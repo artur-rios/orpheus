@@ -6,7 +6,14 @@ plugins {
 
 android {
     namespace = "io.github.artur_rios.orpheus"
-    compileSdk = flutter.compileSdkVersion
+    // 37 rather than Flutter's own default, which is 36 as of Flutter 3.47:
+    // `permission_handler_android` is built against 37 and refuses to be
+    // consumed by anything compiled against less, so the build fails outright
+    // without this. Compiling against a newer platform is not the same as
+    // running on one — `targetSdk` is what opts this application in to new
+    // runtime behaviour, and `minSdk` is what decides where it installs, and
+    // neither of those moves here.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

@@ -69,6 +69,17 @@ class FileCoverStore implements CoverStore {
   Future<bool> contains(String id) async => File(pathFor(id)).existsSync();
 
   @override
+  Future<String?> locationOf(String id) async {
+    final file = File(pathFor(id));
+
+    // Checked rather than handed over unread: a path to a picture that is not
+    // there would be a notification that shows a blank square where the sleeve
+    // should be, and answering `null` is what makes it show the application's
+    // own icon instead.
+    return file.existsSync() ? file.path : null;
+  }
+
+  @override
   Future<void> clear() async {
     final store = Directory(directory);
     if (store.existsSync()) await store.delete(recursive: true);

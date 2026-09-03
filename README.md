@@ -11,10 +11,10 @@ reads its catalog from a Rust core over FFI; Orpheus has no core and no server.
 It walks the folders it is pointed at, reads the tags itself, and keeps the
 result in a file beside its own settings.
 
-> **Status:** complete and tested. 165 unit and widget tests; `flutter analyze`
-> clean. Verified running on Linux; the Windows and Android targets are
-> configured and build from the same source, and have not been run on a device
-> from this checkout.
+> **Status:** complete and tested. 197 unit and widget tests; `flutter analyze`
+> clean. Verified running on Linux, and the Linux and Android release builds
+> are verified to produce a binary from this checkout. Neither Windows nor
+> Android has been run on a device here.
 
 ## What it does
 
@@ -27,6 +27,9 @@ result in a file beside its own settings.
   you can see and jump around in, repeat, and a resume point per track.
 - **Shows what is playing everywhere** — a persistent bar across the bottom, and
   a full player with the record's own sleeve as large as the window allows.
+- **Keeps playing on Android once you switch away**, from a notification and the
+  lock screen that carry the sleeve and the transport buttons — and stops for a
+  phone call, and for headphones pulled out of the socket.
 - **Searches** across titles, artists and albums, ranked so a match at the start
   of a title comes above one buried in the middle of something else.
 - **Adapts to the window**: a rail down the side on a desktop, a bar across the
@@ -42,8 +45,6 @@ result in a file beside its own settings.
   `INTERNET` permission, which is the version of this promise a machine can
   check.
 - **No accounts, no sync, no cloud.** One person, one machine, one library.
-- **No background playback service on Android yet** — see
-  [Known limits](#known-limits).
 
 ## Screenshots
 
@@ -82,11 +83,14 @@ The library starts empty and stays empty until you point it somewhere. Open
 **Folders**, add the folder your music is in — or press **Add my music folder**,
 which offers the platform's conventional one — and the scan starts. On Android
 the system asks for permission to read audio files at that point; it is asked
-for once you have registered a folder, never before.
+for once you have registered a folder, never before. Android also asks to be
+allowed to post the playback notification, and that one is asked for the first
+time you press play. Refusing it costs the notification and nothing else —
+playback still runs, and still runs in the background.
 
 ## How it works
 
-Six things happen, and they are worth reading in this order.
+Seven things happen, and they are worth reading in this order.
 
 **A scan walks the folders and reads the tags.** It runs on an isolate of its
 own, because it is the whole of the expensive half of this application: a walk
@@ -128,6 +132,20 @@ is missing or will not decode is named, stepped over, and the queue carries on;
 when the queue runs out of tracks to try, it says so.
 (`features/playback/application/audio_playback_controller.dart`)
 
+**On Android the notification is the background playback.** A foreground
+service is the only way the system lets a process keep making noise once it is
+no longer on screen, and the notification is what a foreground service is
+obliged to post — so the two are one thing rather than a feature and its
+decoration. The session behind it is a third view of the same player, alongside
+the bar and the full player: it shows what is playing and it sends back what was
+pressed, and it holds no queue of its own. What comes back through it is not
+only the transport buttons — a phone call arriving and a pair of headphones
+leaving the socket arrive as the same ask, which is why the player never learns
+the difference between them. On Windows and Linux the same seam is bound to a
+session that shows nothing, which is why none of the code above it has a
+platform check in it.
+(`features/playback/domain/media_session.dart`)
+
 ### The sound bars, honestly
 
 The moving bars on the player screen are **synthesised, not measured**. Nothing
@@ -150,7 +168,8 @@ lib/
                    and the single composition root in core/di/providers.dart
   features/
     library/       folders, scanning, tags, cover and catalog storage
-    playback/      the queue, the engine boundary, and the music area
+    playback/      the queue, the engine and media-session boundaries, and
+                   the music area
     shell/         the frame: navigation, the playback bar, preferences
 ```
 
@@ -163,7 +182,7 @@ override a binding rather than patching a global.
 
 ```bash
 flutter analyze              # must be clean; there is no known-warnings list
-flutter test                 # 165 unit and widget tests
+flutter test                 # 197 unit and widget tests
 flutter build linux --release
 flutter build windows --release
 flutter build apk --release
@@ -172,9 +191,9 @@ flutter build apk --release
 Tests are named Given-When-Then, one behaviour apiece, and follow the source
 tree: `lib/x/y.dart` is tested by `test/x/y_test.dart`. Nothing in the suite
 reads the developer's own preferences, writes into their application-support
-folder, opens the native playback engine, or reaches the network — every one of
-those is a provider, and every one is overridden by the harness in
-`test/support/test_container.dart`.
+folder, opens the native playback engine, starts a platform media service, or
+reaches the network — every one of those is a provider, and every one is
+overridden by the harness in `test/support/test_container.dart`.
 
 Two of the tests are guards rather than assertions about behaviour, and they
 exist because a rule nobody checks is a comment:
@@ -192,11 +211,16 @@ from a test.
 
 ## Known limits
 
-- **No background playback service on Android.** Playback continues while the
-  application is in the foreground; Android is free to stop the process once it
-  is backgrounded, and there is no foreground service or media notification yet.
-  This is the one thing a phone owner will notice first, and it is the next
-  thing worth building.
+- **The Android media session is written and built, but unrun on a device.**
+  The foreground service, the notification, the lock screen controls and the
+  audio-focus handling are all there and are covered by tests against a stand-in
+  session; what no test on a build machine can tell you is how the real one
+  behaves on real hardware. It is the part of this application most in need of a
+  phone.
+- **No media session on Windows or Linux.** Neither desktop gets transport keys
+  or a system now-playing panel. The seam that would carry them exists and is
+  bound to a session that shows nothing, so this is an implementation to write
+  rather than a design to change.
 - **No playlists.** Queues are built from a track, a record, an artist, or the
   whole library shuffled. There is nothing to save and name yet.
 - **A track is identified by its path.** Move a file and it is a different track
@@ -208,9 +232,10 @@ from a test.
   an ordinary record it gives the same answer; a various-artists compilation with
   no album-artist tag anywhere lands under whichever performer has the most
   tracks on it.
-- **Windows and Android are configured and unrun from this checkout.** They build
-  from the same source and the same engine, and neither has been launched on a
-  device here.
+- **Windows and Android are unrun from this checkout.** The Android release
+  package builds from this source and its permissions have been read back out of
+  the built APK; Windows is configured from the same source and the same engine.
+  Neither has been launched on a device here.
 
 ## Licence
 

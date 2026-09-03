@@ -51,6 +51,17 @@ dependencies:
   # else — the desktops have no such gate.
   permission_handler: ^13.0.1
 
+  # The Android media session: the foreground service that keeps playback
+  # alive once the application is backgrounded, and the notification and lock
+  # screen controls that come with it. Android alone — it covers no desktop,
+  # which is why it sits behind an interface with a silent implementation for
+  # the two that have no such thing.
+  audio_service: ^0.18.19
+
+  # Audio focus, which arrives through the same seam: the phone call that
+  # should pause playback, and the headphones pulled out that should too.
+  audio_session: ^0.2.4
+
   # The desktop window: the minimum size, and the geometry that is restored
   # between runs. Desktop-only by nature, and guarded as such at every call.
   window_manager: ^0.5.2

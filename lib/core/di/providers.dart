@@ -29,12 +29,15 @@ import '../../features/library/domain/library_scan.dart';
 import '../../features/library/domain/music_catalog.dart';
 import '../../features/playback/application/album_art_controller.dart';
 import '../../features/playback/application/audio_playback_controller.dart';
+import '../../features/playback/application/media_session_controller.dart';
 import '../../features/playback/application/music_browse_controller.dart';
 import '../../features/playback/application/music_layout_controller.dart';
 import '../../features/playback/data/file_track_probe.dart';
 import '../../features/playback/data/media_kit_player.dart';
 import '../../features/playback/data/settings_playback_position_store.dart';
+import '../../features/playback/data/silent_media_session.dart';
 import '../../features/playback/domain/media_player.dart';
+import '../../features/playback/domain/media_session.dart';
 import '../../features/playback/domain/music_layout.dart';
 import '../../features/playback/domain/playback_position_store.dart';
 import '../../features/playback/domain/track_energy.dart';
@@ -123,6 +126,20 @@ final audioPlayerProvider = Provider<MediaPlayer>((ref) {
   return player;
 });
 
+/// The platform's media session — the notification, the lock screen, and
+/// whatever has transport buttons on it.
+///
+/// Silent by default, which is the honest answer on the two desktop targets
+/// and the one every test wants. `main` overrides it on Android with the
+/// session over the foreground service, because starting that service is
+/// asynchronous and has to have happened before the first frame.
+final mediaSessionProvider = Provider<MediaSession>((ref) {
+  final session = SilentMediaSession();
+  ref.onDispose(session.dispose);
+
+  return session;
+});
+
 /// The resume points.
 final playbackPositionsProvider = Provider<PlaybackPositionStore>(
   (ref) => SettingsPlaybackPositionStore(ref.watch(settingsStoreProvider)),
@@ -155,6 +172,16 @@ final scanControllerProvider = NotifierProvider<ScanController, ScanState>(
 final audioPlaybackControllerProvider =
     NotifierProvider<AudioPlaybackController, AudioPlaybackState>(
       AudioPlaybackController.new,
+    );
+
+/// What the media session is showing, and what it sends back.
+///
+/// Not auto-disposed and never watched by a widget for its value: it is a view
+/// of the player that outlives every screen, in the same way the player itself
+/// does.
+final mediaSessionControllerProvider =
+    NotifierProvider<MediaSessionController, NowPlaying?>(
+      MediaSessionController.new,
     );
 
 /// Where in the music area the owner is.

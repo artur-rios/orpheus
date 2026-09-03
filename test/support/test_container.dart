@@ -12,6 +12,7 @@ import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/library/domain/music_grouping.dart';
 
 import 'fake_media_player.dart';
+import 'fake_media_session.dart';
 import 'fake_track_probe.dart';
 import 'fakes.dart';
 
@@ -33,6 +34,7 @@ class Harness {
     int shuffleSeed = 7,
     DateTime? now,
   }) : player = FakeMediaPlayer(),
+       session = FakeMediaSession(),
        probe = FakeTrackProbe(missing: {...missingTracks}),
        covers = InMemoryCoverStore(),
        access = access ?? FakeLibraryAccess(),
@@ -58,6 +60,7 @@ class Harness {
         catalogStoreProvider.overrideWithValue(catalogs),
         coverStoreProvider.overrideWithValue(covers),
         audioPlayerProvider.overrideWithValue(player),
+        mediaSessionProvider.overrideWithValue(session),
         trackProbeProvider.overrideWithValue(probe),
         libraryAccessProvider.overrideWithValue(this.access),
         folderPickerProvider.overrideWithValue(this.picker),
@@ -75,6 +78,9 @@ class Harness {
 
   /// The engine, which records what it was asked to open.
   final FakeMediaPlayer player;
+
+  /// The platform's media session, which records what it was shown.
+  final FakeMediaSession session;
 
   /// Which queued files exist.
   final FakeTrackProbe probe;

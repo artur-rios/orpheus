@@ -22,6 +22,16 @@ abstract interface class CoverStore {
   /// Whether [id] is already stored.
   Future<bool> contains(String id);
 
+  /// Where the picture stored under [id] is on disk, or `null` where this
+  /// store does not keep it as a file.
+  ///
+  /// Here for one caller: the platform's media session shows the sleeve on a
+  /// notification and a lock screen, and it takes a URI it will load and scale
+  /// itself rather than the bytes. Nullable rather than assumed, because a
+  /// store need not be a directory, and because a picture the store was told
+  /// about and no longer holds has no path to give.
+  Future<String?> locationOf(String id);
+
   /// Removes every stored picture.
   Future<void> clear();
 }

@@ -17,6 +17,27 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"/>
 
+    <!-- Playing on after the owner switches away.
+
+         A foreground service is the only way Android lets a process keep
+         making noise once it is no longer on screen, and its type says what
+         for: mediaPlayback, which is the one this application would qualify
+         for and the one it asks for. WAKE_LOCK is what keeps the processor
+         running through a track while the screen is off.
+
+         POST_NOTIFICATIONS is the notification that comes with it, and is
+         asked for at the moment there is something to show rather than on a
+         launch nobody has pressed play in. A refusal costs the notification
+         and nothing else — the service still runs, and so does the music.
+
+         None of these is a network permission, and there is still no INTERNET
+         permission here. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
     <application
         android:label="Orpheus"
         android:name="${applicationName}"
@@ -43,6 +64,31 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- The playback service, and the button events that reach it.
+
+             `audio_service` supplies both; what is declared here is what the
+             system needs to know about them. The service answers the media
+             browser intent, which is what makes this application visible to
+             anything that drives a player from outside it — the lock screen,
+             a car head unit, a watch. The receiver is the media button: the
+             pause on a pair of headphones, and the one on a steering wheel. -->
+        <service
+            android:name="com.ryanheise.audioservice.AudioService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService"/>
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name="com.ryanheise.audioservice.MediaButtonReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON"/>
+            </intent-filter>
+        </receiver>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

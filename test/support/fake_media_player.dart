@@ -53,16 +53,21 @@ class FakeMediaPlayer implements MediaPlayer {
     _status = PlaybackStatus(isPlaying: true, position: startAt);
   }
 
+  // Announced, not just recorded. media_kit reports playing and paused on its
+  // own stream, and the player above it learns that a pause took effect from
+  // there rather than from the call returning — so a fake that only recorded
+  // it would leave every flow that reads back "is it playing" testing against
+  // a state the real engine would have moved on from.
   @override
   Future<void> play() async {
     plays++;
-    _status = _status.copyWith(isPlaying: true);
+    report(_status.copyWith(isPlaying: true));
   }
 
   @override
   Future<void> pause() async {
     pauses++;
-    _status = _status.copyWith(isPlaying: false);
+    report(_status.copyWith(isPlaying: false));
   }
 
   @override

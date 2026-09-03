@@ -13,6 +13,8 @@ import 'core/platform/host_platform.dart';
 import 'core/settings/in_memory_settings_store.dart';
 import 'core/settings/settings_store.dart';
 import 'core/settings/shared_preferences_settings_store.dart';
+import 'features/playback/data/audio_service_media_session.dart';
+import 'features/playback/domain/media_session.dart';
 import 'features/shell/data/desktop_window.dart';
 
 /// The entry point.
@@ -42,13 +44,22 @@ Future<void> main() async {
     await window.open();
   }
 
+  final session = await _startMediaSession(platform);
+
   final container = ProviderContainer(
     overrides: [
       settingsStoreProvider.overrideWithValue(settings),
       appDirectoriesProvider.overrideWithValue(directories),
       hostPlatformProvider.overrideWithValue(platform),
+      if (session != null) mediaSessionProvider.overrideWithValue(session),
     ],
   );
+
+  // Read for its effect, which is the point of it. The session is what keeps
+  // playing once the owner switches away from the application, so the thing
+  // that publishes to it cannot wait to be created by a screen the system is
+  // entitled to take down.
+  container.read(mediaSessionControllerProvider.notifier);
 
   // Started after the first frame so the window is already up: the owner sees
   // the library the last scan left, and the strip above the bar says what the
@@ -65,6 +76,33 @@ Future<void> main() async {
       child: const OrpheusApp(),
     ),
   );
+}
+
+/// The platform's media session, or `null` to leave the silent one bound.
+///
+/// Android alone. The service behind it is a foreground service, and starting
+/// it is what lets playback survive the application being backgrounded — which
+/// is why it is started here, before the first frame, rather than at the
+/// moment the owner first presses play.
+///
+/// A session that will not start is not fatal. Playback works without it for
+/// as long as the application is on screen, which is exactly what this target
+/// did before there was one, and the alternative is a music player that
+/// refuses to open.
+Future<MediaSession?> _startMediaSession(HostPlatform platform) async {
+  if (!platform.isAndroid) return null;
+
+  try {
+    return await AudioServiceMediaSession.start();
+  } on Object catch (error) {
+    Logger('startup').warning(
+      'the media session could not be started; playback will not continue in '
+      'the background',
+      error,
+    );
+
+    return null;
+  }
 }
 
 /// The settings store, or an empty one where the platform will not give it up.

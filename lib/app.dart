@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/di/providers.dart';
 import 'core/l10n/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
+import 'features/playback/presentation/media_session_names_scope.dart';
 import 'features/shell/domain/shell_destination.dart';
 import 'features/shell/presentation/shell_screen.dart';
 
@@ -86,7 +87,7 @@ class _ShellWithBack extends ConsumerWidget {
 
         ref.read(musicBrowseControllerProvider.notifier).back();
       },
-      child: const ShellScreen(),
+      child: const MediaSessionNamesScope(child: ShellScreen()),
     );
   }
 }

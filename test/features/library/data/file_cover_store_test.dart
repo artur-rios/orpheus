@@ -33,6 +33,29 @@ void main() {
   );
 
   test(
+    'GivenAStoredPicture_WhenItsLocationIsAsked_ThenTheFileHoldingItIsNamed',
+    () async {
+      // What the platform's media session is handed: it loads and scales the
+      // sleeve itself from a path rather than taking the bytes.
+      final id = await store.put(picture(1));
+
+      final location = await store.locationOf(id);
+
+      expect(location, store.pathFor(id));
+      expect(File(location!).readAsBytesSync(), picture(1));
+    },
+  );
+
+  test(
+    'GivenAPictureTheStoreDoesNotHold_WhenItsLocationIsAsked_ThenThereIsNone',
+    () async {
+      // A path to a file that is not there would be a notification showing a
+      // blank square where the sleeve should be.
+      expect(await store.locationOf('never-stored-0'), isNull);
+    },
+  );
+
+  test(
     'GivenTheSamePictureTwice_WhenBothAreStored_ThenThereIsOneFileAndOneId',
     () async {
       // Content-addressed, which is what keeps the cache proportional to the

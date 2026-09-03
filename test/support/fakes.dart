@@ -36,6 +36,14 @@ class InMemoryCatalogStore implements CatalogStore {
 class InMemoryCoverStore implements CoverStore {
   final Map<String, Uint8List> _pictures = {};
 
+  /// Where each picture is to be told it is, by cover id.
+  ///
+  /// Empty by default, which is the truth about a store that holds its
+  /// pictures in memory. A test that is about the sleeve on a lock screen
+  /// writes into it, because that flow is entirely about a *path* being handed
+  /// to the platform and there is otherwise none to hand.
+  final Map<String, String> locations = {};
+
   @override
   Future<String> put(Uint8List bytes) async {
     final id = coverIdOf(bytes);
@@ -49,6 +57,9 @@ class InMemoryCoverStore implements CoverStore {
 
   @override
   Future<bool> contains(String id) async => _pictures.containsKey(id);
+
+  @override
+  Future<String?> locationOf(String id) async => locations[id];
 
   @override
   Future<void> clear() async => _pictures.clear();
