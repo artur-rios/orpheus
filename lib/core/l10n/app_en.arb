@@ -470,5 +470,71 @@
   "failureUnexpected": "Something went wrong.",
   "@failureUnexpected": {
     "description": "Anything the application did not model."
+  },
+  "statsTitle": "What you listen to",
+  "@statsTitle": {
+    "description": "The title of the listening statistics screen."
+  },
+  "statsOpen": "Statistics",
+  "@statsOpen": {
+    "description": "The app bar button that opens the listening statistics."
+  },
+  "statsReadAgain": "Read again",
+  "@statsReadAgain": {
+    "description": "Reads the statistics from scratch."
+  },
+  "statsTotalPlays": "Plays",
+  "@statsTotalPlays": {
+    "description": "Label for the total number of plays counted."
+  },
+  "statsDistinctTracks": "Tracks",
+  "@statsDistinctTracks": {
+    "description": "Label for how many different tracks have been played."
+  },
+  "statsTopTracks": "Most played tracks",
+  "@statsTopTracks": {
+    "description": "Heading of the track ranking."
+  },
+  "statsTopArtists": "Most played artists",
+  "@statsTopArtists": {
+    "description": "Heading of the artist ranking."
+  },
+  "statsTopAlbums": "Most played records",
+  "@statsTopAlbums": {
+    "description": "Heading of the record ranking."
+  },
+  "statsTopGenres": "Most played genres",
+  "@statsTopGenres": {
+    "description": "Heading of the genre ranking."
+  },
+  "statsRankingEmpty": "Nothing here yet",
+  "@statsRankingEmpty": {
+    "description": "Shown under a ranking heading that has no rows."
+  },
+  "statsEmptyTitle": "Nothing counted yet",
+  "@statsEmptyTitle": {
+    "description": "Title of the statistics screen before anything has been played."
+  },
+  "statsEmptyBody": "A track counts once you have heard half of it, or four minutes of it — whichever comes first.",
+  "@statsEmptyBody": {
+    "description": "Explains what has to happen before a statistic appears."
+  },
+  "statsPlaysCount": "{count, plural, =1{1 play} other{{count} plays}}",
+  "@statsPlaysCount": {
+    "description": "How many plays one row of a ranking accounts for.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statsUntaggedNote": "{count, plural, =1{1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no ranking below.} other{{count} played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no ranking below.}}",
+  "@statsUntaggedNote": {
+    "description": "Explains why the totals can be larger than the rankings.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

@@ -19,9 +19,10 @@ import 'fakes.dart';
 /// Everything a test needs bound, and nothing reaching outside the process.
 ///
 /// No test reads the developer's own preferences, writes into their
-/// application-support folder, opens the native playback engine, or touches
-/// the filesystem: every one of those is a provider, and every one of them is
-/// overridden here.
+/// application-support folder, records a play against their listening
+/// statistics, opens the native playback engine, starts a platform media
+/// service, or touches the filesystem: every one of those is a provider, and
+/// every one of them is overridden here.
 class Harness {
   /// Builds a container over [library], with the doubles the test can inspect.
   Harness({
@@ -37,6 +38,7 @@ class Harness {
        session = FakeMediaSession(),
        probe = FakeTrackProbe(missing: {...missingTracks}),
        covers = InMemoryCoverStore(),
+       plays = InMemoryPlayHistoryStore(),
        access = access ?? FakeLibraryAccess(),
        picker = picker ?? FakeFolderPicker(),
        settings = settings ?? InMemorySettingsStore(),
@@ -59,6 +61,7 @@ class Harness {
         ),
         catalogStoreProvider.overrideWithValue(catalogs),
         coverStoreProvider.overrideWithValue(covers),
+        playHistoryStoreProvider.overrideWithValue(plays),
         audioPlayerProvider.overrideWithValue(player),
         mediaSessionProvider.overrideWithValue(session),
         trackProbeProvider.overrideWithValue(probe),
@@ -90,6 +93,9 @@ class Harness {
 
   /// The covers, in memory.
   final InMemoryCoverStore covers;
+
+  /// What has been played, in memory.
+  final InMemoryPlayHistoryStore plays;
 
   /// The preferences, in memory.
   final SettingsStore settings;

@@ -13,6 +13,7 @@ import '../../playback/presentation/music_library_view.dart';
 import '../../playback/presentation/now_playing_screen.dart';
 import '../../playback/presentation/queue_view.dart';
 import '../../playback/presentation/search_results_view.dart';
+import '../../stats/presentation/music_stats_screen.dart';
 import '../application/shell_controller.dart';
 import '../domain/shell_destination.dart';
 import 'playback_bar.dart';
@@ -120,6 +121,11 @@ class _ShellAppBar extends ConsumerWidget implements PreferredSizeWidget {
           const SizedBox(width: 320, child: _SearchField())
         else
           const _PhoneSearchButton(),
+        IconButton(
+          tooltip: l10n.statsOpen,
+          icon: const Icon(Icons.insights_outlined),
+          onPressed: () => unawaited(MusicStatsScreen.show(context)),
+        ),
         IconButton(
           tooltip: l10n.settingsTitle,
           icon: const Icon(Icons.settings_outlined),

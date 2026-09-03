@@ -45,6 +45,11 @@ import '../../features/playback/domain/track_probe.dart';
 import '../../features/shell/application/preferences_controller.dart';
 import '../../features/shell/application/shell_controller.dart';
 import '../../features/shell/domain/shell_destination.dart';
+import '../../features/stats/application/music_stats_controller.dart';
+import '../../features/stats/application/play_recorder.dart';
+import '../../features/stats/data/json_play_history_store.dart';
+import '../../features/stats/domain/music_stats.dart';
+import '../../features/stats/domain/play_history.dart';
 import '../app_directories.dart';
 import '../platform/host_platform.dart';
 import '../settings/settings_store.dart';
@@ -145,6 +150,23 @@ final playbackPositionsProvider = Provider<PlaybackPositionStore>(
   (ref) => SettingsPlaybackPositionStore(ref.watch(settingsStoreProvider)),
 );
 
+/// Where the play history is kept.
+final playHistoryStoreProvider = Provider<PlayHistoryStore>(
+  (ref) => JsonPlayHistoryStore(ref.watch(appDirectoriesProvider).support),
+);
+
+/// What counts a play, and what has been counted.
+///
+/// One for the application: the player writes to it and the statistics screen
+/// reads from it, and a second one would be a screen showing a total the last
+/// play is missing from.
+final playRecorderProvider = Provider<PlayRecorder>(
+  (ref) => PlayRecorder(
+    store: ref.watch(playHistoryStoreProvider),
+    clock: ref.watch(clockProvider),
+  ),
+);
+
 /// The folders the library is built from.
 final libraryFoldersControllerProvider =
     NotifierProvider<LibraryFoldersController, List<String>>(
@@ -182,6 +204,16 @@ final audioPlaybackControllerProvider =
 final mediaSessionControllerProvider =
     NotifierProvider<MediaSessionController, NowPlaying?>(
       MediaSessionController.new,
+    );
+
+/// What the owner listens to.
+///
+/// Auto-disposed, so the screen reads afresh each time it is opened rather
+/// than showing what was true the first time it was opened this session.
+final musicStatsControllerProvider =
+    AsyncNotifierProvider<MusicStatsController, MusicStats>(
+      MusicStatsController.new,
+      isAutoDispose: true,
     );
 
 /// Where in the music area the owner is.

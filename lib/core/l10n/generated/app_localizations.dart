@@ -673,6 +673,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Something went wrong.'**
   String get failureUnexpected;
+
+  /// The title of the listening statistics screen.
+  ///
+  /// In en, this message translates to:
+  /// **'What you listen to'**
+  String get statsTitle;
+
+  /// The app bar button that opens the listening statistics.
+  ///
+  /// In en, this message translates to:
+  /// **'Statistics'**
+  String get statsOpen;
+
+  /// Reads the statistics from scratch.
+  ///
+  /// In en, this message translates to:
+  /// **'Read again'**
+  String get statsReadAgain;
+
+  /// Label for the total number of plays counted.
+  ///
+  /// In en, this message translates to:
+  /// **'Plays'**
+  String get statsTotalPlays;
+
+  /// Label for how many different tracks have been played.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracks'**
+  String get statsDistinctTracks;
+
+  /// Heading of the track ranking.
+  ///
+  /// In en, this message translates to:
+  /// **'Most played tracks'**
+  String get statsTopTracks;
+
+  /// Heading of the artist ranking.
+  ///
+  /// In en, this message translates to:
+  /// **'Most played artists'**
+  String get statsTopArtists;
+
+  /// Heading of the record ranking.
+  ///
+  /// In en, this message translates to:
+  /// **'Most played records'**
+  String get statsTopAlbums;
+
+  /// Heading of the genre ranking.
+  ///
+  /// In en, this message translates to:
+  /// **'Most played genres'**
+  String get statsTopGenres;
+
+  /// Shown under a ranking heading that has no rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet'**
+  String get statsRankingEmpty;
+
+  /// Title of the statistics screen before anything has been played.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing counted yet'**
+  String get statsEmptyTitle;
+
+  /// Explains what has to happen before a statistic appears.
+  ///
+  /// In en, this message translates to:
+  /// **'A track counts once you have heard half of it, or four minutes of it — whichever comes first.'**
+  String get statsEmptyBody;
+
+  /// How many plays one row of a ranking accounts for.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 play} other{{count} plays}}'**
+  String statsPlaysCount(int count);
+
+  /// Explains why the totals can be larger than the rankings.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no ranking below.} other{{count} played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no ranking below.}}'**
+  String statsUntaggedNote(int count);
 }
 
 class _AppLocalizationsDelegate

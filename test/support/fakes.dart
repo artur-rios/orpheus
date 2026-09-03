@@ -5,6 +5,7 @@ import 'package:orpheus/features/library/domain/cover_store.dart';
 import 'package:orpheus/features/library/domain/library_access.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
+import 'package:orpheus/features/stats/domain/play_history.dart';
 
 /// A [CatalogStore] in memory, seeded with whatever the test wants the last
 /// scan to have left behind.
@@ -19,8 +20,16 @@ class InMemoryCatalogStore implements CatalogStore {
   /// persisted what it found.
   final List<MusicCatalog> written = [];
 
+  /// Whether reading the catalog fails, for the flows that have to carry on
+  /// without a library.
+  bool failOnRead = false;
+
   @override
-  Future<MusicCatalog> read() async => _catalog;
+  Future<MusicCatalog> read() async {
+    if (failOnRead) throw StateError('the catalog could not be read');
+
+    return _catalog;
+  }
 
   @override
   Future<void> write(MusicCatalog catalog) async {
@@ -123,4 +132,29 @@ class FakeFolderPicker implements FolderPicker {
 
   @override
   Future<String?> pickFolder() async => folder;
+}
+
+/// A [PlayHistoryStore] that keeps the history in memory.
+///
+/// Bound by the harness for the same reason every other store is: a test that
+/// wrote a play history would write into the developer's own
+/// application-support folder and change their statistics.
+class InMemoryPlayHistoryStore implements PlayHistoryStore {
+  /// Creates a store over [history].
+  InMemoryPlayHistoryStore([this.history = PlayHistory.empty]);
+
+  /// What has been recorded.
+  PlayHistory history;
+
+  /// How many times the history was written.
+  int writes = 0;
+
+  @override
+  Future<PlayHistory> read() async => history;
+
+  @override
+  Future<void> write(PlayHistory history) async {
+    writes++;
+    this.history = history;
+  }
 }

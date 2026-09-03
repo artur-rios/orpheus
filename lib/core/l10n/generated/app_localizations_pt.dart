@@ -355,4 +355,64 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get failureUnexpected => 'Algo deu errado.';
+
+  @override
+  String get statsTitle => 'O que você ouve';
+
+  @override
+  String get statsOpen => 'Estatísticas';
+
+  @override
+  String get statsReadAgain => 'Ler novamente';
+
+  @override
+  String get statsTotalPlays => 'Reproduções';
+
+  @override
+  String get statsDistinctTracks => 'Faixas';
+
+  @override
+  String get statsTopTracks => 'Faixas mais tocadas';
+
+  @override
+  String get statsTopArtists => 'Artistas mais tocados';
+
+  @override
+  String get statsTopAlbums => 'Discos mais tocados';
+
+  @override
+  String get statsTopGenres => 'Gêneros mais tocados';
+
+  @override
+  String get statsRankingEmpty => 'Nada aqui ainda';
+
+  @override
+  String get statsEmptyTitle => 'Nada contabilizado ainda';
+
+  @override
+  String get statsEmptyBody =>
+      'Uma faixa conta quando você ouve metade dela, ou quatro minutos dela — o que vier primeiro.';
+
+  @override
+  String statsPlaysCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reproduções',
+      one: '1 reprodução',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String statsUntaggedNote(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count faixas tocadas não têm tag de artista, disco ou gênero, então elas são contadas nos totais acima mas não aparecem em nenhum ranking abaixo.',
+      one: '1 faixa tocada não tem tag de artista, disco ou gênero, então ela é contada nos totais acima mas não aparece em nenhum ranking abaixo.',
+    );
+    return '$_temp0';
+  }
 }

@@ -354,4 +354,64 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get failureUnexpected => 'Something went wrong.';
+
+  @override
+  String get statsTitle => 'What you listen to';
+
+  @override
+  String get statsOpen => 'Statistics';
+
+  @override
+  String get statsReadAgain => 'Read again';
+
+  @override
+  String get statsTotalPlays => 'Plays';
+
+  @override
+  String get statsDistinctTracks => 'Tracks';
+
+  @override
+  String get statsTopTracks => 'Most played tracks';
+
+  @override
+  String get statsTopArtists => 'Most played artists';
+
+  @override
+  String get statsTopAlbums => 'Most played records';
+
+  @override
+  String get statsTopGenres => 'Most played genres';
+
+  @override
+  String get statsRankingEmpty => 'Nothing here yet';
+
+  @override
+  String get statsEmptyTitle => 'Nothing counted yet';
+
+  @override
+  String get statsEmptyBody =>
+      'A track counts once you have heard half of it, or four minutes of it — whichever comes first.';
+
+  @override
+  String statsPlaysCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plays',
+      one: '1 play',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String statsUntaggedNote(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no ranking below.',
+      one: '1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no ranking below.',
+    );
+    return '$_temp0';
+  }
 }

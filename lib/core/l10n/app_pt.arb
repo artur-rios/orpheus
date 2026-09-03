@@ -470,5 +470,71 @@
   "failureUnexpected": "Algo deu errado.",
   "@failureUnexpected": {
     "description": "Anything the application did not model."
+  },
+  "statsTitle": "O que você ouve",
+  "@statsTitle": {
+    "description": "The title of the listening statistics screen."
+  },
+  "statsOpen": "Estatísticas",
+  "@statsOpen": {
+    "description": "The app bar button that opens the listening statistics."
+  },
+  "statsReadAgain": "Ler novamente",
+  "@statsReadAgain": {
+    "description": "Reads the statistics from scratch."
+  },
+  "statsTotalPlays": "Reproduções",
+  "@statsTotalPlays": {
+    "description": "Label for the total number of plays counted."
+  },
+  "statsDistinctTracks": "Faixas",
+  "@statsDistinctTracks": {
+    "description": "Label for how many different tracks have been played."
+  },
+  "statsTopTracks": "Faixas mais tocadas",
+  "@statsTopTracks": {
+    "description": "Heading of the track ranking."
+  },
+  "statsTopArtists": "Artistas mais tocados",
+  "@statsTopArtists": {
+    "description": "Heading of the artist ranking."
+  },
+  "statsTopAlbums": "Discos mais tocados",
+  "@statsTopAlbums": {
+    "description": "Heading of the record ranking."
+  },
+  "statsTopGenres": "Gêneros mais tocados",
+  "@statsTopGenres": {
+    "description": "Heading of the genre ranking."
+  },
+  "statsRankingEmpty": "Nada aqui ainda",
+  "@statsRankingEmpty": {
+    "description": "Shown under a ranking heading that has no rows."
+  },
+  "statsEmptyTitle": "Nada contabilizado ainda",
+  "@statsEmptyTitle": {
+    "description": "Title of the statistics screen before anything has been played."
+  },
+  "statsEmptyBody": "Uma faixa conta quando você ouve metade dela, ou quatro minutos dela — o que vier primeiro.",
+  "@statsEmptyBody": {
+    "description": "Explains what has to happen before a statistic appears."
+  },
+  "statsPlaysCount": "{count, plural, =1{1 reprodução} other{{count} reproduções}}",
+  "@statsPlaysCount": {
+    "description": "How many plays one row of a ranking accounts for.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statsUntaggedNote": "{count, plural, =1{1 faixa tocada não tem tag de artista, disco ou gênero, então ela é contada nos totais acima mas não aparece em nenhum ranking abaixo.} other{{count} faixas tocadas não têm tag de artista, disco ou gênero, então elas são contadas nos totais acima mas não aparecem em nenhum ranking abaixo.}}",
+  "@statsUntaggedNote": {
+    "description": "Explains why the totals can be larger than the rankings.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

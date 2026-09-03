@@ -11,10 +11,11 @@ reads its catalog from a Rust core over FFI; Orpheus has no core and no server.
 It walks the folders it is pointed at, reads the tags itself, and keeps the
 result in a file beside its own settings.
 
-> **Status:** complete and tested. 197 unit and widget tests; `flutter analyze`
-> clean. Verified running on Linux, and the Linux and Android release builds
-> are verified to produce a binary from this checkout. Neither Windows nor
-> Android has been run on a device here.
+> **Status:** complete and tested. 241 unit and widget tests; `flutter analyze`
+> clean. Every use case in the [specifications](#specifications) is implemented
+> — see the [roadmap](#roadmap). Verified running on Linux, and the Linux and
+> Android release builds are verified to produce a binary from this checkout.
+> Neither Windows nor Android has been run on a device here.
 
 ## What it does
 
@@ -32,6 +33,9 @@ result in a file beside its own settings.
   phone call, and for headphones pulled out of the socket.
 - **Searches** across titles, artists and albums, ranked so a match at the start
   of a title comes above one buried in the middle of something else.
+- **Says what you actually listen to** — total plays, and the most played
+  tracks, artists, records and genres, counted from your own listening and
+  nobody else's.
 - **Adapts to the window**: a rail down the side on a desktop, a bar across the
   bottom on a phone, and the same rules at every width in between.
 - **Light and dark, English and Brazilian Portuguese.**
@@ -45,6 +49,27 @@ result in a file beside its own settings.
   `INTERNET` permission, which is the version of this promise a machine can
   check.
 - **No accounts, no sync, no cloud.** One person, one machine, one library.
+
+## Specifications
+
+The project is specified before it is built. Start with the `initial/`
+documents for context, then the `requirements/` documents for the normative
+detail.
+
+| Document | What's in it |
+| --- | --- |
+| [Brainstorm](docs/initial/Brainstorm.md) | The original free-form notes this project grew from. |
+| [Project Overview](docs/initial/Project%20Overview.md) | What it is, who it's for, and how success is measured. |
+| [Technology Stack](docs/initial/Technology%20Stack.md) | The informal stack decisions and the reasoning behind them. |
+| [Workflow](docs/initial/Workflow.md) | How one use case is delivered, step by step. |
+| [Business Rules](docs/initial/Business%20Rules.md) | The domain entities and the `BR-xx` rules. |
+| [Vision Document](docs/requirements/Vision%20Document.md) | Stakeholders, positioning, and the `F-xx` features. |
+| [System Requirements Document](docs/requirements/System%20Requirements%20Document.md) | The `FR-<AREA>-xx` and `NFR-xx` requirements, the data model, and traceability. |
+| [Use Case Specification Document](docs/requirements/Use%20Case%20Specification%20Document.md) | The `UC-xx` use cases, their flows, and their `AF-xx` alternatives. |
+| [Development Workflow Document](docs/requirements/Development%20Workflow%20Document.md) | The normative branch pattern, issue lifecycle, and Definition of Done. |
+| [Testing Specification Document](docs/requirements/Testing%20Specification%20Document.md) | How tests are written, named, and run. |
+| [Technology Stack Document](docs/requirements/Technology%20Stack%20Document.md) | The single source of truth for every technology and version. |
+| [Operations & Infrastructure Document](docs/requirements/Operations%20%26%20Infrastructure%20Document.md) | Layout, storage, startup, permissions, logging, and the `IR-xx` requirements. |
 
 ## Screenshots
 
@@ -90,7 +115,7 @@ playback still runs, and still runs in the background.
 
 ## How it works
 
-Seven things happen, and they are worth reading in this order.
+Eight things happen, and they are worth reading in this order.
 
 **A scan walks the folders and reads the tags.** It runs on an isolate of its
 own, because it is the whole of the expensive half of this application: a walk
@@ -146,6 +171,17 @@ session that shows nothing, which is why none of the code above it has a
 platform check in it.
 (`features/playback/domain/media_session.dart`)
 
+**A play is counted at half the track, or four minutes.** The convention
+scrobblers have used for twenty years, and it is the right shape in both
+directions: a two-minute song abandoned after forty seconds was not listened
+to, and an hour-long live set does not stop counting because you left before
+the encore. The counter resets when a track *opens* rather than when the track
+changes, which is what makes a song left on repeat worth a play each time
+round. The rankings themselves are never stored — they are worked out by
+reading the play history against the catalog, so re-tagging a library corrects
+its history instead of leaving the old names ranked forever.
+(`features/stats/domain/play_threshold.dart`)
+
 ### The sound bars, honestly
 
 The moving bars on the player screen are **synthesised, not measured**. Nothing
@@ -170,6 +206,7 @@ lib/
     library/       folders, scanning, tags, cover and catalog storage
     playback/      the queue, the engine and media-session boundaries, and
                    the music area
+    stats/         the play threshold, the history, and the rankings
     shell/         the frame: navigation, the playback bar, preferences
 ```
 
@@ -182,7 +219,7 @@ override a binding rather than patching a global.
 
 ```bash
 flutter analyze              # must be clean; there is no known-warnings list
-flutter test                 # 197 unit and widget tests
+flutter test                 # 241 unit and widget tests
 flutter build linux --release
 flutter build windows --release
 flutter build apk --release
@@ -191,9 +228,10 @@ flutter build apk --release
 Tests are named Given-When-Then, one behaviour apiece, and follow the source
 tree: `lib/x/y.dart` is tested by `test/x/y_test.dart`. Nothing in the suite
 reads the developer's own preferences, writes into their application-support
-folder, opens the native playback engine, starts a platform media service, or
-reaches the network — every one of those is a provider, and every one is
-overridden by the harness in `test/support/test_container.dart`.
+folder, records against their listening statistics, opens the native playback
+engine, starts a platform media service, or reaches the network — every one of
+those is a provider, and every one is overridden by the harness in
+`test/support/test_container.dart`.
 
 Two of the tests are guards rather than assertions about behaviour, and they
 exist because a rule nobody checks is a comment:
@@ -223,6 +261,15 @@ from a test.
   rather than a design to change.
 - **No playlists.** Queues are built from a track, a record, an artist, or the
   whole library shuffled. There is nothing to save and name yet.
+- **The statistics are all-time, with no windows.** "This month" is a control, a
+  parameter, and a second set of numbers to explain, and none of it is worth
+  adding before anyone has read the first set. The history stores a count per
+  file rather than a row per play, which is what keeps it proportional to the
+  number of tracks ever played — and which is what a time window would have to
+  undo.
+- **The rankings are only as good as the tags.** A library where the same artist
+  is spelled two ways ranks as two artists, and nothing here can tell that from
+  two artists who really exist.
 - **A track is identified by its path.** Move a file and it is a different track
   to this application, and its resume point does not follow it. Re-scanning is
   what reconciles that.
@@ -236,6 +283,93 @@ from a test.
   package builds from this source and its permissions have been read back out of
   the built APK; Windows is configured from the same source and the same engine.
   Neither has been launched on a device here.
+
+## Roadmap
+
+Seven milestones covering thirty issues: one foundation issue plus one issue per
+use case. Milestones are dependency-ordered — no milestone depends on a later
+one, and every milestone after `M-01` depends on it.
+
+The live view is the [project board](https://github.com/users/artur-rios/projects/13)
+and GitHub's own milestone pages; the counts here are as of the last update to
+this file.
+
+| Milestone | Delivers | Depends on | Issues | Status |
+| --- | --- | --- | --- | --- |
+| [M-01 — Foundation](https://github.com/artur-rios/orpheus/milestone/1) | The project scaffold, the layering, the composition root, and the cross-cutting infrastructure every use case is built on (IR-01 … IR-21) | — | 1 | 1 / 1 closed |
+| [M-02 — Shell and preferences](https://github.com/artur-rios/orpheus/milestone/2) | A window the owner can open, navigate, theme and translate, with preferences that apply immediately and persist | M-01 | 2 | 2 / 2 closed |
+| [M-03 — Library sources and scanning](https://github.com/artur-rios/orpheus/milestone/3) | Folders can be registered, permitted, scanned, reviewed and unregistered — the catalog gets its content | M-02 | 6 | 6 / 6 closed |
+| [M-04 — Browsing and search](https://github.com/artur-rios/orpheus/milestone/4) | The library can be browsed by artist, record and song, laid out two ways, and searched | M-03 | 6 | 6 / 6 closed |
+| [M-05 — Playback](https://github.com/artur-rios/orpheus/milestone/5) | A track, a record, an artist or the whole library can be played, with a queue, repeat, resume, and a player that survives a bad file | M-04 | 11 | 11 / 11 closed |
+| [M-06 — Background playback](https://github.com/artur-rios/orpheus/milestone/6) | Playback continues on Android once the application is off screen, controllable from the notification, the lock screen and a headset | M-05 | 2 | 2 / 2 closed |
+| [M-07 — Listening statistics](https://github.com/artur-rios/orpheus/milestone/7) | Plays are counted from the owner's own listening and presented as totals and four rankings | M-05 | 2 | 2 / 2 closed |
+
+## Backlog
+
+### M-01 — Foundation
+
+| Issue | Work | Spec |
+| --- | --- | --- |
+| [#1](https://github.com/artur-rios/orpheus/issues/1) | Project scaffold and cross-cutting infrastructure (IR-01 … IR-21) — done | [Operations & Infrastructure](docs/requirements/Operations%20%26%20Infrastructure%20Document.md) |
+
+### M-02 — Shell and preferences
+
+| Issue | Work | Spec |
+| --- | --- | --- |
+| [#2](https://github.com/artur-rios/orpheus/issues/2) | UC-28 — Navigate the application shell — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#3](https://github.com/artur-rios/orpheus/issues/3) | UC-29 — Manage preferences — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+
+### M-03 — Library sources and scanning
+
+| Issue | Work | Spec |
+| --- | --- | --- |
+| [#4](https://github.com/artur-rios/orpheus/issues/4) | UC-01 — Register a music folder — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#5](https://github.com/artur-rios/orpheus/issues/5) | UC-02 — Add the conventional music folder — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#6](https://github.com/artur-rios/orpheus/issues/6) | UC-03 — Grant read access to audio files — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#7](https://github.com/artur-rios/orpheus/issues/7) | UC-04 — Scan the library folders — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#8](https://github.com/artur-rios/orpheus/issues/8) | UC-05 — Review the files a scan could not read — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#9](https://github.com/artur-rios/orpheus/issues/9) | UC-06 — Unregister a music folder — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+
+### M-04 — Browsing and search
+
+| Issue | Work | Spec |
+| --- | --- | --- |
+| [#10](https://github.com/artur-rios/orpheus/issues/10) | UC-07 — Browse the library by artist — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#11](https://github.com/artur-rios/orpheus/issues/11) | UC-08 — Browse an artist's records — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#12](https://github.com/artur-rios/orpheus/issues/12) | UC-09 — Browse a record's tracks — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#13](https://github.com/artur-rios/orpheus/issues/13) | UC-10 — Browse every song — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#14](https://github.com/artur-rios/orpheus/issues/14) | UC-11 — Switch between rows and sleeves — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#15](https://github.com/artur-rios/orpheus/issues/15) | UC-12 — Search the library — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+
+### M-05 — Playback
+
+| Issue | Work | Spec |
+| --- | --- | --- |
+| [#16](https://github.com/artur-rios/orpheus/issues/16) | UC-13 — Play a track — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#17](https://github.com/artur-rios/orpheus/issues/17) | UC-14 — Resume a track where it stopped — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#18](https://github.com/artur-rios/orpheus/issues/18) | UC-15 — Play a record — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#19](https://github.com/artur-rios/orpheus/issues/19) | UC-16 — Play everything by an artist — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#20](https://github.com/artur-rios/orpheus/issues/20) | UC-17 — Shuffle the whole library — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#21](https://github.com/artur-rios/orpheus/issues/21) | UC-18 — Pause, seek and set the volume — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#22](https://github.com/artur-rios/orpheus/issues/22) | UC-19 — Move through the queue — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#23](https://github.com/artur-rios/orpheus/issues/23) | UC-20 — Repeat a queue or a track — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#24](https://github.com/artur-rios/orpheus/issues/24) | UC-21 — See what is playing — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#25](https://github.com/artur-rios/orpheus/issues/25) | UC-22 — Open the full player — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#26](https://github.com/artur-rios/orpheus/issues/26) | UC-23 — Step over a file that will not play — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+
+### M-06 — Background playback
+
+| Issue | Work | Spec |
+| --- | --- | --- |
+| [#27](https://github.com/artur-rios/orpheus/issues/27) | UC-24 — Keep playing in the background — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#28](https://github.com/artur-rios/orpheus/issues/28) | UC-25 — Control playback from outside the application — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+
+### M-07 — Listening statistics
+
+| Issue | Work | Spec |
+| --- | --- | --- |
+| [#29](https://github.com/artur-rios/orpheus/issues/29) | UC-26 — Count a track as played — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#30](https://github.com/artur-rios/orpheus/issues/30) | UC-27 — See what you listen to — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
 ## Licence
 
