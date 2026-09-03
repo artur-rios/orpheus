@@ -1,0 +1,66 @@
+name: orpheus
+description: "A cross-platform music player for Windows, Linux and Android."
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Composition root and state management. The same choice the Alexandria UI
+  # made, for the same reason: the player outlives the screen that started it,
+  # so the queue has to live somewhere that is not a widget.
+  flutter_riverpod: ^3.0.0
+
+  # The playback engine. libmpv-backed, and the one engine in this class that
+  # covers all three targets — Windows, Linux and Android — with the same API
+  # and the same container and codec range, without transcoding anything.
+  media_kit: ^1.2.6
+  media_kit_libs_audio: ^1.0.7
+
+  # Tags and embedded cover art, in pure Dart. Pure Dart matters here: it is
+  # the one component that would otherwise need a native build per target, and
+  # a reader that cannot run in a test is a reader whose parsing nobody checks.
+  audio_metadata_reader: ^1.7.1
+
+  # Where the catalog, the settings and the cover cache live on each platform.
+  path: ^1.9.1
+  path_provider: ^2.1.6
+
+  # The local settings store: library folders, layout, theme, resume positions.
+  shared_preferences: ^2.5.5
+
+  # Structured logging.
+  logging: ^1.3.0
+
+  # Localization for en and pt-BR.
+  intl: ^0.20.2
+
+  # The folder picker. `file_picker` rather than `file_selector` because this
+  # application has a mobile target: `getDirectoryPath` is the one call the
+  # library-folder flow needs, and only this package answers it on Android as
+  # well as on the two desktops.
+  file_picker: ^12.2.0
+
+  # Android's audio-media read permission. Asked for on Android and nowhere
+  # else — the desktops have no such gate.
+  permission_handler: ^13.0.1
+
+  # The desktop window: the minimum size, and the geometry that is restored
+  # between runs. Desktop-only by nature, and guarded as such at every call.
+  window_manager: ^0.5.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true

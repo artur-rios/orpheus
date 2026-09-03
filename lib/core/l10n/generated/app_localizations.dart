@@ -1,0 +1,710 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
+
+import 'app_localizations_en.dart';
+import 'app_localizations_pt.dart';
+
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'generated/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
+abstract class AppLocalizations {
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+
+  final String localeName;
+
+  static AppLocalizations of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
+
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
+
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('pt'),
+  ];
+
+  /// The application's name, shown as the window title.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus'**
+  String get appTitle;
+
+  /// Announced while an operation runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get loading;
+
+  /// The button on a failure state.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get retry;
+
+  /// Dismisses a screen or a dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// Abandons a dialog without doing anything.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// Clears a notice the owner has read.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get dismiss;
+
+  /// Takes an entry out of a list.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get remove;
+
+  /// Closes a dialog that has nothing to confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// Opens the system settings, where a refused permission can be granted.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get openSettings;
+
+  /// The library area, in the navigation panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get destinationMusic;
+
+  /// The play queue area, in the navigation panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get destinationQueue;
+
+  /// The library folders area, in the navigation panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Folders'**
+  String get destinationFolders;
+
+  /// The placeholder in the search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search the library'**
+  String get searchHint;
+
+  /// The button that empties the search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the search'**
+  String get searchClear;
+
+  /// The heading above the search results.
+  ///
+  /// In en, this message translates to:
+  /// **'Results for “{term}”'**
+  String searchResults(String term);
+
+  /// Shown when a search matched no track.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in the library matches “{term}”.'**
+  String searchEmpty(String term);
+
+  /// The title of the preferences dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get settingsTitle;
+
+  /// The heading over the theme and language choices.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsAppearance;
+
+  /// The label on the theme choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get settingsTheme;
+
+  /// The theme choice that follows the operating system.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the system'**
+  String get themeSystem;
+
+  /// The light theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// The dark theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// The label on the language choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingsLanguage;
+
+  /// The language choice that follows the operating system.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the system'**
+  String get languageSystem;
+
+  /// The English language choice.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageEnglish;
+
+  /// The Brazilian Portuguese language choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Português (Brasil)'**
+  String get languagePortuguese;
+
+  /// The heading over the playback preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Playback'**
+  String get settingsPlayback;
+
+  /// The preference that opens the full player on play.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the player when a track starts'**
+  String get settingsOpensPlayerOnPlay;
+
+  /// The preference that scans the folders at startup.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-scan the library at every launch'**
+  String get settingsRescansAtStartup;
+
+  /// The label on the volume slider.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get settingsVolume;
+
+  /// Shown when a preference could not be written.
+  ///
+  /// In en, this message translates to:
+  /// **'This applies now, but could not be saved for next time.'**
+  String get settingsUnsaved;
+
+  /// The artists view.
+  ///
+  /// In en, this message translates to:
+  /// **'Artists'**
+  String get musicViewArtists;
+
+  /// The albums view.
+  ///
+  /// In en, this message translates to:
+  /// **'Albums'**
+  String get musicViewAlbums;
+
+  /// The songs view.
+  ///
+  /// In en, this message translates to:
+  /// **'Songs'**
+  String get musicViewSongs;
+
+  /// The first crumb, which returns to the top of the current view.
+  ///
+  /// In en, this message translates to:
+  /// **'Library'**
+  String get musicBreadcrumbRoot;
+
+  /// What an artist with no tag is called.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown artist'**
+  String get musicUnknownArtist;
+
+  /// What an album with no tag is called.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown album'**
+  String get musicUnknownAlbum;
+
+  /// What a track with no title tag is called.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled'**
+  String get musicUnknownTitle;
+
+  /// Shown when nothing has been scanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Your library is empty.'**
+  String get musicEmpty;
+
+  /// The sentence under the empty library state.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the folder your music is in, and Orpheus will read it.'**
+  String get musicEmptyHint;
+
+  /// The tooltip on a track row's menu button.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions for this track'**
+  String get musicRowActions;
+
+  /// The list layout.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get layoutList;
+
+  /// The grid layout.
+  ///
+  /// In en, this message translates to:
+  /// **'Grid'**
+  String get layoutGrid;
+
+  /// How many tracks a group holds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No tracks} =1{1 track} other{{count} tracks}}'**
+  String musicTrackCount(int count);
+
+  /// Shown in the bar and the player when the queue is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is playing'**
+  String get playbackNothingPlaying;
+
+  /// The accessible name of the playback bar.
+  ///
+  /// In en, this message translates to:
+  /// **'Playback'**
+  String get playbackBarLabel;
+
+  /// Starts or resumes playback.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get audioPlay;
+
+  /// Pauses playback.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get audioPause;
+
+  /// Stops playback and clears the queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get audioStop;
+
+  /// Moves to the next track in the queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Next track'**
+  String get audioNext;
+
+  /// Moves to the previous track, or restarts this one.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous track'**
+  String get audioPrevious;
+
+  /// Queues the whole record the track belongs to.
+  ///
+  /// In en, this message translates to:
+  /// **'Play the album'**
+  String get audioPlayAlbum;
+
+  /// Queues everything by the record's artist.
+  ///
+  /// In en, this message translates to:
+  /// **'Play the artist'**
+  String get audioPlayArtist;
+
+  /// Queues the record in an order nobody chose.
+  ///
+  /// In en, this message translates to:
+  /// **'Shuffle the album'**
+  String get audioShuffleAlbum;
+
+  /// Queues the artist's tracks in an order nobody chose.
+  ///
+  /// In en, this message translates to:
+  /// **'Shuffle the artist'**
+  String get audioShuffleArtist;
+
+  /// Queues the whole library in an order nobody chose.
+  ///
+  /// In en, this message translates to:
+  /// **'Shuffle everything'**
+  String get audioShuffleAll;
+
+  /// What the bar calls the shuffle-everything queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything, shuffled'**
+  String get audioShuffleAllLabel;
+
+  /// Opens the full-window player.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the player'**
+  String get audioOpenPlayer;
+
+  /// Closes the full-window player.
+  ///
+  /// In en, this message translates to:
+  /// **'Close the player'**
+  String get audioClosePlayer;
+
+  /// Names a track the queue stepped over.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped “{title}” — it could not be played.'**
+  String audioSkipped(String title);
+
+  /// Shown when every queued track failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in that selection could be played.'**
+  String get audioNothingPlayable;
+
+  /// Offers to resume a track where it stopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue from {position}?'**
+  String audioResumePrompt(String position);
+
+  /// Resumes a track where it stopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get audioResume;
+
+  /// Plays a track from the beginning.
+  ///
+  /// In en, this message translates to:
+  /// **'Start over'**
+  String get audioStartOver;
+
+  /// The accessible name of the visualiser.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound bars'**
+  String get audioSoundBarsLabel;
+
+  /// The accessible name of a record's sleeve.
+  ///
+  /// In en, this message translates to:
+  /// **'Album cover'**
+  String get albumCoverLabel;
+
+  /// The repeat button when nothing repeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat is off'**
+  String get audioRepeatOff;
+
+  /// The repeat button when the queue repeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat the queue'**
+  String get audioRepeatAll;
+
+  /// The repeat button when one track repeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat this track'**
+  String get audioRepeatOne;
+
+  /// The tooltip on the volume control.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get audioVolume;
+
+  /// Shown when the queue area has no tracks.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is queued.'**
+  String get queueEmpty;
+
+  /// Marks the track the queue is on.
+  ///
+  /// In en, this message translates to:
+  /// **'Playing now'**
+  String get queueNowPlaying;
+
+  /// Where in the queue playback is.
+  ///
+  /// In en, this message translates to:
+  /// **'{index} of {total}'**
+  String queuePosition(int index, int total);
+
+  /// The heading of the folders area.
+  ///
+  /// In en, this message translates to:
+  /// **'Library folders'**
+  String get foldersTitle;
+
+  /// The sentence explaining what the folders are for.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus reads the audio files under these folders. It never moves, changes or deletes them.'**
+  String get foldersDescription;
+
+  /// Shown when no folder is registered.
+  ///
+  /// In en, this message translates to:
+  /// **'No folders yet.'**
+  String get foldersEmpty;
+
+  /// Opens the folder chooser.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a folder'**
+  String get foldersAdd;
+
+  /// Adds the platform's conventional music folder.
+  ///
+  /// In en, this message translates to:
+  /// **'Add my music folder'**
+  String get foldersAddDefault;
+
+  /// Takes a folder out of the library.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this folder'**
+  String get foldersRemove;
+
+  /// The title of the confirmation asked before a folder is removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this folder?'**
+  String get foldersRemoveTitle;
+
+  /// The body of that confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Its tracks leave the library at the next scan. Nothing on disk is touched.'**
+  String get foldersRemoveBody;
+
+  /// Starts a scan of every registered folder.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan now'**
+  String get scanNow;
+
+  /// Shown while the scan is still walking the folders.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for music… {count} files found'**
+  String scanWalking(int count);
+
+  /// Shown while the scan reads tags.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading {read} of {total}'**
+  String scanReading(int read, int total);
+
+  /// Shown when no scan has run.
+  ///
+  /// In en, this message translates to:
+  /// **'This library has never been scanned.'**
+  String get scanNever;
+
+  /// When the last scan ran.
+  ///
+  /// In en, this message translates to:
+  /// **'Last scanned {when}.'**
+  String scanLastAt(String when);
+
+  /// What the last scan changed.
+  ///
+  /// In en, this message translates to:
+  /// **'{tracks} tracks — {added} new, {removed} gone.'**
+  String scanReport(int tracks, int added, int removed);
+
+  /// How many files were listed but not understood.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file had tags that could not be read.} other{{count} files had tags that could not be read.}}'**
+  String scanUnreadable(int count);
+
+  /// Names a registered folder the scan could not walk.
+  ///
+  /// In en, this message translates to:
+  /// **'This folder was not there: {path}'**
+  String scanUnreachable(String path);
+
+  /// How large the library is.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No tracks} =1{1 track} other{{count} tracks}} in the library.'**
+  String scanTracksFound(int count);
+
+  /// A registered folder is gone or unreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'This folder could not be read: {path}'**
+  String failureFolderUnreadable(String path);
+
+  /// The catalog document failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The library could not be read from disk.'**
+  String get failureCatalogUnavailable;
+
+  /// The owner refused the storage permission.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus needs permission to read your audio files.'**
+  String get failurePermissionDenied;
+
+  /// The owner refused it permanently.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission to read audio files was refused. Grant it in the system settings.'**
+  String get failurePermissionDeniedPermanently;
+
+  /// A queued file is missing or will not decode.
+  ///
+  /// In en, this message translates to:
+  /// **'This file could not be played: {path}'**
+  String failureTrackUnplayable(String path);
+
+  /// Anything the application did not model.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong.'**
+  String get failureUnexpected;
+}
+
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
+  }
+
+  @override
+  bool isSupported(Locale locale) =>
+      <String>['en', 'pt'].contains(locale.languageCode);
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'en':
+      return AppLocalizationsEn();
+    case 'pt':
+      return AppLocalizationsPt();
+  }
+
+  throw FlutterError(
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
+}

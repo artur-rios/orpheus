@@ -1,0 +1,474 @@
+{
+  "@@locale": "pt",
+  "appTitle": "Orpheus",
+  "@appTitle": {
+    "description": "The application's name, shown as the window title."
+  },
+  "loading": "Carregando",
+  "@loading": {
+    "description": "Announced while an operation runs."
+  },
+  "retry": "Tentar novamente",
+  "@retry": {
+    "description": "The button on a failure state."
+  },
+  "close": "Fechar",
+  "@close": {
+    "description": "Dismisses a screen or a dialog."
+  },
+  "cancel": "Cancelar",
+  "@cancel": {
+    "description": "Abandons a dialog without doing anything."
+  },
+  "dismiss": "Dispensar",
+  "@dismiss": {
+    "description": "Clears a notice the owner has read."
+  },
+  "remove": "Remover",
+  "@remove": {
+    "description": "Takes an entry out of a list."
+  },
+  "done": "Concluído",
+  "@done": {
+    "description": "Closes a dialog that has nothing to confirm."
+  },
+  "openSettings": "Abrir configurações",
+  "@openSettings": {
+    "description": "Opens the system settings, where a refused permission can be granted."
+  },
+  "destinationMusic": "Músicas",
+  "@destinationMusic": {
+    "description": "The library area, in the navigation panel."
+  },
+  "destinationQueue": "Fila",
+  "@destinationQueue": {
+    "description": "The play queue area, in the navigation panel."
+  },
+  "destinationFolders": "Pastas",
+  "@destinationFolders": {
+    "description": "The library folders area, in the navigation panel."
+  },
+  "searchHint": "Pesquisar na biblioteca",
+  "@searchHint": {
+    "description": "The placeholder in the search field."
+  },
+  "searchClear": "Limpar a pesquisa",
+  "@searchClear": {
+    "description": "The button that empties the search field."
+  },
+  "searchResults": "Resultados para “{term}”",
+  "@searchResults": {
+    "description": "The heading above the search results.",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "searchEmpty": "Nada na biblioteca corresponde a “{term}”.",
+  "@searchEmpty": {
+    "description": "Shown when a search matched no track.",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsTitle": "Preferências",
+  "@settingsTitle": {
+    "description": "The title of the preferences dialog."
+  },
+  "settingsAppearance": "Aparência",
+  "@settingsAppearance": {
+    "description": "The heading over the theme and language choices."
+  },
+  "settingsTheme": "Tema",
+  "@settingsTheme": {
+    "description": "The label on the theme choice."
+  },
+  "themeSystem": "Seguir o sistema",
+  "@themeSystem": {
+    "description": "The theme choice that follows the operating system."
+  },
+  "themeLight": "Claro",
+  "@themeLight": {
+    "description": "The light theme."
+  },
+  "themeDark": "Escuro",
+  "@themeDark": {
+    "description": "The dark theme."
+  },
+  "settingsLanguage": "Idioma",
+  "@settingsLanguage": {
+    "description": "The label on the language choice."
+  },
+  "languageSystem": "Seguir o sistema",
+  "@languageSystem": {
+    "description": "The language choice that follows the operating system."
+  },
+  "languageEnglish": "Inglês",
+  "@languageEnglish": {
+    "description": "The English language choice."
+  },
+  "languagePortuguese": "Português (Brasil)",
+  "@languagePortuguese": {
+    "description": "The Brazilian Portuguese language choice."
+  },
+  "settingsPlayback": "Reprodução",
+  "@settingsPlayback": {
+    "description": "The heading over the playback preferences."
+  },
+  "settingsOpensPlayerOnPlay": "Abrir o player ao iniciar uma faixa",
+  "@settingsOpensPlayerOnPlay": {
+    "description": "The preference that opens the full player on play."
+  },
+  "settingsRescansAtStartup": "Reexaminar a biblioteca a cada inicialização",
+  "@settingsRescansAtStartup": {
+    "description": "The preference that scans the folders at startup."
+  },
+  "settingsVolume": "Volume",
+  "@settingsVolume": {
+    "description": "The label on the volume slider."
+  },
+  "settingsUnsaved": "Isto vale agora, mas não pôde ser salvo para a próxima vez.",
+  "@settingsUnsaved": {
+    "description": "Shown when a preference could not be written."
+  },
+  "musicViewArtists": "Artistas",
+  "@musicViewArtists": {
+    "description": "The artists view."
+  },
+  "musicViewAlbums": "Álbuns",
+  "@musicViewAlbums": {
+    "description": "The albums view."
+  },
+  "musicViewSongs": "Faixas",
+  "@musicViewSongs": {
+    "description": "The songs view."
+  },
+  "musicBreadcrumbRoot": "Biblioteca",
+  "@musicBreadcrumbRoot": {
+    "description": "The first crumb, which returns to the top of the current view."
+  },
+  "musicUnknownArtist": "Artista desconhecido",
+  "@musicUnknownArtist": {
+    "description": "What an artist with no tag is called."
+  },
+  "musicUnknownAlbum": "Álbum desconhecido",
+  "@musicUnknownAlbum": {
+    "description": "What an album with no tag is called."
+  },
+  "musicUnknownTitle": "Sem título",
+  "@musicUnknownTitle": {
+    "description": "What a track with no title tag is called."
+  },
+  "musicEmpty": "Sua biblioteca está vazia.",
+  "@musicEmpty": {
+    "description": "Shown when nothing has been scanned."
+  },
+  "musicEmptyHint": "Adicione a pasta onde está sua música e o Orpheus vai lê-la.",
+  "@musicEmptyHint": {
+    "description": "The sentence under the empty library state."
+  },
+  "musicRowActions": "Ações para esta faixa",
+  "@musicRowActions": {
+    "description": "The tooltip on a track row's menu button."
+  },
+  "layoutList": "Lista",
+  "@layoutList": {
+    "description": "The list layout."
+  },
+  "layoutGrid": "Grade",
+  "@layoutGrid": {
+    "description": "The grid layout."
+  },
+  "musicTrackCount": "{count, plural, =0{Nenhuma faixa} =1{1 faixa} other{{count} faixas}}",
+  "@musicTrackCount": {
+    "description": "How many tracks a group holds.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "playbackNothingPlaying": "Nada em reprodução",
+  "@playbackNothingPlaying": {
+    "description": "Shown in the bar and the player when the queue is empty."
+  },
+  "playbackBarLabel": "Reprodução",
+  "@playbackBarLabel": {
+    "description": "The accessible name of the playback bar."
+  },
+  "audioPlay": "Reproduzir",
+  "@audioPlay": {
+    "description": "Starts or resumes playback."
+  },
+  "audioPause": "Pausar",
+  "@audioPause": {
+    "description": "Pauses playback."
+  },
+  "audioStop": "Parar",
+  "@audioStop": {
+    "description": "Stops playback and clears the queue."
+  },
+  "audioNext": "Próxima faixa",
+  "@audioNext": {
+    "description": "Moves to the next track in the queue."
+  },
+  "audioPrevious": "Faixa anterior",
+  "@audioPrevious": {
+    "description": "Moves to the previous track, or restarts this one."
+  },
+  "audioPlayAlbum": "Reproduzir o álbum",
+  "@audioPlayAlbum": {
+    "description": "Queues the whole record the track belongs to."
+  },
+  "audioPlayArtist": "Reproduzir o artista",
+  "@audioPlayArtist": {
+    "description": "Queues everything by the record's artist."
+  },
+  "audioShuffleAlbum": "Embaralhar o álbum",
+  "@audioShuffleAlbum": {
+    "description": "Queues the record in an order nobody chose."
+  },
+  "audioShuffleArtist": "Embaralhar o artista",
+  "@audioShuffleArtist": {
+    "description": "Queues the artist's tracks in an order nobody chose."
+  },
+  "audioShuffleAll": "Embaralhar tudo",
+  "@audioShuffleAll": {
+    "description": "Queues the whole library in an order nobody chose."
+  },
+  "audioShuffleAllLabel": "Tudo, embaralhado",
+  "@audioShuffleAllLabel": {
+    "description": "What the bar calls the shuffle-everything queue."
+  },
+  "audioOpenPlayer": "Abrir o player",
+  "@audioOpenPlayer": {
+    "description": "Opens the full-window player."
+  },
+  "audioClosePlayer": "Fechar o player",
+  "@audioClosePlayer": {
+    "description": "Closes the full-window player."
+  },
+  "audioSkipped": "“{title}” foi pulada — não foi possível reproduzi-la.",
+  "@audioSkipped": {
+    "description": "Names a track the queue stepped over.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "audioNothingPlayable": "Não foi possível reproduzir nada dessa seleção.",
+  "@audioNothingPlayable": {
+    "description": "Shown when every queued track failed."
+  },
+  "audioResumePrompt": "Continuar de {position}?",
+  "@audioResumePrompt": {
+    "description": "Offers to resume a track where it stopped.",
+    "placeholders": {
+      "position": {
+        "type": "String"
+      }
+    }
+  },
+  "audioResume": "Continuar",
+  "@audioResume": {
+    "description": "Resumes a track where it stopped."
+  },
+  "audioStartOver": "Começar do início",
+  "@audioStartOver": {
+    "description": "Plays a track from the beginning."
+  },
+  "audioSoundBarsLabel": "Barras de som",
+  "@audioSoundBarsLabel": {
+    "description": "The accessible name of the visualiser."
+  },
+  "albumCoverLabel": "Capa do álbum",
+  "@albumCoverLabel": {
+    "description": "The accessible name of a record's sleeve."
+  },
+  "audioRepeatOff": "Repetição desligada",
+  "@audioRepeatOff": {
+    "description": "The repeat button when nothing repeats."
+  },
+  "audioRepeatAll": "Repetir a fila",
+  "@audioRepeatAll": {
+    "description": "The repeat button when the queue repeats."
+  },
+  "audioRepeatOne": "Repetir esta faixa",
+  "@audioRepeatOne": {
+    "description": "The repeat button when one track repeats."
+  },
+  "audioVolume": "Volume",
+  "@audioVolume": {
+    "description": "The tooltip on the volume control."
+  },
+  "queueEmpty": "Nada na fila.",
+  "@queueEmpty": {
+    "description": "Shown when the queue area has no tracks."
+  },
+  "queueNowPlaying": "Reproduzindo agora",
+  "@queueNowPlaying": {
+    "description": "Marks the track the queue is on."
+  },
+  "queuePosition": "{index} de {total}",
+  "@queuePosition": {
+    "description": "Where in the queue playback is.",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "foldersTitle": "Pastas da biblioteca",
+  "@foldersTitle": {
+    "description": "The heading of the folders area."
+  },
+  "foldersDescription": "O Orpheus lê os arquivos de áudio dentro destas pastas. Ele nunca os move, altera ou apaga.",
+  "@foldersDescription": {
+    "description": "The sentence explaining what the folders are for."
+  },
+  "foldersEmpty": "Nenhuma pasta ainda.",
+  "@foldersEmpty": {
+    "description": "Shown when no folder is registered."
+  },
+  "foldersAdd": "Adicionar uma pasta",
+  "@foldersAdd": {
+    "description": "Opens the folder chooser."
+  },
+  "foldersAddDefault": "Adicionar minha pasta de músicas",
+  "@foldersAddDefault": {
+    "description": "Adds the platform's conventional music folder."
+  },
+  "foldersRemove": "Remover esta pasta",
+  "@foldersRemove": {
+    "description": "Takes a folder out of the library."
+  },
+  "foldersRemoveTitle": "Remover esta pasta?",
+  "@foldersRemoveTitle": {
+    "description": "The title of the confirmation asked before a folder is removed."
+  },
+  "foldersRemoveBody": "As faixas dela saem da biblioteca na próxima varredura. Nada no disco é alterado.",
+  "@foldersRemoveBody": {
+    "description": "The body of that confirmation."
+  },
+  "scanNow": "Examinar agora",
+  "@scanNow": {
+    "description": "Starts a scan of every registered folder."
+  },
+  "scanWalking": "Procurando músicas… {count} arquivos encontrados",
+  "@scanWalking": {
+    "description": "Shown while the scan is still walking the folders.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scanReading": "Lendo {read} de {total}",
+  "@scanReading": {
+    "description": "Shown while the scan reads tags.",
+    "placeholders": {
+      "read": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "scanNever": "Esta biblioteca nunca foi examinada.",
+  "@scanNever": {
+    "description": "Shown when no scan has run."
+  },
+  "scanLastAt": "Última varredura em {when}.",
+  "@scanLastAt": {
+    "description": "When the last scan ran.",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "scanReport": "{tracks} faixas — {added} novas, {removed} removidas.",
+  "@scanReport": {
+    "description": "What the last scan changed.",
+    "placeholders": {
+      "tracks": {
+        "type": "int"
+      },
+      "added": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "scanUnreadable": "{count, plural, =1{1 arquivo tinha tags ilegíveis.} other{{count} arquivos tinham tags ilegíveis.}}",
+  "@scanUnreadable": {
+    "description": "How many files were listed but not understood.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scanUnreachable": "Esta pasta não estava lá: {path}",
+  "@scanUnreachable": {
+    "description": "Names a registered folder the scan could not walk.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "scanTracksFound": "{count, plural, =0{Nenhuma faixa} =1{1 faixa} other{{count} faixas}} na biblioteca.",
+  "@scanTracksFound": {
+    "description": "How large the library is.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "failureFolderUnreadable": "Não foi possível ler esta pasta: {path}",
+  "@failureFolderUnreadable": {
+    "description": "A registered folder is gone or unreadable.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "failureCatalogUnavailable": "Não foi possível ler a biblioteca do disco.",
+  "@failureCatalogUnavailable": {
+    "description": "The catalog document failed."
+  },
+  "failurePermissionDenied": "O Orpheus precisa de permissão para ler seus arquivos de áudio.",
+  "@failurePermissionDenied": {
+    "description": "The owner refused the storage permission."
+  },
+  "failurePermissionDeniedPermanently": "A permissão para ler arquivos de áudio foi negada. Conceda-a nas configurações do sistema.",
+  "@failurePermissionDeniedPermanently": {
+    "description": "The owner refused it permanently."
+  },
+  "failureTrackUnplayable": "Não foi possível reproduzir este arquivo: {path}",
+  "@failureTrackUnplayable": {
+    "description": "A queued file is missing or will not decode.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "failureUnexpected": "Algo deu errado.",
+  "@failureUnexpected": {
+    "description": "Anything the application did not model."
+  }
+}
