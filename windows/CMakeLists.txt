@@ -32,6 +32,24 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
 
+# Lets permission_handler_windows compile against a current MSVC.
+#
+# That plugin pins C++/WinRT 2.0.210806.1, which includes
+# <experimental/coroutine>. Visual Studio's newer toolsets turn that header
+# into a hard error (STL1011, "deprecated and will be REMOVED SOON") rather
+# than a warning, so the Windows build fails in a plugin this application does
+# not even call — permission_handler is asked for on Android and nowhere else.
+#
+# This is the escape hatch Microsoft's own error text prescribes, and it is set
+# here rather than reported upstream-and-waited-on because 0.2.2 is the latest
+# release and the pin is inside it. Global rather than per-target: the plugin's
+# CMakeLists is generated into the build tree, so there is no target of ours to
+# hang it on.
+#
+# Remove this when permission_handler_windows ships a C++/WinRT new enough to
+# use <coroutine>. Nothing else in this build needs it.
+add_definitions(-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by

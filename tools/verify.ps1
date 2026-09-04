@@ -74,11 +74,19 @@ function Wanted($target) { return (-not $Only) -or ($Only -eq $target) }
 
 # Runs a command and answers whether it succeeded, without $ErrorActionPreference
 # turning a non-zero exit into a terminating error we cannot summarize.
+#
+# `| Out-Host` is load-bearing and not formatting. A native command's stdout
+# joins its caller's output stream, so without it this function returns every
+# line the build printed *and* the boolean — and `if (Invoke-Step ...)` then
+# tests a non-empty array, which is true whatever the exit code was. That is
+# not hypothetical: it reported a failed Windows build as passed until CI
+# caught it. Out-Host writes to the console and puts nothing on the pipeline,
+# so the boolean is the only thing returned.
 function Invoke-Step {
     param([string] $Command, [string[]] $Arguments)
 
-    & $Command @Arguments
-    return $LASTEXITCODE -eq 0
+    & $Command @Arguments | Out-Host
+    return ($LASTEXITCODE -eq 0)
 }
 
 # --------------------------------------------------------------- preflight
@@ -177,7 +185,11 @@ if ($Installer) {
         Record-Skip 'windows installer' 'the Windows release build did not run or did not pass'
     } else {
         Step 'Building the Windows installer'
-        & (Join-Path $PSScriptRoot 'build-windows-installer.ps1') -SkipBuild
+        # A script, not a native command, so $LASTEXITCODE is only set if it
+        # actually calls `exit`. Seeded first so a script that returned without
+        # one cannot be read as the previous command's success.
+        $global:LASTEXITCODE = 0
+        & (Join-Path $PSScriptRoot 'build-windows-installer.ps1') -SkipBuild | Out-Host
         if ($LASTEXITCODE -eq 0) { Record-Pass 'windows installer' }
         else { Record-Fail 'windows installer' }
     }
