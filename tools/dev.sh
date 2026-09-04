@@ -48,7 +48,8 @@ Usage: tools/dev.sh [options]
                     the only mode worth judging performance or startup in.
                     Hot reload is not available.
   --clean           Delete the data this application has written — the catalog,
-                    the cover cache, the play history and the preferences — so
+                    the cover cache, the analysed spectra, the play history and
+                    the preferences — so
                     the next start is a first launch. Never touches your music.
                     Asks first unless --yes.
   --generate        Regenerate the localizations before running. Needed after
@@ -162,9 +163,9 @@ note "mode: $MODE"
 
 # ------------------------------------------------------------------- the data
 
-# Where this application keeps the catalog, the cover cache, the play history
-# and the preferences — per platform, and derived from the same rules
-# path_provider uses rather than guessed.
+# Where this application keeps the catalog, the cover cache, the analysed
+# spectra, the play history and the preferences — per platform, and derived
+# from the same rules path_provider uses rather than guessed.
 app_data_directories() {
   case $DEVICE_PLATFORM in
     linux*)
@@ -218,7 +219,7 @@ clean_data() {
   # Said explicitly, because this is the sentence someone needs to read before
   # answering: the folders you registered are forgotten, the music in them is
   # not touched.
-  note "your music is not touched — only the catalog, covers, statistics and settings"
+  note "your music is not touched — only the catalog, covers, analyses, statistics and settings"
 
   if [ "$ASSUME_YES" != "yes" ]; then
     printf '    Delete the above? [y/N] '

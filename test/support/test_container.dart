@@ -30,6 +30,7 @@ class Harness {
     Set<String> missingTracks = const {},
     SettingsStore? settings,
     ScriptedScanner? scanner,
+    ScriptedTrackAnalysis? analysis,
     FakeLibraryAccess? access,
     FakeFolderPicker? picker,
     int shuffleSeed = 7,
@@ -38,6 +39,8 @@ class Harness {
        session = FakeMediaSession(),
        probe = FakeTrackProbe(missing: {...missingTracks}),
        covers = InMemoryCoverStore(),
+       energies = InMemoryEnergyStore(),
+       analysis = analysis ?? ScriptedTrackAnalysis(),
        plays = InMemoryPlayHistoryStore(),
        access = access ?? FakeLibraryAccess(),
        picker = picker ?? FakeFolderPicker(),
@@ -61,6 +64,8 @@ class Harness {
         ),
         catalogStoreProvider.overrideWithValue(catalogs),
         coverStoreProvider.overrideWithValue(covers),
+        energyStoreProvider.overrideWithValue(energies),
+        trackAnalysisProvider.overrideWithValue(this.analysis),
         playHistoryStoreProvider.overrideWithValue(plays),
         audioPlayerProvider.overrideWithValue(player),
         mediaSessionProvider.overrideWithValue(session),
@@ -93,6 +98,12 @@ class Harness {
 
   /// The covers, in memory.
   final InMemoryCoverStore covers;
+
+  /// The analysed spectra, in memory.
+  final InMemoryEnergyStore energies;
+
+  /// What the sound bars' analysis answers, in place of libmpv.
+  final ScriptedTrackAnalysis analysis;
 
   /// What has been played, in memory.
   final InMemoryPlayHistoryStore plays;

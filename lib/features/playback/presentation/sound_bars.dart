@@ -7,16 +7,19 @@ import '../domain/track_energy.dart';
 
 /// The bars that move with the music on the player screen.
 ///
-/// What they are drawn from is stated on [TrackEnergy], and it is worth
-/// repeating here where it is visible: the envelope is synthesised from the
-/// track's identity, not measured from its sound. Nothing in this application
-/// decodes audio. What the instrument honestly is, is a sign that something is
-/// playing, deterministic per track and per second so it belongs to the track
-/// rather than looping the same shape under everything.
+/// What they are drawn from is a [TrackEnergy]: the spectrum of the recording,
+/// measured from its own decoded samples, wherever the analysis of the track
+/// has been done — and the stand-in for the second or so before it lands on
+/// first play, and for a file that could not be decoded. Which one it is
+/// holding is not this widget's business; both answer the same question, and
+/// the provider that composes them decides.
 ///
-/// With nothing playing the bars rest. A pause settles them rather than
-/// freezing them mid-swell: what an owner sees when they press pause is the
-/// sound falling away, which is what pausing actually did.
+/// The widget's own job is the part the spectrum does not cover: reading
+/// between the position reports the engine sends, so the bars move at the
+/// frame rate rather than a few times a second, and settling them when the
+/// music stops. A pause settles them rather than freezing them mid-swell:
+/// what an owner sees when they press pause is the sound falling away, which
+/// is what pausing actually did.
 class SoundBars extends StatefulWidget {
   /// Creates the visualiser.
   const SoundBars({

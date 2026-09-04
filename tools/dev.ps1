@@ -35,8 +35,9 @@ param(
     [switch] $Release,
 
     # Delete the data this application has written — the catalog, the cover
-    # cache, the play history and the preferences — so the next start is a first
-    # launch. Never touches your music. Asks first unless -Yes.
+    # cache, the analysed spectra, the play history and the preferences — so the
+    # next start is a first launch. Never touches your music. Asks first unless
+    # -Yes.
     [switch] $Clean,
 
     # Regenerate the localizations before running. Needed after changing either
@@ -137,8 +138,9 @@ Note "mode: $Mode"
 
 # ------------------------------------------------------------------- the data
 
-# Where this application keeps the catalog, the cover cache, the play history
-# and the preferences — derived from the same rule path_provider_windows uses
+# Where this application keeps the catalog, the cover cache, the analysed
+# spectra, the play history and the preferences — derived from the same rule
+# path_provider_windows uses
 # rather than guessed: %APPDATA% plus CompanyName\ProductName, which come from
 # the executable's own version info.
 function Get-AppDataDirectories {
@@ -173,7 +175,7 @@ function Clear-AppData {
     # Said explicitly, because this is the sentence someone needs to read before
     # answering: the folders you registered are forgotten, the music in them is
     # not touched.
-    Note 'your music is not touched — only the catalog, covers, statistics and settings'
+    Note 'your music is not touched — only the catalog, covers, analyses, statistics and settings'
 
     if (-not $Yes) {
         $answer = Read-Host '    Delete the above? [y/N]'

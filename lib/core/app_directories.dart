@@ -17,4 +17,11 @@ class AppDirectories {
 
   /// Where extracted cover pictures are cached.
   String get covers => p.join(support, 'covers');
+
+  /// Where the analysed spectra the sound bars are drawn from are cached.
+  ///
+  /// Beside the pictures rather than among them: both are caches that an owner
+  /// may delete without losing anything but the work of building them again,
+  /// and keeping them apart is what makes either one deletable on its own.
+  String get energy => p.join(support, 'energy');
 }

@@ -11,7 +11,7 @@ reads its catalog from a Rust core over FFI; Orpheus has no core and no server.
 It walks the folders it is pointed at, reads the tags itself, and keeps the
 result in a file beside its own settings.
 
-> **Status:** complete and tested. 241 unit and widget tests; `flutter analyze`
+> **Status:** complete and tested. 273 unit and widget tests; `flutter analyze`
 > clean. Every use case in the [specifications](#specifications) is implemented
 > — see the [roadmap](#roadmap). All three release builds and the Windows
 > installer are produced and verified by CI on every push. Verified *running*
@@ -191,19 +191,34 @@ reading the play history against the catalog, so re-tagging a library corrects
 its history instead of leaving the old names ranked forever.
 (`features/stats/domain/play_threshold.dart`)
 
-### The sound bars, honestly
+### The sound bars
 
-The moving bars on the player screen are **synthesised, not measured**. Nothing
-in this application decodes audio — the playback engine reports a position and a
-duration and nothing about the waveform behind them — so what they show is a
-figure computed from the track's identity and the moment being played.
+The moving bars on the player screen are the **real spectrum of the recording**,
+measured from its own samples. The engine reports a position and nothing about
+the waveform behind it, so the track is analysed separately: the same libmpv
+that plays it is told to decode it to mono at 16 kHz and write it to a scratch
+file as fast as it can, and a windowed Fourier transform over that gives sixteen
+logarithmically spaced bands, about thirty rows a second, levelled against the
+track's own loudest moment so a quietly mastered record still moves. A
+four-minute track takes about a second to analyse and a hundred kilobytes to
+keep, and it is kept — cached beside the covers under a key that carries the
+file's length and modification time, so a track is analysed once and a re-rip of
+it is analysed again.
 
-It is built to the two properties that make that honest: it is **deterministic**
-(the same second of the same track draws the same bars every time, on every
-machine) and **distinct** (two tracks seed differently and move differently). It
-is a sign that something is playing. It is not an analysis, and it is not
-labelled as one anywhere in the interface.
-(`features/playback/domain/track_energy.dart`)
+Using the playback engine as the decoder is what makes this work everywhere:
+whatever Orpheus can play, it can analyse, on all three platforms, with no
+second codec library and no format that plays but does not draw.
+
+The analysis runs off the interface's isolate and does not hold up playback, so
+there is a second on first play before it lands. Until it does — and for a file
+that could not be decoded at all — the bars fall back to a **stand-in**
+synthesised from the track's identity: deterministic (the same second of the
+same track draws the same bars every time) and distinct (two tracks move
+differently). It is a sign that something is playing rather than an analysis,
+and the code says so where it is defined.
+(`features/playback/domain/track_energy.dart`,
+`features/playback/domain/audio_spectrum.dart`,
+`features/playback/data/mpv_track_analysis.dart`)
 
 ## Layout
 
@@ -232,7 +247,7 @@ override a binding rather than patching a global.
 
 ```bash
 flutter analyze              # must be clean; there is no known-warnings list
-flutter test                 # 241 unit and widget tests
+flutter test                 # 273 unit and widget tests
 flutter build linux --release
 flutter build windows --release
 flutter build apk --release
@@ -260,7 +275,7 @@ dependency, a native or platform file, or a change to either `.arb` catalog
 | Flag | |
 | --- | --- |
 | `--device ID` / `--android` | Where to run. `--android` takes the attached device or emulator, whatever its id. |
-| `--clean` | Delete this application's own data — the catalog, cover cache, play history and preferences — so the next start is a first launch. **Never touches your music**, names exactly what it will delete, and asks first unless `--yes`. On Android it clears the app's data on the device. |
+| `--clean` | Delete this application's own data — the catalog, cover cache, analysed spectra, play history and preferences — so the next start is a first launch. **Never touches your music**, names exactly what it will delete, and asks first unless `--yes`. On Android it clears the app's data on the device. |
 | `--generate` | Regenerate the localizations first. |
 | `--test` | Run the suite first, and stop if it is red. |
 | `--profile` / `--release` | Run the way an owner would get it. Neither has hot reload — that is debug only, and the script says so rather than letting you press `r` into silence. |

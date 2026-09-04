@@ -5,6 +5,9 @@ import 'package:orpheus/features/library/domain/cover_store.dart';
 import 'package:orpheus/features/library/domain/library_access.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
+import 'package:orpheus/features/playback/domain/energy_store.dart';
+import 'package:orpheus/features/playback/domain/track_analysis.dart';
+import 'package:orpheus/features/playback/domain/track_energy.dart';
 import 'package:orpheus/features/stats/domain/play_history.dart';
 
 /// A [CatalogStore] in memory, seeded with whatever the test wants the last
@@ -156,5 +159,57 @@ class InMemoryPlayHistoryStore implements PlayHistoryStore {
   Future<void> write(PlayHistory history) async {
     writes++;
     this.history = history;
+  }
+}
+
+/// An [EnergyStore] in memory, so that no test writes an analysis to disk.
+class InMemoryEnergyStore implements EnergyStore {
+  final Map<String, MeasuredEnergy> _analyses = {};
+
+  /// The ids written, in order — which is how a test asserts that an analysis
+  /// was cached rather than thrown away.
+  final List<String> written = [];
+
+  /// Seeds [energy] as already analysed under [id].
+  void seed(String id, MeasuredEnergy energy) => _analyses[id] = energy;
+
+  @override
+  Future<MeasuredEnergy?> read(String id) async => _analyses[id];
+
+  @override
+  Future<void> put(String id, MeasuredEnergy energy) async {
+    _analyses[id] = energy;
+    written.add(id);
+  }
+
+  @override
+  Future<void> clear() async {
+    _analyses.clear();
+    written.clear();
+  }
+}
+
+/// A [TrackAnalysis] that answers whatever the test told it to.
+///
+/// Nothing decodes in a test: the real one starts a libmpv instance, writes a
+/// scratch file and runs a transform on an isolate, none of which belongs in a
+/// widget test. Answering `null` — the "could not be analysed" case — is the
+/// default, because that is the path every test that is not about the bars
+/// should take.
+class ScriptedTrackAnalysis implements TrackAnalysis {
+  /// Creates an analysis answering [answers], by track path.
+  ScriptedTrackAnalysis([Map<String, MeasuredEnergy>? answers])
+    : _answers = answers ?? const {};
+
+  final Map<String, MeasuredEnergy> _answers;
+
+  /// The paths asked about, in order.
+  final List<String> asked = [];
+
+  @override
+  Future<MeasuredEnergy?> of(String path) async {
+    asked.add(path);
+
+    return _answers[path];
   }
 }

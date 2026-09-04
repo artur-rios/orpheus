@@ -32,14 +32,19 @@ import '../../features/playback/application/audio_playback_controller.dart';
 import '../../features/playback/application/media_session_controller.dart';
 import '../../features/playback/application/music_browse_controller.dart';
 import '../../features/playback/application/music_layout_controller.dart';
+import '../../features/playback/application/track_energy_controller.dart';
+import '../../features/playback/data/file_energy_store.dart';
 import '../../features/playback/data/file_track_probe.dart';
 import '../../features/playback/data/media_kit_player.dart';
+import '../../features/playback/data/mpv_track_analysis.dart';
 import '../../features/playback/data/settings_playback_position_store.dart';
 import '../../features/playback/data/silent_media_session.dart';
+import '../../features/playback/domain/energy_store.dart';
 import '../../features/playback/domain/media_player.dart';
 import '../../features/playback/domain/media_session.dart';
 import '../../features/playback/domain/music_layout.dart';
 import '../../features/playback/domain/playback_position_store.dart';
+import '../../features/playback/domain/track_analysis.dart';
 import '../../features/playback/domain/track_energy.dart';
 import '../../features/playback/domain/track_probe.dart';
 import '../../features/shell/application/preferences_controller.dart';
@@ -239,14 +244,37 @@ final albumArtControllerProvider =
       isAutoDispose: true,
     );
 
-/// The envelope the sound bars are drawn from, by track path.
+/// Where analysed spectra are cached.
+final energyStoreProvider = Provider<EnergyStore>(
+  (ref) => FileEnergyStore(ref.watch(appDirectoriesProvider).energy),
+);
+
+/// What measures a track's spectrum.
+final trackAnalysisProvider = Provider<TrackAnalysis>(
+  (ref) => MpvTrackAnalysis(
+    scratchDirectory: ref.watch(appDirectoriesProvider).energy,
+  ),
+);
+
+/// One track's measured spectrum, or `null` while it is being measured.
+final measuredTrackEnergyProvider =
+    AsyncNotifierProvider.family<
+      TrackEnergyController,
+      MeasuredEnergy?,
+      String
+    >(TrackEnergyController.new, isAutoDispose: true);
+
+/// What the sound bars are drawn from, by track path.
 ///
-/// Cheap enough to build on demand — it is a seed and an arithmetic function,
-/// not a measurement — so it is a plain provider rather than an asynchronous
-/// one. Auto-disposed all the same: a player moves through a queue, and an
-/// entry per track ever played would be held for the life of the container.
+/// The measured spectrum of the recording wherever there is one, and the
+/// stand-in wherever there is not — which is the second or so before the first
+/// analysis of a track lands, and a file that could not be decoded. Composed
+/// here rather than in the widget so that the screen asks for one thing and
+/// this decides what it gets.
 final trackEnergyProvider = Provider.family<TrackEnergy, String>(
-  (ref, path) => TrackEnergy.forTrack(path),
+  (ref, path) =>
+      ref.watch(measuredTrackEnergyProvider(path)).value ??
+      SynthesisedEnergy.forTrack(path),
   isAutoDispose: true,
 );
 
