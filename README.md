@@ -236,6 +236,7 @@ lib/
 tools/             dev.sh / dev.ps1 to run it, verify.sh / verify.ps1 to
                    check it, and the Windows installer build
 packaging/windows/ the Inno Setup script the installer is compiled from
+packaging/icon/    the application icon, and the script that draws it
 ```
 
 Each feature is `domain` (no Flutter, no IO), `data` (the outward edges),
@@ -297,6 +298,40 @@ implementation of the `permission_handler` that Android needs, and Flutter
 builds every plugin registered for a platform whether or not it is used.
 
 `tools/dev.ps1` takes the same flags in long form (`-Device`, `-Clean`, `-Yes`).
+
+### The icon
+
+The application icon is a lyre — Orpheus's own instrument — whose strings are
+the sound bars from the player screen, standing at the uneven heights a level
+meter stands at.
+
+It is **drawn in code**, not kept as a binary nobody can edit: a change to the
+palette, the proportions or the string heights is a diff in one Python file,
+and every size every platform wants is regenerated from it.
+
+```bash
+python3 packaging/icon/make_icon.py     # needs Pillow, and nothing else
+```
+
+That writes the Android launcher icons at all five densities — the square one
+for releases before Android 8, and the adaptive icon's foreground layer, drawn
+without its background so the launcher can mask the pair into whatever shape
+the device uses — the Windows `.ico`, the Linux window icon, and the 1024px
+master in `packaging/icon/`.
+
+The two smallest `.ico` frames are drawn from **separate, simpler artwork**.
+At sixteen and thirty-two pixels the arms and the yoke are a stroke under two
+pixels wide, which is not a lyre, it is grey fringing; what those frames show
+instead is what the mark is about — three bars at three heights on their
+soundbox. An `.ico` saved from one image is that image downsampled six times,
+and the two smallest of those are the mush this avoids.
+
+Flutter's Linux runner ships no icon at all, so `linux/CMakeLists.txt` installs
+the PNG beside the bundle's data and `my_application.cc` loads it into the
+window. Beside the bundle rather than into a `hicolor` theme deliberately: this
+is the icon of the window this binary opens, which is a different thing from
+the icon a packaged application registers with the desktop, and only the first
+is the build's to decide.
 
 ### Verifying everything at once
 

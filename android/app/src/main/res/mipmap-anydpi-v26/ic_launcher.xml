@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The launcher icon on Android 8 and later.
+
+  Two layers rather than one picture, because that is what the platform asks
+  for: the launcher chooses the shape — a circle, a squircle, a rounded square,
+  whatever the device's skin uses — and masks these two together into it. An
+  application that ships only the square icon gets that square shrunk inside a
+  white blob instead.
+
+  Both layers are generated, with everything else about the icon, by
+  packaging/icon/make_icon.py.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>

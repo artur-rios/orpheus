@@ -97,6 +97,16 @@ install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   COMPONENT Runtime)
 
+# The window icon. Flutter's Linux runner ships no icon at all, so without this
+# the taskbar and the alt-tab switcher show whatever placeholder the desktop
+# keeps for a window that named none. Copied beside the bundle's data rather
+# than installed into a hicolor theme: this is the icon of the window this
+# binary opens, which is a different thing from the icon a packaged
+# application registers with the desktop, and only the first is the build's to
+# decide.
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/runner/resources/app_icon.png"
+  DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
+
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 

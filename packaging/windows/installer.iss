@@ -58,6 +58,13 @@ ArchitecturesInstallIn64BitMode=x64compatible
 ; x64 and later, which is also the floor the Flutter Windows embedder supports.
 MinVersion=10.0
 
+; The application's own icon on the installer executable and in Add or remove
+; programs, rather than Inno's default. Both are read from the same .ico the
+; built executable carries, which is generated with every other size of the
+; icon by packaging/icon/make_icon.py.
+SetupIconFile=..\..\windows\runner\resources\app_icon.ico
+UninstallDisplayIcon={app}\{#AppExeName}
+
 ; The Restart Manager closes a running Orpheus before files are replaced.
 ; Without it, upgrading while the application is open fails on a locked
 ; orpheus.exe or a loaded engine DLL — and a half-replaced bundle is worse than

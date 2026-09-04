@@ -54,6 +54,20 @@ static void my_application_activate(GApplication* application) {
 
   gtk_window_set_default_size(window, 1280, 720);
 
+  // The window icon, loaded from beside the bundle's data rather than from an
+  // installed icon theme: this binary is run from its build directory as often
+  // as from anywhere else, and an icon that only appears once the application
+  // has been packaged is an icon nobody developing it ever sees. A failure to
+  // load it is not worth reporting — the window opens either way, wearing the
+  // desktop's placeholder.
+  g_autofree gchar* executable = g_file_read_link("/proc/self/exe", nullptr);
+  if (executable != nullptr) {
+    g_autofree gchar* directory = g_path_get_dirname(executable);
+    g_autofree gchar* icon =
+        g_build_filename(directory, "data", "app_icon.png", nullptr);
+    gtk_window_set_icon_from_file(window, icon, nullptr);
+  }
+
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(
       project, self->dart_entrypoint_arguments);
