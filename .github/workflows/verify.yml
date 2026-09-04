@@ -1,0 +1,111 @@
+name: Verify
+
+# The half of "test it on all platforms" that a single machine cannot do.
+#
+# tools/verify.sh and tools/verify.ps1 each verify what their host can verify
+# and say plainly what they skipped. This workflow is what makes the skips add
+# up to nothing: Linux and Android on the Ubuntu runner, Windows and the setup
+# executable on the Windows runner. Between them every target is built, and
+# --strict / -Strict makes a runner that quietly failed to build something it
+# was supposed to build a failing job rather than a green one with a warning.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.47.2
+
+jobs:
+  linux:
+    name: Linux and Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The GTK development libraries the Linux build links against. The runner
+      # image does not carry them, and verify.sh reports a missing toolchain as
+      # a skip rather than a failure — which with --strict would fail the job,
+      # correctly, but unhelpfully.
+      - name: Install the Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      # No --only: this runner builds both the targets it can. --strict turns
+      # a missing toolchain into a failing job; the Windows target is reported
+      # as not applicable rather than skipped, so it does not trip it.
+      - name: Verify
+        run: ./tools/verify.sh --strict
+
+      - name: Read the shipped permissions back out of the package
+        # The enforceable form of "no network of anything". Asserted against the
+        # built APK rather than against the manifest, because the manifest that
+        # matters is the merged one.
+        run: |
+          set -eu
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          aapt2=$(find "$ANDROID_HOME/build-tools" -name aapt2 | sort -V | tail -1)
+          "$aapt2" dump badging "$apk" | grep -E "uses-permission|sdkVersion" | tee permissions.txt
+          if grep -q "android.permission.INTERNET" permissions.txt; then
+            echo "::error::The package declares INTERNET. NFR-02 and BR-03 say it never may."
+            exit 1
+          fi
+          echo "No INTERNET permission — as promised."
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: orpheus-linux-and-apk
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            permissions.txt
+          if-no-files-found: error
+
+  windows:
+    name: Windows and the installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      # The runner image carries Inno Setup already; installed explicitly so
+      # that a change to the image is a clear failure here rather than a
+      # confusing one inside the packaging script.
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      # Only Windows and the installer. Android is built on the Linux runner,
+      # and building it twice buys nothing but minutes.
+      - name: Verify
+        run: .\tools\verify.ps1 -Only windows -Installer -Strict
+        shell: pwsh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: orpheus-windows-setup
+          path: dist/orpheus-setup-*.exe
+          if-no-files-found: error

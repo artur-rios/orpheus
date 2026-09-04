@@ -105,7 +105,7 @@ Requirements Document and demonstrated by use cases.
 | **C-03** | The owner's audio files are opened for reading only. |
 | **C-04** | No server, no database, no account, no synchronisation. |
 | **C-05** | Every flow above the platform edges must be testable without a real audio engine, a real device, or the developer's own filesystem. |
-| **C-06** | Android 6 (API 23) is the minimum supported release, which is what the playback engine requires and where runtime permissions begin. |
+| **C-06** | Android 7 (API 24) is the minimum supported release. The engine would run on 23; three of the plugins will not, and the highest floor is the floor. |
 
 ## 6. Out of scope
 

@@ -97,10 +97,13 @@ sudo apt install libmpv-dev mpv     # Debian and Ubuntu
 ```
 
 **Android** needs no extra dependency; the engine ships inside the package. The
-minimum supported release is Android 6 (API 23).
+minimum supported release is Android 7 (API 24) — read back out of the built
+package rather than asserted, and set by the plugins rather than by the engine.
 
 **Windows** needs no extra dependency either — the engine's DLLs are bundled by
-`media_kit_libs_audio`.
+`media_kit_libs_audio`. For a Windows machine you would rather not build on,
+`tools\build-windows-installer.ps1` produces a normal setup executable —
+see [The Windows installer](#the-windows-installer).
 
 ### First run
 
@@ -208,6 +211,9 @@ lib/
                    the music area
     stats/         the play threshold, the history, and the rankings
     shell/         the frame: navigation, the playback bar, preferences
+
+tools/             verify.sh / verify.ps1, and the Windows installer build
+packaging/windows/ the Inno Setup script the installer is compiled from
 ```
 
 Each feature is `domain` (no Flutter, no IO), `data` (the outward edges),
@@ -224,6 +230,65 @@ flutter build linux --release
 flutter build windows --release
 flutter build apk --release
 ```
+
+### Verifying everything at once
+
+```bash
+./tools/verify.sh            # Linux and macOS
+.\tools\verify.ps1           # Windows
+```
+
+Each runs the analyzer, the suite, and a release build of every target its host
+can build — then prints one summary saying what passed, what was skipped, and
+what this operating system could never have done in the first place.
+
+That last distinction is the point of the script. **No single machine can build
+all three targets**: Windows binaries need Windows and MSVC, Linux binaries need
+Linux and GTK. So a run reports three outcomes rather than two —
+
+| | Meaning | Under `--strict` |
+| --- | --- | --- |
+| `PASS` | It ran and it passed. | passes |
+| `SKIP` | A toolchain that could have been here was not — no Android SDK, no `libgtk-3-dev`. | **fails** |
+| `n/a` | This operating system cannot build that target at all. | passes |
+
+— because a missing Android SDK is something you can fix, and a Linux machine
+not producing a Windows binary is not.
+
+Useful flags: `--no-build` for the fast loop, `--only linux|android|windows` for
+one target, `--strict` for CI. `tools/verify.ps1` takes the same ones in long
+form, plus `-Installer`.
+
+`.github/workflows/verify.yml` is what makes the `n/a` rows add up to nothing: it
+runs `verify.sh --strict` on Linux (Linux + Android) and `verify.ps1 -Strict` on
+Windows (Windows + the installer). It also reads the built APK's permissions back
+out and **fails the build if `INTERNET` ever appears in it** — which is the
+promise at the top of this file, enforced rather than asserted.
+
+### The Windows installer
+
+```powershell
+.\tools\build-windows-installer.ps1
+```
+
+Builds the Windows release and compiles `packaging\windows\installer.iss` into
+`dist\orpheus-setup-<version>.exe`. It needs [Inno Setup](https://jrsoftware.org/isdl.php)
+(`winget install JRSoftware.InnoSetup`); the script looks for `ISCC.exe` on
+`PATH` and in both standard install directories, and takes `-InnoSetupPath` if
+it is somewhere else. `-SkipBuild` reuses an existing release build.
+
+The installer offers a per-machine or per-user install, an optional desktop
+icon, and both languages the application ships. Upgrading over an existing
+installation removes the old one first — including one left in a different
+directory, if you moved it — and the removal is targeted at the files this
+payload writes rather than being a wipe of a directory you chose by hand.
+
+**Your library, catalog, statistics and settings are never touched by
+installing, upgrading or uninstalling.** They live in the application-support
+directory; an uninstall is not a request to forget what you listened to.
+
+The installer is **unsigned**. SmartScreen will warn on first run until the
+project holds a code-signing certificate, which it does not.
 
 Tests are named Given-When-Then, one behaviour apiece, and follow the source
 tree: `lib/x/y.dart` is tested by `test/x/y_test.dart`. Nothing in the suite
@@ -279,6 +344,11 @@ from a test.
   an ordinary record it gives the same answer; a various-artists compilation with
   no album-artist tag anywhere lands under whichever performer has the most
   tracks on it.
+- **The Windows installer has never been compiled or run.** Inno Setup is a
+  Windows program and this checkout was verified on Linux, so
+  `packaging/windows/installer.iss` and `tools/build-windows-installer.ps1` are
+  written and reviewed but unexecuted. The CI workflow compiles them on a
+  Windows runner, which is the first place they will actually have run.
 - **Windows and Android are unrun from this checkout.** The Android release
   package builds from this source and its permissions have been read back out of
   the built APK; Windows is configured from the same source and the same engine.
@@ -296,7 +366,7 @@ this file.
 
 | Milestone | Delivers | Depends on | Issues | Status |
 | --- | --- | --- | --- | --- |
-| [M-01 — Foundation](https://github.com/artur-rios/orpheus/milestone/1) | The project scaffold, the layering, the composition root, and the cross-cutting infrastructure every use case is built on (IR-01 … IR-21) | — | 1 | 1 / 1 closed |
+| [M-01 — Foundation](https://github.com/artur-rios/orpheus/milestone/1) | The project scaffold, the layering, the composition root, and the cross-cutting infrastructure every use case is built on (IR-01 … IR-27) | — | 1 | 1 / 1 closed |
 | [M-02 — Shell and preferences](https://github.com/artur-rios/orpheus/milestone/2) | A window the owner can open, navigate, theme and translate, with preferences that apply immediately and persist | M-01 | 2 | 2 / 2 closed |
 | [M-03 — Library sources and scanning](https://github.com/artur-rios/orpheus/milestone/3) | Folders can be registered, permitted, scanned, reviewed and unregistered — the catalog gets its content | M-02 | 6 | 6 / 6 closed |
 | [M-04 — Browsing and search](https://github.com/artur-rios/orpheus/milestone/4) | The library can be browsed by artist, record and song, laid out two ways, and searched | M-03 | 6 | 6 / 6 closed |
@@ -310,7 +380,7 @@ this file.
 
 | Issue | Work | Spec |
 | --- | --- | --- |
-| [#1](https://github.com/artur-rios/orpheus/issues/1) | Project scaffold and cross-cutting infrastructure (IR-01 … IR-21) — done | [Operations & Infrastructure](docs/requirements/Operations%20%26%20Infrastructure%20Document.md) |
+| [#1](https://github.com/artur-rios/orpheus/issues/1) | Project scaffold and cross-cutting infrastructure (IR-01 … IR-27) — done | [Operations & Infrastructure](docs/requirements/Operations%20%26%20Infrastructure%20Document.md) |
 
 ### M-02 — Shell and preferences
 

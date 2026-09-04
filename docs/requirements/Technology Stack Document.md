@@ -18,7 +18,7 @@ A dependency added without a row here is a Definition of Done failure.
 
 | Target | Floor | Notes |
 | --- | --- | --- |
-| **Android** | API 23 (Android 6) | Not Flutter's own floor. The playback engine requires it, and 23 is where runtime permissions begin — below it there would be no permission to ask for and no engine to play with. |
+| **Android** | API 24 (Android 7) | Written out in `build.gradle.kts` rather than left to `flutter.minSdkVersion`, because the floor is the plugins' and not Flutter's. The engine needs 23; `permission_handler_android`, `shared_preferences_android` and `audio_session` need 24, and the highest floor is the floor. Verified by reading the built package, not by reading the source — the Flutter tool silently rewrites this line on every Android build. |
 | **Android compile SDK** | 37 | Required by `permission_handler_android`, which refuses to be consumed by anything compiled against less. Compiling against a newer platform is not the same as targeting one. |
 | **Linux** | GTK, x64 | Requires `libmpv` present at runtime — `libmpv-dev` and `mpv` on Debian and Ubuntu. |
 | **Windows** | x64 | The engine's DLLs are bundled by `media_kit_libs_audio`; no extra dependency. |

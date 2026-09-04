@@ -23,12 +23,18 @@ android {
 
     defaultConfig {
         applicationId = "io.github.artur_rios.orpheus"
-        // 23 rather than Flutter's own floor: media_kit's Android build — the
-        // playback engine this application shares with its two desktop targets
-        // — needs it, and 23 is Android 6, which is where runtime permissions
-        // begin. Below it there would be no permission to ask for and no
-        // engine to play with.
-        minSdk = 23
+        // 24 — Android 7 — and stated here rather than left to
+        // `flutter.minSdkVersion`, because this floor is the plugins' and not
+        // Flutter's, and a number that moves when the toolchain moves is a
+        // number the README cannot promise.
+        //
+        // The engine, media_kit, needs 23. Three plugins need 24 —
+        // permission_handler_android, shared_preferences_android and
+        // audio_session — and the highest floor is the floor. Writing 23 here
+        // does not lower it: the Flutter tool rewrites this line on the next
+        // Android build, which is how the discrepancy stayed invisible until
+        // the built package was read back.
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
         // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
