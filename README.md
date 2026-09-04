@@ -13,9 +13,10 @@ result in a file beside its own settings.
 
 > **Status:** complete and tested. 241 unit and widget tests; `flutter analyze`
 > clean. Every use case in the [specifications](#specifications) is implemented
-> — see the [roadmap](#roadmap). Verified running on Linux, and the Linux and
-> Android release builds are verified to produce a binary from this checkout.
-> Neither Windows nor Android has been run on a device here.
+> — see the [roadmap](#roadmap). All three release builds and the Windows
+> installer are produced and verified by CI on every push. Verified *running*
+> on Linux only; Windows and Android build but have not been launched on a
+> machine or a device.
 
 ## What it does
 
@@ -290,6 +291,10 @@ directory; an uninstall is not a request to forget what you listened to.
 The installer is **unsigned**. SmartScreen will warn on first run until the
 project holds a code-signing certificate, which it does not.
 
+Every push builds it: the `Verify` workflow's Windows job uploads
+`orpheus-setup-<version>.exe` as an artifact, so the latest one is a download
+away from the run that produced it.
+
 Tests are named Given-When-Then, one behaviour apiece, and follow the source
 tree: `lib/x/y.dart` is tested by `test/x/y_test.dart`. Nothing in the suite
 reads the developer's own preferences, writes into their application-support
@@ -344,15 +349,16 @@ from a test.
   an ordinary record it gives the same answer; a various-artists compilation with
   no album-artist tag anywhere lands under whichever performer has the most
   tracks on it.
-- **The Windows installer has never been compiled or run.** Inno Setup is a
-  Windows program and this checkout was verified on Linux, so
-  `packaging/windows/installer.iss` and `tools/build-windows-installer.ps1` are
-  written and reviewed but unexecuted. The CI workflow compiles them on a
-  Windows runner, which is the first place they will actually have run.
-- **Windows and Android are unrun from this checkout.** The Android release
-  package builds from this source and its permissions have been read back out of
-  the built APK; Windows is configured from the same source and the same engine.
-  Neither has been launched on a device here.
+- **The Windows installer is built but never installed.** CI compiles
+  `packaging/windows/installer.iss` on a Windows runner on every push, so the
+  setup executable is known to build and to carry the whole payload. What nobody
+  has done is *run* it — install, upgrade over an older install, and uninstall
+  are specified and reviewed but unexercised. The upgrade path in its `[Code]`
+  section is the part most worth someone's attention.
+- **Windows and Android build but are unrun.** Both release packages are
+  produced by CI from this source, and the Android package's permissions are
+  read back out of the built APK rather than asserted. Neither has been launched
+  on a machine or a device.
 
 ## Roadmap
 
