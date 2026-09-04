@@ -6,6 +6,7 @@ import 'package:orpheus/features/library/domain/audio_file.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/library/domain/track_metadata.dart';
+import 'package:path/path.dart' as p;
 
 import '../../../support/flac_fixture.dart';
 
@@ -28,8 +29,14 @@ void main() {
     if (root.existsSync()) await root.delete(recursive: true);
   });
 
+  // Joined rather than interpolated with a slash, because these paths are
+  // compared against the ones the scan's own walk produces. On Windows a
+  // fixture written to `C:\dir/a.flac` and walked as `C:\dir\a.flac` are two
+  // different strings, and the carry-over lookup — which is keyed by path —
+  // misses every time. That made the incremental-scan test fail on Windows for
+  // a reason that had nothing to do with the scanner.
   File writeFile(String relative, List<int> bytes) {
-    final file = File('${root.path}/$relative');
+    final file = File(p.joinAll([root.path, ...relative.split('/')]));
     file.parent.createSync(recursive: true);
     file.writeAsBytesSync(bytes);
 

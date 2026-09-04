@@ -16,15 +16,23 @@ void main() {
 
       for (final entity in Directory('lib').listSync(recursive: true)) {
         if (entity is! File || !entity.path.endsWith('.dart')) continue;
+
+        // Compared with forward slashes whatever the platform walks with.
+        // Windows yields `lib\core\theme\app_theme.dart`, which matches
+        // neither exclusion below as written — so this guard used to fail on
+        // the theme's own seed there, and would have skipped nothing in the
+        // generated catalogs either.
+        final path = entity.path.replaceAll(r'\', '/');
+
         // The theme is where the seed lives, and the generated catalogs are
         // not hand-written.
-        if (entity.path.startsWith('lib/core/theme/')) continue;
-        if (entity.path.contains('l10n/generated/')) continue;
+        if (path.startsWith('lib/core/theme/')) continue;
+        if (path.contains('l10n/generated/')) continue;
 
         final lines = entity.readAsLinesSync();
         for (final (index, line) in lines.indexed) {
           if (_colourLiteral.hasMatch(line)) {
-            offenders.add('${entity.path}:${index + 1}: ${line.trim()}');
+            offenders.add('$path:${index + 1}: ${line.trim()}');
           }
         }
       }
