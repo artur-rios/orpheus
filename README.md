@@ -285,6 +285,17 @@ On Linux it also checks for libmpv up front, because without it playback fails
 at the first press of play rather than at startup — which is a long way from the
 cause.
 
+On Windows the first build in a fresh build directory prints `Nuget.exe not
+found, trying to download or use cached version.` That is CMake, not this
+application: `permission_handler_windows` compiles against the CppWinRT NuGet
+package and fetches a pinned, checksummed `nuget.exe` when one is not on `PATH`.
+It is a status line rather than a warning — a real failure stops the build with
+`Failed to install nuget package Microsoft.Windows.CppWinRT` — and it prints
+once per clean build directory. `winget install Microsoft.NuGet` silences it.
+The plugin itself does nothing on Windows; it arrives as the endorsed Windows
+implementation of the `permission_handler` that Android needs, and Flutter
+builds every plugin registered for a platform whether or not it is used.
+
 `tools/dev.ps1` takes the same flags in long form (`-Device`, `-Clean`, `-Yes`).
 
 ### Verifying everything at once
