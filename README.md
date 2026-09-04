@@ -90,6 +90,11 @@ flutter pub get
 flutter run -d linux      # or -d windows, or a connected Android device
 ```
 
+If you are going to change the code rather than just run it, use
+[`tools/dev.sh`](#running-it-while-you-work-on-it) instead — it picks the
+device, checks what the platform needs, and can reset the application to a
+first launch.
+
 **Linux** additionally needs libmpv at runtime — the playback engine is
 media_kit, which is libmpv-backed:
 
@@ -213,7 +218,8 @@ lib/
     stats/         the play threshold, the history, and the rankings
     shell/         the frame: navigation, the playback bar, preferences
 
-tools/             verify.sh / verify.ps1, and the Windows installer build
+tools/             dev.sh / dev.ps1 to run it, verify.sh / verify.ps1 to
+                   check it, and the Windows installer build
 packaging/windows/ the Inno Setup script the installer is compiled from
 ```
 
@@ -231,6 +237,40 @@ flutter build linux --release
 flutter build windows --release
 flutter build apk --release
 ```
+
+### Running it while you work on it
+
+```bash
+./tools/dev.sh               # Linux and macOS
+.\tools\dev.ps1              # Windows
+```
+
+Picks a device, checks what it needs, and starts the application. With no
+arguments it runs on this host's desktop; with one device attached and no
+desktop target, on that one; with several, it refuses and lists them rather
+than guessing — being handed a phone when you meant the desktop costs more time
+than typing `--device`.
+
+**The loop is Flutter's own.** While it runs, `r` hot-reloads, `R` hot-restarts,
+`q` quits — so *change the code and see it* is one keystroke, not another run of
+the script. Start it again for the things hot reload cannot carry: a new
+dependency, a native or platform file, or a change to either `.arb` catalog
+(then use `--generate`).
+
+| Flag | |
+| --- | --- |
+| `--device ID` / `--android` | Where to run. `--android` takes the attached device or emulator, whatever its id. |
+| `--clean` | Delete this application's own data — the catalog, cover cache, play history and preferences — so the next start is a first launch. **Never touches your music**, names exactly what it will delete, and asks first unless `--yes`. On Android it clears the app's data on the device. |
+| `--generate` | Regenerate the localizations first. |
+| `--test` | Run the suite first, and stop if it is red. |
+| `--profile` / `--release` | Run the way an owner would get it. Neither has hot reload — that is debug only, and the script says so rather than letting you press `r` into silence. |
+| `--no-run` | Do everything else and stop. |
+
+On Linux it also checks for libmpv up front, because without it playback fails
+at the first press of play rather than at startup — which is a long way from the
+cause.
+
+`tools/dev.ps1` takes the same flags in long form (`-Device`, `-Clean`, `-Yes`).
 
 ### Verifying everything at once
 
@@ -372,7 +412,7 @@ this file.
 
 | Milestone | Delivers | Depends on | Issues | Status |
 | --- | --- | --- | --- | --- |
-| [M-01 — Foundation](https://github.com/artur-rios/orpheus/milestone/1) | The project scaffold, the layering, the composition root, and the cross-cutting infrastructure every use case is built on (IR-01 … IR-27) | — | 1 | 1 / 1 closed |
+| [M-01 — Foundation](https://github.com/artur-rios/orpheus/milestone/1) | The project scaffold, the layering, the composition root, and the cross-cutting infrastructure every use case is built on (IR-01 … IR-28) | — | 1 | 1 / 1 closed |
 | [M-02 — Shell and preferences](https://github.com/artur-rios/orpheus/milestone/2) | A window the owner can open, navigate, theme and translate, with preferences that apply immediately and persist | M-01 | 2 | 2 / 2 closed |
 | [M-03 — Library sources and scanning](https://github.com/artur-rios/orpheus/milestone/3) | Folders can be registered, permitted, scanned, reviewed and unregistered — the catalog gets its content | M-02 | 6 | 6 / 6 closed |
 | [M-04 — Browsing and search](https://github.com/artur-rios/orpheus/milestone/4) | The library can be browsed by artist, record and song, laid out two ways, and searched | M-03 | 6 | 6 / 6 closed |
@@ -386,7 +426,7 @@ this file.
 
 | Issue | Work | Spec |
 | --- | --- | --- |
-| [#1](https://github.com/artur-rios/orpheus/issues/1) | Project scaffold and cross-cutting infrastructure (IR-01 … IR-27) — done | [Operations & Infrastructure](docs/requirements/Operations%20%26%20Infrastructure%20Document.md) |
+| [#1](https://github.com/artur-rios/orpheus/issues/1) | Project scaffold and cross-cutting infrastructure (IR-01 … IR-28) — done | [Operations & Infrastructure](docs/requirements/Operations%20%26%20Infrastructure%20Document.md) |
 
 ### M-02 — Shell and preferences
 
