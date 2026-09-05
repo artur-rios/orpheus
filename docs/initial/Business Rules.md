@@ -174,3 +174,55 @@ build failure, not a string that renders as its key.
 **BR-28 — The arrangement follows the window, not the platform.** A rail where
 there is width for one, a bar across the bottom where there is not — decided by
 width at every size, not by which operating system is running.
+
+## 9. Lyrics
+
+**BR-29 — Words come from the machine the music is on.** A track's words are
+read from a `.lrc` file beside it, from its `SYLT` frame, or from its lyrics
+text tag — and from nowhere else. There is no service to ask, and a track this
+machine holds no words for is a track with no words, which the application says
+plainly rather than treating as a failure or as something still loading. There
+is no exception here to `BR-03`.
+
+**BR-30 — The file beside the track outranks the file's own tags.** A `.lrc` is
+the copy the owner can write, correct and delete with a text editor and nothing
+else; a tag needs a tag editor. Where both exist, the sidecar is the answer. Of
+the two tags, the timed frame outranks the text one, because a file carrying
+both was written by somebody who put the timed copy in `SYLT`.
+
+**BR-31 — Times are read, never invented.** A sheet with no times in it is
+shown as a sheet with no times, said to be one, and does not follow the music.
+Nothing here divides a track's length by its number of lines, and nothing
+guesses which line is being sung. The same rule refuses times this application
+cannot resolve: a `SYLT` frame counted in MPEG frames rather than in
+milliseconds is left alone rather than approximated.
+
+**BR-32 — The words are never written.** Lyrics are read like every other tag
+(`BR-02`): nothing is corrected, completed, re-timed or saved back into the
+owner's files, and nothing about them is cached beside the catalog. They are
+read from the file each time the player asks for them.
+
+## 10. The sound bars
+
+**BR-33 — The bars are the recording, not a decoration.** What moves on the
+player is the spectrum of the track being played, measured from its own samples.
+A shape that moved convincingly without having been measured would be a lie the
+owner has no way to catch.
+
+**BR-34 — A track is analysed once.** The result is cached under a key carrying
+the file's path, its length and its modification time, so that a track analysed
+in January draws instantly in June — and so that the same path holding a
+different rip is analysed again rather than drawn with the old one's spectrum.
+
+**BR-35 — There is always something to show, and it never claims to be an
+analysis.** Until the first analysis of a track lands, and for a file that
+cannot be decoded at all, the bars are synthesised from the track's identity:
+deterministic, so the same second of the same track draws the same bars, and
+distinct, so two tracks move differently. It is a sign that something is
+playing, it is named as a stand-in everywhere it is defined, and nothing in the
+interface presents it as measurement.
+
+**BR-36 — Analysis never costs playback anything.** It runs off the interface's
+isolate, it never delays a track opening, and a failure — a format that will not
+decode, a full disk, a read-only cache — costs the bars of that one track and
+nothing else.

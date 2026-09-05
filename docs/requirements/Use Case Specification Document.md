@@ -77,12 +77,23 @@ graph LR
         UC29[UC-29: Manage preferences]
     end
 
+    subgraph "Lyrics (LY)"
+        UC30[UC-30: Read the words]
+        UC31[UC-31: Follow and jump]
+    end
+
+    subgraph "Visualisation (VZ)"
+        UC32[UC-32: See the music move]
+    end
+
     OWNER --> UC01
     OWNER --> UC07
     OWNER --> UC13
     OWNER --> UC24
     OWNER --> UC27
     OWNER --> UC28
+    OWNER --> UC30
+    OWNER --> UC32
 ```
 
 ---
@@ -1032,6 +1043,120 @@ graph LR
 
 ---
 
+### UC-30: Read the words of what is playing
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-30 |
+| **Name** | Read the words of what is playing |
+| **Actors** | Owner, Local filesystem |
+| **Description** | The owner asks for the words of the track playing, and the application shows whatever the machine holds for it. |
+| **Preconditions** | Something is playing, and the full player is open. |
+| **Postconditions** | None. Nothing is written, and nothing about the track has changed. |
+| **Requirements** | FR-LY-01, FR-LY-02, FR-LY-03, FR-LY-07, FR-LY-08, FR-LY-09, FR-LY-10, FR-LY-12 |
+
+**Main Flow**
+
+1. The owner presses the lyrics control on the full player.
+2. The application looks for the words of the track playing: first a `.lrc`
+   beside it and named after it, then its `SYLT` frame, then its lyrics text
+   tag. The first of those that holds words is the answer (`BR-30`).
+3. The words take the place of the record's sleeve, which is the region of the
+   screen large enough to read from.
+4. The line being sung is distinguished, and the sheet follows the music
+   (UC-31).
+5. The owner presses the control again and the sleeve returns.
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | This machine holds no words for the track | The panel says so, and says where words would have to come from. It is not drawn as a failure, and nothing is fetched. |
+| AF-02 | The words carry no times | They are shown as a sheet to read, stated to carry no times, and do not follow the music. No times are invented for them. |
+| AF-03 | Both a sidecar and the file's own tags hold words | The sidecar is shown — it is the copy the owner can edit without a tag editor. |
+| AF-04 | The tag holds both a timed frame and a text one | The timed frame is shown. |
+| AF-05 | The `SYLT` frame counts its times in MPEG frames, or is compressed or encrypted | It is declined, and the text tag answers instead. Nothing is approximated. |
+| AF-06 | The sidecar or the file cannot be read | The words are lost and nothing else is: playback is not interrupted, and the panel shows the no-words state. |
+| AF-07 | The queue moves to another track while the words are showing | The words of the new track are looked for, and the panel is showing that track's own state. |
+| AF-08 | The owner closes the player and opens it again | It is still showing the words: reading along is a way of listening to a record, not to one track. |
+
+---
+
+### UC-31: Follow the words and jump to a line
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-31 |
+| **Name** | Follow the words and jump to a line |
+| **Actors** | Owner, Playback engine |
+| **Description** | Timed words follow the music, and a line can be used to move playback to where it is sung. |
+| **Preconditions** | The words of the track playing are showing and carry times. |
+| **Postconditions** | Playback is where the owner put it, or where it had got to on its own. |
+| **Requirements** | FR-LY-04, FR-LY-05, FR-LY-06, FR-LY-11 |
+
+**Main Flow**
+
+1. The engine reports the position within the track.
+2. The application distinguishes the line whose time is the latest one at or
+   before that position.
+3. The sheet scrolls that line into view without being asked.
+4. The owner presses a line, and playback moves to the time that line carries.
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | Playback has not reached the first line — an intro, a count-in | No line is distinguished. Nothing pretends to be the line being sung. |
+| AF-02 | The sheet times a gap between verses | No line is distinguished through it, rather than the last line of the verse staying lit through the solo. |
+| AF-03 | The owner scrolls the words themselves | Following stops long enough to read ahead, then resumes on its own. |
+| AF-04 | The words carry no times | No line is distinguished and pressing one does nothing: an untimed line is not a place in the track. |
+| AF-05 | The player is opened part-way through a track | The line being sung is already in view — it is jumped to rather than scrolled to from the top. |
+| AF-06 | The system asks for reduced motion | The scrolling is not animated, and the screen is otherwise unchanged. |
+
+---
+
+### UC-32: See the music move
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-32 |
+| **Name** | See the music move |
+| **Actors** | Owner, Playback engine, Local filesystem |
+| **Description** | The player draws the spectrum of the recording being played, measured from the recording itself. |
+| **Preconditions** | Something is playing, and the full player is open. |
+| **Postconditions** | The track's measured spectrum is cached, where it could be measured and could be written. The owner's file is unchanged. |
+| **Requirements** | FR-VZ-01 … FR-VZ-11 |
+
+**Main Flow**
+
+1. The owner opens the full player while a track is playing.
+2. The bars are drawn, moving with the music and settling when it stops.
+3. The first time a track is played, its analysis is started away from the
+   interface: the engine that plays it is told to decode it, and the transform
+   runs off the interface's isolate.
+4. Until that lands, the stand-in is drawn — deterministic for the track, and
+   never presented as a measurement (`BR-35`).
+5. The measurement lands, replaces the stand-in, and is cached under a key
+   carrying the file's path, length and modification time.
+6. The next time that track is played, the bars are drawn from the cache and
+   nothing is decoded.
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | The analysis has not landed yet | The stand-in is drawn. The bars are never empty and never waiting on a decode. |
+| AF-02 | The file cannot be decoded at all | The stand-in is drawn for as long as that track plays, and nothing is cached that would later have to be invalidated. |
+| AF-03 | Playback is paused or stopped | The bars settle rather than continuing to move over silence. |
+| AF-04 | The analysis cannot be cached — a full disk, a read-only directory | The bars are drawn from it anyway. The cost is one more analysis the next time that track is played, and nothing is reported to the owner. |
+| AF-05 | A different file is put at the same path — a re-rip, a re-tag | The key changes with the file's length and modification time, so it is analysed again rather than drawn with the previous file's spectrum. |
+| AF-06 | The system asks for reduced motion | The bars stop moving and the screen is otherwise unchanged. |
+| AF-07 | The owner closes the player while an analysis is running | It finishes into the cache rather than into an error nobody sees, so the next play of that track is instant. |
+| AF-08 | The decode times out or fails part-way | The scratch data is deleted however it ended, and the stand-in is what stays on screen. |
+| AF-09 | The owner deletes the analysis cache | Nothing is lost but the work of building it again: the next play of each track measures it afresh. |
+
+---
+
 ## 3. Use case — requirements traceability
 
 | Use case | Requirements |
@@ -1065,6 +1190,9 @@ graph LR
 | UC-27 See what you listen to | FR-ST-08 … FR-ST-15, FR-UX-03 |
 | UC-28 Navigate the shell | FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-07 |
 | UC-29 Manage preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18 |
+| UC-30 Read the words | FR-LY-01, FR-LY-02, FR-LY-03, FR-LY-07 … FR-LY-10, FR-LY-12 |
+| UC-31 Follow and jump | FR-LY-04, FR-LY-05, FR-LY-06, FR-LY-11 |
+| UC-32 See the music move | FR-VZ-01 … FR-VZ-11 |
 
 ## 4. State diagrams
 

@@ -32,6 +32,10 @@ of any kind.
 | **Queue** | The tracks lined up to play, and the position within them. |
 | **Media session** | The platform's own now-playing surface — notification, lock screen, and media buttons. |
 | **Play** | One track heard past the threshold in `BR-19`. |
+| **Sidecar** | A file beside a track, named after it, holding something about it — here, a `.lrc` of its words. |
+| **Synced lyrics** | Words with a time against each line, so that the line being sung can be shown while it is sung. |
+| **Spectrum** | How a moment of a recording divides across frequency bands — what the sound bars are drawn from. |
+| **Stand-in** | The synthesised bars drawn for a track not yet analysed, or one that cannot be. Never presented as a measurement (`BR-35`). |
 
 ## 2. Positioning
 
@@ -95,6 +99,8 @@ Requirements Document and demonstrated by use cases.
 | **F-12** | Adaptive shell | The application arranges itself by window width: a rail on a desktop, a bar across the bottom on a phone, and the same rules between. |
 | **F-13** | Preferences | Theme, language, volume, whether the player opens on play, and whether the library is re-scanned at launch — applied immediately and remembered. |
 | **F-14** | Localization | English and Brazilian Portuguese, both catalogs complete. |
+| **F-15** | Lyrics | Where the machine holds a track's words — a `.lrc` beside it, or the track's own tags — they are shown; where they carry times, the line being sung is lit, the sheet follows the music, and a line can be tapped to play from there. Nothing is fetched, guessed or written. |
+| **F-16** | Sound bars | The player draws the spectrum of the recording being played, measured from its own samples with the engine that plays it, analysed once per track and kept. Until an analysis lands, and for a file that cannot be decoded, a deterministic stand-in is drawn in its place and named as one. |
 
 ## 5. Constraints
 
@@ -111,6 +117,6 @@ Requirements Document and demonstrated by use cases.
 
 Stated so that their absence is a decision rather than an omission: tag
 editing, file renaming, moving or deletion, transcoding, streaming, scrobbling,
-online metadata or cover-art lookup, accounts, synchronisation, playlists that
-can be saved and named, a media session on Windows or Linux, and time-windowed
-statistics.
+online metadata, cover-art or lyrics lookup, writing or re-timing lyrics back
+into the owner's files, accounts, synchronisation, playlists that can be saved
+and named, a media session on Windows or Linux, and time-windowed statistics.

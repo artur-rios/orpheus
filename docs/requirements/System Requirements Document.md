@@ -25,6 +25,8 @@ Section 4 is the traceability.
 | `BG` | Background playback and the media session |
 | `ST` | Listening statistics |
 | `UX` | Shell, preferences and presentation |
+| `LY` | Lyrics |
+| `VZ` | Visualisation |
 
 ### 1.3 Keywords
 
@@ -148,6 +150,43 @@ wherever a test can enforce it.
 | **FR-UX-09** | Both language catalogs must stay complete, every message must carry a description, and a translation must use the same placeholders as its original (`BR-27`). |
 | **FR-UX-10** | The desktop window's size and position must be restored between runs, and a minimum size enforced. |
 
+### 2.7 Lyrics (LY)
+
+Realises F-15.
+
+| ID | Requirement |
+| --- | --- |
+| **FR-LY-01** | The application must show the words of the track playing, on demand, from the full player. |
+| **FR-LY-02** | Words must be read from a `.lrc` file beside the track and named after it, from the track's ID3 `SYLT` frame, or from the track's lyrics text tag, and from no other source (`BR-29`). |
+| **FR-LY-03** | Where more than one of those holds words, the sidecar must win, and the timed frame must win over the text tag (`BR-30`). |
+| **FR-LY-04** | Words carrying a time per line must follow the music: the line being sung must be distinguished, and the sheet must bring it into view by itself. |
+| **FR-LY-05** | Where the owner scrolls the words themselves, following must stop for long enough to read, and then resume. |
+| **FR-LY-06** | Tapping a line that carries a time must move playback to that time. |
+| **FR-LY-07** | Words carrying no times must be shown, must be stated to carry none, and must not follow the music. No time may be invented for them (`BR-31`). |
+| **FR-LY-08** | A track this machine holds no words for must be told so plainly, together with where words would have to come from. It is not a failure state and must not be presented as one. |
+| **FR-LY-09** | Reading the words must not block, interrupt or delay playback, and a file that cannot be read for them must cost the words and nothing else. |
+| **FR-LY-10** | Nothing about the words may be written, cached beside the catalog, or saved back into the owner's files (`BR-32`). |
+| **FR-LY-11** | A timed gap between verses must leave no line distinguished, rather than leaving the previous line lit through it. |
+| **FR-LY-12** | The reader must accept the forms real files are written in: several times against one line, a `[offset:]` correction, per-word times, ID3v2.2 through v2.4, the four ID3 text encodings, and unsynchronisation. Times it cannot resolve must be declined rather than approximated (`BR-31`). |
+
+### 2.8 Visualisation (VZ)
+
+Realises F-16.
+
+| ID | Requirement |
+| --- | --- |
+| **FR-VZ-01** | The full player must draw a visualiser that moves while a track plays and settles when playback stops. |
+| **FR-VZ-02** | What it draws must be the spectrum of the recording being played, measured from that recording's own samples (`BR-33`). |
+| **FR-VZ-03** | The measurement must use the playback engine as its decoder, so that whatever the application can play it can also analyse, on every target, with no second codec library. |
+| **FR-VZ-04** | Analysis must run off the interface's isolate. It must never delay a track opening, interrupt playback, or hold up the screen (`BR-36`). |
+| **FR-VZ-05** | A track must be analysed once. The result must be cached, keyed by the file's path, length and modification time, so that a file replaced at the same path is analysed again rather than drawn with the previous one's spectrum (`BR-34`). |
+| **FR-VZ-06** | Until a track's analysis lands, and for any file that cannot be decoded, a stand-in must be drawn: deterministic for a given track and moment, and distinct between tracks (`BR-35`). |
+| **FR-VZ-07** | The stand-in must never be presented as a measurement, and must be named as a stand-in wherever it is defined. |
+| **FR-VZ-08** | A failure to cache an analysis must cost that track's cached analysis and nothing else; it must not be surfaced as an error and must not stop the bars from being drawn. |
+| **FR-VZ-09** | The analysis cache must live apart from the cover cache and must be deletable on its own, costing only the work of building it again (`IR-05`). |
+| **FR-VZ-10** | The visualiser must carry an accessible name, and where the system asks for reduced motion it must stop moving while the rest of the screen is unchanged (`NFR-12`). |
+| **FR-VZ-11** | Scratch data written during an analysis must be deleted however the analysis ends, including where it fails or times out. |
+
 ## 3. Non-functional requirements
 
 | ID | Requirement |
@@ -185,6 +224,8 @@ wherever a test can enforce it.
 | F-12 Adaptive shell | FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-10 |
 | F-13 Preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18 |
 | F-14 Localization | FR-UX-09, FR-CT-06 |
+| F-15 Lyrics | FR-LY-01 … FR-LY-12 |
+| F-16 Sound bars | FR-VZ-01 … FR-VZ-11 |
 
 ### 4.2 Requirements to use cases
 
@@ -196,6 +237,8 @@ wherever a test can enforce it.
 | BG | UC-24, UC-25 |
 | ST | UC-26, UC-27 |
 | UX | UC-28, UC-29 |
+| LY | UC-30, UC-31 |
+| VZ | UC-32 |
 
 ## 5. Data model
 
@@ -206,7 +249,13 @@ Everything the application persists, and where.
 | **Catalog** | `catalog.json` in the application-support directory | One entry per audio file: path, size, modification time, and every tag read from it, plus the id of its cover. Written atomically; versioned. |
 | **Play history** | `play-history.json`, beside the catalog | One entry per file ever played: path, play count, and when it last counted. Written atomically; versioned. |
 | **Cover cache** | a `covers` directory | One file per distinct picture, named by the hash of its bytes. |
+| **Analysis cache** | an `energy` directory | One file per analysed track — the measured spectrum, about a hundred kilobytes for a four-minute track — named by a key carrying the file's path, length and modification time. Disposable: deleting it costs a second per track and nothing else. |
 | **Preferences** | the platform's own preference store | Library folders, theme, language, layout, volume, repeat mode, resume points, and the two behaviour switches. |
+
+Lyrics are deliberately absent from this table. They are read from the owner's
+own files each time the player asks for them and are never copied into this
+application's directory — which is what keeps a corrected `.lrc` correct the
+moment it is saved, with nothing to invalidate (`BR-32`).
 
 Nothing else is written, and nothing is written outside these locations
 (`BR-02`).

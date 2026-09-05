@@ -45,6 +45,7 @@ test/
     playback/        …
     stats/           …
     shell/           …
+    lyrics/          …
   support/           the harness, the fakes, and the fixtures
 ```
 
@@ -67,6 +68,9 @@ outward dependency bound to a double:
 | `folderPickerProvider` | a fake folder picker |
 | `shuffleRandomProvider` | a seeded source |
 | `clockProvider` | a pinned instant, where the test needs one |
+| `lyricsSourceProvider` | a source answering the words the test seeded, by track path |
+| `energyStoreProvider` | in-memory analyses, so no test writes a spectrum to disk |
+| `trackAnalysisProvider` | a scripted analysis, so no test starts a decoder |
 
 A test that needs a real edge — the JSON stores, the cover store, the tag
 reader — uses a temporary directory it creates and deletes.
@@ -95,6 +99,13 @@ checks is a comment.
 The scanner and the tag reader are tested against **real audio files** built by
 `test/support/flac_fixture.dart` — a genuine FLAC header with real Vorbis
 comments and a real embedded picture, small enough to write from a test.
+
+ID3 tags are built the same way by `test/support/id3_fixture.dart` — a real tag,
+frame by frame, in any of the three versions, with the header and frame flags
+and the four text encodings the reader has to cope with. It exists because the
+synchronised-lyrics reader walks those bytes itself: the branches worth testing
+are the ones an ordinary file would not happen to carry, and the only way to
+have a file that carries them is to write one.
 
 A tag reader tested against a mock of itself proves nothing. This is why the
 reader is pure Dart in the first place.

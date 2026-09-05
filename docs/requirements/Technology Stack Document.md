@@ -30,7 +30,7 @@ A dependency added without a row here is a Definition of Done failure.
 | `flutter_riverpod` | `^3.0.0` | State management and the single composition root. The queue outlives the screen that started it, so it cannot live in a widget. |
 | `media_kit` | `^1.2.6` | The playback engine. libmpv-backed, and the one engine in its class covering all three targets with one API and no transcoding. |
 | `media_kit_libs_audio` | `^1.0.7` | The engine's bundled native libraries for Windows and Android. |
-| `audio_metadata_reader` | `^1.7.1` | Tag reading — ID3, Vorbis comments, iTunes atoms, RIFF, APE — **in pure Dart**, which is what makes it testable and what avoids a native build per target. |
+| `audio_metadata_reader` | `^1.7.1` | Tag reading — ID3, Vorbis comments, iTunes atoms, RIFF, APE — **in pure Dart**, which is what makes it testable and what avoids a native build per target. It surfaces the unsynchronised lyrics frame and not the synchronised one, which is why `features/lyrics/data/id3_synced_lyrics.dart` reads `SYLT` out of the tag itself rather than a dependency being added for it. |
 | `audio_service` | `^0.18.19` | The Android foreground service, its notification, the lock screen, and media buttons. Android-only in effect; behind the `MediaSession` seam. |
 | `audio_session` | `^0.2.4` | Audio focus — the phone call that should pause the music, and the headphones pulled out of the socket. Reaches the player through the same seam. |
 | `path_provider` | `^2.1.6` | Where this application may write, per platform. |

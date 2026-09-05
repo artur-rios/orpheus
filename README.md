@@ -11,7 +11,7 @@ reads its catalog from a Rust core over FFI; Orpheus has no core and no server.
 It walks the folders it is pointed at, reads the tags itself, and keeps the
 result in a file beside its own settings.
 
-> **Status:** complete and tested. 273 unit and widget tests; `flutter analyze`
+> **Status:** complete and tested. 344 unit and widget tests; `flutter analyze`
 > clean. Every use case in the [specifications](#specifications) is implemented
 > — see the [roadmap](#roadmap). All three release builds and the Windows
 > installer are produced and verified by CI on every push. Verified *running*
@@ -29,9 +29,16 @@ result in a file beside its own settings.
   you can see and jump around in, repeat, and a resume point per track.
 - **Shows what is playing everywhere** — a persistent bar across the bottom, and
   a full player with the record's own sleeve as large as the window allows.
+- **Draws the music itself.** The bars on the player are the spectrum of the
+  recording, measured from its own samples by the same engine that plays it,
+  analysed once per track and kept.
 - **Keeps playing on Android once you switch away**, from a notification and the
   lock screen that carry the sleeve and the transport buttons — and stops for a
   phone call, and for headphones pulled out of the socket.
+- **Shows the words, in time with the music**, where your own files carry
+  them — a `.lrc` beside the track, or the track's own lyrics tag. The line
+  being sung is lit, the sheet scrolls itself, and tapping a line plays from
+  there.
 - **Searches** across titles, artists and albums, ranked so a match at the start
   of a title comes above one buried in the middle of something else.
 - **Says what you actually listen to** — total plays, and the most played
@@ -220,6 +227,46 @@ and the code says so where it is defined.
 `features/playback/domain/audio_spectrum.dart`,
 `features/playback/data/mpv_track_analysis.dart`)
 
+### The words
+
+Synced lyrics come from the machine the music is on, because there is nowhere
+else for them to come from here. Three places are looked in, in this order: an
+`.lrc` file beside the track and named after it; the track's `SYLT` frame; and
+the track's lyrics text tag — `USLT` in an MP3, `©lyr` in an MP4, `LYRICS` in a
+Vorbis comment or an APE tag. The sidecar wins over both, because it is the one
+of the three an owner can write, correct or delete with a text editor and no
+help from this application.
+
+`SYLT` comes next because it is the frame that actually carries times: a moment
+and a piece of text, held as structure rather than as text somebody hoped a
+player would parse. The tag-reading package used everywhere else here surfaces
+`USLT` — the frame that by definition has no times in it — and stops, so the ID3
+tag is walked directly for `SYLT` before the text frame is consulted. It is a
+header read: the tag's own first ten bytes say how long it is, exactly that much
+is read, and the audio behind it is never touched. ID3v2.2 through v2.4, the
+four text encodings, unsynchronisation whole or per frame, an extended header
+and a data-length indicator are all covered, because real files carry all of
+them. A frame that is compressed, encrypted, carrying something other than words
+— the format allows chords and trivia in the same frame — or timed in MPEG
+frames rather than milliseconds is declined, and the text frame answers instead.
+
+The sidecar and the text frames are read with one LRC reader, since a lyrics tag
+very often holds LRC pasted into it. It takes the parts of that format real
+files actually use: the `[ti:]`-style header, several times on one line for a
+refrain, `[offset:]`, and the per-word times of enhanced LRC, which are dropped
+because this lights a line at a time. A file with no times in it at all is read
+as a plain sheet and said to be one, rather than rejected or given invented
+times — nothing here guesses when a line is sung.
+
+On the player the words take the sleeve's place rather than sitting under it —
+both want the same room — the line being sung is lit and brought into view by
+itself, tapping a line plays from there, and the panel leaves you where you
+scrolled to for a few seconds so that reading ahead is possible.
+(`features/lyrics/data/lrc_parsing.dart`,
+`features/lyrics/data/id3_synced_lyrics.dart`,
+`features/lyrics/data/file_lyrics_source.dart`,
+`features/lyrics/domain/lyrics.dart`)
+
 ## Layout
 
 ```
@@ -230,6 +277,7 @@ lib/
     library/       folders, scanning, tags, cover and catalog storage
     playback/      the queue, the engine and media-session boundaries, and
                    the music area
+    lyrics/        finding a track's words on this machine, and reading along
     stats/         the play threshold, the history, and the rankings
     shell/         the frame: navigation, the playback bar, preferences
 
@@ -248,7 +296,7 @@ override a binding rather than patching a global.
 
 ```bash
 flutter analyze              # must be clean; there is no known-warnings list
-flutter test                 # 273 unit and widget tests
+flutter test                 # 344 unit and widget tests
 flutter build linux --release
 flutter build windows --release
 flutter build apk --release
@@ -430,6 +478,13 @@ from a test.
   or a system now-playing panel. The seam that would carry them exists and is
   bound to a session that shows nothing, so this is an implementation to write
   rather than a design to change.
+- **Lyrics are read, never fetched or written.** A track whose words are on
+  neither side of it — no `.lrc`, no `SYLT`, no lyrics text tag — shows a panel
+  that says so and says where words would have to come from. Nothing is
+  corrected, re-timed or saved back, and a `SYLT` frame whose times are counted
+  in MPEG frames rather than milliseconds is declined rather than approximated:
+  turning those into a position needs the frame rate of the audio behind them,
+  and this reads headers, not streams.
 - **No playlists.** Queues are built from a track, a record, an artist, or the
   whole library shuffled. There is nothing to save and name yet.
 - **The statistics are all-time, with no windows.** "This month" is a control, a
@@ -463,8 +518,8 @@ from a test.
 
 ## Roadmap
 
-Seven milestones covering thirty issues: one foundation issue plus one issue per
-use case. Milestones are dependency-ordered — no milestone depends on a later
+Nine milestones covering thirty-three issues: one foundation issue plus one
+issue per use case. Milestones are dependency-ordered — no milestone depends on a later
 one, and every milestone after `M-01` depends on it.
 
 The live view is the [project board](https://github.com/users/artur-rios/projects/13)
@@ -480,6 +535,8 @@ this file.
 | [M-05 — Playback](https://github.com/artur-rios/orpheus/milestone/5) | A track, a record, an artist or the whole library can be played, with a queue, repeat, resume, and a player that survives a bad file | M-04 | 11 | 11 / 11 closed |
 | [M-06 — Background playback](https://github.com/artur-rios/orpheus/milestone/6) | Playback continues on Android once the application is off screen, controllable from the notification, the lock screen and a headset | M-05 | 2 | 2 / 2 closed |
 | [M-07 — Listening statistics](https://github.com/artur-rios/orpheus/milestone/7) | Plays are counted from the owner's own listening and presented as totals and four rankings | M-05 | 2 | 2 / 2 closed |
+| [M-08 — Lyrics](https://github.com/artur-rios/orpheus/milestone/8) | The words of what is playing, read from the machine the music is on, following the music where the file carries times | M-05 | 2 | 0 / 2 closed |
+| [M-09 — Sound bars](https://github.com/artur-rios/orpheus/milestone/9) | The spectrum of the recording being played, measured from its own samples, cached per track, with a stand-in until it lands | M-05 | 1 | 1 / 1 closed |
 
 ## Backlog
 
@@ -547,6 +604,22 @@ this file.
 | --- | --- | --- |
 | [#29](https://github.com/artur-rios/orpheus/issues/29) | UC-26 — Count a track as played — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [#30](https://github.com/artur-rios/orpheus/issues/30) | UC-27 — See what you listen to — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+
+### M-08 — Lyrics
+
+Built, tested and specified; the two issues close when the branch carrying them
+is merged.
+
+| Issue | Work | Spec |
+| --- | --- | --- |
+| [#31](https://github.com/artur-rios/orpheus/issues/31) | UC-30 — Read the words of what is playing — in review | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#32](https://github.com/artur-rios/orpheus/issues/32) | UC-31 — Follow the words and jump to a line — in review | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+
+### M-09 — Sound bars
+
+| Issue | Work | Spec |
+| --- | --- | --- |
+| [#33](https://github.com/artur-rios/orpheus/issues/33) | UC-32 — See the music move — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
 ## Licence
 

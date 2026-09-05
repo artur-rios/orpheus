@@ -42,7 +42,13 @@ nothing at all is written into the owner's music folders (`BR-02`).
 | Catalog | `catalog.json` |
 | Play history | `play-history.json` |
 | Cover cache | `covers/` |
+| Analysed spectra | `energy/` |
 | Preferences | the platform's own preference store |
+
+Both caches are disposable: deleting `covers/` or `energy/` costs the work of
+building them again and nothing else. They are directories of plain files, and
+they are kept apart from each other so that either can be deleted on its own, by
+the owner, without this application's help.
 
 **IR-06** — Documents are versioned and written atomically: to a temporary file,
 then renamed over the real one. A document written by an incompatible version is
@@ -97,8 +103,8 @@ on screen and the queue in the notification would be two different players.
 
 ## 6. Logging
 
-**IR-15** — One logger per feature area — `library`, `playback`, `stats`,
-`shell`, `startup` — initialized at startup. Logging is local and structured. No
+**IR-15** — One logger per feature area — `library`, `playback`, `lyrics`,
+`stats`, `shell`, `startup` — initialized at startup. Logging is local and structured. No
 log leaves the machine (`BR-03`).
 
 **IR-16** — A failure that the owner can do something about is surfaced in the
