@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:orpheus/features/library/domain/catalog_store.dart';
@@ -170,6 +171,10 @@ class InMemoryEnergyStore implements EnergyStore {
   /// was cached rather than thrown away.
   final List<String> written = [];
 
+  /// Whether storing an analysis fails, for the flow about a full disk or a
+  /// cache directory that cannot be written.
+  bool failOnPut = false;
+
   /// Seeds [energy] as already analysed under [id].
   void seed(String id, MeasuredEnergy energy) => _analyses[id] = energy;
 
@@ -178,6 +183,10 @@ class InMemoryEnergyStore implements EnergyStore {
 
   @override
   Future<void> put(String id, MeasuredEnergy energy) async {
+    if (failOnPut) {
+      throw const FileSystemException('the analysis could not be cached');
+    }
+
     _analyses[id] = energy;
     written.add(id);
   }

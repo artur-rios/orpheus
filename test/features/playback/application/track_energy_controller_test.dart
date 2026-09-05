@@ -136,6 +136,26 @@ void main() {
     expect(watch.read(), isA<SynthesisedEnergy>());
   });
 
+  test(
+    'GivenAnAnalysisThatCannotBeCached_WhenTheBarsAskForIt_ThenTheyStillGetIt',
+    () async {
+      // A full disk, or a cache directory that cannot be written. The cost is
+      // one more analysis the next time this track is played, and the owner is
+      // told nothing — there is nothing they would do about it.
+      final harness = Harness(
+        analysis: ScriptedTrackAnalysis({track: flat(200)}),
+      );
+      harness.energies.failOnPut = true;
+
+      final measured = await harness.container.read(
+        measuredTrackEnergyProvider(track).future,
+      );
+
+      expect(measured, isNotNull);
+      expect(harness.energies.written, isEmpty);
+    },
+  );
+
   test('GivenATrackReplacedByADifferentRip_WhenTheBarsAskForIt_ThenTheOldSpectrumIsNotUsed', () async {
     // Same path, different file. The cache key carries the length and the
     // modification time so that the bars do not draw the previous rip's
