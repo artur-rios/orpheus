@@ -73,10 +73,17 @@ class ScanController extends Notifier<ScanState> {
   /// available to be turned off wherever a scan must not put a dialog in front
   /// of anyone.
   ///
+  /// [quick] asks for the cheap walk, where a folder untouched since the last
+  /// scan is taken from the catalog rather than stat'ed file by file. It is on
+  /// for the scan at startup, which runs whether or not anything has changed
+  /// and is the one an owner waits through every launch; it is off for the
+  /// scan they ask for by hand, which is exactly what they press when a file
+  /// has been re-tagged underneath the application.
+  ///
   /// The order matters and is deliberate: a library with no folders registered
   /// returns before the question is asked, so a fresh install does not open on
   /// a permission dialog for files it has not been pointed at.
-  Future<void> scan({bool askForAccess = true}) async {
+  Future<void> scan({bool askForAccess = true, bool quick = false}) async {
     if (state.isRunning) return;
 
     final folders = ref.read(libraryFoldersControllerProvider);
@@ -116,6 +123,7 @@ class ScanController extends Notifier<ScanState> {
           folders: folders,
           previous: previous,
           coverDirectory: ref.read(appDirectoriesProvider).covers,
+          unchangedSince: quick ? previous.scannedAt : null,
         )
         .listen(
           (event) async {
@@ -124,7 +132,7 @@ class ScanController extends Notifier<ScanState> {
                 state = ScanState(isRunning: true, progress: progress);
 
               case ScanCompleted(:final catalog, :final report):
-                await _apply(catalog);
+                await _apply(catalog, report: report);
                 state = ScanState(report: report);
                 if (!finished.isCompleted) finished.complete();
 
@@ -150,7 +158,21 @@ class ScanController extends Notifier<ScanState> {
   /// Writes [catalog] and puts it on screen.
   ///
   /// `null` empties the library, which is what removing the last folder means.
-  Future<void> _apply(MusicCatalog? catalog) async {
+  ///
+  /// [report] is what the scan found, and what decides whether the document is
+  /// rewritten at all. A scan that added nothing and removed nothing produced
+  /// a catalog holding exactly the entries the stored one already holds — the
+  /// carried-over metadata came from that document in the first place — so
+  /// writing it back would encode several megabytes of JSON and push it at the
+  /// disk to produce the file that is already there. On a library of eleven
+  /// thousand tracks that is the single most expensive thing a launch does,
+  /// and for an unchanged library it buys nothing.
+  ///
+  /// The library is still replaced on screen, because the catalog carries the
+  /// time of the scan and the folder screen shows it: skipping that too would
+  /// save a re-grouping worth a fraction of the write, and would leave the
+  /// screen saying the library was last scanned some other day.
+  Future<void> _apply(MusicCatalog? catalog, {ScanReport? report}) async {
     final library = ref.read(musicLibraryControllerProvider.notifier);
 
     if (catalog == null) {
@@ -159,6 +181,8 @@ class ScanController extends Notifier<ScanState> {
     }
 
     library.replaceWith(catalog);
+
+    if (report != null && report.added == 0 && report.removed == 0) return;
 
     try {
       await ref.read(catalogStoreProvider).write(catalog);

@@ -42,11 +42,27 @@ class ScanOutcome {
 ///
 /// [onProgress] is called as the walk and the read advance; it is called often
 /// but not per file — see [progressInterval].
+///
+/// [unchangedSince] turns on the cheap walk, and is the moment the last scan
+/// ran. A directory whose own timestamp is older than that has had nothing
+/// added to it, removed from it or renamed inside it since, so the files in it
+/// are the files the last scan recorded, and their sizes and timestamps are
+/// taken from [previous] instead of from the disk. What that saves is one
+/// `stat` per file — on a library of eleven thousand tracks, eleven thousand
+/// system calls, which on a phone's storage is most of what a re-scan costs.
+///
+/// What it gives up is a file rewritten *in place*: that changes the file's
+/// own timestamp and not its folder's, so the cheap walk carries the old tags
+/// over. Anything that adds, deletes or renames is still seen, and so is a
+/// tagger that writes to a temporary file and renames over the original, which
+/// is what most of them do. Pass `null` — as the scan the owner asks for by
+/// hand does — and every file is stat'ed as before.
 ScanOutcome scanFolders({
   required List<String> folders,
   required List<MusicEntry> previous,
   required String coverDirectory,
   void Function(ScanProgress progress)? onProgress,
+  DateTime? unchangedSince,
 }) {
   /// How many files pass between progress reports.
   final covers = FileCoverStore(coverDirectory);
@@ -77,6 +93,8 @@ ScanOutcome scanFolders({
       directory,
       found: found,
       visited: visited,
+      known: known,
+      unchangedSince: unchangedSince,
       onProgress: onProgress == null
           ? null
           : () => onProgress(
@@ -243,6 +261,8 @@ void _walk(
   Directory directory, {
   required List<AudioFile> found,
   required Set<String> visited,
+  required Map<String, MusicEntry> known,
+  DateTime? unchangedSince,
   void Function()? onProgress,
 }) {
   // Symbolic links are not followed, but a library folder can still be reached
@@ -268,6 +288,18 @@ void _walk(
     return;
   }
 
+  // Whether the files here can be taken from the last catalog rather than
+  // stat'ed one by one — see [scanFolders]. The folder's own timestamp is one
+  // system call; the files in it are one each.
+  var settled = false;
+  if (unchangedSince != null) {
+    try {
+      settled = directory.statSync().modified.isBefore(unchangedSince);
+    } on Object {
+      settled = false;
+    }
+  }
+
   for (final child in children) {
     if (child is Directory) {
       // Hidden directories are skipped whole: `.git`, `.Trash-1000` and
@@ -275,11 +307,29 @@ void _walk(
       // them is the bulk of the cost of scanning a home folder.
       if (p.basename(child.path).startsWith('.')) continue;
 
-      _walk(child, found: found, visited: seen, onProgress: onProgress);
+      _walk(
+        child,
+        found: found,
+        visited: seen,
+        known: known,
+        unchangedSince: unchangedSince,
+        onProgress: onProgress,
+      );
       continue;
     }
 
     if (child is! File || !isAudioPath(child.path)) continue;
+
+    // A settled folder answers from the last catalog. A file in one that the
+    // catalog does not know is still stat'ed: it is a file the last scan did
+    // not see, whatever the folder's timestamp says.
+    if (settled) {
+      if (known[child.path] case final carried?) {
+        found.add(carried.file);
+        if (found.length % progressInterval == 0) onProgress?.call();
+        continue;
+      }
+    }
 
     try {
       final stat = child.statSync();

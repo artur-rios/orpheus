@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
@@ -50,26 +51,18 @@ class JsonCatalogStore implements CatalogStore {
     if (!file.existsSync()) return MusicCatalog.empty;
 
     try {
-      final decoded = jsonDecode(await file.readAsString());
-      if (decoded is! Map<String, dynamic>) return MusicCatalog.empty;
-      if (decoded['version'] != documentVersion) {
-        _log.info('the catalog was written by another version; re-scanning');
-        return MusicCatalog.empty;
-      }
+      // On an isolate for the same reason the scan is: decoding this document
+      // is several megabytes of JSON and one object per track, all of it
+      // synchronous, and on the interface's isolate it is a held frame at the
+      // exact moment the first screen is being drawn. Only the path crosses
+      // going in, and the entries — plain objects — coming back.
+      final document = await Isolate.run(() => _parse(path));
 
-      final scannedAt = decoded['scannedAt'];
-      final tracks = decoded['tracks'];
-      if (tracks is! List) return MusicCatalog.empty;
+      if (document.note case final note?) _log.info(note);
 
       return MusicCatalog(
-        // Re-derived on read rather than stored: it is a conclusion about the
-        // library as a whole, and one stored alongside the tracks would be a
-        // second copy of a fact the tracks already contain.
-        entries: albumArtistsAcross([
-          for (final track in tracks)
-            if (track is Map<String, dynamic>) _entryFrom(track),
-        ]),
-        scannedAt: scannedAt is String ? DateTime.tryParse(scannedAt) : null,
+        entries: document.entries ?? const [],
+        scannedAt: document.scannedAt,
       );
     } on Object catch (error, trace) {
       // Broad by intent, as everywhere a stored document is read: a catalog
@@ -84,16 +77,15 @@ class JsonCatalogStore implements CatalogStore {
   Future<void> write(MusicCatalog catalog) async {
     await Directory(directory).create(recursive: true);
 
-    final temporary = File('$path.tmp');
-    await temporary.writeAsString(
-      jsonEncode({
-        'version': documentVersion,
-        'scannedAt': (catalog.scannedAt ?? DateTime.now()).toIso8601String(),
-        'tracks': [for (final entry in catalog.entries) _rowOf(entry)],
-      }),
-      flush: true,
-    );
-    await temporary.rename(path);
+    // Encoded on an isolate, and written from there too: the encode is the
+    // expensive half and the write is what must not be interleaved with it.
+    // The entries go across as plain objects, which costs a fraction of what
+    // encoding them costs.
+    final entries = catalog.entries;
+    final scannedAt = catalog.scannedAt ?? DateTime.now();
+    final destination = path;
+
+    await Isolate.run(() => _writeDocument(destination, entries, scannedAt));
   }
 
   @override
@@ -151,4 +143,77 @@ class JsonCatalogStore implements CatalogStore {
       ),
     );
   }
+}
+
+/// What [_parse] found in the document, or why it found nothing.
+///
+/// A plain object because it crosses an isolate boundary. The [note] carries
+/// the one thing the parse knows and the caller cannot work out for itself —
+/// that the document was written by another version — so that it is logged on
+/// the isolate that has the logger rather than on the one that has the file.
+class _CatalogDocument {
+  const _CatalogDocument({this.entries, this.scannedAt, this.note});
+
+  /// Every track the document holds, or `null` when it holds none.
+  final List<MusicEntry>? entries;
+
+  /// When the scan that wrote it ran.
+  final DateTime? scannedAt;
+
+  /// What is worth saying about a document that yielded nothing.
+  final String? note;
+}
+
+/// Reads and decodes the document at [path].
+///
+/// Runs on an isolate of its own — see [JsonCatalogStore.read]. It throws
+/// rather than reporting a failure, and the caller turns that into an empty
+/// library: an isolate that dies takes its error back across the boundary.
+_CatalogDocument _parse(String path) {
+  final decoded = jsonDecode(File(path).readAsStringSync());
+  if (decoded is! Map<String, dynamic>) return const _CatalogDocument();
+  if (decoded['version'] != JsonCatalogStore.documentVersion) {
+    return const _CatalogDocument(
+      note: 'the catalog was written by another version; re-scanning',
+    );
+  }
+
+  final scannedAt = decoded['scannedAt'];
+  final tracks = decoded['tracks'];
+  if (tracks is! List) return const _CatalogDocument();
+
+  return _CatalogDocument(
+    // Re-derived on read rather than stored: it is a conclusion about the
+    // library as a whole, and one stored alongside the tracks would be a
+    // second copy of a fact the tracks already contain. Derived here, on the
+    // isolate, because it is a pass over every track and there is no reason
+    // for the interface to wait through it.
+    entries: albumArtistsAcross([
+      for (final track in tracks)
+        if (track is Map<String, dynamic>) JsonCatalogStore._entryFrom(track),
+    ]),
+    scannedAt: scannedAt is String ? DateTime.tryParse(scannedAt) : null,
+  );
+}
+
+/// Encodes [entries] and puts the document at [path].
+///
+/// Written to a temporary file and renamed over the real one — see
+/// [JsonCatalogStore]. Runs on an isolate of its own.
+void _writeDocument(
+  String path,
+  List<MusicEntry> entries,
+  DateTime scannedAt,
+) {
+  final temporary = File('$path.tmp')
+    ..writeAsStringSync(
+      jsonEncode({
+        'version': JsonCatalogStore.documentVersion,
+        'scannedAt': scannedAt.toIso8601String(),
+        'tracks': [for (final entry in entries) JsonCatalogStore._rowOf(entry)],
+      }),
+      flush: true,
+    );
+
+  temporary.renameSync(path);
 }

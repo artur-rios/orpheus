@@ -67,7 +67,9 @@ Future<void> main() async {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     if (!container.read(preferencesControllerProvider).rescansAtStartup) return;
 
-    unawaited(container.read(scanControllerProvider.notifier).scan());
+    unawaited(
+      container.read(scanControllerProvider.notifier).scan(quick: true),
+    );
   });
 
   runApp(

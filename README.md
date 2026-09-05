@@ -11,7 +11,7 @@ reads its catalog from a Rust core over FFI; Orpheus has no core and no server.
 It walks the folders it is pointed at, reads the tags itself, and keeps the
 result in a file beside its own settings.
 
-> **Status:** complete and tested. 344 unit and widget tests; `flutter analyze`
+> **Status:** complete and tested. 354 unit and widget tests; `flutter analyze`
 > clean. Every use case in the [specifications](#specifications) is implemented
 > — see the [roadmap](#roadmap). All three release builds and the Windows
 > installer are produced and verified by CI on every push. Verified *running*
@@ -165,7 +165,21 @@ one where it lives. (`features/library/domain/music_grouping.dart`)
 launch so a start is fast, and re-scanned behind the interface: a file still on
 disk at the same size and timestamp is carried over rather than re-parsed, which
 is what makes re-scanning an unchanged library cheap enough to do at every
-launch. (`features/library/data/json_catalog_store.dart`)
+launch. Encoding and decoding it happen on an isolate, not on the interface's:
+on a large library the document is megabytes, and parsing it is the one piece of
+startup work that would otherwise land on the thread drawing the first screen.
+It is rewritten only when the scan actually added or removed something — a scan
+that changed nothing would encode the file that is already on disk.
+(`features/library/data/json_catalog_store.dart`)
+
+**The scan at startup trusts folder timestamps; the one you ask for does not.**
+A folder whose own timestamp predates the last scan has had nothing added to it,
+removed from it or renamed inside it, so its tracks are taken from the catalog
+instead of being `stat`ed one by one — on a library of eleven thousand tracks
+that is eleven thousand system calls a launch does not make. What it cannot see
+is a file rewritten in place, which changes the file's timestamp and not its
+folder's, so **Scan now** on the library screen still stats everything.
+(`features/library/data/scan_worker.dart`)
 
 **The player outlives the screen that started it.** The queue and the engine
 live in a controller; the bar and the full player are views of it. A file that
@@ -296,7 +310,7 @@ override a binding rather than patching a global.
 
 ```bash
 flutter analyze              # must be clean; there is no known-warnings list
-flutter test                 # 344 unit and widget tests
+flutter test                 # 354 unit and widget tests
 flutter build linux --release
 flutter build windows --release
 flutter build apk --release

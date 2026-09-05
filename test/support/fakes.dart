@@ -91,13 +91,20 @@ class ScriptedScanner implements LibraryScanner {
   /// The folder lists each scan was asked for.
   final List<List<String>> requests = [];
 
+  /// The `unchangedSince` each scan was asked for, in order — which is how a
+  /// test asserts that the startup scan asked for the cheap walk and the one
+  /// the owner pressed did not.
+  final List<DateTime?> unchangedSinces = [];
+
   @override
   Stream<ScanEvent> scan({
     required List<String> folders,
     required MusicCatalog previous,
     required String coverDirectory,
+    DateTime? unchangedSince,
   }) {
     requests.add(folders);
+    unchangedSinces.add(unchangedSince);
 
     return Stream.fromIterable(events);
   }

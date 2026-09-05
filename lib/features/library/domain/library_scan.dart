@@ -148,9 +148,16 @@ abstract interface class LibraryScanner {
   /// enough to run at every startup.
   ///
   /// [coverDirectory] is where extracted pictures are written.
+  ///
+  /// [unchangedSince] is when the last scan ran, and asks for the cheap walk:
+  /// a folder untouched since then is taken from [previous] rather than
+  /// stat'ed file by file. `null` stat's everything, which is what the scan an
+  /// owner asks for by hand does. See the implementation for what the cheap
+  /// walk gives up.
   Stream<ScanEvent> scan({
     required List<String> folders,
     required MusicCatalog previous,
     required String coverDirectory,
+    DateTime? unchangedSince,
   });
 }

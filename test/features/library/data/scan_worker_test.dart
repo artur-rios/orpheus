@@ -52,10 +52,14 @@ void main() {
         ),
       );
 
-  ScanOutcome scan({List<MusicEntry> previous = const []}) => scanFolders(
+  ScanOutcome scan({
+    List<MusicEntry> previous = const [],
+    DateTime? unchangedSince,
+  }) => scanFolders(
     folders: [root.path],
     previous: previous,
     coverDirectory: covers.path,
+    unchangedSince: unchangedSince,
   );
 
   test(
@@ -317,4 +321,111 @@ void main() {
       expect(reports.last.fraction, 1.0);
     },
   );
+
+  group('the cheap walk', () {
+    /// A moment after everything written so far, which is what a folder's
+    /// timestamp is compared against.
+    DateTime settledNow() => DateTime.now().add(const Duration(minutes: 1));
+
+    test(
+      'GivenAFolderUntouchedSinceTheLastScan_WhenItIsWalkedCheaply_ThenItsTracksAreCarriedOver',
+      () {
+        writeTrack('a.flac', {'TITLE': 'Airbag'});
+        final first = scan();
+
+        final outcome = scan(
+          previous: first.entries,
+          unchangedSince: settledNow(),
+        );
+
+        expect(outcome.report.tracks, 1);
+        expect(outcome.report.reused, 1);
+        expect(outcome.report.added, 0);
+        expect(outcome.entries.single.title, 'Airbag');
+      },
+    );
+
+    test(
+      'GivenATrackRewrittenInPlace_WhenTheFolderIsWalkedCheaply_ThenTheOldTagsAreKept',
+      () {
+        // The cost of not stat-ing: the file changed, its folder did not, and
+        // the cheap walk answers from the catalog. The scan the owner asks for
+        // by hand is what picks this up, which is the test below.
+        writeTrack('a.flac', {'TITLE': 'Airbag'});
+        final first = scan();
+
+        writeTrack('a.flac', {'TITLE': 'Retagged'});
+
+        // Rewriting a file that already exists leaves its folder's own
+        // timestamp alone, which is precisely the case the cheap walk cannot
+        // see.
+        final outcome = scan(
+          previous: first.entries,
+          unchangedSince: settledNow(),
+        );
+
+        expect(outcome.entries.single.title, 'Airbag');
+        expect(outcome.report.reused, 1);
+      },
+    );
+
+    test(
+      'GivenATrackRewrittenInPlace_WhenTheFullWalkRuns_ThenItIsReadAgain',
+      () {
+        writeTrack('a.flac', {'TITLE': 'Airbag'});
+        final first = scan();
+
+        writeTrack('a.flac', {'TITLE': 'Retagged'});
+
+        final outcome = scan(previous: first.entries);
+
+        expect(outcome.entries.single.title, 'Retagged');
+        expect(outcome.report.added, 1);
+      },
+    );
+
+    test(
+      'GivenATrackTheCatalogDoesNotKnow_WhenItsFolderIsWalkedCheaply_ThenItIsStillRead',
+      () {
+        // A folder can be settled and still hold a file the last scan never
+        // recorded — a scan that was interrupted, or a catalog written before
+        // the file arrived. The timestamp is not taken as proof the catalog is
+        // complete.
+        writeTrack('a.flac', {'TITLE': 'Airbag'});
+        final first = scan();
+
+        writeTrack('b.flac', {'TITLE': 'Karma'});
+
+        final outcome = scan(
+          previous: first.entries,
+          unchangedSince: settledNow(),
+        );
+
+        expect(outcome.report.tracks, 2);
+        expect(
+          [for (final entry in outcome.entries) entry.title],
+          ['Airbag', 'Karma'],
+        );
+      },
+    );
+
+    test(
+      'GivenAFolderChangedSinceTheLastScan_WhenItIsWalkedCheaply_ThenItIsReadFromDisk',
+      () {
+        writeTrack('a.flac', {'TITLE': 'Airbag'});
+        final first = scan();
+
+        writeTrack('a.flac', {'TITLE': 'Retagged'});
+
+        // The folder itself is newer than the last scan, so nothing about it
+        // is taken on trust.
+        final outcome = scan(
+          previous: first.entries,
+          unchangedSince: DateTime.now().subtract(const Duration(days: 1)),
+        );
+
+        expect(outcome.entries.single.title, 'Retagged');
+      },
+    );
+  });
 }
