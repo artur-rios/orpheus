@@ -8,6 +8,7 @@ import '../../../core/di/providers.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/breakpoints.dart';
+import '../../lyrics/presentation/lyrics_view.dart';
 import '../domain/media_player.dart';
 import '../domain/playback_queue.dart';
 import 'album_art.dart';
@@ -65,6 +66,7 @@ class NowPlayingScreen extends ConsumerWidget {
     final controller = ref.read(audioPlaybackControllerProvider.notifier);
     final current = state.current;
     final entry = current == null ? null : musicEntryForFile(ref, current);
+    final showLyrics = ref.watch(lyricsVisibilityProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -80,7 +82,11 @@ class NowPlayingScreen extends ConsumerWidget {
           queueLabelOf(state.queue, l10n) ?? l10n.appTitle,
           style: theme.textTheme.titleMedium,
         ),
-        actions: const [_RepeatButton(), SizedBox(width: AppSpacing.sm)],
+        actions: const [
+          _LyricsButton(),
+          _RepeatButton(),
+          SizedBox(width: AppSpacing.sm),
+        ],
       ),
       body: SafeArea(
         child: LayoutBuilder(
@@ -107,10 +113,22 @@ class NowPlayingScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    RaisedAlbumArt(
-                      coverId: entry?.metadata.coverId,
-                      side: side,
-                    ),
+                    // The sleeve, or the words in its place. They are the
+                    // same region of the screen because they want the same
+                    // room: the widest, tallest thing the window has left.
+                    if (showLyrics && current != null)
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 640),
+                        child: LyricsPanel(
+                          trackPath: current.path,
+                          height: side,
+                        ),
+                      )
+                    else
+                      RaisedAlbumArt(
+                        coverId: entry?.metadata.coverId,
+                        side: side,
+                      ),
                     const SizedBox(height: AppSpacing.lg),
 
                     Text(
@@ -271,6 +289,32 @@ class _RepeatButton extends ConsumerWidget {
       onPressed: () => unawaited(
         ref.read(audioPlaybackControllerProvider.notifier).cycleRepeat(),
       ),
+    );
+  }
+}
+
+/// The sleeve, or the words.
+///
+/// Always enabled, and always the same button, whether or not the track has
+/// words on this machine: a control that disabled itself for most of a library
+/// would be one an owner never learned was there, and the panel behind it is
+/// what explains where words come from.
+class _LyricsButton extends ConsumerWidget {
+  const _LyricsButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final showing = ref.watch(lyricsVisibilityProvider);
+
+    return IconButton(
+      tooltip: showing ? l10n.lyricsHide : l10n.lyricsShow,
+      color: showing
+          ? theme.colorScheme.primary
+          : theme.colorScheme.onSurfaceVariant,
+      icon: Icon(showing ? Icons.lyrics : Icons.lyrics_outlined),
+      onPressed: ref.read(lyricsVisibilityProvider.notifier).toggle,
     );
   }
 }

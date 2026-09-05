@@ -225,6 +225,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get audioSoundBarsLabel => 'Sound bars';
 
   @override
+  String get lyricsShow => 'Show the lyrics';
+
+  @override
+  String get lyricsHide => 'Hide the lyrics';
+
+  @override
+  String get lyricsLabel => 'Lyrics';
+
+  @override
+  String get lyricsNone => 'No lyrics for this track';
+
+  @override
+  String get lyricsWhereTheyComeFrom =>
+      'Orpheus reads them from an .lrc file beside the track, or from the track\'s own tags. It never fetches them from the internet.';
+
+  @override
+  String get lyricsNotSynced =>
+      'These lyrics carry no times, so they do not follow the music.';
+
+  @override
   String get albumCoverLabel => 'Album cover';
 
   @override

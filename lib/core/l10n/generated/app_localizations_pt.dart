@@ -226,6 +226,26 @@ class AppLocalizationsPt extends AppLocalizations {
   String get audioSoundBarsLabel => 'Barras de som';
 
   @override
+  String get lyricsShow => 'Mostrar a letra';
+
+  @override
+  String get lyricsHide => 'Ocultar a letra';
+
+  @override
+  String get lyricsLabel => 'Letra';
+
+  @override
+  String get lyricsNone => 'Sem letra para esta faixa';
+
+  @override
+  String get lyricsWhereTheyComeFrom =>
+      'O Orpheus lê a letra de um arquivo .lrc ao lado da faixa, ou das tags da própria faixa. Nunca a busca na internet.';
+
+  @override
+  String get lyricsNotSynced =>
+      'Esta letra não tem marcações de tempo, então não acompanha a música.';
+
+  @override
   String get albumCoverLabel => 'Capa do álbum';
 
   @override

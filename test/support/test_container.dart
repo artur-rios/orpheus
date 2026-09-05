@@ -31,6 +31,7 @@ class Harness {
     SettingsStore? settings,
     ScriptedScanner? scanner,
     ScriptedTrackAnalysis? analysis,
+    ScriptedLyricsSource? lyrics,
     FakeLibraryAccess? access,
     FakeFolderPicker? picker,
     int shuffleSeed = 7,
@@ -41,6 +42,7 @@ class Harness {
        covers = InMemoryCoverStore(),
        energies = InMemoryEnergyStore(),
        analysis = analysis ?? ScriptedTrackAnalysis(),
+       lyrics = lyrics ?? ScriptedLyricsSource(),
        plays = InMemoryPlayHistoryStore(),
        access = access ?? FakeLibraryAccess(),
        picker = picker ?? FakeFolderPicker(),
@@ -66,6 +68,7 @@ class Harness {
         coverStoreProvider.overrideWithValue(covers),
         energyStoreProvider.overrideWithValue(energies),
         trackAnalysisProvider.overrideWithValue(this.analysis),
+        lyricsSourceProvider.overrideWithValue(this.lyrics),
         playHistoryStoreProvider.overrideWithValue(plays),
         audioPlayerProvider.overrideWithValue(player),
         mediaSessionProvider.overrideWithValue(session),
@@ -104,6 +107,9 @@ class Harness {
 
   /// What the sound bars' analysis answers, in place of libmpv.
   final ScriptedTrackAnalysis analysis;
+
+  /// What the words of each track are, in place of files on a disk.
+  final ScriptedLyricsSource lyrics;
 
   /// What has been played, in memory.
   final InMemoryPlayHistoryStore plays;

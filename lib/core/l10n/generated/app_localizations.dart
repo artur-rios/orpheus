@@ -488,6 +488,42 @@ abstract class AppLocalizations {
   /// **'Sound bars'**
   String get audioSoundBarsLabel;
 
+  /// The player button that puts the words in place of the sleeve.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the lyrics'**
+  String get lyricsShow;
+
+  /// The player button that puts the sleeve back.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the lyrics'**
+  String get lyricsHide;
+
+  /// The accessible name of the lyrics panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Lyrics'**
+  String get lyricsLabel;
+
+  /// Shown where the machine holds no words for what is playing.
+  ///
+  /// In en, this message translates to:
+  /// **'No lyrics for this track'**
+  String get lyricsNone;
+
+  /// Explains, under the no-lyrics message, where words would have to come from.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus reads them from an .lrc file beside the track, or from the track\'s own tags. It never fetches them from the internet.'**
+  String get lyricsWhereTheyComeFrom;
+
+  /// Shown above words that are a plain sheet rather than a timed one.
+  ///
+  /// In en, this message translates to:
+  /// **'These lyrics carry no times, so they do not follow the music.'**
+  String get lyricsNotSynced;
+
   /// The accessible name of a record's sleeve.
   ///
   /// In en, this message translates to:

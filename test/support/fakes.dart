@@ -6,6 +6,8 @@ import 'package:orpheus/features/library/domain/cover_store.dart';
 import 'package:orpheus/features/library/domain/library_access.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
+import 'package:orpheus/features/lyrics/domain/lyrics.dart';
+import 'package:orpheus/features/lyrics/domain/lyrics_source.dart';
 import 'package:orpheus/features/playback/domain/energy_store.dart';
 import 'package:orpheus/features/playback/domain/track_analysis.dart';
 import 'package:orpheus/features/playback/domain/track_energy.dart';
@@ -220,5 +222,33 @@ class ScriptedTrackAnalysis implements TrackAnalysis {
     asked.add(path);
 
     return _answers[path];
+  }
+}
+
+/// A [LyricsSource] that answers whatever the test seeded, by track path.
+///
+/// Nothing on this path touches a disk in a widget test: the real source
+/// probes for a sidecar and, failing that, parses the track's own header, and
+/// a test about the player has no files for either. Answering `null` — the
+/// "this machine holds no words for that track" case — is the default,
+/// because it is the case most tracks in most libraries are in.
+class ScriptedLyricsSource implements LyricsSource {
+  /// Creates a source answering [lyrics], by track path.
+  ScriptedLyricsSource([Map<String, Lyrics> lyrics = const {}])
+    : _lyrics = {...lyrics};
+
+  final Map<String, Lyrics> _lyrics;
+
+  /// The tracks it was asked about, in order.
+  final List<String> asked = [];
+
+  /// Seeds [lyrics] as the words of the track at [path].
+  void seed(String path, Lyrics lyrics) => _lyrics[path] = lyrics;
+
+  @override
+  Future<Lyrics?> of(String path) async {
+    asked.add(path);
+
+    return _lyrics[path];
   }
 }

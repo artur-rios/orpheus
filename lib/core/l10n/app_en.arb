@@ -285,6 +285,30 @@
   "@audioSoundBarsLabel": {
     "description": "The accessible name of the visualiser."
   },
+  "lyricsShow": "Show the lyrics",
+  "@lyricsShow": {
+    "description": "The player button that puts the words in place of the sleeve."
+  },
+  "lyricsHide": "Hide the lyrics",
+  "@lyricsHide": {
+    "description": "The player button that puts the sleeve back."
+  },
+  "lyricsLabel": "Lyrics",
+  "@lyricsLabel": {
+    "description": "The accessible name of the lyrics panel."
+  },
+  "lyricsNone": "No lyrics for this track",
+  "@lyricsNone": {
+    "description": "Shown where the machine holds no words for what is playing."
+  },
+  "lyricsWhereTheyComeFrom": "Orpheus reads them from an .lrc file beside the track, or from the track's own tags. It never fetches them from the internet.",
+  "@lyricsWhereTheyComeFrom": {
+    "description": "Explains, under the no-lyrics message, where words would have to come from."
+  },
+  "lyricsNotSynced": "These lyrics carry no times, so they do not follow the music.",
+  "@lyricsNotSynced": {
+    "description": "Shown above words that are a plain sheet rather than a timed one."
+  },
   "albumCoverLabel": "Album cover",
   "@albumCoverLabel": {
     "description": "The accessible name of a record's sleeve."

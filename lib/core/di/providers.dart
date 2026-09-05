@@ -27,6 +27,11 @@ import '../../features/library/domain/cover_store.dart';
 import '../../features/library/domain/library_access.dart';
 import '../../features/library/domain/library_scan.dart';
 import '../../features/library/domain/music_catalog.dart';
+import '../../features/lyrics/application/lyrics_controller.dart';
+import '../../features/lyrics/application/lyrics_visibility_controller.dart';
+import '../../features/lyrics/data/file_lyrics_source.dart';
+import '../../features/lyrics/domain/lyrics.dart';
+import '../../features/lyrics/domain/lyrics_source.dart';
 import '../../features/playback/application/album_art_controller.dart';
 import '../../features/playback/application/audio_playback_controller.dart';
 import '../../features/playback/application/media_session_controller.dart';
@@ -102,6 +107,11 @@ final catalogStoreProvider = Provider<CatalogStore>(
 /// Where cover pictures are cached.
 final coverStoreProvider = Provider<CoverStore>(
   (ref) => FileCoverStore(ref.watch(appDirectoriesProvider).covers),
+);
+
+/// Where a track's words are looked for.
+final lyricsSourceProvider = Provider<LyricsSource>(
+  (ref) => const FileLyricsSource(),
 );
 
 /// What builds the catalog from the owner's folders.
@@ -277,6 +287,22 @@ final trackEnergyProvider = Provider.family<TrackEnergy, String>(
       SynthesisedEnergy.forTrack(path),
   isAutoDispose: true,
 );
+
+/// One track's words, by track path.
+///
+/// Auto-disposed with the screen that asked, which is the player: a queue that
+/// has moved on has no use for the words of what it moved on from.
+final lyricsProvider =
+    AsyncNotifierProvider.family<LyricsController, Lyrics?, String>(
+      LyricsController.new,
+      isAutoDispose: true,
+    );
+
+/// Whether the player is showing the words in place of the sleeve.
+final lyricsVisibilityProvider =
+    NotifierProvider<LyricsVisibilityController, bool>(
+      LyricsVisibilityController.new,
+    );
 
 /// Which area the shell is showing.
 final shellControllerProvider =
