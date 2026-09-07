@@ -312,8 +312,9 @@ lib/
     shell/         the frame: navigation, the playback bar, preferences
 
 tools/             dev.sh / dev.ps1 to run it, verify.sh / verify.ps1 to
-                   check it, and the Windows installer build
+                   check it, and the two installer builds
 packaging/windows/ the Inno Setup script the installer is compiled from
+packaging/linux/   the shell installer the Linux payload is wrapped in
 packaging/icon/    the application icon, and the script that draws it
 ```
 
@@ -459,6 +460,72 @@ Builds the Windows release and compiles `packaging\windows\installer.iss` into
 (`winget install JRSoftware.InnoSetup`); the script looks for `ISCC.exe` on
 `PATH` and in both standard install directories, and takes `-InnoSetupPath` if
 it is somewhere else. `-SkipBuild` reuses an existing release build.
+
+### The Linux installer
+
+```sh
+./tools/build-linux-installer.sh
+```
+
+Builds the Linux release and wraps it in `dist/orpheus-installer-<version>.sh`
+— a shell script with the release bundle compressed onto the end of it.
+`--skip-build` reuses an existing release build.
+
+A self-extracting script rather than a `.deb`, a Flatpak or an AppImage, and
+the reason is what each of those assumes. A `.deb` assumes `apt`, which leaves
+out every distribution that does not use it. A Flatpak assumes Flatpak is set
+up, and adds a sandbox that would have to be punched through for the one thing
+this application does — read music folders the owner chose, anywhere on their
+disk. An AppImage is a portable binary rather than an installation: no launcher
+entry, no icon.
+
+What the installer does:
+
+```sh
+./orpheus-installer-1.0.0.sh              # just for you, under ~/.local
+./orpheus-installer-1.0.0.sh --system     # for everyone, under /usr/local
+./orpheus-installer-1.0.0.sh --prefix DIR # somewhere you choose
+./orpheus-installer-1.0.0.sh --uninstall  # remove it again
+```
+
+It unpacks the bundle, links the binary onto `PATH`, writes a desktop entry and
+an icon so it appears in the applications menu, and keeps a copy of itself
+beside the payload so uninstalling later needs nothing downloaded. The per-user
+install needs no root and is the default. Uninstalling removes only what it put
+down, and never the owner's catalog, statistics or settings.
+
+## Releases
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+`.github/workflows/release.yml` does the rest. It refuses immediately if the
+tag and `pubspec.yaml` disagree about the version — a release whose file names,
+installer wizard and application each state something different is worth
+failing a job over. A tag like `v1.0.0-beta.1` names version `1.0.0` and is
+published as a pre-release.
+
+Then four artifacts, each built where it can be:
+
+| Platform | File | What it is |
+| --- | --- | --- |
+| Windows | `orpheus-setup-<version>.exe` | The installer, from Inno Setup |
+| Windows | `orpheus-<version>-windows-x64-portable.zip` | Unpack and run; nothing installed |
+| Linux | `orpheus-installer-<version>.sh` | The shell installer above |
+| Android | `orpheus-<version>-android.apk` | Installed directly, not from a store |
+
+The APK is put through the same permission gate the Verify workflow applies,
+against the package that actually ships. The analyzer and the suite are run
+before anything is built, because a release is not the place to discover the
+suite is red. Every file is checksummed into `SHA256SUMS.txt`, which is the
+only way somebody can tell that what they downloaded is what the workflow
+built — both installers are unsigned.
+
+The Windows portable artifact is an archive rather than a single `.exe`, and
+that is not a shortcut: a Flutter Windows application is an executable beside
+the engine's DLLs and a `data` directory, and it does not run without them.
 
 The installer offers a per-machine or per-user install, an optional desktop
 icon, and both languages the application ships. Upgrading over an existing

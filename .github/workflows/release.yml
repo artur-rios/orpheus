@@ -1,0 +1,318 @@
+name: Release
+
+# Everything a person can download, built from the tag that names it.
+#
+# Four artifacts, because there are four ways somebody sensibly gets this
+# application onto a machine: a Windows installer for the people who want it in
+# Add or remove programs, a portable Windows archive for the people who do not,
+# an installer for Linux, and an APK for Android. Each is built on a runner that
+# can actually build it — the Windows two need MSVC and Inno Setup, and neither
+# cross-compiles — and the release is assembled once all of them exist.
+#
+# The tag is the input. `git tag v1.2.3 && git push --tags` is the whole of how
+# a release is made, and the first thing this checks is that the tag and
+# pubspec.yaml agree about what version that is.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'An existing tag to build a release from'
+        required: true
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+# The release job creates a release and uploads to it. Nothing else here writes
+# anything, and the two build jobs say so.
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: 3.47.2
+
+jobs:
+  # --------------------------------------------------------------------------
+  version:
+    name: The version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+      tag: ${{ steps.read.outputs.tag }}
+      prerelease: ${{ steps.read.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Read the version, and check the tag agrees with it
+        id: read
+        # A tag that disagrees with pubspec.yaml produces a release whose file
+        # names, whose installer wizard and whose application all state
+        # different versions. Cheaper to refuse here than to explain later.
+        run: |
+          set -eu
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          version=$(sed -n 's/^version:[[:space:]]*\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p' pubspec.yaml | head -1)
+          [ -n "$version" ] || { echo "::error::pubspec.yaml declares no x.y.z version"; exit 1; }
+
+          # v1.2.3 and v1.2.3-beta.1 both name version 1.2.3; the suffix says
+          # the release is a pre-release rather than that the version differs.
+          bare="${tag#v}"
+          core="${bare%%-*}"
+
+          if [ "$core" != "$version" ]; then
+            echo "::error::the tag $tag names version $core, but pubspec.yaml says $version. Tag and pubspec have to agree."
+            exit 1
+          fi
+
+          case "$bare" in
+            *-*) prerelease=true ;;
+            *)   prerelease=false ;;
+          esac
+
+          echo "version=$version"       >> "$GITHUB_OUTPUT"
+          echo "tag=$tag"               >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          echo "Releasing $version from $tag (prerelease: $prerelease)"
+
+  # --------------------------------------------------------------------------
+  linux:
+    name: Linux installer and the APK
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Install the Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      # A release is not the place to find out the suite is red. The full
+      # cross-platform verification runs on every push to main; what runs here
+      # is the part that is true on any host, as a gate on shipping.
+      - name: Analyzer and tests
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+
+      - name: Build the Linux installer
+        run: ./tools/build-linux-installer.sh
+
+      - name: Build the APK
+        run: flutter build apk --release
+
+      - name: Read the shipped permissions back out of the package
+        # The same gate the Verify workflow applies, against the package that
+        # actually ships rather than one built from the same source earlier.
+        # See .github/workflows/verify.yml for why it is an exact set.
+        run: |
+          set -eu
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          aapt2=$(find "$ANDROID_HOME/build-tools" -name aapt2 | sort -V | tail -1)
+          "$aapt2" dump badging "$apk" | grep -E "uses-permission|sdkVersion" | tee permissions.txt
+
+          cat > expected-permissions.txt <<'PERMISSIONS'
+          android.permission.FOREGROUND_SERVICE
+          android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
+          android.permission.INTERNET
+          android.permission.POST_NOTIFICATIONS
+          android.permission.READ_EXTERNAL_STORAGE
+          android.permission.READ_MEDIA_AUDIO
+          android.permission.WAKE_LOCK
+          io.github.artur_rios.orpheus.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+          PERMISSIONS
+          sed -i 's/^ *//' expected-permissions.txt
+
+          sed -n "s/^uses-permission[^']*name='\([^']*\)'.*/\1/p" permissions.txt \
+            | sort -u > shipped-permissions.txt
+
+          if ! diff -u expected-permissions.txt shipped-permissions.txt; then
+            echo "::error::The package's permissions are not the declared set."
+            exit 1
+          fi
+          echo "Exactly the declared permissions — as promised."
+
+      - name: Name the artifacts
+        run: |
+          set -eu
+          version="${{ needs.version.outputs.version }}"
+          mkdir -p release
+          cp "dist/orpheus-installer-$version.sh" "release/"
+          cp build/app/outputs/flutter-apk/app-release.apk \
+             "release/orpheus-$version-android.apk"
+          ls -lh release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-and-android
+          path: release/*
+          if-no-files-found: error
+
+  # --------------------------------------------------------------------------
+  windows:
+    name: Windows portable and the installer
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      # Builds the release and compiles the setup executable from it. The
+      # portable archive below is zipped from the same build, so the two cannot
+      # be of different code.
+      - name: Build Windows and the installer
+        run: .\tools\build-windows-installer.ps1
+
+      - name: Pack the portable archive
+        shell: pwsh
+        # A Flutter Windows application is an executable beside the engine's
+        # DLLs and a data directory, and it will not run without them — so the
+        # portable form is an archive that unpacks and runs, not a lone .exe.
+        # Nothing is installed, nothing is written to the registry, and it runs
+        # from a memory stick.
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ needs.version.outputs.version }}'
+          $release = 'build\windows\x64\runner\Release'
+          if (-not (Test-Path "$release\orpheus.exe")) {
+            throw "no release build in $release"
+          }
+
+          $staging = "staging\orpheus-$version"
+          New-Item -ItemType Directory -Force -Path $staging | Out-Null
+          Copy-Item "$release\*" $staging -Recurse -Force
+
+          # Says what the archive is, next to the thing it is about, for
+          # somebody who unpacks it a month later.
+          @"
+          Orpheus $version — portable
+
+          Run orpheus.exe. Nothing is installed and nothing is written outside
+          this folder except your own settings, catalog and statistics, which
+          live in your Windows application data directory and are shared with an
+          installed copy if you ever install one.
+
+          The whole folder is the application: orpheus.exe will not run on its
+          own, because the playback engine's libraries sit beside it.
+
+          Unsigned, so SmartScreen will warn the first time.
+
+          https://github.com/artur-rios/orpheus
+          "@ | Set-Content "$staging\README.txt" -Encoding UTF8
+
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          Compress-Archive -Path "$staging\*" `
+            -DestinationPath "release\orpheus-$version-windows-x64-portable.zip" `
+            -CompressionLevel Optimal
+
+          Copy-Item "dist\orpheus-setup-$version.exe" release\
+          Get-ChildItem release | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: release/*
+          if-no-files-found: error
+
+  # --------------------------------------------------------------------------
+  release:
+    name: The release
+    needs: [version, linux, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: downloaded
+
+      - name: Gather the artifacts, and check all four are there
+        run: |
+          set -eu
+          version="${{ needs.version.outputs.version }}"
+          mkdir -p release
+          find downloaded -type f -exec cp {} release/ \;
+
+          # Named rather than globbed: a job that half-failed and uploaded three
+          # of four would otherwise publish a release quietly missing one.
+          for expected in \
+            "orpheus-$version-windows-x64-portable.zip" \
+            "orpheus-setup-$version.exe" \
+            "orpheus-$version-android.apk" \
+            "orpheus-installer-$version.sh"; do
+            [ -f "release/$expected" ] || { echo "::error::missing $expected"; exit 1; }
+          done
+
+          # Both installers are unsigned, so a checksum is the only way somebody
+          # can tell that what they downloaded is what this workflow built.
+          ( cd release && sha256sum ./* > SHA256SUMS.txt )
+          ls -lh release
+          cat release/SHA256SUMS.txt
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          version="${{ needs.version.outputs.version }}"
+          tag="${{ needs.version.outputs.tag }}"
+
+          cat > notes.md <<NOTES
+          ## Downloads
+
+          | Platform | File | What it is |
+          | --- | --- | --- |
+          | Windows | \`orpheus-setup-$version.exe\` | Installer. Per-machine or per-user, with a Start menu entry and an optional desktop icon. |
+          | Windows | \`orpheus-$version-windows-x64-portable.zip\` | Portable. Unpack anywhere and run \`orpheus.exe\` — nothing is installed. |
+          | Linux | \`orpheus-installer-$version.sh\` | Installer. \`chmod +x\` it and run it; installs for you alone by default, \`--system\` for everyone, \`--uninstall\` to remove. |
+          | Android | \`orpheus-$version-android.apk\` | Install directly. Not on any store, so your device will ask you to allow it. |
+
+          Verify a download against \`SHA256SUMS.txt\`. Both installers are
+          unsigned — Windows SmartScreen and Android will both warn on first
+          run, and will keep doing so until the project holds a certificate.
+
+          Your library folders, catalog, listening statistics and settings are
+          left alone by an upgrade and by an uninstall.
+          NOTES
+
+          gh release create "$tag" \
+            --title "Orpheus $version" \
+            --notes-file notes.md \
+            --generate-notes \
+            ${{ needs.version.outputs.prerelease == 'true' && '--prerelease' || '' }} \
+            release/*

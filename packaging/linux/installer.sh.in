@@ -1,0 +1,264 @@
+#!/bin/sh
+# The Orpheus installer for Linux — version @APP_VERSION@.
+#
+# This file is a shell script with a compressed archive stuck to the end of it.
+# Everything above the payload marker is read by /bin/sh; everything below it is
+# the release bundle. Running the file installs it; nothing else is needed and
+# nothing is downloaded.
+#
+# A self-extracting script rather than a .deb, an AppImage or a Flatpak, and the
+# reason is what the other three assume. A .deb assumes apt, which excludes
+# every distribution that does not use it. A Flatpak assumes Flatpak is set up
+# and adds a sandbox that would have to be punched through for the one thing
+# this application does — reading music folders the owner chose anywhere on
+# their disk. An AppImage is a portable binary rather than an installation: it
+# leaves no launcher entry and no icon. This is the Linux counterpart of the
+# Windows setup executable, and it behaves like one.
+#
+# Built by tools/build-linux-installer.sh. Do not edit the generated file; edit
+# packaging/linux/installer.sh.in and build it again.
+
+set -eu
+
+VERSION="@APP_VERSION@"
+PAYLOAD_LINE=@PAYLOAD_LINE@
+
+APP_NAME="Orpheus"
+APP_ID="io.github.artur_rios.orpheus"
+BINARY="orpheus"
+
+# Where the two kinds of installation go. The per-user one needs no root and is
+# the default for exactly that reason: an application that reads one person's
+# music has no business asking for the whole machine.
+USER_PREFIX="${XDG_DATA_HOME:-$HOME/.local}"
+SYSTEM_PREFIX="/usr/local"
+
+MODE=""
+PREFIX=""
+UNINSTALL="no"
+
+say()  { printf '%s\n' "$*"; }
+step() { printf '\033[36m==> %s\033[0m\n' "$*"; }
+note() { printf '\033[90m    %s\033[0m\n' "$*"; }
+warn() { printf '\033[33m    %s\033[0m\n' "$*"; }
+fail() { printf '\033[31merror: %s\033[0m\n' "$*" >&2; exit 2; }
+
+usage() {
+  cat <<USAGE
+$APP_NAME $VERSION — installer
+
+  ./$(basename "$0")                 install for you alone, under $USER_PREFIX
+  ./$(basename "$0") --system        install for everyone, under $SYSTEM_PREFIX
+  ./$(basename "$0") --prefix DIR    install under a directory you choose
+  ./$(basename "$0") --uninstall     remove an installation this put down
+  ./$(basename "$0") --help          this
+
+A per-user install needs no root. --system does, and will ask for it through
+sudo if you are not already root.
+
+Your music is never touched, and neither is anything $APP_NAME has written for
+you — the library catalog, the cover cache, the listening statistics and the
+settings live in your own data directory and survive both an upgrade and an
+uninstall.
+USAGE
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --system)    MODE="system"; shift ;;
+    --user)      MODE="user"; shift ;;
+    --prefix)    [ $# -ge 2 ] || fail "--prefix wants a directory"
+                 PREFIX="$2"; MODE="prefix"; shift 2 ;;
+    --uninstall) UNINSTALL="yes"; shift ;;
+    -h|--help)   usage; exit 0 ;;
+    *)           fail "unknown option: $1 (try --help)" ;;
+  esac
+done
+
+# ------------------------------------------------------------------ where to
+
+# Asked rather than assumed, but only when there is somebody to ask. Piped into
+# a shell, or run from a script, it takes the per-user install — the choice that
+# needs no privileges and can be undone by the person who made it.
+if [ -z "$MODE" ]; then
+  if [ -t 0 ]; then
+    say "$APP_NAME $VERSION"
+    say ""
+    say "  1) Just for me       $USER_PREFIX  (no root needed)"
+    say "  2) For everyone      $SYSTEM_PREFIX  (needs root)"
+    say ""
+    printf 'Which? [1] '
+    read -r answer || answer=""
+    case "$answer" in
+      2) MODE="system" ;;
+      *) MODE="user" ;;
+    esac
+  else
+    MODE="user"
+  fi
+fi
+
+case "$MODE" in
+  user)   PREFIX="$USER_PREFIX" ;;
+  system) PREFIX="$SYSTEM_PREFIX" ;;
+  prefix) : ;;
+esac
+
+# Re-run under sudo rather than failing at the first unwritable directory: a
+# half-finished installation is worse than one that never started.
+if [ "$MODE" = "system" ] && [ "$(id -u)" -ne 0 ]; then
+  command -v sudo >/dev/null 2>&1 ||
+    fail "installing for everyone needs root, and sudo is not here"
+  step "Asking for root, to install under $SYSTEM_PREFIX"
+  if [ "$UNINSTALL" = "yes" ]; then
+    exec sudo -- "$0" --system --uninstall
+  else
+    exec sudo -- "$0" --system
+  fi
+fi
+
+LIB_DIR="$PREFIX/lib/$BINARY"
+BIN_DIR="$PREFIX/bin"
+DESKTOP_DIR="$PREFIX/share/applications"
+ICON_DIR="$PREFIX/share/icons/hicolor/256x256/apps"
+DESKTOP_FILE="$DESKTOP_DIR/$APP_ID.desktop"
+
+# ------------------------------------------------------------------ uninstall
+
+remove_installation() {
+  step "Removing $APP_NAME from $PREFIX"
+
+  # Only what this put down. The bundle directory is ours whole, so it goes;
+  # everything else is removed by name, because these are shared directories
+  # and deleting one wholesale would take somebody else's program with it.
+  if [ -d "$LIB_DIR" ]; then
+    rm -rf "$LIB_DIR"
+    note "removed $LIB_DIR"
+  fi
+
+  if [ -L "$BIN_DIR/$BINARY" ] || [ -f "$BIN_DIR/$BINARY" ]; then
+    rm -f "$BIN_DIR/$BINARY"
+    note "removed $BIN_DIR/$BINARY"
+  fi
+
+  if [ -f "$DESKTOP_FILE" ]; then
+    rm -f "$DESKTOP_FILE"
+    note "removed $DESKTOP_FILE"
+  fi
+
+  if [ -f "$ICON_DIR/$BINARY.png" ]; then
+    rm -f "$ICON_DIR/$BINARY.png"
+    note "removed the icon"
+  fi
+
+  if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database "$DESKTOP_DIR" >/dev/null 2>&1 || true
+  fi
+
+  say ""
+  say "$APP_NAME is uninstalled."
+  note "Your library folders, catalog, statistics and settings are untouched,"
+  note "in ${XDG_DATA_HOME:-\$HOME/.local/share}/$APP_ID — delete that yourself if you want them gone."
+}
+
+if [ "$UNINSTALL" = "yes" ]; then
+  [ -d "$LIB_DIR" ] || fail "no $APP_NAME installation under $PREFIX"
+  remove_installation
+  exit 0
+fi
+
+# -------------------------------------------------------------------- install
+
+step "Installing $APP_NAME $VERSION into $PREFIX"
+
+for directory in "$LIB_DIR" "$BIN_DIR" "$DESKTOP_DIR" "$ICON_DIR"; do
+  mkdir -p "$directory" 2>/dev/null ||
+    fail "cannot create $directory — try --user, or --prefix somewhere you can write"
+done
+
+[ -w "$LIB_DIR" ] || fail "cannot write to $LIB_DIR"
+
+# An upgrade replaces the bundle rather than layering a new release over an old
+# one. The Flutter runner, its plugins and the engine's libraries carry versions
+# in their names, and a stale library left beside a new binary surfaces later as
+# an unrelated-looking failure to start playback.
+if [ -e "$LIB_DIR/$BINARY" ]; then
+  note "replacing the installation already in $LIB_DIR"
+  rm -rf "$LIB_DIR"
+  mkdir -p "$LIB_DIR"
+fi
+
+step "Unpacking"
+tail -n +$PAYLOAD_LINE "$0" | tar xz -C "$LIB_DIR" ||
+  fail "the archive inside this installer could not be unpacked"
+
+[ -x "$LIB_DIR/$BINARY" ] || fail "the unpacked bundle holds no $BINARY"
+note "$(du -sh "$LIB_DIR" | cut -f1) in $LIB_DIR"
+
+# A launcher on PATH. A symlink rather than a copy, because the binary loads its
+# own libraries and its data directory from beside itself, and a copy somewhere
+# else would find neither.
+ln -sf "$LIB_DIR/$BINARY" "$BIN_DIR/$BINARY"
+note "$BIN_DIR/$BINARY"
+
+step "Registering the launcher entry"
+
+# StartupWMClass is the application id the GTK runner sets on its window. Without
+# it the desktop shows a running Orpheus as a second, nameless icon rather than
+# lighting up the one that started it.
+cat > "$DESKTOP_FILE" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=$APP_NAME
+GenericName=Music Player
+Comment=Play the music already on your machine
+Exec=$LIB_DIR/$BINARY %U
+Icon=$BINARY
+Terminal=false
+Categories=AudioVideo;Audio;Player;
+Keywords=music;audio;player;lyrics;
+StartupNotify=true
+StartupWMClass=$APP_ID
+DESKTOP
+
+# The icon travels inside the payload, at a path the build script puts it at.
+# It is not part of what `flutter build linux` emits.
+if [ -f "$LIB_DIR/icon.png" ]; then
+  cp "$LIB_DIR/icon.png" "$ICON_DIR/$BINARY.png"
+  note "$ICON_DIR/$BINARY.png"
+fi
+
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database "$DESKTOP_DIR" >/dev/null 2>&1 || true
+fi
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+  gtk-update-icon-cache -f -t "$PREFIX/share/icons/hicolor" >/dev/null 2>&1 || true
+fi
+
+# An uninstaller beside the payload, so removing it later needs no copy of this
+# installer. It is this same script, kept for its --uninstall path.
+if cp "$0" "$LIB_DIR/uninstall.sh" 2>/dev/null; then
+  chmod +x "$LIB_DIR/uninstall.sh"
+else
+  warn "could not keep a copy of this installer for uninstalling later"
+fi
+
+say ""
+say "$APP_NAME $VERSION is installed."
+say ""
+note "Run it:      $BINARY   (or find it in your applications menu)"
+if [ "$MODE" = "system" ]; then
+  note "Remove it:   sudo $LIB_DIR/uninstall.sh --uninstall --system"
+else
+  note "Remove it:   $LIB_DIR/uninstall.sh --uninstall --prefix $PREFIX"
+fi
+
+case ":$PATH:" in
+  *":$BIN_DIR:"*) ;;
+  *) warn "$BIN_DIR is not on your PATH — add it, or launch from your desktop menu" ;;
+esac
+
+# The payload is a gzipped tar of the release bundle. Nothing may follow it.
+exit 0
+__PAYLOAD_BELOW__
