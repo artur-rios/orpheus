@@ -67,6 +67,22 @@ fi
 [ -x "$BUNDLE/orpheus" ] || fail "the bundle holds no orpheus binary: $BUNDLE"
 [ -d "$BUNDLE/data/flutter_assets" ] || fail 'the bundle holds no data/flutter_assets; the build is incomplete'
 [ -d "$BUNDLE/lib" ] || fail 'the bundle holds no lib directory; the engine libraries are missing'
+[ -f "$BUNDLE/lib/libapp.so" ] || fail 'the bundle holds no lib/libapp.so; this is not a release build'
+
+# A release build is compiled ahead of time into lib/libapp.so and has no
+# kernel_blob.bin — that file belongs to a debug or profile build. Finding one
+# here means the directory still holds something an earlier build left, and
+# `flutter build` does not clear it out. It matters because it is enormous:
+# packaging a stale blob quietly tripled the size of an installer built this
+# way, and every one of those megabytes would have been downloaded by somebody.
+if [ -f "$BUNDLE/data/flutter_assets/kernel_blob.bin" ]; then
+  fail "$(printf '%s\n' \
+    'the release bundle holds data/flutter_assets/kernel_blob.bin, which only a' \
+    'debug or profile build produces. The directory is stale, and packaging it' \
+    'would ship tens of megabytes nobody needs.' \
+    '' \
+    '  flutter clean && ./tools/build-linux-installer.sh')"
+fi
 note "payload: $BUNDLE"
 
 # ------------------------------------------------------------------ staging
