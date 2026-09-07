@@ -11,7 +11,7 @@ reads its catalog from a Rust core over FFI; Orpheus has no core and no server.
 It walks the folders it is pointed at, reads the tags itself, and keeps the
 result in a file beside its own settings.
 
-> **Status:** complete and tested. 354 unit and widget tests; `flutter analyze`
+> **Status:** complete and tested. 422 unit and widget tests; `flutter analyze`
 > clean. Every use case in the [specifications](#specifications) is implemented
 > — see the [roadmap](#roadmap). All three release builds and the Windows
 > installer are produced and verified by CI on every push. Verified *running*
@@ -35,10 +35,12 @@ result in a file beside its own settings.
 - **Keeps playing on Android once you switch away**, from a notification and the
   lock screen that carry the sleeve and the transport buttons — and stops for a
   phone call, and for headphones pulled out of the socket.
-- **Shows the words, in time with the music**, where your own files carry
-  them — a `.lrc` beside the track, or the track's own lyrics tag. The line
-  being sung is lit, the sheet scrolls itself, and tapping a line plays from
-  there.
+- **Shows the words, in time with the music.** Your own files come first — a
+  `.lrc` beside the track, or the track's own lyrics tag. For a track that has
+  neither, Orpheus looks the words up online and saves them as a `.lrc` beside
+  it, so it only ever asks once; that lookup is a switch in the preferences and
+  it sends the track's artist and title and nothing else. The line being sung
+  is lit, the sheet scrolls itself, and tapping a line plays from there.
 - **Searches** across titles, artists and albums, ranked so a match at the start
   of a title comes above one buried in the middle of something else.
 - **Says what you actually listen to** — total plays, and the most played
@@ -50,13 +52,19 @@ result in a file beside its own settings.
 
 ## What it doesn't do
 
-- **It never writes to your music.** No tag editing, no renaming, no moving, no
-  deleting, no transcoding. It opens files for reading and that is all.
-- **No network of anything.** No streaming, no scrobbling, no metadata lookup,
-  no cover art fetched from the internet. The Android package asks for no
-  `INTERNET` permission, which is the version of this promise a machine can
-  check.
+- **It never touches your audio files.** No tag editing, no renaming, no
+  moving, no deleting, no transcoding. It opens them for reading and that is
+  all. The one thing it ever writes into a music folder is a `.lrc` next to a
+  track whose words it looked up — a new file, never a replacement for one you
+  wrote, and never the track itself.
+- **Almost no network.** No streaming, no scrobbling, no telemetry, no
+  analytics, no crash reporting, no cover art fetched from anywhere. The single
+  exception is the lyrics lookup described above, which you can turn off. The
+  Android package declares exactly seven permissions and CI fails the build on
+  an eighth, which is the version of this promise a machine can check.
 - **No accounts, no sync, no cloud.** One person, one machine, one library.
+  Nothing Orpheus sends identifies you, or persists between requests: there is
+  no account, no key, and no identifier of any kind.
 
 ## Specifications
 
@@ -434,8 +442,11 @@ form, plus `-Installer`.
 `.github/workflows/verify.yml` is what makes the `n/a` rows add up to nothing: it
 runs `verify.sh --strict` on Linux (Linux + Android) and `verify.ps1 -Strict` on
 Windows (Windows + the installer). It also reads the built APK's permissions back
-out and **fails the build if `INTERNET` ever appears in it** — which is the
-promise at the top of this file, enforced rather than asserted.
+out and **fails the build if they are not exactly the seven declared in
+`AndroidManifest.xml`** — which is the promise at the top of this file,
+enforced rather than asserted. A deny list would only catch the permissions
+somebody thought to forbid; pinning the whole set catches the next one
+whatever it is, including one merged in by a dependency.
 
 ### The Windows installer
 
@@ -557,7 +568,7 @@ this file.
 | [M-05 — Playback](https://github.com/artur-rios/orpheus/milestone/5) | A track, a record, an artist or the whole library can be played, with a queue, repeat, resume, and a player that survives a bad file | M-04 | 11 | 11 / 11 closed |
 | [M-06 — Background playback](https://github.com/artur-rios/orpheus/milestone/6) | Playback continues on Android once the application is off screen, controllable from the notification, the lock screen and a headset | M-05 | 2 | 2 / 2 closed |
 | [M-07 — Listening statistics](https://github.com/artur-rios/orpheus/milestone/7) | Plays are counted from the owner's own listening and presented as totals and four rankings | M-05 | 2 | 2 / 2 closed |
-| [M-08 — Lyrics](https://github.com/artur-rios/orpheus/milestone/8) | The words of what is playing, read from the machine the music is on, following the music where the file carries times | M-05 | 2 | 0 / 2 closed |
+| [M-08 — Lyrics](https://github.com/artur-rios/orpheus/milestone/8) | The words of what is playing — the owner's own files first, a lookup for the tracks they have none for — following the music where the sheet carries times | M-05 | 3 | 0 / 3 closed |
 | [M-09 — Sound bars](https://github.com/artur-rios/orpheus/milestone/9) | The spectrum of the recording being played, measured from its own samples, cached per track, with a stand-in until it lands | M-05 | 1 | 1 / 1 closed |
 
 ## Backlog
@@ -629,13 +640,14 @@ this file.
 
 ### M-08 — Lyrics
 
-Built, tested and specified; the two issues close when the branch carrying them
-is merged.
+Built, tested and specified; the three issues close when the branch carrying
+them is merged.
 
 | Issue | Work | Spec |
 | --- | --- | --- |
 | [#31](https://github.com/artur-rios/orpheus/issues/31) | UC-30 — Read the words of what is playing — in review | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [#32](https://github.com/artur-rios/orpheus/issues/32) | UC-31 — Follow the words and jump to a line — in review | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| — | UC-33 — Look the words up for a track that has none — in review | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
 ### M-09 — Sound bars
 

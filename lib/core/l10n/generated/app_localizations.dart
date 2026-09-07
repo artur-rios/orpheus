@@ -272,6 +272,24 @@ abstract class AppLocalizations {
   /// **'Re-scan the library at every launch'**
   String get settingsRescansAtStartup;
 
+  /// The heading over the lyrics preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Lyrics'**
+  String get settingsLyrics;
+
+  /// The preference that allows the online lyrics lookup.
+  ///
+  /// In en, this message translates to:
+  /// **'Look up missing lyrics online'**
+  String get settingsFetchesLyricsOnline;
+
+  /// Says exactly what the online lyrics lookup sends and writes.
+  ///
+  /// In en, this message translates to:
+  /// **'For a track this machine has no lyrics for, Orpheus sends its artist and title to lrclib.net and saves what comes back as an .lrc file beside the track. This is the only thing Orpheus sends anywhere.'**
+  String get settingsFetchesLyricsOnlineDetail;
+
   /// The label on the volume slider.
   ///
   /// In en, this message translates to:
@@ -512,10 +530,10 @@ abstract class AppLocalizations {
   /// **'No lyrics for this track'**
   String get lyricsNone;
 
-  /// Explains, under the no-lyrics message, where words would have to come from.
+  /// Explains, under the no-lyrics message, where words come from.
   ///
   /// In en, this message translates to:
-  /// **'Orpheus reads them from an .lrc file beside the track, or from the track\'s own tags. It never fetches them from the internet.'**
+  /// **'Orpheus reads them from an .lrc file beside the track, or from the track\'s own tags. Where there are none and the online lookup is on, it asks a lyrics service for them.'**
   String get lyricsWhereTheyComeFrom;
 
   /// Shown above words that are a plain sheet rather than a timed one.

@@ -8,14 +8,32 @@
          request on releases that predate the split, and is capped at API 32 so
          it is never asked for on a device that has the narrower permission.
 
-         There is no INTERNET permission, and there is nothing here that would
-         use one: this application reads files from this device and plays them.
-         Nothing is uploaded, nothing is looked up, and no artwork is
-         fetched. -->
+         Nothing is uploaded, and no artwork is fetched. -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"/>
+
+    <!-- The lyrics lookup, and nothing else.
+
+         This is the one permission here that reaches off the device, and it
+         is worth being exact about what it is for. When a track has no words
+         on this device — no .lrc beside it, no SYLT frame, no lyrics tag —
+         and the owner has left the lookup on in the preferences, Orpheus asks
+         a lyrics service for them using that track's artist and title.
+
+         What that sends is the artist and the title. Not the file's name, not
+         its path, not the library, not what else is on the device, not who is
+         holding it, and nothing that persists between requests: no account,
+         no key, no identifier of any kind. There is no telemetry, no
+         analytics and no crash reporting in this package, and the absence of
+         any other network call is checked in the same place this permission
+         is: the workflow reads the shipped package's permissions back out of
+         it and fails on anything not listed in this file.
+
+         The owner can turn the lookup off, and then this permission is
+         declared and never exercised. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <!-- Playing on after the owner switches away.
 
@@ -30,8 +48,7 @@
          launch nobody has pressed play in. A refusal costs the notification
          and nothing else — the service still runs, and so does the music.
 
-         None of these is a network permission, and there is still no INTERNET
-         permission here. -->
+         None of these is a network permission. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>

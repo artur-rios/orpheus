@@ -11,6 +11,7 @@ class PreferencesState {
     required this.themeMode,
     required this.opensPlayerOnPlay,
     required this.rescansAtStartup,
+    required this.fetchesLyricsOnline,
     required this.volume,
     this.locale,
     this.unsaved = false,
@@ -27,6 +28,9 @@ class PreferencesState {
 
   /// Whether the library folders are re-scanned at every launch.
   final bool rescansAtStartup;
+
+  /// Whether a track this machine has no words for is looked up online.
+  final bool fetchesLyricsOnline;
 
   /// How loud playback is, 0 to 1.
   final double volume;
@@ -45,6 +49,7 @@ class PreferencesState {
     bool clearLocale = false,
     bool? opensPlayerOnPlay,
     bool? rescansAtStartup,
+    bool? fetchesLyricsOnline,
     double? volume,
     bool? unsaved,
   }) => PreferencesState(
@@ -52,6 +57,7 @@ class PreferencesState {
     locale: clearLocale ? null : locale ?? this.locale,
     opensPlayerOnPlay: opensPlayerOnPlay ?? this.opensPlayerOnPlay,
     rescansAtStartup: rescansAtStartup ?? this.rescansAtStartup,
+    fetchesLyricsOnline: fetchesLyricsOnline ?? this.fetchesLyricsOnline,
     volume: volume ?? this.volume,
     unsaved: unsaved ?? this.unsaved,
   );
@@ -70,6 +76,7 @@ class PreferencesController extends Notifier<PreferencesState> {
       locale: settings.locale,
       opensPlayerOnPlay: settings.opensPlayerOnPlay,
       rescansAtStartup: settings.rescansAtStartup,
+      fetchesLyricsOnline: settings.fetchesLyricsOnline,
       volume: settings.volume,
     );
   }
@@ -103,6 +110,26 @@ class PreferencesController extends Notifier<PreferencesState> {
     state = state.copyWith(rescansAtStartup: value, unsaved: false);
     await _write(
       () => ref.read(settingsStoreProvider).setRescansAtStartup(value),
+    );
+  }
+
+  /// Applies [value], and re-asks for the words of whatever is open.
+  ///
+  /// The invalidation is what makes the switch mean something in the moment it
+  /// is flipped. Turning the lookup on is nearly always done by somebody
+  /// looking at a panel that says there are no lyrics for what is playing, and
+  /// without this they would have to skip the track and come back to find out
+  /// whether it worked. Turning it off re-reads too, which puts the panel back
+  /// to what this machine's own files say.
+  ///
+  /// The whole family, because the player holds the track that is open and the
+  /// bar may hold another; both are keyed by path, and both are now answering
+  /// a question that was asked under the old rule.
+  Future<void> setFetchesLyricsOnline(bool value) async {
+    state = state.copyWith(fetchesLyricsOnline: value, unsaved: false);
+    ref.invalidate(lyricsProvider);
+    await _write(
+      () => ref.read(settingsStoreProvider).setFetchesLyricsOnline(value),
     );
   }
 

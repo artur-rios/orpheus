@@ -126,6 +126,18 @@
   "@settingsRescansAtStartup": {
     "description": "The preference that scans the folders at startup."
   },
+  "settingsLyrics": "Letras",
+  "@settingsLyrics": {
+    "description": "The heading over the lyrics preferences."
+  },
+  "settingsFetchesLyricsOnline": "Buscar letras ausentes na internet",
+  "@settingsFetchesLyricsOnline": {
+    "description": "The preference that allows the online lyrics lookup."
+  },
+  "settingsFetchesLyricsOnlineDetail": "Para uma faixa sem letra nesta máquina, o Orpheus envia o artista e o título dela ao lrclib.net e salva o que voltar como um arquivo .lrc ao lado da faixa. É a única coisa que o Orpheus envia a algum lugar.",
+  "@settingsFetchesLyricsOnlineDetail": {
+    "description": "Says exactly what the online lyrics lookup sends and writes."
+  },
   "settingsVolume": "Volume",
   "@settingsVolume": {
     "description": "The label on the volume slider."
@@ -301,7 +313,7 @@
   "@lyricsNone": {
     "description": "Shown where the machine holds no words for what is playing."
   },
-  "lyricsWhereTheyComeFrom": "O Orpheus lê a letra de um arquivo .lrc ao lado da faixa, ou das tags da própria faixa. Nunca a busca na internet.",
+  "lyricsWhereTheyComeFrom": "O Orpheus lê a letra de um arquivo .lrc ao lado da faixa, ou das tags da própria faixa. Quando não há nenhuma e a busca online está ativada, ele a pede a um serviço de letras.",
   "@lyricsWhereTheyComeFrom": {
     "description": "Explains, under the no-lyrics message, where words would have to come from."
   },

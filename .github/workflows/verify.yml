@@ -58,19 +58,42 @@ jobs:
         run: ./tools/verify.sh --strict
 
       - name: Read the shipped permissions back out of the package
-        # The enforceable form of "no network of anything". Asserted against the
-        # built APK rather than against the manifest, because the manifest that
-        # matters is the merged one.
+        # The enforceable form of "it asks for exactly this and nothing more".
+        # Asserted against the built APK rather than against the manifest,
+        # because the manifest that matters is the merged one — a dependency
+        # that quietly wants a permission gets it merged in, and this is where
+        # that shows up.
+        #
+        # An exact set rather than a deny list. INTERNET is here, declared and
+        # explained in AndroidManifest.xml, for the lyrics lookup and nothing
+        # else (NFR-02, BR-03); the point of pinning the whole set is that the
+        # next permission to arrive fails this job whatever it is, instead of
+        # only the ones somebody thought to forbid.
         run: |
           set -eu
           apk=build/app/outputs/flutter-apk/app-release.apk
           aapt2=$(find "$ANDROID_HOME/build-tools" -name aapt2 | sort -V | tail -1)
           "$aapt2" dump badging "$apk" | grep -E "uses-permission|sdkVersion" | tee permissions.txt
-          if grep -q "android.permission.INTERNET" permissions.txt; then
-            echo "::error::The package declares INTERNET. NFR-02 and BR-03 say it never may."
+
+          cat > expected-permissions.txt <<'PERMISSIONS'
+          android.permission.FOREGROUND_SERVICE
+          android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
+          android.permission.INTERNET
+          android.permission.POST_NOTIFICATIONS
+          android.permission.READ_EXTERNAL_STORAGE
+          android.permission.READ_MEDIA_AUDIO
+          android.permission.WAKE_LOCK
+          PERMISSIONS
+          sed -i 's/^ *//' expected-permissions.txt
+
+          sed -n "s/^uses-permission[^']*name='\([^']*\)'.*/\1/p" permissions.txt \
+            | sort -u > shipped-permissions.txt
+
+          if ! diff -u expected-permissions.txt shipped-permissions.txt; then
+            echo "::error::The package's permissions are not the declared set. Anything added here has to be explained in AndroidManifest.xml and in the specifications first."
             exit 1
           fi
-          echo "No INTERNET permission — as promised."
+          echo "Exactly the declared permissions — as promised."
 
       - uses: actions/upload-artifact@v4
         with:

@@ -48,6 +48,18 @@ abstract interface class SettingsStore {
   /// Records [value] for the next launch.
   Future<void> setRescansAtStartup(bool value);
 
+  /// Whether a track with no words on this machine is looked up online, or
+  /// `true` when the owner has not said.
+  ///
+  /// The only preference here that governs whether anything leaves the
+  /// machine, which is why it is a preference at all rather than a constant.
+  /// It gates the lookup and nothing else: the owner's own `.lrc` files and
+  /// lyrics tags are read whatever this says.
+  bool get fetchesLyricsOnline;
+
+  /// Records [value] for the next launch.
+  Future<void> setFetchesLyricsOnline(bool value);
+
   /// How loud playback is, 0 to 1, or 1 when the owner has not said.
   double get volume;
 

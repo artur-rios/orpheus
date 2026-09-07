@@ -18,8 +18,9 @@ audio files already present on the machine, derives a browsable library from
 their tags, and plays them.
 
 It is not a library manager, not a streaming client, not a tag editor, and not
-a synchronisation service. It has no server, no account, and no network access
-of any kind.
+a synchronisation service. It has no server and no account. It reaches a
+network for exactly one thing — the words of a track that has none on the
+machine — and the owner can turn that off.
 
 ### 1.3 Definitions
 
@@ -46,7 +47,7 @@ of any kind.
 | **The problem of** | having a music collection on disk and no good way to listen to it across the machines it is wanted on |
 | **affects** | a person who owns files rather than subscriptions |
 | **the impact of which is** | a choice between a streaming client that will not play their files and a desktop player that cannot leave the desk |
-| **a successful solution would** | play their own files, unchanged, with one interface, on both their desktop and their phone, without an account, a server, or a network connection |
+| **a successful solution would** | play their own files, unchanged, with one interface, on both their desktop and their phone, without an account, a server, or a network connection to play a note |
 
 ### 2.2 Product position
 
@@ -57,7 +58,7 @@ of any kind.
 | **Orpheus is** | a local music player |
 | **That** | reads registered folders, derives a library from their tags, and plays it with the same interface on Windows, Linux and Android |
 | **Unlike** | a streaming client, which plays somebody else's catalog, or a desktop player, which stops at the edge of the desk |
-| **Our product** | reads only what it was pointed at, writes nothing back, and reaches no network at all |
+| **Our product** | reads only what it was pointed at, never writes to an audio file, and reaches a network for one optional convenience and nothing else |
 
 ### 2.3 Relationship to Alexandria
 
@@ -107,7 +108,7 @@ Requirements Document and demonstrated by use cases.
 | ID | Constraint |
 | --- | --- |
 | **C-01** | Three targets — Windows, Linux, Android — from one source. No per-platform implementation of any feature above the platform edges. |
-| **C-02** | No network access of any kind, enforced by the shipped Android package requesting no `INTERNET` permission. |
+| **C-02** | No network access beyond the lyrics lookup (`FR-LY-13`), which the owner can turn off and which no playback depends on. Enforced by the shipped Android package declaring exactly the permissions its manifest lists and no others. |
 | **C-03** | The owner's audio files are opened for reading only. |
 | **C-04** | No server, no database, no account, no synchronisation. |
 | **C-05** | Every flow above the platform edges must be testable without a real audio engine, a real device, or the developer's own filesystem. |

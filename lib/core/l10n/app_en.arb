@@ -126,6 +126,18 @@
   "@settingsRescansAtStartup": {
     "description": "The preference that scans the folders at startup."
   },
+  "settingsLyrics": "Lyrics",
+  "@settingsLyrics": {
+    "description": "The heading over the lyrics preferences."
+  },
+  "settingsFetchesLyricsOnline": "Look up missing lyrics online",
+  "@settingsFetchesLyricsOnline": {
+    "description": "The preference that allows the online lyrics lookup."
+  },
+  "settingsFetchesLyricsOnlineDetail": "For a track this machine has no lyrics for, Orpheus sends its artist and title to lrclib.net and saves what comes back as an .lrc file beside the track. This is the only thing Orpheus sends anywhere.",
+  "@settingsFetchesLyricsOnlineDetail": {
+    "description": "Says exactly what the online lyrics lookup sends and writes."
+  },
   "settingsVolume": "Volume",
   "@settingsVolume": {
     "description": "The label on the volume slider."
@@ -301,9 +313,9 @@
   "@lyricsNone": {
     "description": "Shown where the machine holds no words for what is playing."
   },
-  "lyricsWhereTheyComeFrom": "Orpheus reads them from an .lrc file beside the track, or from the track's own tags. It never fetches them from the internet.",
+  "lyricsWhereTheyComeFrom": "Orpheus reads them from an .lrc file beside the track, or from the track's own tags. Where there are none and the online lookup is on, it asks a lyrics service for them.",
   "@lyricsWhereTheyComeFrom": {
-    "description": "Explains, under the no-lyrics message, where words would have to come from."
+    "description": "Explains, under the no-lyrics message, where words come from."
   },
   "lyricsNotSynced": "These lyrics carry no times, so they do not follow the music.",
   "@lyricsNotSynced": {

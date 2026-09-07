@@ -80,6 +80,7 @@ graph LR
     subgraph "Lyrics (LY)"
         UC30[UC-30: Read the words]
         UC31[UC-31: Follow and jump]
+        UC33[UC-33: Look the words up]
     end
 
     subgraph "Visualisation (VZ)"
@@ -1054,7 +1055,7 @@ graph LR
 | **Actors** | Owner, Local filesystem |
 | **Description** | The owner asks for the words of the track playing, and the application shows whatever the machine holds for it. |
 | **Preconditions** | Something is playing, and the full player is open. |
-| **Postconditions** | None. Nothing is written, and nothing about the track has changed. |
+| **Postconditions** | None. Nothing about the track has changed. |
 | **Requirements** | FR-LY-01, FR-LY-02, FR-LY-03, FR-LY-07, FR-LY-08, FR-LY-09, FR-LY-10, FR-LY-12 |
 
 **Main Flow**
@@ -1073,7 +1074,7 @@ graph LR
 
 | ID | Condition | Outcome |
 | --- | --- | --- |
-| AF-01 | This machine holds no words for the track | The panel says so, and says where words would have to come from. It is not drawn as a failure, and nothing is fetched. |
+| AF-01 | This machine holds no words for the track | The words are looked up (UC-33). Where that finds none, or the owner has turned the lookup off, the panel says there are none and says where words come from. It is not drawn as a failure. |
 | AF-02 | The words carry no times | They are shown as a sheet to read, stated to carry no times, and do not follow the music. No times are invented for them. |
 | AF-03 | Both a sidecar and the file's own tags hold words | The sidecar is shown — it is the copy the owner can edit without a tag editor. |
 | AF-04 | The tag holds both a timed frame and a text one | The timed frame is shown. |
@@ -1114,6 +1115,48 @@ graph LR
 | AF-04 | The words carry no times | No line is distinguished and pressing one does nothing: an untimed line is not a place in the track. |
 | AF-05 | The player is opened part-way through a track | The line being sung is already in view — it is jumped to rather than scrolled to from the top. |
 | AF-06 | The system asks for reduced motion | The scrolling is not animated, and the screen is otherwise unchanged. |
+
+---
+
+### UC-33: Look the words up for a track that has none
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-33 |
+| **Name** | Look the words up for a track that has none |
+| **Actors** | Owner, Lyrics service, Local filesystem |
+| **Description** | For a track this machine holds no words for, the application asks a lyrics service for them and saves what it gets beside the track. |
+| **Preconditions** | The words of the track playing have been looked for locally and none were found (UC-30, step 2), and the owner has left the lookup on. |
+| **Postconditions** | Either a `.lrc` sits beside the track and its words are showing, or the track is stated to have no words. Nothing else on the machine has changed, and the audio file has not been opened for writing. |
+| **Requirements** | FR-LY-13, FR-LY-14, FR-LY-15, FR-LY-16, FR-LY-17, FR-LY-10 |
+
+**Main Flow**
+
+1. The application reads the track's artist and title from the catalog, with
+   its record and length where the tags give them (`BR-29a`).
+2. It asks the lyrics service for a sheet matching them. Nothing else about the
+   machine, the library or the owner is sent, and no account, key or
+   identifier accompanies the request.
+3. The service answers with a sheet.
+4. The application writes it as a `.lrc` beside the track, exactly as it
+   arrived, so that the next launch finds it locally and asks nothing (UC-30,
+   step 2).
+5. The words take the place of the sleeve and follow the music (UC-31).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | The owner has turned the lookup off | Nothing is asked and nothing is sent. The track is stated to have no words. |
+| AF-02 | The track's tags do not give both an artist and a title | Nothing is asked: a lookup on a title alone is a guess between every recording that shares the name. The track is stated to have no words. |
+| AF-03 | The service knows nothing about the track | The track is stated to have no words, exactly as if there had been no lookup. It is not drawn as a failure. |
+| AF-04 | The service cannot be reached — no network, a captive portal, a timeout, an error, a malformed answer | The same outcome as AF-03. Playback is not interrupted, and the owner is not shown a failure they can do nothing about. |
+| AF-05 | The service returns several candidates | The timed sheet wins over an untimed one, a length matching the track's wins over one that does not, and an exact artist match wins over a merely similar one. |
+| AF-06 | The service says the track is instrumental | It is treated as a track with no words, and nothing is written. |
+| AF-07 | The service returns a sheet with no times | It is written and shown as a sheet to read, stated to carry no times (`BR-31`). |
+| AF-08 | A `.lrc` already sits beside the track | It is not replaced. That file is the owner's answer for that track, and this flow was only ever reached for a track that had none. |
+| AF-09 | The folder cannot be written to — a read-only mount, a share, Android's scoped storage | The words are shown for this session and the saving is lost. Nothing is left behind in the folder, and the owner is not interrupted. On Android this is the ordinary outcome rather than the exception. |
+| AF-10 | The owner turns the lookup on while looking at a track stated to have no words | The words of what is open are asked for again, so the switch means something in the moment it is flipped. |
 
 ---
 

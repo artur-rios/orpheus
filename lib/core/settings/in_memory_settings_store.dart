@@ -18,6 +18,7 @@ class InMemorySettingsStore implements SettingsStore {
     List<String> libraryFolders = const [],
     bool opensPlayerOnPlay = true,
     bool rescansAtStartup = true,
+    bool fetchesLyricsOnline = true,
     double volume = 1,
     Map<String, String>? values,
   }) : _libraryFolders = [...libraryFolders],
@@ -26,6 +27,7 @@ class InMemorySettingsStore implements SettingsStore {
     _locale = locale;
     _opensPlayerOnPlay = opensPlayerOnPlay;
     _rescansAtStartup = rescansAtStartup;
+    _fetchesLyricsOnline = fetchesLyricsOnline;
     _volume = volume;
   }
 
@@ -34,6 +36,7 @@ class InMemorySettingsStore implements SettingsStore {
   List<String> _libraryFolders;
   late bool _opensPlayerOnPlay;
   late bool _rescansAtStartup;
+  late bool _fetchesLyricsOnline;
   late double _volume;
   final Map<String, String> _values;
 
@@ -69,6 +72,13 @@ class InMemorySettingsStore implements SettingsStore {
   @override
   Future<void> setRescansAtStartup(bool value) async =>
       _rescansAtStartup = value;
+
+  @override
+  bool get fetchesLyricsOnline => _fetchesLyricsOnline;
+
+  @override
+  Future<void> setFetchesLyricsOnline(bool value) async =>
+      _fetchesLyricsOnline = value;
 
   @override
   double get volume => _volume;

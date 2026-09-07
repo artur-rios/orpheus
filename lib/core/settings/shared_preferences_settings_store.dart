@@ -33,6 +33,9 @@ class SharedPreferencesSettingsStore implements SettingsStore {
   /// The key the startup-rescan preference is stored under.
   static const String rescansAtStartupKey = 'rescansAtStartup';
 
+  /// The key the online lyrics lookup is stored under.
+  static const String fetchesLyricsOnlineKey = 'fetchesLyricsOnline';
+
   /// The key the volume is stored under.
   static const String volumeKey = 'volume';
 
@@ -95,6 +98,14 @@ class SharedPreferencesSettingsStore implements SettingsStore {
   @override
   Future<void> setRescansAtStartup(bool value) =>
       _preferences.setBool(rescansAtStartupKey, value);
+
+  @override
+  bool get fetchesLyricsOnline =>
+      _preferences.getBool(fetchesLyricsOnlineKey) ?? true;
+
+  @override
+  Future<void> setFetchesLyricsOnline(bool value) =>
+      _preferences.setBool(fetchesLyricsOnlineKey, value);
 
   @override
   double get volume => _preferences.getDouble(volumeKey) ?? 1;

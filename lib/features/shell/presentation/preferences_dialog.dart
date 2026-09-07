@@ -104,6 +104,29 @@ class PreferencesDialog extends ConsumerWidget {
                 onChanged: (value) =>
                     unawaited(controller.setRescansAtStartup(value)),
               ),
+
+              const SizedBox(height: AppSpacing.lg),
+              _Heading(text: l10n.settingsLyrics),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: preferences.fetchesLyricsOnline,
+                title: Text(l10n.settingsFetchesLyricsOnline),
+                // The one switch here that carries a subtitle, because it is
+                // the one that decides whether anything leaves the machine.
+                // What it sends and what it writes are said in full, on the
+                // screen where it is turned on, rather than left to a
+                // changelog nobody reads.
+                subtitle: Text(
+                  l10n.settingsFetchesLyricsOnlineDetail,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                isThreeLine: true,
+                onChanged: (value) =>
+                    unawaited(controller.setFetchesLyricsOnline(value)),
+              ),
+
               const SizedBox(height: AppSpacing.sm),
               Text(l10n.settingsVolume, style: theme.textTheme.bodyMedium),
               Slider(

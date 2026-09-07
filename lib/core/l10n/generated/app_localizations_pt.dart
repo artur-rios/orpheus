@@ -102,6 +102,17 @@ class AppLocalizationsPt extends AppLocalizations {
       'Reexaminar a biblioteca a cada inicialização';
 
   @override
+  String get settingsLyrics => 'Letras';
+
+  @override
+  String get settingsFetchesLyricsOnline =>
+      'Buscar letras ausentes na internet';
+
+  @override
+  String get settingsFetchesLyricsOnlineDetail =>
+      'Para uma faixa sem letra nesta máquina, o Orpheus envia o artista e o título dela ao lrclib.net e salva o que voltar como um arquivo .lrc ao lado da faixa. É a única coisa que o Orpheus envia a algum lugar.';
+
+  @override
   String get settingsVolume => 'Volume';
 
   @override
@@ -239,7 +250,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get lyricsWhereTheyComeFrom =>
-      'O Orpheus lê a letra de um arquivo .lrc ao lado da faixa, ou das tags da própria faixa. Nunca a busca na internet.';
+      'O Orpheus lê a letra de um arquivo .lrc ao lado da faixa, ou das tags da própria faixa. Quando não há nenhuma e a busca online está ativada, ele a pede a um serviço de letras.';
 
   @override
   String get lyricsNotSynced =>

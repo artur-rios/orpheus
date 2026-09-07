@@ -29,9 +29,13 @@ import '../../features/library/domain/library_scan.dart';
 import '../../features/library/domain/music_catalog.dart';
 import '../../features/lyrics/application/lyrics_controller.dart';
 import '../../features/lyrics/application/lyrics_visibility_controller.dart';
+import '../../features/lyrics/data/file_lyrics_sidecar.dart';
 import '../../features/lyrics/data/file_lyrics_source.dart';
+import '../../features/lyrics/data/lrclib_lyrics_source.dart';
 import '../../features/lyrics/domain/lyrics.dart';
+import '../../features/lyrics/domain/lyrics_sidecar.dart';
 import '../../features/lyrics/domain/lyrics_source.dart';
+import '../../features/lyrics/domain/remote_lyrics_source.dart';
 import '../../features/playback/application/album_art_controller.dart';
 import '../../features/playback/application/audio_playback_controller.dart';
 import '../../features/playback/application/media_session_controller.dart';
@@ -109,9 +113,30 @@ final coverStoreProvider = Provider<CoverStore>(
   (ref) => FileCoverStore(ref.watch(appDirectoriesProvider).covers),
 );
 
-/// Where a track's words are looked for.
+/// Where a track's words are looked for on this machine.
 final lyricsSourceProvider = Provider<LyricsSource>(
   (ref) => const FileLyricsSource(),
+);
+
+/// Where they are looked for when this machine holds none.
+///
+/// The only binding in this graph that reaches a network. It is built on first
+/// use and closed with the container, because it holds pooled connections —
+/// and a second one would be a second pool for a feature that makes at most
+/// one request per track.
+///
+/// Every test overrides it, as every test overrides the engine and the media
+/// session: no test in this suite opens a socket.
+final remoteLyricsSourceProvider = Provider<RemoteLyricsSource>((ref) {
+  final source = LrclibLyricsSource();
+  ref.onDispose(source.close);
+
+  return source;
+});
+
+/// Where a fetched sheet is written, so it is found locally next time.
+final lyricsSidecarProvider = Provider<LyricsSidecar>(
+  (ref) => const FileLyricsSidecar(),
 );
 
 /// What builds the catalog from the owner's folders.

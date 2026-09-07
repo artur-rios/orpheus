@@ -74,8 +74,8 @@ live somewhere that is not a widget.
 The one more: a single composition root where every outward dependency is bound
 means a test overrides a binding rather than reaching into the widget tree or
 patching a global. That is what lets the whole suite run without touching the
-developer's own preferences, their application-support folder, the network, or
-a real audio device.
+developer's own preferences, their application-support folder, their music
+folders, the network, or a real audio device.
 
 ## Storage: JSON documents and shared_preferences
 

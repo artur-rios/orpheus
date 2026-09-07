@@ -39,13 +39,21 @@ part of the application must have anyway.
 > track to this application. Its resume point and its play count do not follow
 > it. Re-scanning is what reconciles that.
 
-**BR-02 — The owner's files are read and never written.** No tag is edited, no
-file is renamed, moved, deleted or transcoded. Everything this application
-writes lives in its own directory.
+**BR-02 — The owner's audio files are read and never written.** No tag is
+edited, no file is renamed, moved, deleted or transcoded. Everything this
+application produces lives in its own directory, with exactly one exception:
+the `.lrc` a lyrics lookup writes beside a track (`BR-29a`). That is a new file
+next to the audio, never a change to the audio, and never a replacement for a
+sidecar the owner wrote.
 
-**BR-03 — Nothing leaves the machine.** No lookup, no upload, no fetch, no
-telemetry. The absence of an `INTERNET` permission in the Android package is
-the enforceable form of this rule.
+**BR-03 — One thing leaves the machine, and it is named.** The lyrics lookup
+(`BR-29a`) and nothing else. No upload, no telemetry, no analytics, no crash
+reporting, no scrobbling, no cover art, no metadata lookup of any other kind,
+and nothing that identifies the owner or persists between requests — no
+account, no key, no identifier. The enforceable form of this rule is that the
+Android package declares exactly the permissions listed in its manifest and CI
+fails on any other, so a network capability arriving through a dependency
+fails the build rather than shipping quietly.
 
 **BR-04 — Nothing is indexed that was not pointed at.** Only registered folders
 are walked.
@@ -185,12 +193,26 @@ width at every size, not by which operating system is running.
 
 ## 9. Lyrics
 
-**BR-29 — Words come from the machine the music is on.** A track's words are
-read from a `.lrc` file beside it, from its `SYLT` frame, or from its lyrics
-text tag — and from nowhere else. There is no service to ask, and a track this
-machine holds no words for is a track with no words, which the application says
-plainly rather than treating as a failure or as something still loading. There
-is no exception here to `BR-03`.
+**BR-29 — The machine the music is on answers first.** A track's words are read
+from a `.lrc` file beside it, from its `SYLT` frame, or from its lyrics text
+tag. Whatever those hold is the answer, and nothing else is asked. Only for a
+track they hold nothing for is anything looked up (`BR-29a`), and a track that
+neither the machine nor the lookup has words for is a track with no words —
+which the application says plainly rather than treating as a failure or as
+something still loading.
+
+**BR-29a — The lookup sends the sleeve and nothing else.** For a track this
+machine holds no words for, and only while the owner leaves the lookup on, the
+application asks a lyrics service for them using that track's artist and title,
+and its record and length where the tags give them. It sends nothing else: not
+the file's name, not its path, not the library, not what else is on the
+machine, not who owns it, and nothing that persists between requests. A track
+whose tags do not give both an artist and a title is not looked up at all,
+because a lookup on a title alone is a guess between every recording that
+shares the name. The lookup is a preference the owner can turn off, and turning
+it off does not affect `BR-29` — their own files are read either way. Nothing
+about the lookup may block, interrupt or delay playback, and a service that
+cannot be reached costs the words and nothing else.
 
 **BR-30 — The file beside the track outranks the file's own tags.** A `.lrc` is
 the copy the owner can write, correct and delete with a text editor and nothing
@@ -205,10 +227,18 @@ guesses which line is being sung. The same rule refuses times this application
 cannot resolve: a `SYLT` frame counted in MPEG frames rather than in
 milliseconds is left alone rather than approximated.
 
-**BR-32 — The words are never written.** Lyrics are read like every other tag
-(`BR-02`): nothing is corrected, completed, re-timed or saved back into the
-owner's files, and nothing about them is cached beside the catalog. They are
-read from the file each time the player asks for them.
+**BR-32 — The owner's own words are never rewritten.** Nothing is corrected,
+completed, re-timed or saved back into the owner's audio files, and nothing
+about lyrics is cached beside the catalog. What the machine already holds is
+read from the file each time the player asks for it, which is what keeps a
+corrected `.lrc` correct the moment it is saved, with nothing to invalidate.
+
+A sheet that came from the lookup is written once, as a new `.lrc` beside the
+track (`BR-02`), so that the next launch finds it locally and asks nobody
+anything. It is written only where no sidecar exists — a file the owner wrote
+is never replaced — and a refusal to write it, which is every Android device
+and every read-only mount, costs the owner that saving and nothing in the
+session they are in.
 
 ## 10. The sound bars
 

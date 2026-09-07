@@ -101,6 +101,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsRescansAtStartup => 'Re-scan the library at every launch';
 
   @override
+  String get settingsLyrics => 'Lyrics';
+
+  @override
+  String get settingsFetchesLyricsOnline => 'Look up missing lyrics online';
+
+  @override
+  String get settingsFetchesLyricsOnlineDetail =>
+      'For a track this machine has no lyrics for, Orpheus sends its artist and title to lrclib.net and saves what comes back as an .lrc file beside the track. This is the only thing Orpheus sends anywhere.';
+
+  @override
   String get settingsVolume => 'Volume';
 
   @override
@@ -238,7 +248,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get lyricsWhereTheyComeFrom =>
-      'Orpheus reads them from an .lrc file beside the track, or from the track\'s own tags. It never fetches them from the internet.';
+      'Orpheus reads them from an .lrc file beside the track, or from the track\'s own tags. Where there are none and the online lookup is on, it asks a lyrics service for them.';
 
   @override
   String get lyricsNotSynced =>

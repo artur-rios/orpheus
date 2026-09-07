@@ -9,7 +9,9 @@ import 'package:orpheus/features/library/domain/library_access.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/lyrics/domain/lyrics.dart';
+import 'package:orpheus/features/lyrics/domain/lyrics_sidecar.dart';
 import 'package:orpheus/features/lyrics/domain/lyrics_source.dart';
+import 'package:orpheus/features/lyrics/domain/remote_lyrics_source.dart';
 import 'package:orpheus/features/playback/domain/energy_store.dart';
 import 'package:orpheus/features/playback/domain/track_analysis.dart';
 import 'package:orpheus/features/playback/domain/track_energy.dart';
@@ -310,8 +312,70 @@ class UnwritableSettingsStore extends InMemorySettingsStore {
   Future<void> setRescansAtStartup(bool value) async => _refuse();
 
   @override
+  Future<void> setFetchesLyricsOnline(bool value) async => _refuse();
+
+  @override
   Future<void> setVolume(double value) async => _refuse();
 
   @override
   Future<void> setString(String key, String value) async => _refuse();
+}
+
+/// A [RemoteLyricsSource] that answers what a test told it to.
+///
+/// It records every query it was given, which is how the suite asserts the
+/// half of this feature that is not about words at all: that nothing is asked
+/// of a network for a track this machine already has words for, that nothing
+/// is asked when the owner has turned the lookup off, and that what does get
+/// asked is the artist and the title and not the path of a file.
+class ScriptedRemoteLyricsSource implements RemoteLyricsSource {
+  /// Creates a source answering [sheets], by track title.
+  ScriptedRemoteLyricsSource([Map<String, RemoteLyrics> sheets = const {}])
+    : _sheets = {...sheets};
+
+  final Map<String, RemoteLyrics> _sheets;
+
+  /// Every lookup made, in order.
+  final List<LyricsQuery> asked = [];
+
+  /// Whether the lookup fails outright rather than answering nothing.
+  ///
+  /// The difference matters: a service that is unreachable is not a service
+  /// that said no, and the panel has to end up in the same place either way.
+  bool fails = false;
+
+  /// Seeds [sheet] as the answer for a track titled [title].
+  void seed(String title, RemoteLyrics sheet) => _sheets[title] = sheet;
+
+  @override
+  Future<RemoteLyrics?> find(LyricsQuery query) async {
+    asked.add(query);
+
+    if (fails) throw StateError('the lyrics service could not be reached');
+
+    return _sheets[query.title];
+  }
+}
+
+/// A [LyricsSidecar] that records rather than writes.
+///
+/// No test in this suite puts a file in anybody's music folder — the same rule
+/// every other store here follows. `FileLyricsSidecar` is exercised against a
+/// temporary directory of its own, in its own test.
+class RecordingLyricsSidecar implements LyricsSidecar {
+  /// What was written, by track path.
+  final Map<String, String> written = {};
+
+  /// Whether the write is refused, as a read-only folder or Android's sandbox
+  /// refuses it.
+  bool refuses = false;
+
+  @override
+  Future<bool> write(String path, String text) async {
+    if (refuses) return false;
+
+    written[path] = text;
+
+    return true;
+  }
 }

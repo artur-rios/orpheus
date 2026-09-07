@@ -157,7 +157,7 @@ Realises F-15.
 | ID | Requirement |
 | --- | --- |
 | **FR-LY-01** | The application must show the words of the track playing, on demand, from the full player. |
-| **FR-LY-02** | Words must be read from a `.lrc` file beside the track and named after it, from the track's ID3 `SYLT` frame, or from the track's lyrics text tag, and from no other source (`BR-29`). |
+| **FR-LY-02** | Words must be read from a `.lrc` file beside the track and named after it, from the track's ID3 `SYLT` frame, or from the track's lyrics text tag. Whatever these hold is the answer, and no lookup may be made for a track they hold words for (`BR-29`). |
 | **FR-LY-03** | Where more than one of those holds words, the sidecar must win, and the timed frame must win over the text tag (`BR-30`). |
 | **FR-LY-04** | Words carrying a time per line must follow the music: the line being sung must be distinguished, and the sheet must bring it into view by itself. |
 | **FR-LY-05** | Where the owner scrolls the words themselves, following must stop for long enough to read, and then resume. |
@@ -165,7 +165,12 @@ Realises F-15.
 | **FR-LY-07** | Words carrying no times must be shown, must be stated to carry none, and must not follow the music. No time may be invented for them (`BR-31`). |
 | **FR-LY-08** | A track this machine holds no words for must be told so plainly, together with where words would have to come from. It is not a failure state and must not be presented as one. |
 | **FR-LY-09** | Reading the words must not block, interrupt or delay playback, and a file that cannot be read for them must cost the words and nothing else. |
-| **FR-LY-10** | Nothing about the words may be written, cached beside the catalog, or saved back into the owner's files (`BR-32`). |
+| **FR-LY-10** | Nothing about the words may be cached beside the catalog or saved back into the owner's audio files. A sheet obtained by lookup must be written once as a new `.lrc` beside the track, never replacing an existing sidecar, and a refused write must cost the saving and nothing in the session (`BR-32`). |
+| **FR-LY-13** | A track the machine holds no words for must be looked up against a lyrics service, and only such a track (`BR-29a`). |
+| **FR-LY-14** | A lookup must send the track's artist and title, and its record and length where the tags give them, and nothing else — in particular no file name, no path, no account, no key and no identifier of any kind (`BR-29a`). |
+| **FR-LY-15** | A track whose tags do not give both an artist and a title must not be looked up (`BR-29a`). |
+| **FR-LY-16** | The lookup must be a preference the owner can turn off, stated where it is turned on in terms of what it sends and what it writes. Turning it off must not affect reading the owner's own files (`BR-29a`). |
+| **FR-LY-17** | A lookup that finds nothing, is refused, or cannot be reached must leave the track stated to have no words, must not be presented as a failure, and must never block, interrupt or delay playback (`BR-29a`). |
 | **FR-LY-11** | A timed gap between verses must leave no line distinguished, rather than leaving the previous line lit through it. |
 | **FR-LY-12** | The reader must accept the forms real files are written in: several times against one line, a `[offset:]` correction, per-word times, ID3v2.2 through v2.4, the four ID3 text encodings, and unsynchronisation. Times it cannot resolve must be declined rather than approximated (`BR-31`). |
 
@@ -192,13 +197,13 @@ Realises F-16.
 | ID | Requirement |
 | --- | --- |
 | **NFR-01** | **One source, three targets.** Windows, Linux and Android must build from the same source with no per-platform implementation of any feature above the platform edges. |
-| **NFR-02** | **No network.** The application must make no network request of any kind. The Android package must declare no `INTERNET` permission, and this must be verifiable from the built package. |
+| **NFR-02** | **One network call, named.** The application must make no network request other than the lyrics lookup of `FR-LY-13`. No telemetry, analytics, crash reporting, scrobbling, cover-art or other metadata lookup may be added. The Android package must declare exactly the permissions its manifest lists, and this must be verifiable from the built package. |
 | **NFR-03** | **Read-only on the owner's media.** No audio file may be written, renamed, moved or deleted. |
 | **NFR-04** | **Startup is not gated on a scan.** The library from the last scan must be on screen before a new scan is started. |
 | **NFR-05** | **Scanning is proportional to change.** Re-scanning an unchanged library must not re-parse it. |
 | **NFR-06** | **The cover cache is proportional to records, not files.** |
 | **NFR-07** | **Testability at the edges.** Every outward dependency must sit behind an interface bound in one composition root, and must be overridable in a test. |
-| **NFR-08** | **No test may reach outside its process** — not to the developer's preferences, their application-support folder, their listening statistics, the native audio engine, a platform media service, or the network. |
+| **NFR-08** | **No test may reach outside its process** — not to the developer's preferences, their application-support folder, their listening statistics, the native audio engine, a platform media service, a music folder, or the network. The lyrics lookup and the sidecar writer must be overridable, and no test may open a socket. |
 | **NFR-09** | **A clean analyzer.** `flutter analyze` must pass with no issues and no known-warnings list. |
 | **NFR-10** | **Every judgement is documented where it lives.** A rule that exists only in a document is a rule the next change will break. |
 | **NFR-11** | **Failures are surfaced, never swallowed** — except where a documented rule says otherwise, as in `FR-ST-04`. |
@@ -224,7 +229,7 @@ Realises F-16.
 | F-12 Adaptive shell | FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-10 |
 | F-13 Preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18 |
 | F-14 Localization | FR-UX-09, FR-CT-06 |
-| F-15 Lyrics | FR-LY-01 … FR-LY-12 |
+| F-15 Lyrics | FR-LY-01 … FR-LY-17 |
 | F-16 Sound bars | FR-VZ-01 … FR-VZ-11 |
 
 ### 4.2 Requirements to use cases
@@ -237,7 +242,7 @@ Realises F-16.
 | BG | UC-24, UC-25 |
 | ST | UC-26, UC-27 |
 | UX | UC-28, UC-29 |
-| LY | UC-30, UC-31 |
+| LY | UC-30, UC-31, UC-33 |
 | VZ | UC-32 |
 
 ## 5. Data model
@@ -252,10 +257,13 @@ Everything the application persists, and where.
 | **Analysis cache** | an `energy` directory | One file per analysed track — the measured spectrum, about a hundred kilobytes for a four-minute track — named by a key carrying the file's path, length and modification time. Disposable: deleting it costs a second per track and nothing else. |
 | **Preferences** | the platform's own preference store | Library folders, theme, language, layout, volume, repeat mode, resume points, and the two behaviour switches. |
 
-Lyrics are deliberately absent from this table. They are read from the owner's
-own files each time the player asks for them and are never copied into this
-application's directory — which is what keeps a corrected `.lrc` correct the
-moment it is saved, with nothing to invalidate (`BR-32`).
+Lyrics are deliberately absent from this table, because this application's own
+directory never holds any. They are read from the owner's own files each time
+the player asks for them — which is what keeps a corrected `.lrc` correct the
+moment it is saved, with nothing to invalidate. A sheet obtained by lookup is
+written beside the track it belongs to, as a `.lrc` the owner and every other
+player on the machine can read, and is thereafter one of those files rather
+than a cache of anything (`BR-32`).
 
 Nothing else is written, and nothing is written outside these locations
 (`BR-02`).

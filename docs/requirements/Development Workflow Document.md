@@ -97,5 +97,9 @@ An issue is done when **all** of the following hold.
   [Technology Stack Document](Technology%20Stack%20Document.md).
 - Widening a platform permission without saying so in the manifest comment and
   in the README.
-- Adding a network call. There is no circumstance under which this is in scope
-  (`NFR-02`).
+- Adding a network call. The lyrics lookup (`FR-LY-13`) is the only one, and
+  there is no circumstance under which a second is in scope without amending
+  `NFR-02`, `BR-03` and the manifest first.
+- Adding a permission to the Android package. CI pins the whole set, so this
+  fails the build until it has been argued for in the manifest, the README and
+  the Operations & Infrastructure Document.

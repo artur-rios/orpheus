@@ -92,10 +92,14 @@ developer happens to have.
 | `POST_NOTIFICATIONS` | The playback notification. |
 | `WAKE_LOCK` | Keeping the processor running through a track with the screen off. |
 
-**IR-13** — The package declares **no `INTERNET` permission**, and this is
-verifiable from the built package. It is the enforceable form of `BR-03` and
-`NFR-02`, and a change that adds one is a change that breaks the product's
-stated promise.
+**IR-13** — The package declares **`INTERNET`, and only for the lyrics lookup**
+(`BR-29a`, `FR-LY-13`). The manifest says so at the declaration, in terms of
+what is sent and what is not. The enforceable form of `BR-03` and `NFR-02` is
+no longer the absence of that permission but the exactness of the whole set:
+the built package must declare the permissions the manifest lists and no
+others, so a network capability arriving through a dependency fails the build
+rather than shipping quietly. A change that adds a permission is a change that
+must be argued for in the manifest, in the README, and here, first.
 
 **IR-14** — The single activity extends the playback service's own activity, so
 that the service and the interface share one Flutter engine. With two, the queue
@@ -145,8 +149,11 @@ on a Linux runner and a Windows runner, so that every target is built and every
 "not applicable" is covered somewhere.
 
 **IR-21** — The workflow reads the built Android package's permissions back out
-and fails if `INTERNET` appears among them. This is `BR-03` and `NFR-02` made
-enforceable: asserted against the artifact that ships, not against the source.
+and fails unless they are exactly the set `AndroidManifest.xml` declares. This
+is `BR-03` and `NFR-02` made enforceable: asserted against the artifact that
+ships, not against the source, and against the merged manifest rather than the
+one in this repository — which is where a dependency's own permission would
+otherwise appear unannounced.
 
 **IR-22** — Neither a failing analyzer nor a failing test suite may be released.
 

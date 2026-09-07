@@ -8,8 +8,10 @@ machine can verify is verified by a test, not asserted in a document.
 **Nothing reaches outside the process.** No test reads the developer's own
 preferences, writes into their application-support folder, records against their
 listening statistics, opens the native playback engine, starts a platform media
-service, or touches the network (`NFR-08`). Every one of those is a provider,
-and every one is overridden by the harness.
+service, writes into a music folder, or touches the network (`NFR-08`). Every
+one of those is a provider, and every one is overridden by the harness — the
+lyrics lookup included, which is scripted rather than reached, so no test in
+the suite opens a socket.
 
 **One behaviour per test.** A test asserting three things fails once and tells
 you one thing.

@@ -175,7 +175,7 @@ void main() {
 
       expect(find.text('No lyrics for this track'), findsOneWidget);
       expect(
-        find.textContaining('never fetches them from the internet'),
+        find.textContaining('an .lrc file beside the track'),
         findsOneWidget,
       );
     },

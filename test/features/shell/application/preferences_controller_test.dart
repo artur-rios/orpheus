@@ -54,4 +54,38 @@ void main() {
       expect(harness.settings.volume, 0.4);
     },
   );
+
+  test(
+    'GivenTheLookupCannotBeSaved_WhenItIsTurnedOff_ThenItHoldsForTheSessionAndSaysSo',
+    () async {
+      // The switch that decides whether anything leaves the machine follows
+      // the same rule as its neighbours, and it is the one where getting that
+      // wrong would matter most: an owner who turns it off has to have it off
+      // now, whether or not the preferences file would take the change.
+      final harness = Harness(settings: UnwritableSettingsStore());
+      final preferences = harness.read(preferencesControllerProvider.notifier);
+
+      await preferences.setFetchesLyricsOnline(false);
+
+      final state = harness.read(preferencesControllerProvider);
+      expect(state.fetchesLyricsOnline, isFalse);
+      expect(state.unsaved, isTrue);
+    },
+  );
+
+  test(
+    'GivenTheStoreTakesTheChange_WhenTheLookupIsTurnedOff_ThenItIsRememberedForNextLaunch',
+    () async {
+      final harness = Harness();
+      final preferences = harness.read(preferencesControllerProvider.notifier);
+
+      await preferences.setFetchesLyricsOnline(false);
+
+      expect(harness.settings.fetchesLyricsOnline, isFalse);
+      expect(
+        harness.read(preferencesControllerProvider).unsaved,
+        isFalse,
+      );
+    },
+  );
 }

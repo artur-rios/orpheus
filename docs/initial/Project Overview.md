@@ -70,13 +70,17 @@ player did not have opinions about what they should listen to next.
 
 ## What It Doesn't Do
 
-- **It never writes to the owner's music.** No tag editing, no renaming, no
-  moving, no deleting, no transcoding. Files are opened for reading and that is
-  all. Everything this application writes lives in its own directory.
-- **No network of anything.** No streaming, no scrobbling, no metadata lookup,
-  no cover art fetched from the internet. The Android package asks for no
-  `INTERNET` permission, which is the version of this promise a machine can
-  check.
+- **It never writes to the owner's audio files.** No tag editing, no renaming,
+  no moving, no deleting, no transcoding. They are opened for reading and that
+  is all. The one thing written into a music folder is a `.lrc` beside a track
+  whose words were looked up — a new file, never a replacement for one the
+  owner wrote.
+- **Almost no network.** No streaming, no scrobbling, no telemetry, no
+  analytics, no crash reporting, no cover art fetched from anywhere. The single
+  exception is the lyrics lookup, which sends a track's artist and title and
+  which the owner can turn off. The Android package declares exactly seven
+  permissions and CI fails on an eighth, which is the version of this promise a
+  machine can check.
 - **No accounts, no sync, no cloud.** One person, one machine, one library.
 - **No library management.** Organising, tagging and de-duplicating a music
   collection is a different program. This one reads what is there.
@@ -93,9 +97,9 @@ player did not have opinions about what they should listen to next.
 4. **Playback survives the phone.** Music started on Android keeps playing when
    the owner switches away, and is controllable without returning to the
    application.
-5. **The promises are checkable.** "It never writes to your music" and "no
-   network" are enforced by the test suite and by the shipped package's
-   permissions, not asserted in a README.
+5. **The promises are checkable.** "It never touches your audio files" and
+   "nothing but the lyrics lookup leaves the machine" are enforced by the test
+   suite and by the shipped package's permissions, not asserted in a README.
 6. **A change is safe to make.** Every flow above the platform edges is covered
    by tests that run without a real audio engine, a real filesystem, or a real
    device.

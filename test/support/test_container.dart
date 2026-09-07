@@ -21,8 +21,9 @@ import 'fakes.dart';
 /// No test reads the developer's own preferences, writes into their
 /// application-support folder, records a play against their listening
 /// statistics, opens the native playback engine, starts a platform media
-/// service, or touches the filesystem: every one of those is a provider, and
-/// every one of them is overridden here.
+/// service, reaches a network, writes into a music folder, or touches the
+/// filesystem: every one of those is a provider, and every one of them is
+/// overridden here.
 class Harness {
   /// Builds a container over [library], with the doubles the test can inspect.
   Harness({
@@ -32,6 +33,7 @@ class Harness {
     ScriptedScanner? scanner,
     ScriptedTrackAnalysis? analysis,
     ScriptedLyricsSource? lyrics,
+    ScriptedRemoteLyricsSource? remoteLyrics,
     FakeLibraryAccess? access,
     FakeFolderPicker? picker,
     int shuffleSeed = 7,
@@ -43,6 +45,8 @@ class Harness {
        energies = InMemoryEnergyStore(),
        analysis = analysis ?? ScriptedTrackAnalysis(),
        lyrics = lyrics ?? ScriptedLyricsSource(),
+       remoteLyrics = remoteLyrics ?? ScriptedRemoteLyricsSource(),
+       sidecars = RecordingLyricsSidecar(),
        plays = InMemoryPlayHistoryStore(),
        access = access ?? FakeLibraryAccess(),
        picker = picker ?? FakeFolderPicker(),
@@ -69,6 +73,8 @@ class Harness {
         energyStoreProvider.overrideWithValue(energies),
         trackAnalysisProvider.overrideWithValue(this.analysis),
         lyricsSourceProvider.overrideWithValue(this.lyrics),
+        remoteLyricsSourceProvider.overrideWithValue(this.remoteLyrics),
+        lyricsSidecarProvider.overrideWithValue(sidecars),
         playHistoryStoreProvider.overrideWithValue(plays),
         audioPlayerProvider.overrideWithValue(player),
         mediaSessionProvider.overrideWithValue(session),
@@ -110,6 +116,13 @@ class Harness {
 
   /// What the words of each track are, in place of files on a disk.
   final ScriptedLyricsSource lyrics;
+
+  /// What the lookup answers, in place of a network. No test opens a socket.
+  final ScriptedRemoteLyricsSource remoteLyrics;
+
+  /// What a fetched sheet was written as, in place of the owner's music
+  /// folder. No test writes into one.
+  final RecordingLyricsSidecar sidecars;
 
   /// What has been played, in memory.
   final InMemoryPlayHistoryStore plays;

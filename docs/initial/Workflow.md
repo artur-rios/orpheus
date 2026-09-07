@@ -102,8 +102,9 @@ source tree.
 
 Nothing in the suite may read the developer's own preferences, write into their
 application-support folder, record against their listening statistics, open the
-native playback engine, start a platform media service, or reach the network.
-Every one of those is a provider, and every one is overridden by the harness.
+native playback engine, start a platform media service, write into a music
+folder, or reach the network. Every one of those is a provider, and every one
+is overridden by the harness.
 
 **Pause.**
 
