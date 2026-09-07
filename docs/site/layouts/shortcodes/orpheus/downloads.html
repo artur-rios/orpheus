@@ -1,0 +1,162 @@
+{{/*
+  The current release, one card per platform.
+
+  Asset names carry the version — orpheus-setup-1.0.0.exe — so a static link to
+  "the latest" cannot name a file. The links are therefore resolved at page load
+  from the GitHub releases API and matched by pattern, which keeps this page
+  correct across releases without anybody editing it.
+
+  Everything degrades: with no JavaScript, a blocked API or a rate-limited one,
+  every button still points at the releases page, which is always right and only
+  costs the reader one more click. That is why the fallback href is in the
+  markup rather than written in by the script.
+
+  Colours come from Bootstrap/Docsy classes only, so the cards follow the
+  light/dark setting without this shortcode knowing which is active.
+*/}}
+
+{{- $repo := "artur-rios/orpheus" -}}
+{{- $releases := printf "https://github.com/%s/releases" $repo -}}
+
+<div class="alert alert-secondary d-flex align-items-center" role="alert">
+  <i class="fa-solid fa-tag me-2" aria-hidden="true"></i>
+  <div>
+    Latest release:
+    <strong><a id="orpheus-release-name" href="{{ $releases }}/latest">the most recent release</a></strong>
+    <span id="orpheus-release-date" class="text-body-secondary"></span>
+  </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 g-4 mb-4" id="orpheus-downloads">
+
+  <div class="col">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title"><i class="fa-brands fa-windows me-2" aria-hidden="true"></i>Windows</h5>
+        <p class="card-text text-body-secondary">Installer, with a Start menu entry and an uninstaller.</p>
+        <a class="btn btn-primary" href="{{ $releases }}/latest"
+           data-orpheus-asset="windows-setup">
+          Download <span class="orpheus-size"></span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title"><i class="fa-brands fa-windows me-2" aria-hidden="true"></i>Windows &mdash; portable</h5>
+        <p class="card-text text-body-secondary">Unpack anywhere and run it. Nothing is installed.</p>
+        <a class="btn btn-outline-primary" href="{{ $releases }}/latest"
+           data-orpheus-asset="windows-portable">
+          Download <span class="orpheus-size"></span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title"><i class="fa-brands fa-linux me-2" aria-hidden="true"></i>Linux</h5>
+        <p class="card-text text-body-secondary">A shell installer. Per-user by default, and needs no root.</p>
+        <a class="btn btn-primary" href="{{ $releases }}/latest"
+           data-orpheus-asset="linux-installer">
+          Download <span class="orpheus-size"></span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title"><i class="fa-brands fa-android me-2" aria-hidden="true"></i>Android</h5>
+        <p class="card-text text-body-secondary">Installed directly. Not on any store.</p>
+        <a class="btn btn-primary" href="{{ $releases }}/latest"
+           data-orpheus-asset="android-apk">
+          Download <span class="orpheus-size"></span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="text-body-secondary">
+  <i class="fa-solid fa-shield-halved me-1" aria-hidden="true"></i>
+  <a id="orpheus-checksums" href="{{ $releases }}/latest">SHA256SUMS.txt</a>
+  &mdash; check a download against it.
+  Every file above, and every past release, is on the
+  <a href="{{ $releases }}">releases page</a>.
+</p>
+
+<script>
+(function () {
+  'use strict';
+
+  // Matched by pattern rather than by exact name, because every name carries a
+  // version. Ordered: the first pattern that matches an asset claims it.
+  var WANTED = [
+    ['windows-setup',    /^orpheus-setup-.*\.exe$/i],
+    ['windows-portable', /windows.*portable.*\.zip$/i],
+    ['linux-installer',  /^orpheus-installer-.*\.sh$/i],
+    ['android-apk',      /\.apk$/i]
+  ];
+
+  function readable(bytes) {
+    if (!bytes) return '';
+    var mb = bytes / (1024 * 1024);
+    return mb >= 1 ? '(' + mb.toFixed(0) + ' MB)' : '(' + Math.round(bytes / 1024) + ' KB)';
+  }
+
+  fetch('https://api.github.com/repos/{{ $repo }}/releases/latest', {
+    headers: { 'Accept': 'application/vnd.github+json' }
+  })
+    .then(function (response) {
+      // A rate-limited or offline reader keeps the fallback links, which are
+      // already in the markup and already correct.
+      if (!response.ok) throw new Error('releases API answered ' + response.status);
+      return response.json();
+    })
+    .then(function (release) {
+      var assets = release.assets || [];
+
+      var name = document.getElementById('orpheus-release-name');
+      if (name && release.name) {
+        name.textContent = release.name;
+        name.href = release.html_url;
+      }
+
+      var when = document.getElementById('orpheus-release-date');
+      if (when && release.published_at) {
+        when.textContent = ' — ' + new Date(release.published_at)
+          .toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+      }
+
+      WANTED.forEach(function (entry) {
+        var key = entry[0], pattern = entry[1];
+        var asset = assets.find(function (a) { return pattern.test(a.name); });
+        if (!asset) return;
+
+        var link = document.querySelector('[data-orpheus-asset="' + key + '"]');
+        if (!link) return;
+
+        link.href = asset.browser_download_url;
+        link.setAttribute('download', '');
+        link.title = asset.name;
+
+        var size = link.querySelector('.orpheus-size');
+        if (size) size.textContent = readable(asset.size);
+      });
+
+      var sums = assets.find(function (a) { return /^SHA256SUMS/i.test(a.name); });
+      var sumsLink = document.getElementById('orpheus-checksums');
+      if (sums && sumsLink) sumsLink.href = sums.browser_download_url;
+    })
+    .catch(function (error) {
+      // Deliberately quiet on the page. The links still work.
+      if (window.console) console.info('Orpheus: keeping the fallback download links —', error.message);
+    });
+})();
+</script>

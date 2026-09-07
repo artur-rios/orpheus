@@ -1,0 +1,107 @@
+# The documentation site.
+#
+# It lives in docs/site/ rather than in docs/ itself, and deliberately: docs/
+# already holds the project's specification documents, which the README links
+# into from forty-six places and which the workflow documents cross-reference.
+# A Hugo site rooted there would either collide with them or require moving
+# them, and the specifications are the normative documents — they are not
+# something to relocate for a website's convenience. The site links out to them
+# instead.
+
+baseURL = 'https://artur-rios.github.io/orpheus/'
+title = 'Orpheus'
+languageCode = 'en-gb'
+contentDir = 'content/en'
+defaultContentLanguage = 'en'
+enableRobotsTXT = true
+
+# The theme, as a Hugo module rather than a git submodule. A submodule is a
+# second thing to remember to update and a common way for a clone to arrive
+# without its theme; a module is a version in go.mod that `hugo mod get` moves.
+[module]
+  proxy = 'https://proxy.golang.org'
+  [[module.imports]]
+    path = 'github.com/google/docsy'
+  [[module.imports]]
+    path = 'github.com/google/docsy/dependencies'
+
+# Mermaid diagrams are rendered from fenced code blocks, so the diagram in the
+# source is the diagram a reader sees — reviewable in a diff rather than an
+# image nobody can edit. The same reasoning the icon script is written under.
+[markup]
+  [markup.goldmark.renderer]
+    unsafe = true
+  [markup.highlight]
+    noClasses = false
+    style = 'tango'
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 4
+
+[params]
+  copyright = 'Artur Rios'
+  github_repo = 'https://github.com/artur-rios/orpheus'
+  github_branch = 'main'
+  # The site source sits below the repository root, so "edit this page" has to
+  # be told where, or every link points at a path that does not exist.
+  github_subdir = 'docs/site'
+  version_menu = 'Releases'
+  archived_version = false
+  version = '1.0.0'
+  url_latest_version = 'https://github.com/artur-rios/orpheus/releases/latest'
+  offlineSearch = true
+
+  [params.mermaid]
+    enable = true
+    # Pinned. Docsy defaults to `latest`, which means the diagrams on this site
+    # are re-rendered by whatever Mermaid shipped this morning — a breaking
+    # change upstream would break every diagram here with no commit to point
+    # at. Moving this is a deliberate act with a diff.
+    version = '11.4.1'
+
+  [params.ui]
+    # Light and dark, with a control to choose between them. Left on `auto` for
+    # somebody who has expressed no preference, which follows the system — the
+    # same rule the application itself follows for its own theme.
+    showLightDarkModeMenu = true
+    sidebar_menu_compact = false
+    sidebar_search_disable = false
+    breadcrumb_disable = false
+    navbar_logo = true
+    footer_about_enable = true
+
+  [params.links]
+    [[params.links.user]]
+      name = 'Releases'
+      url = 'https://github.com/artur-rios/orpheus/releases'
+      icon = 'fa fa-download'
+      desc = 'Every release, with its downloads'
+    [[params.links.developer]]
+      name = 'GitHub'
+      url = 'https://github.com/artur-rios/orpheus'
+      icon = 'fab fa-github'
+      desc = 'The source, the specifications and the issues'
+
+[menu]
+  [[menu.main]]
+    name = 'Downloads'
+    weight = 40
+    url = '/downloads/'
+    pre = '<i class="fa-solid fa-download"></i>'
+  [[menu.main]]
+    name = 'GitHub'
+    weight = 50
+    url = 'https://github.com/artur-rios/orpheus'
+    pre = '<i class="fab fa-github"></i>'
+
+[languages]
+  [languages.en]
+    languageName = 'English'
+    weight = 1
+    [languages.en.params]
+      title = 'Orpheus'
+      description = 'A music player for Windows, Linux and Android that plays the files you already own.'
+
+[outputs]
+  home = ['HTML', 'RSS', 'PRINT']
+  section = ['HTML', 'RSS', 'PRINT']

@@ -1,0 +1,59 @@
+---
+title: Orpheus
+---
+
+{{< blocks/cover title="Orpheus" image_anchor="top" height="med" color="primary" >}}
+<div class="mx-auto">
+  <p class="lead mt-4">A music player for Windows, Linux and Android.<br>
+  It plays the files you already own.</p>
+  <a class="btn btn-lg btn-secondary me-3 mb-4" href="{{< relref "/downloads" >}}">
+    Download <i class="fa-solid fa-download ms-2"></i>
+  </a>
+  <a class="btn btn-lg btn-primary me-3 mb-4" href="{{< relref "/docs" >}}">
+    Read the docs <i class="fa-solid fa-book ms-2"></i>
+  </a>
+</div>
+{{< /blocks/cover >}}
+
+{{% blocks/lead color="dark" %}}
+Orpheus reads the audio files already on the machine it is running on, names
+every track by its tags rather than by its file name, and plays them — with the
+same interface on all three platforms.
+
+No account. No server. No catalog somebody else curates.
+{{% /blocks/lead %}}
+
+{{< blocks/section color="light" type="row" >}}
+{{% blocks/feature icon="fa-solid fa-folder-open" title="Your folders, your library" %}}
+Register the folders you choose and Orpheus walks them, reads the tags out of
+every audio file, and pulls out the cover art. Nothing is indexed that you did
+not point it at.
+{{% /blocks/feature %}}
+
+{{% blocks/feature icon="fa-solid fa-wave-square" title="It draws the music itself" %}}
+The bars on the player are the spectrum of the recording, measured from its own
+samples by the same engine that plays it — analysed once per track and kept.
+{{% /blocks/feature %}}
+
+{{% blocks/feature icon="fa-solid fa-align-center" title="The words, in time" %}}
+Your own `.lrc` files and lyrics tags come first. For a track that has neither,
+Orpheus looks the words up and saves them beside it.
+{{% /blocks/feature %}}
+{{< /blocks/section >}}
+
+{{< blocks/section color="white" type="row" >}}
+{{% blocks/feature icon="fa-solid fa-lock" title="It never touches your audio files" %}}
+No tag editing, no renaming, no moving, no deleting, no transcoding. They are
+opened for reading and that is all.
+{{% /blocks/feature %}}
+
+{{% blocks/feature icon="fa-solid fa-mobile-screen" title="It keeps playing on Android" %}}
+From a notification and the lock screen that carry the sleeve and the transport
+buttons — and it stops for a phone call, and for headphones pulled out.
+{{% /blocks/feature %}}
+
+{{% blocks/feature icon="fa-solid fa-code" title="Specified before it was built" %}}
+Every use case is written down before it is implemented, and every promise the
+project makes is checked by CI rather than asserted in a README.
+{{% /blocks/feature %}}
+{{< /blocks/section >}}

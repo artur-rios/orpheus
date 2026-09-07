@@ -50,3 +50,10 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# The documentation site's build output and dependencies. The site is built and
+# published by .github/workflows/docs.yml; none of this belongs in the history.
+/docs/site/public/
+/docs/site/resources/
+/docs/site/node_modules/
+/docs/site/.hugo_build.lock

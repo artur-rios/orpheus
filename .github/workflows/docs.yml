@@ -1,0 +1,120 @@
+name: Docs
+
+# Builds the documentation site and publishes it to GitHub Pages.
+#
+# The site lives in docs/site/ and is a Hugo project using the Docsy theme,
+# which is pulled in as a Hugo module rather than a git submodule — so this
+# needs Go as well as Hugo, and Hugo has to be the extended build because Docsy
+# is written in SCSS.
+#
+# It runs on a push that touches the site, and can be run by hand. It does not
+# run on every push: nothing else in this repository changes what the site
+# renders, and a docs deploy on a commit that only moved Dart around is noise.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/site/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+# One deployment at a time, and never cancel one half-done: a cancelled deploy
+# can leave the published site partly replaced.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  HUGO_VERSION: 0.140.2
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs/site
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Docsy's "last modified" dates come from the git log, and a shallow
+          # clone gives every page the same date.
+          fetch-depth: 0
+
+      # The extended build, because Docsy is SCSS and the standard build cannot
+      # compile it. Installed from the .deb rather than through a marketplace
+      # action, so the version above is the version that runs.
+      - name: Install Hugo (extended)
+        run: |
+          set -eu
+          curl -sSLo hugo.deb "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.deb"
+          sudo dpkg -i hugo.deb
+          hugo version
+
+      # Hugo modules are Go modules, so fetching the theme needs a Go toolchain
+      # even though nothing here is written in Go.
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # PostCSS, which Docsy's stylesheet pipeline shells out to. Without it the
+      # build fails on the first uncached stylesheet — and only on the first,
+      # which is what makes it easy to miss locally.
+      - name: Install the stylesheet toolchain
+        run: npm install --no-audit --no-fund
+
+      - uses: actions/configure-pages@v5
+        id: pages
+
+      - name: Build
+        # The base URL comes from the Pages configuration rather than from
+        # hugo.toml, so that a fork publishes under its own name instead of
+        # linking every asset back to this repository's site.
+        run: |
+          hugo --minify --gc \
+            --baseURL "${{ steps.pages.outputs.base_url }}/"
+
+      # A page that renders as an empty shell still exits zero, so the things
+      # this site is actually for are checked rather than assumed.
+      - name: Check the site holds what it should
+        run: |
+          set -eu
+          test -f public/index.html            || { echo "::error::no home page"; exit 1; }
+          test -f public/downloads/index.html  || { echo "::error::no downloads page"; exit 1; }
+
+          diagrams=$(grep -rlo 'class="mermaid' public/docs/architecture/ | wc -l)
+          [ "$diagrams" -ge 4 ] || { echo "::error::expected diagrams on at least 4 architecture pages, found $diagrams"; exit 1; }
+
+          grep -q 'td-light-dark-menu' public/index.html ||
+            { echo "::error::the light/dark control is not rendered"; exit 1; }
+
+          grep -qo 'mermaid@11' public/docs/architecture/index.html ||
+            { echo "::error::mermaid is not pinned to the expected major version"; exit 1; }
+
+          echo "Home, downloads, $diagrams diagram pages, the theme control, and a pinned mermaid."
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/site/public
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
