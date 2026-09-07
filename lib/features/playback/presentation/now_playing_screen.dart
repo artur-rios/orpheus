@@ -22,7 +22,7 @@ import 'sound_bars.dart';
 /// and it is making a sound right now. So that is the screen — the record's own
 /// picture as large as the window allows, what is playing named underneath it,
 /// and the bars, which move while the music does and settle when it stops.
-class NowPlayingScreen extends ConsumerWidget {
+class NowPlayingScreen extends ConsumerStatefulWidget {
   /// Creates the screen.
   const NowPlayingScreen({super.key});
 
@@ -42,24 +42,39 @@ class NowPlayingScreen extends ConsumerWidget {
   /// and the playback bar's button are two independent paths to the same
   /// route, and either could otherwise stack a second copy on top of a first
   /// that is already open.
+  ///
+  /// Raised by [show] and lowered by the screen's own `dispose`, rather than
+  /// by whatever happens to the future the push returns. A route can go away
+  /// without that future ever completing — the navigator holding it is torn
+  /// down, which is every widget test that ends with the player open — and
+  /// clearing the flag there left it raised for the rest of the process, so
+  /// the player could never be opened again.
   static bool _open = false;
 
   /// Pushes the full-window player over [context], unless one is already open.
-  static Future<void> show(BuildContext context) async {
-    if (_open) return;
+  static Future<void> show(BuildContext context) {
+    if (_open) return Future<void>.value();
 
     _open = true;
-    try {
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute(builder: (context) => const NowPlayingScreen()),
-      );
-    } finally {
-      _open = false;
-    }
+
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (context) => const NowPlayingScreen()),
+    );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NowPlayingScreen> createState() => _NowPlayingScreenState();
+}
+
+class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
+  @override
+  void dispose() {
+    NowPlayingScreen._open = false;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final state = ref.watch(audioPlaybackControllerProvider);
@@ -100,7 +115,10 @@ class NowPlayingScreen extends ConsumerWidget {
                   viewport.maxWidth - AppSpacing.lg * 2,
                   viewport.maxHeight * 0.42,
                 )
-                .clamp(coverMinimum, coverMaximum)
+                .clamp(
+                  NowPlayingScreen.coverMinimum,
+                  NowPlayingScreen.coverMaximum,
+                )
                 .toDouble();
 
             return SingleChildScrollView(

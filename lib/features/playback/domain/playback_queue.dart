@@ -90,27 +90,6 @@ class PlaybackQueue {
   /// Whether there is a track before this one.
   bool get hasPrevious => index > 0;
 
-  /// Whether every queued track was skipped.
-  bool get everythingFailed =>
-      tracks.isNotEmpty && skipped.length == tracks.length;
-
-  /// Whether the record playing is the queue's own, rather than the current
-  /// track's.
-  ///
-  /// An album or an artist queue *is* a record: it carries the label and the
-  /// year that identify it, and every track in it belongs to the same one.
-  ///
-  /// A track queue and a playlist queue are not. A lone track's record is
-  /// whatever that track's own tags say it is; a playlist's is the same
-  /// question asked again on every track, because a playlist deliberately
-  /// names no record of its own — which is what makes crossing from one album
-  /// to the next inside one change the sleeve on the bar, while skipping
-  /// within an album does not.
-  bool get namesOwnRecord => switch (kind) {
-    QueueKind.album || QueueKind.artist => true,
-    QueueKind.track || QueueKind.playlist => false,
-  };
-
   /// A copy with the given changes.
   PlaybackQueue copyWith({
     List<AudioFile>? tracks,

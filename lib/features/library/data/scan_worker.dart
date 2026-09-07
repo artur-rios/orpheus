@@ -108,6 +108,13 @@ ScanOutcome scanFolders({
   // holds, which is not stable between machines or even between runs.
   found.sort((a, b) => a.path.compareTo(b.path));
 
+  // What is actually on disk this time, so that "removed" can be counted as
+  // the question it is — which of the paths the catalog held are no longer
+  // there. Counting it as `known.length - reused` instead made every file that
+  // had merely *changed* count as one removed and one added, so re-tagging a
+  // track reported a removal that never happened.
+  final present = {for (final file in found) file.path};
+
   final entries = <MusicEntry>[];
   final sidecars = <String, String?>{};
   var reused = 0;
@@ -159,7 +166,7 @@ ScanOutcome scanFolders({
       tracks: entries.length,
       added: added,
       reused: reused,
-      removed: known.length - reused,
+      removed: known.keys.where((path) => !present.contains(path)).length,
       unreadable: unreadable,
       unreachableFolders: unreachable,
     ),
@@ -234,8 +241,13 @@ String? _sidecarCover(
       final path = candidates[name];
       if (path == null) continue;
 
+      // Only a picture with bytes in it settles the folder. A zero-length
+      // `cover.jpg` — which is what a failed download leaves behind — is not a
+      // sleeve, and stopping at it would hide the `folder.jpg` beside it.
       final bytes = File(path).readAsBytesSync();
-      if (bytes.isNotEmpty) found = covers.putSync(bytes);
+      if (bytes.isEmpty) continue;
+
+      found = covers.putSync(bytes);
       break;
     }
   } on Object {

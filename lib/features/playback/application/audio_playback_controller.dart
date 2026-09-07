@@ -5,9 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/di/providers.dart';
 import '../../library/domain/audio_file.dart';
 import '../../library/domain/music_catalog.dart';
-import '../../library/domain/music_entry.dart';
 import '../../library/domain/music_grouping.dart';
-import '../../library/domain/track_metadata.dart';
 import '../../stats/domain/play_threshold.dart';
 import '../domain/media_player.dart';
 import '../domain/playback_position_store.dart';
@@ -235,12 +233,15 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
 
     final library = await _library();
     if (library == null) {
-      state = const AudioPlaybackState(stage: AudioStage.allFailed);
+      state = AudioPlaybackState(
+        stage: AudioStage.allFailed,
+        repeat: state.repeat,
+      );
 
       return;
     }
     if (library.isEmpty) {
-      state = const AudioPlaybackState();
+      state = AudioPlaybackState(repeat: state.repeat);
 
       return;
     }
@@ -302,12 +303,31 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
     };
 
     await _player.seek(bounded);
+
+    // Carried into the state rather than waited for. The engine reports where
+    // it is a few times a second and on its own schedule, so until the next
+    // report lands `status.position` is still the position the seek moved
+    // away from — and the write below reads the state. Without this the
+    // resume point recorded by a seek was the one the owner had just left,
+    // which is the opposite of what a seek means, and the slider sprang back
+    // under the thumb for the rest of the tick.
+    state = state.copyWith(
+      status: state.status.copyWith(position: bounded),
+      resumeFrom: state.resumeFrom,
+      lastSkipped: state.lastSkipped,
+    );
+
     await _recordPosition(force: true);
   }
 
   /// Moves to the next track in the queue.
   ///
-  /// At the end of a queue set to repeat, the next track is the first one.
+  /// At the end of a queue set to repeat — either mode — the next track is the
+  /// first one. That is deliberately not what the *end of a track* does under
+  /// [QueueRepeat.one], which re-opens the same track: a track running out is
+  /// the repeat doing its job, and the owner pressing next is the owner asking
+  /// for something else. A next button that re-played what was already playing
+  /// would be a button that appeared to do nothing.
   Future<void> next() async {
     if (state.queue.hasNext) {
       await _openAt(state.queue.index + 1);
@@ -436,31 +456,41 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
       // `lastSkipped` stays null on purpose: nothing was attempted, so naming
       // [file] as skipped would claim a specific track failed to play, which
       // did not happen.
-      state = const AudioPlaybackState(stage: AudioStage.allFailed);
+      state = AudioPlaybackState(
+        stage: AudioStage.allFailed,
+        repeat: state.repeat,
+      );
 
       return;
     }
 
     final entries = library.entries;
-    final entry =
-        library.entryAt(file.path) ??
-        MusicEntry(file: file, metadata: TrackMetadata.empty);
 
-    final gathered = switch (kind) {
-      _GroupKind.album => albumOf(entry, entries),
-      _GroupKind.artist => artistOf(entry, entries),
-    };
+    // A file the library does not hold is a file with no record around it —
+    // played from a queue whose tracks have since been re-scanned away, say.
+    // It queues alone, and it is checked here rather than left to the grouping
+    // functions: an entry built from an untagged stranger looks exactly like a
+    // member of the library's own untagged group, and those two want opposite
+    // answers — the stranger is one file, and the group is the group.
+    final entry = library.entryAt(file.path);
+
+    final gathered = entry == null
+        ? [file]
+        : switch (kind) {
+            _GroupKind.album => albumOf(entry, entries),
+            _GroupKind.artist => artistOf(entry, entries),
+          };
     final tracks = shuffled ? _shuffled(gathered) : gathered;
 
     // Never the file name: an absent tag is carried as `null` rather than
     // defaulting to the name on disk here, because this is application code
     // with no `AppLocalizations` to turn that absence into the right word.
     final label = switch (kind) {
-      _GroupKind.album => entry.album,
+      _GroupKind.album => entry?.album,
       // The album artist, because `artistOf` gathered the queue by it: a label
       // naming the guest performer would title a queue of the host's whole
       // catalogue after one track's guest.
-      _GroupKind.artist => entry.albumArtist,
+      _GroupKind.artist => entry?.albumArtist,
     };
 
     // Starting where the owner started, not at the top: they picked this
@@ -481,7 +511,7 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
           _GroupKind.artist => QueueKind.artist,
         },
         label: label,
-        year: entry.metadata.year,
+        year: entry?.metadata.year,
         index: startIndex < 0 ? 0 : startIndex,
       ),
       at: Duration.zero,

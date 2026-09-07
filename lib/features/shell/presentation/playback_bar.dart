@@ -167,8 +167,9 @@ class _Bar extends ConsumerWidget {
         if (!compact) ...[
           _Position(status: state.status),
           const SizedBox(width: AppSpacing.sm),
-          // Disabled rather than hidden at the ends of a queue, so the
-          // controls do not move as it plays through.
+          // Never disabled: pressing back near the start of a track steps to
+          // the one before it and pressing it later restarts this one, so
+          // there is no point in a queue where it does nothing.
           IconButton(
             tooltip: l10n.audioPrevious,
             icon: const Icon(Icons.skip_previous),
@@ -180,6 +181,8 @@ class _Bar extends ConsumerWidget {
           icon: Icon(state.isPlaying ? Icons.pause : Icons.play_arrow),
           onPressed: () => unawaited(controller.togglePlaying()),
         ),
+        // Disabled rather than hidden at the end of a queue, so the controls
+        // do not move as it plays through.
         IconButton(
           tooltip: l10n.audioNext,
           icon: const Icon(Icons.skip_next),

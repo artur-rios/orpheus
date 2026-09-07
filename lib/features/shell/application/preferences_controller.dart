@@ -107,10 +107,18 @@ class PreferencesController extends Notifier<PreferencesState> {
   }
 
   /// Applies [value] to the engine now, and remembers it.
+  ///
+  /// Through [_write] like every other preference here. The player is what
+  /// owns the level — it sets the engine and records the choice in one call —
+  /// but a level that could not be written is the same condition the theme and
+  /// the language report, and this was the one control that let it escape as
+  /// an unhandled error from a slider's callback instead.
   Future<void> setVolume(double value) async {
     final level = value.clamp(0.0, 1.0).toDouble();
     state = state.copyWith(volume: level, unsaved: false);
-    await ref.read(audioPlaybackControllerProvider.notifier).setVolume(level);
+    await _write(
+      () => ref.read(audioPlaybackControllerProvider.notifier).setVolume(level),
+    );
   }
 
   /// Runs [write], and records a refusal rather than throwing it.

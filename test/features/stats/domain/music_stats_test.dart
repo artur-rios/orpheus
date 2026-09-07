@@ -31,6 +31,56 @@ void main() {
   );
 
   test(
+    'GivenTwoRecordsShareATitle_WhenTheAlbumsAreRanked_ThenTheirPlaysAreNotAddedTogether',
+    () {
+      // Ranked by the record, not by the words on its spine. Keyed by title
+      // alone, an owner's three plays of one artist's Greatest Hits and four
+      // of another's became one line claiming seven plays of something they
+      // never played.
+      final records = albumArtistsAcross([
+        entry(id: 'a', title: 'A', artist: 'Aretha', albumArtist: 'Aretha',
+            album: 'Greatest Hits', directory: '/library/aretha'),
+        entry(id: 'b', title: 'B', artist: 'Bowie', albumArtist: 'Bowie',
+            album: 'Greatest Hits', directory: '/library/bowie'),
+      ]);
+
+      final stats = musicStatsFrom(
+        history: historyOf({
+          '/library/aretha/zzz-a.flac': 3,
+          '/library/bowie/zzz-b.flac': 4,
+        }),
+        catalog: MusicCatalog(entries: records),
+      );
+
+      expect(
+        [for (final line in stats.albums) (line.name, line.plays)],
+        [('Greatest Hits', 4), ('Greatest Hits', 3)],
+      );
+    },
+  );
+
+  test(
+    'GivenTwoRankingsAreTied_WhenTheyAreOrdered_ThenTheirNamesAreComparedAsAReaderWould',
+    () {
+      // Case-insensitively, like every listing in the application. Raw string
+      // order puts every capital above every lower-case letter, which is not
+      // an order anybody reading a chart expects.
+      final stats = musicStatsFrom(
+        history: historyOf({
+          '/library/zzz-x.flac': 2,
+          '/library/zzz-y.flac': 2,
+        }),
+        catalog: catalogOf([
+          entry(id: 'x', title: 'x', artist: 'beatles', album: 'b'),
+          entry(id: 'y', title: 'y', artist: 'Abba', album: 'a'),
+        ]),
+      );
+
+      expect([for (final line in stats.artists) line.name], ['Abba', 'beatles']);
+    },
+  );
+
+  test(
     'GivenNothingHasBeenPlayed_WhenTheStatisticsAreRead_ThenTheyAreEmpty',
     () async {
       final stats = musicStatsFrom(

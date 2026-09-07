@@ -17,9 +17,6 @@ class MusicGroup {
   /// The tracks in it.
   final List<MusicEntry> entries;
 
-  /// Whether this is the group of files that carry no tag.
-  bool get isUntagged => name == null;
-
   /// How long the whole group runs, or `null` where any track's length is
   /// unknown — a total that quietly omitted the tracks it could not measure
   /// would be a number the owner has no way to read.
@@ -103,29 +100,30 @@ List<MusicEntry> songsIn(List<MusicEntry> library) =>
 
 /// The tracks of [entry]'s album, in track order.
 ///
-/// A file whose album the tags do not name is its own album of one: two
-/// untitled files are not the same record, and treating a blank field as a
-/// grouping key would queue an owner's whole collection of loose tracks
-/// together.
-///
 /// Keyed by the album's artist rather than the track's, as [albumsIn] is: a
 /// queue built from a group has to contain what the group showed, and keying
 /// this on the performer would mean pressing play on a compilation queued only
 /// the tracks whose performer matched the one started from.
+///
+/// A file whose album the tags do not name belongs to the untitled group —
+/// every file under the same album artist that names no record either — and it
+/// queues that whole group, because that is the group the Albums list showed
+/// and drilled into. An earlier version answered with the seed file alone,
+/// which made pressing play on a group of forty tracks play one of them.
+///
+/// The caller decides what a file the library does not hold at all means; this
+/// is a question about a library and an entry in it.
 List<AudioFile> albumOf(MusicEntry entry, List<MusicEntry> library) {
   final album = entry.album;
-  if (album == null) return [entry.file];
-
   final artist = entry.albumArtist;
 
   return [
     for (final candidate in inTrackOrder([
       for (final candidate in library)
         // Two different artists can name an album the same thing, so the album
-        // is the pair. Exact equality including the absent case: an album
-        // whose artist no tag names is its own record, and a permissive `null`
-        // arm here would queue every album of that title under a group that
-        // listed only the untagged files.
+        // is the pair. Exact equality including the absent case on both sides,
+        // which is what makes the untitled group of one artist a different
+        // record from the untitled group of another.
         if (candidate.album == album && candidate.albumArtist == artist)
           candidate,
     ]))
@@ -137,9 +135,13 @@ List<AudioFile> albumOf(MusicEntry entry, List<MusicEntry> library) {
 ///
 /// The album artist, so that what an artist queue plays is what the Artists
 /// list showed under that name — including the guest tracks on their records.
+///
+/// A file whose artist the tags do not name queues the untagged group, for the
+/// reason [albumOf] queues the untitled one: it is the group the Artists list
+/// showed, and a play button on a group of forty that played one of them was
+/// answering a different question from the one it was asked.
 List<AudioFile> artistOf(MusicEntry entry, List<MusicEntry> library) {
   final artist = entry.albumArtist;
-  if (artist == null) return [entry.file];
 
   return inArtistOrder([
     for (final candidate in library)
@@ -150,12 +152,8 @@ List<AudioFile> artistOf(MusicEntry entry, List<MusicEntry> library) {
 /// [entries], grouped by album and ordered within each album.
 ///
 /// [artistOf] performs the same album-then-track ordering, but it starts from a
-/// single seed track and a whole library to filter down from, and it
-/// deliberately answers just that one file when the seed names no artist. That
-/// early return is wrong here: [entries] may already be the untagged-artist
-/// group, and every track in it belongs in the result rather than only the
-/// first — so this sorts the list it is given rather than re-deriving one from
-/// a single file.
+/// single seed track and a whole library to filter down from; this sorts the
+/// list it is given, which is what the callers that already hold a group need.
 List<AudioFile> inArtistOrder(List<MusicEntry> entries) {
   final ordered = [...entries]..sort((a, b) {
     final byAlbum = (a.album ?? '').compareTo(b.album ?? '');
@@ -213,52 +211,122 @@ int byName(String? left, String? right) {
 /// that one record than listing all of them — and a far better one for every
 /// ordinary album with a guest on it, which is what most libraries are made
 /// of. An owner who disagrees has the tag, and it wins.
+///
+/// **What identifies a record here is its title and its folder**, not its title
+/// alone — see [_RecordKey]. Every grouping downstream keys albums by
+/// `(album, albumArtist)` precisely so that two artists who name a record the
+/// same thing stay two records; a derivation that pooled them by title would
+/// hand both of them one artist and defeat that key before it was ever read.
 List<MusicEntry> albumArtistsAcross(List<MusicEntry> entries) {
-  final tagged = <String, Map<String, int>>{};
-  final performers = <String, Map<String, int>>{};
+  final tagged = <_RecordKey, Map<String, int>>{};
+  final performers = <_RecordKey, Map<String, int>>{};
+
+  // The same two counts pooled across every folder that shares an album title.
+  // Read only to break a tie one folder cannot break for itself — see
+  // [_commonest] — which is what keeps a record split into `CD1` and `CD2` one
+  // record when a disc of it is half guests.
+  final taggedByTitle = <String, Map<String, int>>{};
+  final performersByTitle = <String, Map<String, int>>{};
 
   for (final entry in entries) {
-    final album = entry.album;
-    if (album == null) continue;
+    final record = _recordOf(entry);
+    if (record == null) continue;
 
     if (trimmedOrNull(entry.metadata.albumArtist) case final artist?) {
-      _count(tagged, album, artist);
+      _count(tagged, record, artist);
+      _count(taggedByTitle, record.album, artist);
     }
     if (entry.artist case final artist?) {
-      _count(performers, album, artist);
+      _count(performers, record, artist);
+      _count(performersByTitle, record.album, artist);
     }
   }
 
   return [
     for (final entry in entries)
-      entry.withRecordArtist(
-        entry.album == null
-            ? null
-            : _commonest(tagged[entry.album!]) ??
-                  _commonest(performers[entry.album!]),
-      ),
+      entry.withRecordArtist(switch (_recordOf(entry)) {
+        null => null,
+        final record =>
+          _commonest(
+            tagged[record],
+            breakTiesWith: taggedByTitle[record.album],
+          ) ??
+              _commonest(
+                performers[record],
+                breakTiesWith: performersByTitle[record.album],
+              ),
+      }),
   ];
 }
 
-void _count(Map<String, Map<String, int>> into, String album, String artist) =>
-    into
-        .putIfAbsent(album, () => {})
-        .update(artist, (count) => count + 1, ifAbsent: () => 1);
+/// What tells one record from another while its artist is still being worked
+/// out.
+///
+/// The album title and the folder the file sits in. The folder is what
+/// separates two artists who named a record the same thing, and it is the right
+/// separator rather than a convenient one: a record is a directory of tracks
+/// on every machine this runs on, which is also why the sidecar cover is looked
+/// for there.
+///
+/// What it does not separate is two same-titled records by different artists
+/// loose in one flat folder — there is nothing left to tell those apart before
+/// the artist is known, and the album-artist tag is what an owner has if they
+/// care. A multi-disc set split into `CD1` and `CD2` is two keys rather than
+/// one, which costs nothing: each half answers with the same artist, and
+/// [albumsIn] keys by `(album, albumArtist)` and joins them again.
+typedef _RecordKey = ({String album, String directory});
+
+/// The record [entry] belongs to, or `null` when its tags name none.
+_RecordKey? _recordOf(MusicEntry entry) {
+  final album = entry.album;
+
+  return album == null
+      ? null
+      : (album: album, directory: entry.file.directory);
+}
+
+void _count<K>(Map<K, Map<String, int>> into, K key, String artist) => into
+    .putIfAbsent(key, () => {})
+    .update(artist, (count) => count + 1, ifAbsent: () => 1);
 
 /// The name most of them carry, or `null` when there are none.
 ///
-/// Ties break alphabetically rather than by encounter order: a library listing
-/// its artists differently depending on which file the scan happened to read
-/// first would be a library that reorders itself for no reason the owner can
-/// see.
-String? _commonest(Map<String, int>? counts) {
+/// [breakTiesWith] is the same tally taken over a wider set — every folder that
+/// shares this album's title — and it is consulted only between names [counts]
+/// ranks equally. A disc folder holding one track by the host and one by a
+/// guest has no opinion of its own; the rest of the record does, and without
+/// asking it the two halves of a multi-disc set could land under two different
+/// artists and list as two records.
+///
+/// It can only reorder names already tied here, so a wider tally can never
+/// overrule a folder that answered for itself — which is what keeps two
+/// artists who named a record the same thing from being pooled into one.
+///
+/// What is left over breaks alphabetically rather than by encounter order: a
+/// library listing its artists differently depending on which file the scan
+/// happened to read first would be a library that reorders itself for no
+/// reason the owner can see.
+String? _commonest(Map<String, int>? counts, {Map<String, int>? breakTiesWith}) {
   if (counts == null || counts.isEmpty) return null;
 
   final names = counts.keys.toList()..sort();
+  var best = names.first;
 
-  return names.reduce(
-    (best, name) => counts[name]! > counts[best]! ? name : best,
-  );
+  for (final name in names.skip(1)) {
+    final byCount = counts[name]!.compareTo(counts[best]!);
+    if (byCount > 0) {
+      best = name;
+      continue;
+    }
+    if (byCount < 0) continue;
+
+    final wider = (breakTiesWith?[name] ?? 0).compareTo(
+      breakTiesWith?[best] ?? 0,
+    );
+    if (wider > 0) best = name;
+  }
+
+  return best;
 }
 
 List<MusicGroup> _groupedBy(

@@ -351,13 +351,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String failureFolderUnreadable(String path) {
-    return 'This folder could not be read: $path';
-  }
-
-  @override
   String get failureCatalogUnavailable =>
-      'The library could not be read from disk.';
+      'The library could not be saved. This scan will have to run again next time Orpheus starts.';
 
   @override
   String get failurePermissionDenied =>
@@ -366,11 +361,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get failurePermissionDeniedPermanently =>
       'Permission to read audio files was refused. Grant it in the system settings.';
-
-  @override
-  String failureTrackUnplayable(String path) {
-    return 'This file could not be played: $path';
-  }
 
   @override
   String get failureUnexpected => 'Something went wrong.';

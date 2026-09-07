@@ -262,7 +262,7 @@ final energyStoreProvider = Provider<EnergyStore>(
 /// What measures a track's spectrum.
 final trackAnalysisProvider = Provider<TrackAnalysis>(
   (ref) => MpvTrackAnalysis(
-    scratchDirectory: ref.watch(appDirectoriesProvider).energy,
+    scratchDirectory: ref.watch(appDirectoriesProvider).scratch,
   ),
 );
 

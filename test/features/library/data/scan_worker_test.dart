@@ -189,6 +189,26 @@ void main() {
   );
 
   test(
+    'GivenThePreferredCoverFileIsEmpty_WhenTheFolderIsScanned_ThenTheNextOneIsUsed',
+    () {
+      // A zero-length `cover.jpg` is what a failed download leaves behind, not
+      // a sleeve. Stopping at it hid the perfectly good `folder.png` beside
+      // it, and the record showed no artwork at all.
+      writeTrack('LP/01.flac', {'TITLE': 'Bare'});
+      writeFile('LP/cover.png', <int>[]);
+      writeFile('LP/folder.png', onePixelPng());
+
+      final coverId = scan().entries.single.metadata.coverId;
+
+      expect(coverId, isNotNull);
+      expect(
+        File('${covers.path}/$coverId').readAsBytesSync(),
+        onePixelPng(),
+      );
+    },
+  );
+
+  test(
     'GivenAPreviousScanAndAnUnchangedFile_WhenItIsScannedAgain_ThenItsTagsAreCarriedOverNotReRead',
     () {
       final file = writeFile(
@@ -240,6 +260,34 @@ void main() {
 
       expect(outcome.entries.single.title, 'On disk');
       expect(outcome.report.added, 1);
+    },
+  );
+
+  test(
+    'GivenAFileThatChangedSinceTheLastScan_WhenItIsScannedAgain_ThenNothingIsReportedAsRemoved',
+    () {
+      // Re-tagging a track is one file added and none removed. Counting
+      // removals as "what the catalog held minus what was carried over" made
+      // every changed file count as a removal too, so the folders screen told
+      // an owner who had corrected one tag that a track had left their
+      // library.
+      final file = writeFile('a.flac', taggedFlac(tags: {'TITLE': 'On disk'}));
+
+      final outcome = scan(
+        previous: [
+          MusicEntry(
+            file: AudioFile(
+              path: file.path,
+              sizeInBytes: 1,
+              modifiedAt: file.statSync().modified,
+            ),
+            metadata: const TrackMetadata(title: 'Stale'),
+          ),
+        ],
+      );
+
+      expect(outcome.report.added, 1);
+      expect(outcome.report.removed, 0);
     },
   );
 

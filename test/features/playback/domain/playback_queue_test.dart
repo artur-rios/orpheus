@@ -36,42 +36,14 @@ void main() {
   });
 
   test(
-    'GivenEveryQueuedTrackWasSkipped_WhenTheQueueIsAsked_ThenItSaysEverythingFailed',
+    'GivenEveryQueuedTrackWasSkipped_WhenTheQueueIsAsked_ThenEachOneIsRecorded',
     () {
       var queue = PlaybackQueue(tracks: tracks, kind: QueueKind.album);
       for (final track in tracks) {
         queue = queue.skipping(track);
       }
 
-      expect(queue.everythingFailed, isTrue);
-    },
-  );
-
-  test(
-    'GivenAnAlbumOrArtistQueue_WhenItIsAsked_ThenItNamesTheRecordItself',
-    () {
-      // An album queue *is* a record: every track in it belongs to the same
-      // one, so the sleeve does not change as it plays through.
-      for (final kind in [QueueKind.album, QueueKind.artist]) {
-        expect(
-          PlaybackQueue(tracks: tracks, kind: kind).namesOwnRecord,
-          isTrue,
-        );
-      }
-    },
-  );
-
-  test(
-    'GivenATrackOrShuffledQueue_WhenItIsAsked_ThenTheRecordIsWhicheverTrackIsPlaying',
-    () {
-      // Which is what makes crossing from one album to the next inside a
-      // shuffle change the sleeve, while skipping within an album does not.
-      for (final kind in [QueueKind.track, QueueKind.playlist]) {
-        expect(
-          PlaybackQueue(tracks: tracks, kind: kind).namesOwnRecord,
-          isFalse,
-        );
-      }
+      expect(queue.skipped, tracks);
     },
   );
 

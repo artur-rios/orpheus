@@ -81,24 +81,29 @@ class IsolateLibraryScanner implements LibraryScanner {
 
     unawaited(
       Isolate.spawn(
-        _run,
-        _ScanRequest(
-          folders: folders,
-          previous: previous.entries,
-          coverDirectory: coverDirectory,
-          unchangedSince: unchangedSince,
-          reply: messages.sendPort,
-        ),
-        onError: errors.sendPort,
-        errorsAreFatal: true,
-        debugName: 'orpheus-scan',
-      ).then((spawned) => isolate = spawned).catchError((Object error) {
-        _log.severe('the library scan could not start', error);
-        events.add(const ScanFailed(UnexpectedFailure()));
-        unawaited(close());
-
-        return isolate!;
-      }),
+            _run,
+            _ScanRequest(
+              folders: folders,
+              previous: previous.entries,
+              coverDirectory: coverDirectory,
+              unchangedSince: unchangedSince,
+              reply: messages.sendPort,
+            ),
+            onError: errors.sendPort,
+            errorsAreFatal: true,
+            debugName: 'orpheus-scan',
+          )
+          // Typed as void deliberately. A spawn that failed has no isolate to
+          // answer with, and an earlier version satisfied the `Future<Isolate>`
+          // this chain would otherwise have by asserting the one it had just
+          // failed to get — which threw a second, unhandled error out of the
+          // handler for the first.
+          .then<void>((spawned) => isolate = spawned)
+          .catchError((Object error) {
+            _log.severe('the library scan could not start', error);
+            events.add(const ScanFailed(UnexpectedFailure()));
+            unawaited(close());
+          }),
     );
 
     return events.stream;

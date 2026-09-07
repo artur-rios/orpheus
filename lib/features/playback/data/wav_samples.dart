@@ -94,9 +94,10 @@ WavFormat? readWavFormat(Uint8List bytes) {
         bits: bits,
         isFloat: isFloat,
         dataOffset: body,
-        // A length that runs past the end of the file is a header that was
-        // never patched, which is what a decoder that was killed mid-write
-        // leaves behind. Read to the end instead of trusting it.
+        // Zero means the header was never patched with the real length, which
+        // is what a decoder killed mid-write leaves behind: read to the end
+        // instead. A length that overshoots the file needs no handling here —
+        // the reader stops at the first short read, which is the same place.
         dataLength: length <= 0 ? -1 : length,
       );
     }

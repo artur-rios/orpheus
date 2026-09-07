@@ -12,16 +12,13 @@ sealed class Failure implements Exception {
   final Object? cause;
 }
 
-/// A folder the owner registered is gone, or cannot be read.
-class LibraryFolderUnreadable extends Failure {
-  /// Creates the failure for [path].
-  const LibraryFolderUnreadable({required this.path, super.cause});
-
-  /// The folder that could not be read.
-  final String path;
-}
-
-/// The catalog on disk could not be read or written.
+/// The catalog document could not be written.
+///
+/// Writing only. A catalog that cannot be *read* is not a failure anyone is
+/// shown: it is answered with an empty library and a re-scan, which is the
+/// same place a first launch starts from. A catalog that cannot be written is
+/// different — the scan the owner just waited through will have to run again
+/// next launch, and they are owed that.
 class CatalogUnavailable extends Failure {
   /// Creates the failure.
   const CatalogUnavailable({super.cause});
@@ -41,15 +38,6 @@ class StoragePermissionDenied extends Failure {
 
   /// Whether the system will refuse to ask again.
   final bool permanently;
-}
-
-/// A file the player was asked to open is missing, or will not decode.
-class TrackUnplayable extends Failure {
-  /// Creates the failure for [path].
-  const TrackUnplayable({required this.path, super.cause});
-
-  /// The file that would not play.
-  final String path;
 }
 
 /// Anything the application did not model.

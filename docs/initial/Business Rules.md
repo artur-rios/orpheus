@@ -90,6 +90,14 @@ The answer is taken in this order:
 > artist. Falling straight through to the performer would list every guest as an
 > artist in their own right.
 
+**While the answer is being worked out, a record is its album title *and* the
+folder its files sit in.** It cannot be the album artist — that is the thing
+being derived — and it cannot be the title alone: two artists who both called
+something *Greatest Hits* would be pooled, one of them would win the count, and
+the other's tracks would be filed under a name that is not theirs. Two
+same-titled records by different artists loose in one flat folder are the case
+this cannot separate, and the album-artist tag is what settles it.
+
 **BR-09 — Where no track on a record carries an album-artist tag, the performer
 named by most of its tracks is taken as its artist.** This is a judgement, not a
 deduction, and it is documented as one where it lives. A various-artists

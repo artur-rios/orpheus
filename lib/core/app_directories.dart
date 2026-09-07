@@ -24,4 +24,14 @@ class AppDirectories {
   /// may delete without losing anything but the work of building them again,
   /// and keeping them apart is what makes either one deletable on its own.
   String get energy => p.join(support, 'energy');
+
+  /// Where a decode writes the audio it is about to analyse.
+  ///
+  /// Apart from [energy], which it used to share. What lands here is one
+  /// multi-megabyte WAV per track being analysed and it is deleted the moment
+  /// the transform is done, where what lands in [energy] is a hundred
+  /// kilobytes per track and is meant to survive; mixing the two put working
+  /// files in a cache directory an owner is invited to inspect, and put the
+  /// cache within reach of a `clear()` that deletes its whole directory.
+  String get scratch => p.join(support, 'scratch');
 }

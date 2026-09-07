@@ -15,6 +15,81 @@ void main() {
   ];
   final untagged = [entry(id: '4')];
 
+  group('albumArtistsAcross', () {
+    test(
+      'GivenTwoArtistsWhoNamedARecordTheSameThing_WhenTheLibraryIsDerived_ThenEachKeepsTheirOwn',
+      () {
+        // The case that made a whole artist disappear: the derivation pooled
+        // by album title alone, so the commonest performer across both
+        // records was handed to every track of both — and the Artists list,
+        // which groups by that answer, then showed one artist where there
+        // were two.
+        final library = albumArtistsAcross([
+          entry(id: 'a1', artist: 'Aretha', album: 'Greatest Hits',
+              directory: '/library/aretha'),
+          entry(id: 'a2', artist: 'Aretha', album: 'Greatest Hits',
+              directory: '/library/aretha'),
+          entry(id: 'a3', artist: 'Aretha', album: 'Greatest Hits',
+              directory: '/library/aretha'),
+          entry(id: 'b1', artist: 'Bowie', album: 'Greatest Hits',
+              directory: '/library/bowie'),
+          entry(id: 'b2', artist: 'Bowie', album: 'Greatest Hits',
+              directory: '/library/bowie'),
+        ]);
+
+        expect(
+          [for (final group in artistsIn(library)) group.name],
+          ['Aretha', 'Bowie'],
+        );
+        expect(
+          [
+            for (final group in albumsIn(library))
+              (group.name, group.entries.first.albumArtist, group.entries.length),
+          ],
+          [
+            ('Greatest Hits', 'Aretha', 3),
+            ('Greatest Hits', 'Bowie', 2),
+          ],
+        );
+      },
+    );
+
+    test(
+      'GivenOneRecordCarriesAnAlbumArtistTag_WhenAnotherSharesItsTitle_ThenTheTagDoesNotBleedOntoIt',
+      () {
+        final library = albumArtistsAcross([
+          entry(id: 'a1', artist: 'Aretha', albumArtist: 'Aretha',
+              album: 'Greatest Hits', directory: '/library/aretha'),
+          entry(id: 'b1', artist: 'Bowie', album: 'Greatest Hits',
+              directory: '/library/bowie'),
+        ]);
+
+        expect(
+          [for (final entry in library) entry.albumArtist],
+          ['Aretha', 'Bowie'],
+        );
+      },
+    );
+
+    test(
+      'GivenARecordSplitAcrossDiscFolders_WhenTheLibraryIsDerived_ThenItIsStillOneRecord',
+      () {
+        // Two keys, one answer: each folder derives the same artist, and
+        // `albumsIn` keys by (album, albumArtist) and joins them again.
+        final library = albumArtistsAcross([
+          entry(id: '1', artist: 'Host', album: 'LP', track: 1,
+              directory: '/library/lp/CD1'),
+          entry(id: '2', artist: 'Guest', album: 'LP', track: 2,
+              directory: '/library/lp/CD1'),
+          entry(id: '3', artist: 'Host', album: 'LP', track: 1,
+              directory: '/library/lp/CD2'),
+        ]);
+
+        expect(albumsIn(library).single.entries.length, 3);
+      },
+    );
+  });
+
   group('artistsIn', () {
     test(
       'GivenALibraryOfTwoArtistsAndAnUntaggedFile_WhenTheArtistsAreListed_ThenTheUntaggedGroupIsLast',
@@ -25,7 +100,6 @@ void main() {
           [for (final group in groups) group.name],
           ['Miles Davis', 'Radiohead', null],
         );
-        expect(groups.last.isUntagged, isTrue);
       },
     );
 
@@ -151,13 +225,31 @@ void main() {
     );
 
     test(
-      'GivenATrackWithNoAlbumTag_WhenItsAlbumIsQueued_ThenItIsARecordOfOne',
+      'GivenTracksWithNoAlbumTag_WhenTheirAlbumIsQueued_ThenTheWholeUntitledGroupPlays',
       () {
-        // Two untitled files are not the same record: grouping on a blank
-        // field would queue an owner's every loose track together.
-        final library = [entry(id: '1'), entry(id: '2')];
+        // What `albumsIn` shows as one group is what pressing play on it
+        // queues. The Albums list already gathers the files that name no
+        // record into a single untitled group, so answering with the seed
+        // file alone made a group of many play one of them.
+        final library = albumArtistsAcross([entry(id: '1'), entry(id: '2')]);
 
-        expect(albumOf(library.first, library).length, 1);
+        expect(albumOf(library.first, library).length, 2);
+      },
+    );
+
+    test(
+      'GivenTwoArtistsWithNoAlbumTag_WhenOneUntitledGroupIsQueued_ThenTheOtherIsNotInIt',
+      () {
+        // The untitled group is still per artist, which is how `albumsIn`
+        // keys it: one owner's loose Bowie tracks are not the same record as
+        // their loose Aretha ones.
+        final library = albumArtistsAcross([
+          entry(id: '1', artist: 'Bowie'),
+          entry(id: '2', artist: 'Bowie'),
+          entry(id: '3', artist: 'Aretha'),
+        ]);
+
+        expect(albumOf(library.first, library).length, 2);
       },
     );
   });

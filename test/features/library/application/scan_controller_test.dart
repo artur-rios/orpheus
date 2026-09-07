@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/failures/failure.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
+import 'package:orpheus/features/library/application/music_library_controller.dart';
 import 'package:orpheus/features/library/domain/library_access.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
@@ -28,6 +29,100 @@ void main() {
         access: access,
         settings: InMemorySettingsStore(libraryFolders: const ['/music']),
       );
+
+  test(
+    'GivenAScanChangedNothing_WhenTheDocumentIsNotRewritten_ThenTheTimeOfTheScanIsStillRecorded',
+    () async {
+      // The document is the expensive thing and is skipped when nothing
+      // changed; the moment of the scan is one short string and is not. Left
+      // only in the document, it never advanced for an unchanged library —
+      // so the folders screen kept showing the date of the last scan that
+      // happened to change something, and the cheap walk's cutoff stayed
+      // pinned there for good.
+      final harness = harnessWith(
+        ScriptedScanner([
+          ScanCompleted(
+            catalog: scanned,
+            report: const ScanReport(
+              tracks: 1,
+              added: 0,
+              removed: 0,
+              reused: 1,
+            ),
+          ),
+        ]),
+      );
+
+      await harness.read(scanControllerProvider.notifier).scan();
+
+      expect(harness.catalogs.written, isEmpty);
+      expect(
+        harness.settings.getString(
+          MusicLibraryController.lastScanSettingsKey,
+        ),
+        DateTime.utc(2026, 6).toIso8601String(),
+      );
+    },
+  );
+
+  test(
+    'GivenAScanTimeWasRecorded_WhenTheLibraryIsReadBack_ThenItIsWhatTheScreenShows',
+    () async {
+      // The catalog document on disk carries an older moment, because the scan
+      // that wrote it is not the scan that ran last.
+      final harness = Harness(
+        settings: InMemorySettingsStore(
+          libraryFolders: const ['/music'],
+          values: {
+            MusicLibraryController.lastScanSettingsKey: DateTime.utc(
+              2026,
+              9,
+            ).toIso8601String(),
+          },
+        ),
+      );
+      harness.catalogs.seed(
+        MusicCatalog(entries: const [], scannedAt: DateTime.utc(2026, 6)),
+      );
+
+      expect((await harness.library()).scannedAt, DateTime.utc(2026, 9));
+    },
+  );
+
+  test(
+    'GivenTheCatalogCannotBeWritten_WhenAScanFinishes_ThenTheOwnerIsToldItWillRunAgain',
+    () async {
+      final harness = harnessWith(
+        ScriptedScanner([ScanCompleted(catalog: scanned, report: report)]),
+      );
+      harness.catalogs.failOnWrite = true;
+
+      await harness.read(scanControllerProvider.notifier).scan();
+
+      final state = harness.read(scanControllerProvider);
+      expect(state.failure, isA<CatalogUnavailable>());
+      expect(state.report, isNotNull);
+      // The library is on screen either way, which is what was asked for.
+      expect((await harness.library()).entries.single.title, 'Airbag');
+    },
+  );
+
+  test(
+    'GivenTheCatalogCannotBeDeleted_WhenTheLastFolderIsRemoved_ThenTheLibraryStillEmpties',
+    () async {
+      final harness = Harness(
+        library: [entry(id: '1', title: 'Airbag', artist: 'Radiohead')],
+      );
+      await harness.library();
+      harness.catalogs.failOnClear = true;
+
+      // No folders registered is what removing the last one leaves behind.
+      await harness.read(scanControllerProvider.notifier).scan();
+
+      expect((await harness.library()).isEmpty, isTrue);
+      expect(harness.read(scanControllerProvider).failure, isNull);
+    },
+  );
 
   test(
     'GivenAFolderIsRegistered_WhenAScanFinishes_ThenTheLibraryOnScreenIsWhatItFound',

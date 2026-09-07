@@ -68,10 +68,11 @@ class FileLyricsSource implements LyricsSource {
 
       try {
         return await file.readAsString();
-      } on FileSystemException catch (error) {
+      } on Object catch (error) {
         // A sidecar that is there but unreadable — a permission, a bad
         // encoding — is not a failure the owner needs a dialog about. It is a
-        // track whose words fall back to its tags.
+        // track whose words fall back to its tags. Broad, like every other
+        // read of a file the owner wrote in this application.
         _log.fine('could not read the lyrics beside $path', error);
       }
     }
@@ -106,7 +107,12 @@ class FileLyricsSource implements LyricsSource {
       return parseId3SyncedLyrics(
         await handle.read(length < fileLength ? length : fileLength),
       );
-    } on FileSystemException catch (error) {
+    } on Object catch (error) {
+      // Broad by intent, as it is where the scanner reads the same files: a
+      // malformed header does not politely throw a `FileSystemException`, it
+      // walks off the end of a byte list and throws a `RangeError` — an
+      // `Error`, which a narrower catch here let past and turned into a lyrics
+      // panel showing a failure for a track that simply has no words.
       _log.fine('could not read the tag of $path for synced lyrics', error);
 
       return null;
@@ -140,10 +146,12 @@ class FileLyricsSource implements LyricsSource {
         // RIFF carries no lyrics field at all.
         RiffMetadata() => null,
       };
-    } on Exception catch (error) {
-      // The same judgement the scanner makes about a file whose tags will not
-      // parse: it is very often a file that plays perfectly well, and it is
-      // certainly not one to interrupt playback over.
+    } on Object catch (error) {
+      // The same judgement — and the same breadth — the scanner makes about a
+      // file whose tags will not parse: it is very often a file that plays
+      // perfectly well, it is certainly not one to interrupt playback over,
+      // and what a truncated tag actually throws is as often an `Error` as an
+      // `Exception`.
       _log.fine('could not read the tags of $path for lyrics', error);
 
       return null;

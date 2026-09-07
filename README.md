@@ -159,7 +159,11 @@ libraries are the norm — so a rap record whose tracks credit a different guest
 each time is one artist rather than twelve. One track carrying the tag settles
 the record; with no tag anywhere, the performer most of the record's tracks name
 is taken as its artist. That last rule is a judgement, and it is documented as
-one where it lives. (`features/library/domain/music_grouping.dart`)
+one where it lives. A record is its title *and* its folder for this purpose:
+two artists who both called something *Greatest Hits* are two records, and
+pooling them by title alone put one artist's tracks under the other's name and
+took the second artist out of the library entirely.
+(`features/library/domain/music_grouping.dart`)
 
 **The catalog is a single JSON document, written atomically.** It is read back at
 launch so a start is fast, and re-scanned behind the interface: a file still on
@@ -169,7 +173,11 @@ launch. Encoding and decoding it happen on an isolate, not on the interface's:
 on a large library the document is megabytes, and parsing it is the one piece of
 startup work that would otherwise land on the thread drawing the first screen.
 It is rewritten only when the scan actually added or removed something — a scan
-that changed nothing would encode the file that is already on disk.
+that changed nothing would encode the file that is already on disk. The *moment*
+of the scan is kept beside it in the settings rather than only inside it, because
+that does change every time and it is one short string: left in the document
+alone it never advanced for an unchanged library, so the library screen kept
+showing an older date and the cheap walk below never moved its cutoff forward.
 (`features/library/data/json_catalog_store.dart`)
 
 **The scan at startup trusts folder timestamps; the one you ask for does not.**

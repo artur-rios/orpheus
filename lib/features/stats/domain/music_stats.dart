@@ -1,5 +1,6 @@
 import '../../library/domain/music_catalog.dart';
 import '../../library/domain/music_entry.dart';
+import '../../library/domain/music_grouping.dart';
 import 'play_history.dart';
 
 /// One line of a ranking: something with a name, and how often it was played.
@@ -61,9 +62,15 @@ class MusicStats {
 
   /// How many played files carry no artist, record or genre tag.
   ///
-  /// Counted so the screen can say why its totals are larger than its
-  /// rankings. Without it, seven plays above three artists is a discrepancy
-  /// with no explanation anywhere on screen.
+  /// Counted so the screen can say *why* its totals stand above rankings that
+  /// do not add up to them: these files are counted in the one and appear in
+  /// none of the others.
+  ///
+  /// A count of files rather than of their plays, which is the honest shape
+  /// for it — "three of your tracks are untagged" is something an owner can go
+  /// and act on, where a number of plays is only the size of the hole. It is
+  /// therefore not the arithmetic difference between the totals and the
+  /// rankings, and the sentence on screen does not claim it is.
   final int untaggedTracks;
 
   /// Whether nothing has been played.
@@ -97,7 +104,11 @@ MusicStats musicStatsFrom({
 
   final tracks = <String, int>{};
   final artists = <String, int>{};
-  final albums = <String, int>{};
+  // Keyed by the record rather than by its title, for the reason `albumsIn`
+  // groups by the pair: two artists can name a record the same thing, and one
+  // line adding their plays together is a chart that says an owner played
+  // something they never played.
+  final albums = <(String album, String? artist), int>{};
   final genres = <String, int>{};
   var untagged = 0;
 
@@ -124,7 +135,7 @@ MusicStats musicStatsFrom({
       artists.update(artist, (e) => e + plays, ifAbsent: () => plays);
     }
     if (album != null) {
-      albums.update(album, (e) => e + plays, ifAbsent: () => plays);
+      albums.update((album, artist), (e) => e + plays, ifAbsent: () => plays);
     }
     if (genre != null) {
       genres.update(genre, (e) => e + plays, ifAbsent: () => plays);
@@ -136,24 +147,40 @@ MusicStats musicStatsFrom({
     distinctTracks: history.distinctTracks,
     tracks: _ranked(tracks, limit),
     artists: _ranked(artists, limit),
-    albums: _ranked(albums, limit),
+    albums: _rankedBy(albums, limit, (record) => record.$1),
     genres: _ranked(genres, limit),
     untaggedTracks: untagged,
   );
 }
 
-/// [counts] as the top [limit] lines, most played first.
+/// [counts] as the top [limit] lines, most played first, where the key is
+/// already the name.
+List<RankedPlays> _ranked(Map<String, int> counts, int limit) =>
+    _rankedBy(counts, limit, (name) => name);
+
+/// [counts] as the top [limit] lines, most played first, named by [nameOf].
+///
+/// The key and the name are separate so that a ranking can be counted by
+/// something finer than it is labelled with — the albums are, because a record
+/// is its title *and* its artist while the line only has room for the title.
 ///
 /// Ties break by name, so a ranking is the same list every time it is read
-/// rather than one whose equal rows swap places between openings.
-List<RankedPlays> _ranked(Map<String, int> counts, int limit) {
+/// rather than one whose equal rows swap places between openings. Through
+/// [byName], which is the case-insensitive comparison the listings order by:
+/// ranking `Blue` above `abbey road` because capitals sort first is the kind of
+/// order nobody reading a chart is expecting.
+List<RankedPlays> _rankedBy<K>(
+  Map<K, int> counts,
+  int limit,
+  String Function(K key) nameOf,
+) {
   final lines = [
     for (final entry in counts.entries)
-      RankedPlays(name: entry.key, plays: entry.value),
+      RankedPlays(name: nameOf(entry.key), plays: entry.value),
   ]..sort((a, b) {
     final byPlays = b.plays.compareTo(a.plays);
 
-    return byPlays != 0 ? byPlays : a.name.compareTo(b.name);
+    return byPlays != 0 ? byPlays : byName(a.name, b.name);
   });
 
   return lines.length <= limit ? lines : lines.sublist(0, limit);

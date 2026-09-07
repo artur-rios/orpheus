@@ -63,8 +63,13 @@ class ShellScreen extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Whatever the scan is doing, above the playback bar and below
-        // everything else. It takes no height when nothing is running.
-        const ScanStrip(),
+        // everything else. It takes no height when there is nothing to say.
+        //
+        // Not its failures while the folders screen is open: that screen says
+        // the same thing at length and offers the settings button a permanent
+        // refusal needs, and the same sentence twice on one screen reads as
+        // two problems.
+        ScanStrip(showsFailure: destination != ShellDestination.folders),
         const Divider(height: 1, thickness: 1),
         const PlaybackBar(),
         if (breakpoint.usesBottomNavigation)
@@ -153,14 +158,40 @@ class _SearchFieldState extends ConsumerState<_SearchField> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    // Only to bring the clear button in and out; the results themselves come
+    // from the provider. Watching the controller rather than the keystrokes
+    // means it follows a term cleared from anywhere too.
+    _text.addListener(_onTextChanged);
+  }
+
+  @override
   void dispose() {
-    _text.dispose();
+    _text
+      ..removeListener(_onTextChanged)
+      ..dispose();
     super.dispose();
   }
+
+  void _onTextChanged() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+
+    // The field follows the term, not only the other way about. The back
+    // gesture clears a search from outside this widget, and a box still
+    // showing what it was cleared of is a box that disagrees with the listing
+    // under it about whether anything is being searched for.
+    ref.listen(searchTermProvider, (_, term) {
+      if (_text.text == term) return;
+
+      _text.value = TextEditingValue(
+        text: term,
+        selection: TextSelection.collapsed(offset: term.length),
+      );
+    });
 
     return TextField(
       controller: _text,
@@ -178,16 +209,10 @@ class _SearchFieldState extends ConsumerState<_SearchField> {
                 onPressed: () {
                   _text.clear();
                   ref.read(searchTermProvider.notifier).clear();
-                  setState(() {});
                 },
               ),
       ),
-      onChanged: (term) {
-        ref.read(searchTermProvider.notifier).type(term);
-        // Only to bring the clear button in and out; the results themselves
-        // come from the provider.
-        setState(() {});
-      },
+      onChanged: ref.read(searchTermProvider.notifier).type,
     );
   }
 }

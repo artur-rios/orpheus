@@ -352,13 +352,8 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String failureFolderUnreadable(String path) {
-    return 'Não foi possível ler esta pasta: $path';
-  }
-
-  @override
   String get failureCatalogUnavailable =>
-      'Não foi possível ler a biblioteca do disco.';
+      'Não foi possível salvar a biblioteca. Esta varredura precisará ser refeita na próxima vez que o Orpheus abrir.';
 
   @override
   String get failurePermissionDenied =>
@@ -367,11 +362,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get failurePermissionDeniedPermanently =>
       'A permissão para ler arquivos de áudio foi negada. Conceda-a nas configurações do sistema.';
-
-  @override
-  String failureTrackUnplayable(String path) {
-    return 'Não foi possível reproduzir este arquivo: $path';
-  }
 
   @override
   String get failureUnexpected => 'Algo deu errado.';

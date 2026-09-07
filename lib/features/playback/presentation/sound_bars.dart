@@ -58,8 +58,17 @@ class SoundBars extends StatefulWidget {
 
 class _SoundBarsState extends State<SoundBars>
     with SingleTickerProviderStateMixin {
-  /// Drives one repaint per frame while the music runs.
-  late final Ticker _ticker = createTicker((_) => setState(() {}));
+  /// How much of the way toward the envelope one frame moves the bars.
+  static const double _risesBy = 0.06;
+
+  /// How much of the way back down one frame moves them once it stops.
+  ///
+  /// Slower than the rise: sound arrives faster than it dies away, and a
+  /// settle that matched the rise reads as the bars being switched off.
+  static const double _fallsBy = 0.04;
+
+  /// Drives one repaint per frame while there is anything to move.
+  late final Ticker _ticker = createTicker(_onTick);
 
   /// When the position now on the widget was reported.
   DateTime _reportedAt = DateTime.now();
@@ -88,16 +97,42 @@ class _SoundBarsState extends State<SoundBars>
   /// picture the instrument makes without the motion somebody asked the system
   /// not to show them.
   void _apply() {
-    final reduced = MediaQuery.disableAnimationsOf(context);
-
-    if (reduced || !widget.isPlaying) {
+    if (MediaQuery.disableAnimationsOf(context)) {
       if (_ticker.isActive) _ticker.stop();
-      setState(() => _energyIn = reduced && widget.isPlaying ? 1 : 0);
+      setState(() => _energyIn = widget.isPlaying ? 1 : 0);
 
       return;
     }
 
+    // Started for the settle as well as for the run: the bars come down over
+    // several frames after a pause, and [_onTick] is what stops the ticker
+    // once they have arrived.
     if (!_ticker.isActive) _ticker.start();
+  }
+
+  /// Moves the bars one frame, and rests once there is nothing left to move.
+  ///
+  /// The stepping lives here rather than in `build` — where it was, along with
+  /// a post-frame callback that asked for the next frame — because a widget
+  /// that advances an animation while it is being built advances it once per
+  /// rebuild rather than once per frame: the rise ran at whatever rate the
+  /// player above happened to report positions at.
+  void _onTick(Duration _) {
+    final target = widget.isPlaying ? 1.0 : 0.0;
+    final next = widget.isPlaying
+        ? math.min(target, _energyIn + _risesBy)
+        : math.max(target, _energyIn - _fallsBy);
+
+    // While it plays a frame is due whatever the level is doing, because the
+    // position has moved on and the bars are read from it. Once it stops and
+    // the settle is over there is nothing left to draw.
+    if (!widget.isPlaying && next == _energyIn) {
+      _ticker.stop();
+
+      return;
+    }
+
+    setState(() => _energyIn = next);
   }
 
   @override
@@ -117,20 +152,6 @@ class _SoundBarsState extends State<SoundBars>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-
-    // Toward full while it plays and back down when it stops, a step a frame:
-    // the settle is the only motion the bars make of their own accord, and it
-    // is what keeps a pause from looking like a freeze.
-    if (_ticker.isActive) {
-      _energyIn = math.min(1, _energyIn + 0.06);
-    } else if (_energyIn > 0 && !widget.isPlaying) {
-      _energyIn = math.max(0, _energyIn - 0.04);
-      if (_energyIn > 0) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() {});
-        });
-      }
-    }
 
     return SizedBox(
       height: widget.height,

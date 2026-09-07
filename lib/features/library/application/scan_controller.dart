@@ -8,6 +8,7 @@ import '../../../core/failures/failure.dart';
 import '../domain/library_access.dart';
 import '../domain/library_scan.dart';
 import '../domain/music_catalog.dart';
+import 'music_library_controller.dart';
 
 /// Where the scan is.
 class ScanState {
@@ -132,8 +133,14 @@ class ScanController extends Notifier<ScanState> {
                 state = ScanState(isRunning: true, progress: progress);
 
               case ScanCompleted(:final catalog, :final report):
-                await _apply(catalog, report: report);
-                state = ScanState(report: report);
+                final unwritable = await _apply(catalog, report: report);
+                // The catalog is on screen either way; a document that could
+                // not be written is a scan the next launch has to repeat, and
+                // the owner is owed that rather than a silent line in a log.
+                state = ScanState(
+                  report: report,
+                  failure: unwritable,
+                );
                 if (!finished.isCompleted) finished.complete();
 
               case ScanFailed(:final failure):
@@ -168,29 +175,57 @@ class ScanController extends Notifier<ScanState> {
   /// thousand tracks that is the single most expensive thing a launch does,
   /// and for an unchanged library it buys nothing.
   ///
-  /// The library is still replaced on screen, because the catalog carries the
-  /// time of the scan and the folder screen shows it: skipping that too would
-  /// save a re-grouping worth a fraction of the write, and would leave the
-  /// screen saying the library was last scanned some other day.
-  Future<void> _apply(MusicCatalog? catalog, {ScanReport? report}) async {
+  /// The library is still replaced on screen, and the *time* of the scan is
+  /// recorded whether or not the document was: it is one short string, the
+  /// folders screen shows it, and the cheap walk measures against it — see
+  /// [MusicLibraryController.lastScanSettingsKey], which is where skipping the
+  /// document stops costing anything.
+  ///
+  /// Answers the failure to report, or `null` where there is none.
+  Future<Failure?> _apply(MusicCatalog? catalog, {ScanReport? report}) async {
     final library = ref.read(musicLibraryControllerProvider.notifier);
 
     if (catalog == null) {
       await library.clear();
-      return;
+      await _rememberScanTime(null);
+
+      return null;
     }
 
     library.replaceWith(catalog);
+    await _rememberScanTime(catalog.scannedAt);
 
-    if (report != null && report.added == 0 && report.removed == 0) return;
+    if (report != null && report.added == 0 && report.removed == 0) return null;
 
     try {
       await ref.read(catalogStoreProvider).write(catalog);
     } on Object catch (error) {
-      // A catalog that could not be written is a scan the next launch has to
-      // repeat. The library is on screen either way, which is what the owner
-      // asked for.
       _log.warning('the catalog could not be written', error);
+
+      return CatalogUnavailable(cause: error);
+    }
+
+    return null;
+  }
+
+  /// Records when this scan ran, or forgets it for a library with nothing in
+  /// it.
+  ///
+  /// Never fatal, for the reason no stored preference in this application is:
+  /// the scan happened and the library is on screen, and what is lost is a
+  /// date and one launch's worth of the cheap walk.
+  Future<void> _rememberScanTime(DateTime? at) async {
+    final settings = ref.read(settingsStoreProvider);
+
+    try {
+      await (at == null
+          ? settings.remove(MusicLibraryController.lastScanSettingsKey)
+          : settings.setString(
+              MusicLibraryController.lastScanSettingsKey,
+              at.toIso8601String(),
+            ));
+    } on Object catch (error) {
+      _log.warning('the time of the scan could not be saved', error);
     }
   }
 }

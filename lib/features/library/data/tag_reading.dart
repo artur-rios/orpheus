@@ -62,6 +62,11 @@ ReadTags _fromMp3(Mp3Metadata tags) => ReadTags(
   picture: _frontCover(tags.pictures),
 );
 
+/// MP4 carries a record's own artist in `aART`, and this reader folds it into
+/// the same `artist` field as `©ART` rather than surfacing it separately —
+/// there is no album-artist field here to read. So an MP4 library leans on
+/// `albumArtistsAcross` to work the record out across its tracks, exactly as a
+/// Vorbis one does.
 ReadTags _fromMp4(Mp4Metadata tags) => ReadTags(
   metadata: TrackMetadata(
     title: tags.title,

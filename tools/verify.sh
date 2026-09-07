@@ -46,8 +46,9 @@ usage() {
   cat <<USAGE
 Usage: tools/verify.sh [options]
 
-  --only TARGET   Build only one target: linux, android, or web-of-nothing.
-                  Accepts linux or android on this host.
+  --only TARGET   Build only one target: linux, android or windows. This host
+                  builds linux and android; windows is reported as not
+                  applicable, because a Windows binary needs a Windows host.
   --no-build      Analyzer and tests only. The fast loop.
   --no-test       Skip the suite. For checking that the builds still link.
   --no-analyze    Skip the analyzer.

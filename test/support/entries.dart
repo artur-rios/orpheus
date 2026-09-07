@@ -18,8 +18,9 @@ MusicEntry entry({
   int? year,
   String? coverId,
   Duration? duration,
+  String directory = defaultLibraryDirectory,
 }) => MusicEntry(
-  file: file(id),
+  file: file(id, directory: directory),
   metadata: TrackMetadata(
     title: title,
     artist: artist,
@@ -33,9 +34,17 @@ MusicEntry entry({
   ),
 );
 
+/// The folder the fixtures sit in unless a test says otherwise.
+///
+/// Named because the folder is part of what identifies a record — see
+/// `albumArtistsAcross` — so a test about two records that share a title has
+/// to be able to put them in two places, exactly as a real library would.
+const String defaultLibraryDirectory = '/library';
+
 /// A file at a deterministic path, named nothing like anything it holds.
-AudioFile file(String id) => AudioFile(
-  path: '/library/zzz-$id.flac',
-  sizeInBytes: 1024,
-  modifiedAt: DateTime.utc(2026),
-);
+AudioFile file(String id, {String directory = defaultLibraryDirectory}) =>
+    AudioFile(
+      path: '$directory/zzz-$id.flac',
+      sizeInBytes: 1024,
+      modifiedAt: DateTime.utc(2026),
+    );

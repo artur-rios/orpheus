@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
+import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 import 'package:orpheus/features/library/domain/catalog_store.dart';
 import 'package:orpheus/features/library/domain/cover_store.dart';
 import 'package:orpheus/features/library/domain/library_access.dart';
@@ -30,6 +32,20 @@ class InMemoryCatalogStore implements CatalogStore {
   /// without a library.
   bool failOnRead = false;
 
+  /// Whether writing the catalog fails, for the flow that has to tell the
+  /// owner their scan will have to run again.
+  bool failOnWrite = false;
+
+  /// Whether deleting the catalog fails, for the flow that has to empty the
+  /// library on screen anyway.
+  bool failOnClear = false;
+
+  /// Replaces what a read will answer with, without recording a write.
+  ///
+  /// What a test uses to say "this is the document already on disk", which is
+  /// a different thing from "this is what a scan wrote".
+  void seed(MusicCatalog catalog) => _catalog = catalog;
+
   @override
   Future<MusicCatalog> read() async {
     if (failOnRead) throw StateError('the catalog could not be read');
@@ -39,12 +55,18 @@ class InMemoryCatalogStore implements CatalogStore {
 
   @override
   Future<void> write(MusicCatalog catalog) async {
+    if (failOnWrite) throw StateError('the catalog could not be written');
+
     _catalog = catalog;
     written.add(catalog);
   }
 
   @override
-  Future<void> clear() async => _catalog = MusicCatalog.empty;
+  Future<void> clear() async {
+    if (failOnClear) throw StateError('the catalog could not be deleted');
+
+    _catalog = MusicCatalog.empty;
+  }
 }
 
 /// A [CoverStore] in memory.
@@ -258,4 +280,38 @@ class ScriptedLyricsSource implements LyricsSource {
 
     return _lyrics[path];
   }
+}
+
+/// A [SettingsStore] that refuses to write.
+///
+/// The other half of the rule every preference in this application follows: a
+/// choice applies for the session whether or not it could be saved, and the
+/// owner is told when it could not. Without a store that can refuse, only the
+/// happy half of that rule is ever exercised.
+class UnwritableSettingsStore extends InMemorySettingsStore {
+  /// Creates a store that throws from every write.
+  UnwritableSettingsStore({super.libraryFolders});
+
+  Never _refuse() => throw StateError('the preferences could not be written');
+
+  @override
+  Future<void> setThemeMode(ThemeMode mode) async => _refuse();
+
+  @override
+  Future<void> setLocale(Locale? locale) async => _refuse();
+
+  @override
+  Future<void> setLibraryFolders(List<String> folders) async => _refuse();
+
+  @override
+  Future<void> setOpensPlayerOnPlay(bool value) async => _refuse();
+
+  @override
+  Future<void> setRescansAtStartup(bool value) async => _refuse();
+
+  @override
+  Future<void> setVolume(double value) async => _refuse();
+
+  @override
+  Future<void> setString(String key, String value) async => _refuse();
 }

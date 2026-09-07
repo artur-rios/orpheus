@@ -9,12 +9,10 @@ import 'failure.dart';
 extension FailureMessage on Failure {
   /// The sentence for this failure, in the active language.
   String localizedMessage(AppLocalizations l10n) => switch (this) {
-    LibraryFolderUnreadable(:final path) => l10n.failureFolderUnreadable(path),
     CatalogUnavailable() => l10n.failureCatalogUnavailable,
     StoragePermissionDenied(permanently: true) =>
       l10n.failurePermissionDeniedPermanently,
     StoragePermissionDenied() => l10n.failurePermissionDenied,
-    TrackUnplayable(:final path) => l10n.failureTrackUnplayable(path),
     UnexpectedFailure() => l10n.failureUnexpected,
   };
 }

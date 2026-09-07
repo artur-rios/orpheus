@@ -674,16 +674,10 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No tracks} =1{1 track} other{{count} tracks}} in the library.'**
   String scanTracksFound(int count);
 
-  /// A registered folder is gone or unreadable.
+  /// The catalog document could not be written.
   ///
   /// In en, this message translates to:
-  /// **'This folder could not be read: {path}'**
-  String failureFolderUnreadable(String path);
-
-  /// The catalog document failed.
-  ///
-  /// In en, this message translates to:
-  /// **'The library could not be read from disk.'**
+  /// **'The library could not be saved. This scan will have to run again next time Orpheus starts.'**
   String get failureCatalogUnavailable;
 
   /// The owner refused the storage permission.
@@ -697,12 +691,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Permission to read audio files was refused. Grant it in the system settings.'**
   String get failurePermissionDeniedPermanently;
-
-  /// A queued file is missing or will not decode.
-  ///
-  /// In en, this message translates to:
-  /// **'This file could not be played: {path}'**
-  String failureTrackUnplayable(String path);
 
   /// Anything the application did not model.
   ///

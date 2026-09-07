@@ -198,9 +198,12 @@ class SpectrumAnalyser {
       }
     }
 
-    final sorted = all.toList()..sort();
+    // Sorted where it stands. `Float64List` is a `List<double>` and sorts in
+    // place; `toList()` first would copy four hundred thousand unboxed values
+    // into as many boxed ones, to answer a single question about one of them.
+    all.sort();
 
-    return sorted[(sorted.length * 0.99).floor().clamp(0, sorted.length - 1)];
+    return all[(all.length * 0.99).floor().clamp(0, all.length - 1)];
   }
 
   /// The transform, in place over [_real] and [_imaginary].

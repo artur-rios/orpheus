@@ -36,6 +36,15 @@ class DesktopWindow with WindowListener {
     await windowManager.ensureInitialized();
     await windowManager.setMinimumSize(Breakpoint.minimumWindowSize);
 
+    // What makes [onWindowClose] arrive at all. Without it the platform closes
+    // the window and no listener runs, so the geometry of a window that was
+    // moved and then closed inside the half second [_scheduleWrite] waits was
+    // simply lost — and this class's own close path was unreachable code.
+    //
+    // The trade it makes is that closing the window becomes this class's job:
+    // see [_finish], which destroys it whatever happens to the write.
+    await windowManager.setPreventClose(true);
+
     final stored = _read();
     await windowManager.waitUntilReadyToShow(
       WindowOptions(
@@ -62,13 +71,28 @@ class DesktopWindow with WindowListener {
   void onWindowMoved() => _scheduleWrite();
 
   @override
-  void onWindowClose() => unawaited(_write());
+  void onWindowClose() => unawaited(_finish());
 
   /// Stops listening, having written where the window ended up.
   Future<void> close() async {
     _pending?.cancel();
     windowManager.removeListener(this);
     await _write();
+  }
+
+  /// Writes where the window ended up, then lets it close.
+  ///
+  /// The `finally` is the whole point of it being written out: [setPreventClose]
+  /// means nothing closes this window but this method, so a write that threw —
+  /// or hung on a settings store that could not be reached — would leave an
+  /// owner with an application they cannot quit. The geometry is worth one
+  /// attempt and nothing more.
+  Future<void> _finish() async {
+    try {
+      await close();
+    } finally {
+      await windowManager.destroy();
+    }
   }
 
   void _scheduleWrite() {

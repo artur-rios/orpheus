@@ -461,18 +461,9 @@
       }
     }
   },
-  "failureFolderUnreadable": "This folder could not be read: {path}",
-  "@failureFolderUnreadable": {
-    "description": "A registered folder is gone or unreadable.",
-    "placeholders": {
-      "path": {
-        "type": "String"
-      }
-    }
-  },
-  "failureCatalogUnavailable": "The library could not be read from disk.",
+  "failureCatalogUnavailable": "The library could not be saved. This scan will have to run again next time Orpheus starts.",
   "@failureCatalogUnavailable": {
-    "description": "The catalog document failed."
+    "description": "The catalog document could not be written."
   },
   "failurePermissionDenied": "Orpheus needs permission to read your audio files.",
   "@failurePermissionDenied": {
@@ -481,15 +472,6 @@
   "failurePermissionDeniedPermanently": "Permission to read audio files was refused. Grant it in the system settings.",
   "@failurePermissionDeniedPermanently": {
     "description": "The owner refused it permanently."
-  },
-  "failureTrackUnplayable": "This file could not be played: {path}",
-  "@failureTrackUnplayable": {
-    "description": "A queued file is missing or will not decode.",
-    "placeholders": {
-      "path": {
-        "type": "String"
-      }
-    }
   },
   "failureUnexpected": "Something went wrong.",
   "@failureUnexpected": {

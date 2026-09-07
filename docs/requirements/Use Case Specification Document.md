@@ -569,6 +569,8 @@ graph LR
 | AF-01 | The owner asked for it shuffled | The same tracks are queued in an order nobody chose, and playback begins at the top of that order — starting a shuffle at the track that was clicked would make the first track the one predictable thing about it. |
 | AF-02 | The library cannot be read, so no record can be gathered | The application reports that nothing in the selection could be played. It does not silently fall back to the single track, which would turn "play the record" into "play the track" without saying so. |
 | AF-03 | Some of the record's files are missing | They are stepped over as the queue reaches them (UC-23). |
+| AF-04 | The tracks name no record at all | The untitled group under that album artist is queued whole — it is the group the Albums list showed and drilled into, and a play button on a group of forty that played one of them would be answering a different question from the one it was asked. |
+| AF-05 | The file is one the library does not hold | It plays alone. There is no record around a file the library has never seen, and it must not be mistaken for a member of the untitled group. |
 
 ---
 

@@ -39,19 +39,6 @@ class ScanProgress {
 
     return (filesRead / filesFound).clamp(0.0, 1.0);
   }
-
-  /// A copy with the given changes.
-  ScanProgress copyWith({
-    int? filesFound,
-    int? filesRead,
-    String? folder,
-    bool? walking,
-  }) => ScanProgress(
-    filesFound: filesFound ?? this.filesFound,
-    filesRead: filesRead ?? this.filesRead,
-    folder: folder ?? this.folder,
-    walking: walking ?? this.walking,
-  );
 }
 
 /// What a finished scan found.

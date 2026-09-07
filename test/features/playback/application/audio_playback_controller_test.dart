@@ -191,6 +191,60 @@ void main() {
     );
   });
 
+  group('the files whose tags name nothing', () {
+    final loose = [
+      entry(id: 'u1', title: 'One'),
+      entry(id: 'u2', title: 'Two'),
+      entry(id: 'u3', title: 'Three'),
+    ];
+
+    test(
+      'GivenAGroupOfUntaggedFiles_WhenItIsPlayedAsARecord_ThenTheWholeGroupIsQueued',
+      () async {
+        // What the Albums list shows as one untitled group is what pressing
+        // play on it queues. It used to queue the one file the button had in
+        // hand, so a group of forty played one of them.
+        final harness = Harness(library: loose);
+        final player = await playerOf(harness);
+
+        await player.playAlbum(loose.first.file);
+
+        expect(stateOf(harness).queue.tracks.length, 3);
+      },
+    );
+
+    test(
+      'GivenAGroupOfUntaggedFiles_WhenItIsPlayedAsAnArtist_ThenTheWholeGroupIsQueued',
+      () async {
+        final harness = Harness(library: loose);
+        final player = await playerOf(harness);
+
+        await player.playArtist(loose.first.file);
+
+        expect(stateOf(harness).queue.tracks.length, 3);
+      },
+    );
+
+    test(
+      'GivenAFileTheLibraryDoesNotHold_WhenItIsPlayedAsARecord_ThenItPlaysAlone',
+      () async {
+        // The other side of the same coin: an untagged stranger looks exactly
+        // like a member of the untagged group, and it is not one — there is no
+        // record around a file the library has never seen.
+        final harness = Harness(library: loose);
+        final player = await playerOf(harness);
+
+        await player.playAlbum(file('never-scanned'));
+
+        expect(stateOf(harness).queue.tracks.length, 1);
+        expect(
+          stateOf(harness).queue.tracks.single.path,
+          file('never-scanned').path,
+        );
+      },
+    );
+  });
+
   group('files that will not play', () {
     test(
       'GivenTheFirstTrackOfARecordIsGone_WhenTheRecordIsPlayed_ThenItIsNamedAndTheNextOneOpens',
@@ -223,6 +277,41 @@ void main() {
         expect(stateOf(harness).stage, AudioStage.allFailed);
         expect(stateOf(harness).queue.isEmpty, isTrue);
         expect(harness.player.opened, isEmpty);
+      },
+    );
+
+    test(
+      'GivenARepeatModeIsSet_WhenNothingInTheSelectionPlays_ThenTheModeSurvives',
+      () async {
+        // The repeat mode is a setting, not part of a queue: clearing the
+        // queue must not silently put it back to off while the stored
+        // preference still says otherwise, which is what the button on the
+        // player would then disagree with.
+        final harness = Harness(
+          library: library,
+          missingTracks: {for (final e in okComputer) e.file.path},
+        );
+        final player = await playerOf(harness);
+        await player.cycleRepeat();
+
+        await player.playAlbum(okComputer.first.file);
+
+        expect(stateOf(harness).stage, AudioStage.allFailed);
+        expect(stateOf(harness).repeat, QueueRepeat.all);
+      },
+    );
+
+    test(
+      'GivenARepeatModeIsSet_WhenAnEmptyLibraryIsShuffled_ThenTheModeSurvives',
+      () async {
+        final harness = Harness();
+        final player = await playerOf(harness);
+        await player.cycleRepeat();
+
+        await player.playEverythingShuffled(label: 'Everything');
+
+        expect(stateOf(harness).stage, AudioStage.idle);
+        expect(stateOf(harness).repeat, QueueRepeat.all);
       },
     );
 
@@ -386,6 +475,41 @@ void main() {
         await player.seekTo(const Duration(hours: 1));
 
         expect(harness.player.seeks.last, const Duration(minutes: 4));
+      },
+    );
+
+    test(
+      'GivenTheOwnerSeeks_WhenTheResumePointIsWritten_ThenItIsWhereTheySeekedTo',
+      () async {
+        // The engine reports its position on its own schedule, so when a seek
+        // returns the status still carries the position it moved away from.
+        // The resume point written by a seek used to be that old one, which
+        // meant closing the application within five seconds of seeking came
+        // back to where the owner had just left.
+        final harness = Harness(library: library, now: DateTime.utc(2026, 5));
+        final player = await playerOf(harness);
+        await player.playTrack(okComputer.first.file);
+        await report(
+          harness,
+          const PlaybackStatus(
+            isPlaying: true,
+            position: Duration(seconds: 10),
+            duration: Duration(minutes: 5),
+          ),
+        );
+
+        await player.seekTo(const Duration(minutes: 3));
+
+        expect(
+          harness
+              .read(playbackPositionsProvider)
+              .positionFor(okComputer.first.file.path)
+              ?.position,
+          const Duration(minutes: 3),
+        );
+        // And the state agrees, so the slider does not spring back under the
+        // thumb until the engine catches up.
+        expect(stateOf(harness).status.position, const Duration(minutes: 3));
       },
     );
 
