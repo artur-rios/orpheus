@@ -647,7 +647,7 @@ them is merged.
 | --- | --- | --- |
 | [#31](https://github.com/artur-rios/orpheus/issues/31) | UC-30 — Read the words of what is playing — in review | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [#32](https://github.com/artur-rios/orpheus/issues/32) | UC-31 — Follow the words and jump to a line — in review | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
-| — | UC-33 — Look the words up for a track that has none — in review | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#34](https://github.com/artur-rios/orpheus/issues/34) | UC-33 — Look the words up for a track that has none — in review | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
 ### M-09 — Sound bars
 
