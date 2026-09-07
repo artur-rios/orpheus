@@ -568,7 +568,7 @@ this file.
 | [M-05 — Playback](https://github.com/artur-rios/orpheus/milestone/5) | A track, a record, an artist or the whole library can be played, with a queue, repeat, resume, and a player that survives a bad file | M-04 | 11 | 11 / 11 closed |
 | [M-06 — Background playback](https://github.com/artur-rios/orpheus/milestone/6) | Playback continues on Android once the application is off screen, controllable from the notification, the lock screen and a headset | M-05 | 2 | 2 / 2 closed |
 | [M-07 — Listening statistics](https://github.com/artur-rios/orpheus/milestone/7) | Plays are counted from the owner's own listening and presented as totals and four rankings | M-05 | 2 | 2 / 2 closed |
-| [M-08 — Lyrics](https://github.com/artur-rios/orpheus/milestone/8) | The words of what is playing — the owner's own files first, a lookup for the tracks they have none for — following the music where the sheet carries times | M-05 | 3 | 0 / 3 closed |
+| [M-08 — Lyrics](https://github.com/artur-rios/orpheus/milestone/8) | The words of what is playing — the owner's own files first, a lookup for the tracks they have none for — following the music where the sheet carries times | M-05 | 3 | 3 / 3 closed |
 | [M-09 — Sound bars](https://github.com/artur-rios/orpheus/milestone/9) | The spectrum of the recording being played, measured from its own samples, cached per track, with a stand-in until it lands | M-05 | 1 | 1 / 1 closed |
 
 ## Backlog
@@ -640,14 +640,13 @@ this file.
 
 ### M-08 — Lyrics
 
-Built, tested and specified; the three issues close when the branch carrying
-them is merged.
+Built, tested and specified, and merged.
 
 | Issue | Work | Spec |
 | --- | --- | --- |
-| [#31](https://github.com/artur-rios/orpheus/issues/31) | UC-30 — Read the words of what is playing — in review | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
-| [#32](https://github.com/artur-rios/orpheus/issues/32) | UC-31 — Follow the words and jump to a line — in review | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
-| [#34](https://github.com/artur-rios/orpheus/issues/34) | UC-33 — Look the words up for a track that has none — in review | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#31](https://github.com/artur-rios/orpheus/issues/31) | UC-30 — Read the words of what is playing — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#32](https://github.com/artur-rios/orpheus/issues/32) | UC-31 — Follow the words and jump to a line — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#34](https://github.com/artur-rios/orpheus/issues/34) | UC-33 — Look the words up for a track that has none — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
 ### M-09 — Sound bars
 
