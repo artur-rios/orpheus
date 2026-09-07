@@ -69,6 +69,17 @@ jobs:
         # else (NFR-02, BR-03); the point of pinning the whole set is that the
         # next permission to arrive fails this job whatever it is, instead of
         # only the ones somebody thought to forbid.
+        #
+        # The last entry is not declared in this repository's manifest and is
+        # not a capability. AndroidX Core injects it, namespaced to this
+        # application's own id, so that it can register a broadcast receiver
+        # that is not exported; it is signature-level, so nothing outside this
+        # package can hold it. It has shipped in every build this project has
+        # ever produced — the earlier check only ever grepped for INTERNET, so
+        # it went unnoticed until this list started asserting the whole set.
+        # It is pinned here rather than filtered out by prefix: a permission
+        # under our own namespace is still a permission, and the point of this
+        # job is that every one of them is written down somewhere.
         run: |
           set -eu
           apk=build/app/outputs/flutter-apk/app-release.apk
@@ -83,6 +94,7 @@ jobs:
           android.permission.READ_EXTERNAL_STORAGE
           android.permission.READ_MEDIA_AUDIO
           android.permission.WAKE_LOCK
+          io.github.artur_rios.orpheus.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
           PERMISSIONS
           sed -i 's/^ *//' expected-permissions.txt
 

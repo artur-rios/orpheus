@@ -88,7 +88,19 @@ void main() {
 
       expect(await sidecar.write(track, sheet), isFalse);
 
-      expect(beside('.lrc').existsSync(), isFalse);
+      // Counted, rather than asked for by name. Two of this project's three
+      // targets have a case-insensitive file system, where `.lrc` and `.LRC`
+      // are the same file and asking whether `.lrc` exists answers something
+      // different than it does on the third. What has to hold everywhere is
+      // that the folder still has one sheet in it and it is the owner's.
+      expect(
+        music
+            .listSync()
+            .map((entity) => p.basename(entity.path))
+            .where((name) => name.toLowerCase().endsWith('.lrc')),
+        ['the-track.LRC'],
+      );
+      expect(beside('.LRC').readAsStringSync(), theirs);
     },
   );
 
