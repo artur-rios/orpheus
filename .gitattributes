@@ -1,0 +1,28 @@
+# The line endings are the repository's, not the checkout's.
+#
+# Without this, Git for Windows checks every text file out as CRLF, because
+# `core.autocrlf=true` is what its installer sets by default. That is a fight
+# nobody wins here, and the six files it is lost on are these:
+#
+#   linux/flutter/generated_plugin_registrant.cc
+#   linux/flutter/generated_plugin_registrant.h
+#   linux/flutter/generated_plugins.cmake
+#   windows/flutter/generated_plugin_registrant.cc
+#   windows/flutter/generated_plugin_registrant.h
+#   windows/flutter/generated_plugins.cmake
+#
+# Those are written by the Flutter tool, which renders its template and writes
+# the string it rendered — with LF, on every platform, and with no conversion
+# of any kind. So Git checks them out as CRLF, the next `flutter run` puts
+# them back to LF, and they are reported as modified for the rest of time even
+# though not one byte of their content ever changes.
+#
+# `eol=lf` settles it: LF in the repository and LF in the working tree, on
+# every machine, whatever the local `core.autocrlf` says. Every file tracked
+# here was already LF when this was written, so it normalises nothing — it
+# only stops the conversion that was never wanted.
+* text=auto eol=lf
+
+# The ones that are not text, marked rather than left to be sniffed.
+*.png binary
+*.ico binary
