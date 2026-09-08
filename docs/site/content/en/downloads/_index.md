@@ -93,6 +93,15 @@ release is signed with the same key, which is what Android requires before it
 will treat one package as an update of another; CI reads the signer back out of
 each package and refuses to publish one signed by anything else.
 
+**Coming from 1.0.0, once only.** That first package was signed with a
+throwaway key, and Android will not accept an update whose signer changed — it
+refuses with *App not installed*. Uninstall 1.0.0 before installing 1.0.1.
+Uninstalling takes your library folders, catalog, statistics and settings with
+it, because on Android an application's data goes when the application does;
+you will have to add your music folder again. It is a one-time cost, and it
+cannot be avoided: no key can match one that was generated at random and thrown
+away. Upgrades from 1.0.1 onward install in place and keep everything.
+
 ## Uninstalling
 
 Nothing of yours is removed by an uninstall on any platform. Your library

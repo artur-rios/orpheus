@@ -39,7 +39,7 @@ jobs:
       run:
         working-directory: docs/site
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Docsy's "last modified" dates come from the git log, and a shallow
           # clone gives every page the same date.
@@ -57,11 +57,11 @@ jobs:
 
       # Hugo modules are Go modules, so fetching the theme needs a Go toolchain
       # even though nothing here is written in Go.
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: 'stable'
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
 
@@ -71,7 +71,7 @@ jobs:
       - name: Install the stylesheet toolchain
         run: npm install --no-audit --no-fund
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
         id: pages
 
       - name: Build
@@ -108,7 +108,7 @@ jobs:
 
           echo "Home, downloads, $diagrams diagram pages, the theme control, and a pinned mermaid."
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: docs/site/public
 
@@ -124,4 +124,4 @@ jobs:
       id-token: write
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
