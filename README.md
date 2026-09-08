@@ -534,22 +534,65 @@ with no way forward but uninstalling — losing the library, the statistics and
 the settings that an upgrade is supposed to keep.
 
 So the release workflow signs with a key the project holds, and refuses to
-build without one. Four repository secrets:
+build without one.
 
-| Secret | What it is |
-| --- | --- |
-| `ANDROID_KEYSTORE_BASE64` | The keystore file, base64-encoded |
-| `ANDROID_KEYSTORE_PASSWORD` | Its store password |
-| `ANDROID_KEY_ALIAS` | The alias of the key inside it |
-| `ANDROID_KEY_PASSWORD` | That key's password |
+**1. Make the keystore.** Once, and never again. `keytool` ships with the JDK
+that Android Studio installed, so it is already on your machine.
 
-Making one, once, and never again:
+On Windows, in PowerShell:
+
+```powershell
+keytool -genkeypair -v -keystore orpheus-release.jks -alias orpheus `
+  -keyalg RSA -keysize 4096 -validity 10000 -storetype pkcs12
+```
+
+On Linux or macOS:
 
 ```sh
 keytool -genkeypair -v -keystore orpheus-release.jks -alias orpheus \
   -keyalg RSA -keysize 4096 -validity 10000 -storetype pkcs12
-base64 -w0 orpheus-release.jks        # PowerShell: [Convert]::ToBase64String([IO.File]::ReadAllBytes("orpheus-release.jks"))
 ```
+
+It asks for a password, then for a name, an organisation and a country. None of
+those answers are checked by anything or shown to anyone; the password is the
+part that matters. **Write the password down before you press enter** — there is
+no way to recover it and no way to replace the keystore later.
+
+**2. Encode it.** The secret holds the file's bytes as text, because a GitHub
+secret is a string.
+
+On Windows, which has no `base64` command — this writes the file and puts the
+same text on your clipboard, ready to paste:
+
+```powershell
+$encoded = [Convert]::ToBase64String([IO.File]::ReadAllBytes("orpheus-release.jks"))
+$encoded | Set-Content -NoNewline keystore.base64.txt
+$encoded | Set-Clipboard
+```
+
+On Linux or macOS:
+
+```sh
+base64 -w0 orpheus-release.jks > keystore.base64.txt
+```
+
+Not `certutil -encode`: it wraps its output in `-----BEGIN CERTIFICATE-----`
+lines, which are not part of the data and will not decode.
+
+**3. Put four secrets in the repository.** *Settings → Secrets and variables →
+Actions → New repository secret*. The names are case-sensitive and must be
+exactly these:
+
+| Secret | What to paste into it |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | The entire contents of `keystore.base64.txt` — one long run of letters, digits, `+` and `/`, possibly ending in `=`. Paste what step 2 put on the clipboard, or open the file and select all. Not the `.jks` itself: a secret is text. Line breaks in it are harmless, the workflow strips them. |
+| `ANDROID_KEYSTORE_PASSWORD` | The password you typed at *Enter keystore password*. |
+| `ANDROID_KEY_ALIAS` | `orpheus` — whatever followed `-alias` in the command above. |
+| `ANDROID_KEY_PASSWORD` | **The same password again.** A PKCS12 keystore holds one password for both; keytool warns and ignores a `-keypass` that differs from the store password, so there is no second password to give. |
+
+Then delete `keystore.base64.txt` — it is the keystore in another form, sitting
+in the repository directory. `.gitignore` refuses to commit it, and the `.jks`
+beside it, but neither belongs there once the secret is set.
 
 **Back the `.jks` up somewhere that is not this machine, and keep the
 passwords.** Losing it cannot be undone by generating another: every owner who
@@ -557,11 +600,11 @@ installed a release signed with the old one would have to uninstall first, and
 their catalog, statistics and settings would go with it. It is the one file in
 this project that has no copy in the repository and cannot be rebuilt from it.
 
-Once the first signed release is out, read its fingerprint from the workflow
-log — the *Read the signer back out of the package* step prints it — and set it
-as a repository **variable** named `ANDROID_SIGNING_SHA256`. From then on a
-release signed by anything else fails the job instead of shipping an update
-nobody can install. Optional, and worth the minute.
+**4. Optional, once the first signed release is out.** Read its fingerprint out
+of the workflow log — the *Read the signer back out of the package* step prints
+`Signed with SHA-256 <64 hex characters>` — and set it under *Variables*, not
+*Secrets*, as `ANDROID_SIGNING_SHA256`. From then on a release signed by
+anything else fails the job instead of shipping an update nobody can install.
 
 Building a signed package locally needs none of that. `flutter build apk
 --release` with no key configured falls back to the debug key and works as it

@@ -134,7 +134,12 @@ jobs:
             echo "::error::ANDROID_KEYSTORE_BASE64 is not set, so this release would be signed with the runner's debug key and could not be installed over the previous one. See the Releases section of README.md for the four secrets this needs."
             exit 1
           fi
-          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          # Whitespace stripped before decoding: the value is produced on
+          # whatever machine holds the keystore, and one encoded on Windows
+          # arrives wrapped, carriage-returned, or both. A keystore that fails
+          # to decode is a cryptic way to learn that.
+          printf '%s' "$KEYSTORE_BASE64" | tr -d ' \t\r\n' | base64 -d \
+            > "$RUNNER_TEMP/release.jks"
           test -s "$RUNNER_TEMP/release.jks"
 
       - name: Build the APK

@@ -37,6 +37,15 @@ migrate_working_dir/
 # GitHub release by .github/workflows/release.yml, never committed.
 /dist/
 
+# The Android release signing key, and anything it was encoded into. Neither is
+# ever committed — see the Releases section of README.md, which tells you to
+# make both of them right here. `android/.gitignore` covers that directory; this
+# covers the one the instructions actually put them in.
+*.jks
+*.keystore
+key.properties
+keystore.base64.txt
+
 # Symbolication related
 app.*.symbols
 
