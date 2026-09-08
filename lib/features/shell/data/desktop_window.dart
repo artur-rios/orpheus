@@ -19,7 +19,13 @@ import '../../../core/theme/breakpoints.dart';
 /// owner's next move is what gets recorded.
 class DesktopWindow with WindowListener {
   /// Creates the placement over [settings].
-  DesktopWindow(this._settings);
+  ///
+  /// [shutdownBudget] is a seam for the test that asserts the window closes
+  /// even when the release behind it never finishes; nothing else passes one.
+  DesktopWindow(
+    this._settings, {
+    this._shutdownBudget = const Duration(seconds: 3),
+  });
 
   static final Logger _log = Logger('shell');
 
@@ -30,6 +36,27 @@ class DesktopWindow with WindowListener {
 
   /// Coalesces the flurry of resize events a drag produces into one write.
   Timer? _pending;
+
+  /// What to release on the way out, run behind the hidden window.
+  ///
+  /// The provider graph, in practice, and the reason this is assigned rather
+  /// than passed to the constructor: the window is opened before the container
+  /// exists, because its placement comes from the settings store and it has to
+  /// be up before the first frame.
+  ///
+  /// Why the close path is where it belongs: `destroy` hands the process to
+  /// its own teardown, and everything the application holds natively — a
+  /// libmpv instance with an output device open, above all — is released
+  /// there, at the slowest possible moment and with the window still on
+  /// screen. Released here it is the same work done while the isolate is
+  /// still alive and the owner is no longer looking at it.
+  FutureOr<void> Function()? onClosing;
+
+  /// How long the close path is given before the window goes regardless.
+  final Duration _shutdownBudget;
+
+  /// Whether the close is already under way.
+  bool _closing = false;
 
   /// Sizes the window, restores where it was, and shows it.
   Future<void> open() async {
@@ -74,24 +101,69 @@ class DesktopWindow with WindowListener {
   void onWindowClose() => unawaited(_finish());
 
   /// Stops listening, having written where the window ended up.
-  Future<void> close() async {
+  ///
+  /// [bounds] is the geometry to record, for a caller that had to read it
+  /// first. The close path did: it hides the window before it writes
+  /// anything, and a hidden window is not a thing to ask where it is.
+  Future<void> close({Rect? bounds}) async {
     _pending?.cancel();
     windowManager.removeListener(this);
-    await _write();
+    await _write(bounds);
   }
 
-  /// Writes where the window ended up, then lets it close.
+  /// Takes the window off screen, records where it was, releases what the
+  /// application holds, and quits.
   ///
-  /// The `finally` is the whole point of it being written out: [setPreventClose]
-  /// means nothing closes this window but this method, so a write that threw —
-  /// or hung on a settings store that could not be reached — would leave an
-  /// owner with an application they cannot quit. The geometry is worth one
-  /// attempt and nothing more.
+  /// The order is the whole of this method, and Windows is what sets it.
+  /// There `destroy` is `PostQuitMessage`: it ends the runner's message loop
+  /// and returns, which leaves the window standing — painted, and no longer
+  /// pumping messages — for the whole of the Flutter engine teardown that
+  /// follows as the process unwinds. Everything between the owner's click and
+  /// the end of that teardown is time an application spends looking like it
+  /// did not hear the click, so the window goes first and the rest happens
+  /// behind it.
+  ///
+  /// [_shutdownBudget] and the `finally` are the same idea said twice:
+  /// [WindowManager.setPreventClose] means nothing closes this window but this
+  /// method, so work that threw — or that hung on a settings store or an audio
+  /// device that could not be reached — would leave an owner with an
+  /// application they cannot quit. None of it is worth that.
   Future<void> _finish() async {
+    // A second close event — two clicks on the button before the first hide
+    // lands — would run the release a second time, and what it releases is
+    // not all of it built to be released twice.
+    if (_closing) return;
+    _closing = true;
+
     try {
-      await close();
+      await _shutDown().timeout(_shutdownBudget);
+    } on Object catch (error) {
+      _log.warning('the shutdown did not finish', error);
     } finally {
       await windowManager.destroy();
+    }
+  }
+
+  Future<void> _shutDown() async {
+    final bounds = await _measure();
+
+    await windowManager.hide();
+    await close(bounds: bounds);
+    await onClosing?.call();
+  }
+
+  /// Where the window is, or `null` where it will not say.
+  ///
+  /// Read before the window is hidden, so what gets recorded is where the
+  /// owner left it rather than whatever a hidden window reports — which is the
+  /// last rectangle on Windows and rather less than that on GTK.
+  Future<Rect?> _measure() async {
+    try {
+      return await windowManager.getBounds();
+    } on Object catch (error) {
+      _log.warning('the window geometry could not be measured', error);
+
+      return null;
     }
   }
 
@@ -106,9 +178,10 @@ class DesktopWindow with WindowListener {
     );
   }
 
-  Future<void> _write() async {
+  /// Records [bounds], reading them itself where the caller had none.
+  Future<void> _write([Rect? bounds]) async {
     try {
-      final bounds = await windowManager.getBounds();
+      bounds ??= await windowManager.getBounds();
       await _settings.setString(
         settingsKey,
         jsonEncode({

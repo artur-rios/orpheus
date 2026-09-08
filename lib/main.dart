@@ -61,6 +61,10 @@ Future<void> main() async {
   // entitled to take down.
   container.read(mediaSessionControllerProvider.notifier);
 
+  // Assigned here rather than passed to the constructor, because the window is
+  // already open by this point: see [DesktopWindow.onClosing].
+  window?.onClosing = () => _release(container);
+
   // Started after the first frame so the window is already up: the owner sees
   // the library the last scan left, and the strip above the bar says what the
   // new one is doing.
@@ -78,6 +82,27 @@ Future<void> main() async {
       child: const OrpheusApp(),
     ),
   );
+}
+
+/// Releases what the graph holds natively, and waits for the part that matters.
+///
+/// `ProviderContainer.dispose` cannot do the waiting on its own: Riverpod's
+/// `onDispose` takes a synchronous callback, so a gateway whose release is a
+/// future is started and never awaited. The playback engine is the one where
+/// that is the difference between a clean exit and a slow one — it holds a
+/// libmpv instance and, through it, the machine's audio output — so it is
+/// released by hand first, and the container takes down the rest after.
+///
+/// `exists` rather than a plain read: the engine is built on first use, and a
+/// session that never played anything should not build one in order to throw
+/// it away — which on Windows means loading libmpv and opening an output
+/// device as part of quitting.
+Future<void> _release(ProviderContainer container) async {
+  if (container.exists(audioPlayerProvider)) {
+    await container.read(audioPlayerProvider).dispose();
+  }
+
+  container.dispose();
 }
 
 /// The platform's media session, or `null` to leave the silent one bound.

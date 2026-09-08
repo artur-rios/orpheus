@@ -69,6 +69,7 @@ class MediaKitPlayer implements MediaPlayer {
       StreamController<PlaybackStatus>.broadcast();
 
   PlaybackStatus _status = const PlaybackStatus();
+  bool _disposed = false;
 
   @override
   Stream<PlaybackStatus> get status => _statuses.stream;
@@ -109,6 +110,15 @@ class MediaKitPlayer implements MediaPlayer {
 
   @override
   Future<void> dispose() async {
+    // Answered once, because the shutdown path has two callers by design: it
+    // releases the engine by hand and waits for it — media_kit's own dispose
+    // stops playback, which is what gives the output device back — and the
+    // container it was built by then releases it again on its way down.
+    // media_kit throws an `AssertionError` on a second dispose, so the second
+    // caller is answered here rather than there.
+    if (_disposed) return;
+    _disposed = true;
+
     for (final subscription in _subscriptions) {
       await subscription.cancel();
     }
