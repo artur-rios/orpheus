@@ -35,13 +35,7 @@ class MusicLibraryView extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(child: _ViewSwitcher(selected: browse.view)),
-            const _ShuffleEverythingButton(),
-            _LayoutSwitcher(selected: layout),
-          ],
-        ),
+        _Controls(view: browse.view, layout: layout),
         const SizedBox(height: AppSpacing.sm),
         _Breadcrumb(state: browse),
         Expanded(
@@ -56,6 +50,54 @@ class MusicLibraryView extends ConsumerWidget {
               layout: layout,
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The view switcher, the shuffle button and the layout switcher.
+///
+/// One row wherever one row holds them, and two on a phone, where it does not.
+/// The three of them want about 545 logical pixels together — 585 in
+/// Portuguese, whose words for these are longer — and a 393-pixel handset
+/// offers 361 between its margins. What that shortfall used to buy was a
+/// segmented control squeezed until its labels wrapped mid-word: "Albu / ms".
+///
+/// Reflowed rather than reshaped. Nothing here changes what it is or what it
+/// says on a narrow screen — the switcher takes a row of its own, at the full
+/// width, which is what a segmented control does on a phone anyway, and the
+/// two controls that are already icons sit under its right edge. The tiers
+/// above it are untouched.
+class _Controls extends StatelessWidget {
+  const _Controls({required this.view, required this.layout});
+
+  final MusicView view;
+  final MusicLayout layout;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!Breakpoint.from(context).usesBottomNavigation) {
+      return Row(
+        children: [
+          Expanded(child: _ViewSwitcher(selected: view)),
+          const _ShuffleEverythingButton(),
+          _LayoutSwitcher(selected: layout),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ViewSwitcher(selected: view, fillsWidth: true),
+        const SizedBox(height: AppSpacing.xs),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            const _ShuffleEverythingButton(),
+            _LayoutSwitcher(selected: layout),
+          ],
         ),
       ],
     );
@@ -173,28 +215,42 @@ extension _MusicLayoutPresentation on MusicLayout {
 
 /// The three views.
 class _ViewSwitcher extends ConsumerWidget {
-  const _ViewSwitcher({required this.selected});
+  const _ViewSwitcher({required this.selected, this.fillsWidth = false});
 
   final MusicView selected;
+
+  /// Whether it spreads across everything it is given.
+  ///
+  /// It does on a phone, where it has a row to itself and the three views
+  /// divide it evenly — which is what stops the labels wrapping, since each
+  /// segment is then a third of the row rather than a third of what two other
+  /// controls left over. Everywhere else it is one of three controls sharing a
+  /// row, and takes only the width its words need.
+  final bool fillsWidth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: SegmentedButton<MusicView>(
-        segments: [
-          for (final view in MusicView.values)
-            ButtonSegment(value: view, label: Text(view.label(l10n))),
-        ],
-        selected: {selected},
-        showSelectedIcon: false,
-        onSelectionChanged: (chosen) => ref
-            .read(musicBrowseControllerProvider.notifier)
-            .show(chosen.single),
-      ),
+    final button = SegmentedButton<MusicView>(
+      segments: [
+        for (final view in MusicView.values)
+          ButtonSegment(value: view, label: Text(view.label(l10n))),
+      ],
+      selected: {selected},
+      showSelectedIcon: false,
+      // What makes it divide the row rather than sit at its natural width.
+      // `Alignment.center` would not: an [Align] loosens what it passes down,
+      // and a segmented button given a loose width takes only what its
+      // longest label asks for.
+      expandedInsets: fillsWidth ? EdgeInsets.zero : null,
+      onSelectionChanged: (chosen) =>
+          ref.read(musicBrowseControllerProvider.notifier).show(chosen.single),
     );
+
+    return fillsWidth
+        ? button
+        : Align(alignment: Alignment.centerLeft, child: button);
   }
 }
 
