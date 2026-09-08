@@ -513,4 +513,91 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get updateReleaseNotes => 'O que mudou';
+
+  @override
+  String get statsStory => 'Ver como história';
+
+  @override
+  String get storyOpeningTitle => 'Suas escutas, até aqui';
+
+  @override
+  String storyOpeningPlays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reproduções',
+      one: '1 reprodução',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String storyOpeningTracks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count faixas',
+      one: '1 faixa',
+    );
+    return 'em $_temp0';
+  }
+
+  @override
+  String get storyTopArtist => 'Seu artista favorito';
+
+  @override
+  String get storyTopAlbum => 'Seu disco favorito';
+
+  @override
+  String get storyTopTrack => 'Sua faixa favorita';
+
+  @override
+  String get storyTopGenre => 'Seu gênero favorito';
+
+  @override
+  String get storyRankingArtists => 'Seus artistas';
+
+  @override
+  String get storyRankingAlbums => 'Seus discos';
+
+  @override
+  String get storyRankingTracks => 'Suas faixas';
+
+  @override
+  String get storyRankingGenres => 'Seus gêneros';
+
+  @override
+  String storyShareOfPlays(String percent) {
+    return '$percent% do que você ouviu';
+  }
+
+  @override
+  String get storySummaryTitle => 'Esse é o seu Orpheus';
+
+  @override
+  String get storyShare => 'Compartilhar';
+
+  @override
+  String get storySave => 'Salvar a imagem';
+
+  @override
+  String get storyShared => 'Compartilhado.';
+
+  @override
+  String get storySaved => 'Salvo.';
+
+  @override
+  String get storyShareFailed => 'Não foi possível criar a imagem.';
+
+  @override
+  String get storyClose => 'Fechar a história';
+
+  @override
+  String get storyNext => 'Próximo';
+
+  @override
+  String get storyPrevious => 'Anterior';
+
+  @override
+  String get storyMadeWith => 'Feito com o Orpheus';
 }

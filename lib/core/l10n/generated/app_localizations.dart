@@ -931,6 +931,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'What changed'**
   String get updateReleaseNotes;
+
+  /// Opens the statistics as a story.
+  ///
+  /// In en, this message translates to:
+  /// **'See it as a story'**
+  String get statsStory;
+
+  /// The opening card's heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Your listening, so far'**
+  String get storyOpeningTitle;
+
+  /// How many plays in total.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 play} other{{count} plays}}'**
+  String storyOpeningPlays(int count);
+
+  /// How many distinct tracks account for them.
+  ///
+  /// In en, this message translates to:
+  /// **'across {count, plural, =1{1 track} other{{count} tracks}}'**
+  String storyOpeningTracks(int count);
+
+  /// The heading of the top artist card.
+  ///
+  /// In en, this message translates to:
+  /// **'Your top artist'**
+  String get storyTopArtist;
+
+  /// The heading of the top album card.
+  ///
+  /// In en, this message translates to:
+  /// **'Your top record'**
+  String get storyTopAlbum;
+
+  /// The heading of the top track card.
+  ///
+  /// In en, this message translates to:
+  /// **'Your top track'**
+  String get storyTopTrack;
+
+  /// The heading of the top genre card.
+  ///
+  /// In en, this message translates to:
+  /// **'Your top genre'**
+  String get storyTopGenre;
+
+  /// The heading of the artists ranking card.
+  ///
+  /// In en, this message translates to:
+  /// **'Your artists'**
+  String get storyRankingArtists;
+
+  /// The heading of the albums ranking card.
+  ///
+  /// In en, this message translates to:
+  /// **'Your records'**
+  String get storyRankingAlbums;
+
+  /// The heading of the tracks ranking card.
+  ///
+  /// In en, this message translates to:
+  /// **'Your tracks'**
+  String get storyRankingTracks;
+
+  /// The heading of the genres ranking card.
+  ///
+  /// In en, this message translates to:
+  /// **'Your genres'**
+  String get storyRankingGenres;
+
+  /// What share of a ranking's plays the leader accounts for.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% of what you played'**
+  String storyShareOfPlays(String percent);
+
+  /// The closing card's heading.
+  ///
+  /// In en, this message translates to:
+  /// **'That is your Orpheus'**
+  String get storySummaryTitle;
+
+  /// Hands the card to another application.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get storyShare;
+
+  /// Writes the card to a file.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the picture'**
+  String get storySave;
+
+  /// Confirms the card was handed on.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared.'**
+  String get storyShared;
+
+  /// Confirms the card was written to a file.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved.'**
+  String get storySaved;
+
+  /// Shown when rendering or sending the card failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The picture could not be made.'**
+  String get storyShareFailed;
+
+  /// The tooltip on the story's close button.
+  ///
+  /// In en, this message translates to:
+  /// **'Close the story'**
+  String get storyClose;
+
+  /// The tooltip on the forward half of a card.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get storyNext;
+
+  /// The tooltip on the back half of a card.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get storyPrevious;
+
+  /// The line at the foot of a shared card, which travels with the picture.
+  ///
+  /// In en, this message translates to:
+  /// **'Made with Orpheus'**
+  String get storyMadeWith;
 }
 
 class _AppLocalizationsDelegate

@@ -62,8 +62,10 @@ import '../../features/shell/domain/shell_destination.dart';
 import '../../features/stats/application/music_stats_controller.dart';
 import '../../features/stats/application/play_recorder.dart';
 import '../../features/stats/data/json_play_history_store.dart';
+import '../../features/stats/data/platform_story_share.dart';
 import '../../features/stats/domain/music_stats.dart';
 import '../../features/stats/domain/play_history.dart';
+import '../../features/stats/domain/story_share.dart';
 import '../../features/updates/application/update_controller.dart';
 import '../../features/updates/data/github_release_source.dart';
 import '../../features/updates/data/installer_update.dart';
@@ -354,6 +356,15 @@ final preferencesControllerProvider =
 /// rebuilds on a theme change and on nothing else.
 final themeModeProvider = Provider<ThemeMode>(
   (ref) => ref.watch(preferencesControllerProvider).themeMode,
+);
+
+/// How a story card leaves the application.
+///
+/// A share sheet on a phone and a save dialog on a desktop, decided by the
+/// implementation rather than by the screen. Overridden in every test: a suite
+/// that opened a share sheet would be a suite nobody could run unattended.
+final storyShareProvider = Provider<StoryShare>(
+  (ref) => PlatformStoryShare(platform: ref.watch(hostPlatformProvider)),
 );
 
 /// Where the application looks to see whether it is out of date.

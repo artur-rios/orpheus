@@ -15,6 +15,7 @@ import 'package:orpheus/features/updates/domain/app_version.dart';
 
 import 'fake_media_player.dart';
 import 'fake_media_session.dart';
+import 'fake_story_share.dart';
 import 'fake_track_probe.dart';
 import 'fake_updates.dart';
 import 'fakes.dart';
@@ -43,8 +44,10 @@ class Harness {
     DateTime? now,
     ScriptedReleaseSource? releases,
     ScriptedUpdateInstaller? updates,
+    RecordingStoryShare? storyShare,
     AppVersion? runningVersion,
   }) : player = FakeMediaPlayer(),
+       storyShare = storyShare ?? RecordingStoryShare(),
        releases = releases ?? ScriptedReleaseSource(),
        updates = updates ?? ScriptedUpdateInstaller(),
        shutdown = RecordingAppShutdown(),
@@ -101,6 +104,7 @@ class Harness {
         releaseSourceProvider.overrideWithValue(this.releases),
         updateInstallerProvider.overrideWithValue(this.updates),
         appShutdownProvider.overrideWithValue(shutdown),
+        storyShareProvider.overrideWithValue(this.storyShare),
         runningVersionProvider.overrideWithValue(_runningVersion),
       ],
     );
@@ -122,6 +126,9 @@ class Harness {
 
   /// Whether the application was asked to quit so an installer could run.
   final RecordingAppShutdown shutdown;
+
+  /// Where a shared story card went.
+  final RecordingStoryShare storyShare;
 
   final AppVersion? _runningVersion;
 

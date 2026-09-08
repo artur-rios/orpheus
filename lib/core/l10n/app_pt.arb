@@ -652,5 +652,112 @@
   "updateReleaseNotes": "O que mudou",
   "@updateReleaseNotes": {
     "description": "The heading above the release notes."
+  },
+  "statsStory": "Ver como história",
+  "@statsStory": {
+    "description": "Opens the statistics as a story."
+  },
+  "storyOpeningTitle": "Suas escutas, até aqui",
+  "@storyOpeningTitle": {
+    "description": "The opening card's heading."
+  },
+  "storyOpeningPlays": "{count, plural, =1{1 reprodução} other{{count} reproduções}}",
+  "@storyOpeningPlays": {
+    "description": "How many plays in total.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "storyOpeningTracks": "em {count, plural, =1{1 faixa} other{{count} faixas}}",
+  "@storyOpeningTracks": {
+    "description": "How many distinct tracks account for them.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "storyTopArtist": "Seu artista favorito",
+  "@storyTopArtist": {
+    "description": "The heading of the top artist card."
+  },
+  "storyTopAlbum": "Seu disco favorito",
+  "@storyTopAlbum": {
+    "description": "The heading of the top album card."
+  },
+  "storyTopTrack": "Sua faixa favorita",
+  "@storyTopTrack": {
+    "description": "The heading of the top track card."
+  },
+  "storyTopGenre": "Seu gênero favorito",
+  "@storyTopGenre": {
+    "description": "The heading of the top genre card."
+  },
+  "storyRankingArtists": "Seus artistas",
+  "@storyRankingArtists": {
+    "description": "The heading of the artists ranking card."
+  },
+  "storyRankingAlbums": "Seus discos",
+  "@storyRankingAlbums": {
+    "description": "The heading of the albums ranking card."
+  },
+  "storyRankingTracks": "Suas faixas",
+  "@storyRankingTracks": {
+    "description": "The heading of the tracks ranking card."
+  },
+  "storyRankingGenres": "Seus gêneros",
+  "@storyRankingGenres": {
+    "description": "The heading of the genres ranking card."
+  },
+  "storyShareOfPlays": "{percent}% do que você ouviu",
+  "@storyShareOfPlays": {
+    "description": "What share of a ranking's plays the leader accounts for.",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "storySummaryTitle": "Esse é o seu Orpheus",
+  "@storySummaryTitle": {
+    "description": "The closing card's heading."
+  },
+  "storyShare": "Compartilhar",
+  "@storyShare": {
+    "description": "Hands the card to another application."
+  },
+  "storySave": "Salvar a imagem",
+  "@storySave": {
+    "description": "Writes the card to a file."
+  },
+  "storyShared": "Compartilhado.",
+  "@storyShared": {
+    "description": "Confirms the card was handed on."
+  },
+  "storySaved": "Salvo.",
+  "@storySaved": {
+    "description": "Confirms the card was written to a file."
+  },
+  "storyShareFailed": "Não foi possível criar a imagem.",
+  "@storyShareFailed": {
+    "description": "Shown when rendering or sending the card failed."
+  },
+  "storyClose": "Fechar a história",
+  "@storyClose": {
+    "description": "The tooltip on the story's close button."
+  },
+  "storyNext": "Próximo",
+  "@storyNext": {
+    "description": "The tooltip on the forward half of a card."
+  },
+  "storyPrevious": "Anterior",
+  "@storyPrevious": {
+    "description": "The tooltip on the back half of a card."
+  },
+  "storyMadeWith": "Feito com o Orpheus",
+  "@storyMadeWith": {
+    "description": "The line at the foot of a shared card, which travels with the picture."
   }
 }

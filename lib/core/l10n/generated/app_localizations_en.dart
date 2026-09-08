@@ -512,4 +512,91 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateReleaseNotes => 'What changed';
+
+  @override
+  String get statsStory => 'See it as a story';
+
+  @override
+  String get storyOpeningTitle => 'Your listening, so far';
+
+  @override
+  String storyOpeningPlays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plays',
+      one: '1 play',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String storyOpeningTracks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tracks',
+      one: '1 track',
+    );
+    return 'across $_temp0';
+  }
+
+  @override
+  String get storyTopArtist => 'Your top artist';
+
+  @override
+  String get storyTopAlbum => 'Your top record';
+
+  @override
+  String get storyTopTrack => 'Your top track';
+
+  @override
+  String get storyTopGenre => 'Your top genre';
+
+  @override
+  String get storyRankingArtists => 'Your artists';
+
+  @override
+  String get storyRankingAlbums => 'Your records';
+
+  @override
+  String get storyRankingTracks => 'Your tracks';
+
+  @override
+  String get storyRankingGenres => 'Your genres';
+
+  @override
+  String storyShareOfPlays(String percent) {
+    return '$percent% of what you played';
+  }
+
+  @override
+  String get storySummaryTitle => 'That is your Orpheus';
+
+  @override
+  String get storyShare => 'Share';
+
+  @override
+  String get storySave => 'Save the picture';
+
+  @override
+  String get storyShared => 'Shared.';
+
+  @override
+  String get storySaved => 'Saved.';
+
+  @override
+  String get storyShareFailed => 'The picture could not be made.';
+
+  @override
+  String get storyClose => 'Close the story';
+
+  @override
+  String get storyNext => 'Next';
+
+  @override
+  String get storyPrevious => 'Previous';
+
+  @override
+  String get storyMadeWith => 'Made with Orpheus';
 }

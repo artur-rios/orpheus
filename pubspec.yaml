@@ -42,6 +42,12 @@ dependencies:
   # socket.
   http: ^1.6.0
 
+  # The share sheet, for handing a rendered story card to whatever the owner
+  # posts with. Mobile only in use: the desktops save the picture through the
+  # file dialog `file_picker` already provides, which is what an owner there
+  # actually wants — a file they can attach, not a list of applications.
+  share_plus: ^13.3.0
+
   # The SHA-256 of a downloaded update, checked against the SHA256SUMS.txt the
   # release publishes beside it. Already in the tree as somebody else's
   # transitive dependency; named here because this application now depends on

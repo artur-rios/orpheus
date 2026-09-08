@@ -6,6 +6,8 @@ import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../shell/presentation/async_state_view.dart';
 import '../domain/music_stats.dart';
+import '../domain/stats_story.dart';
+import 'stats_story_screen.dart';
 
 /// What the owner listens to: a summary, and four rankings under it.
 ///
@@ -34,6 +36,18 @@ class MusicStatsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.statsTitle),
         actions: [
+          // Offered only where there is a story to tell. A button that opens
+          // an empty sequence of cards is a button that lies about what is
+          // behind it.
+          if (stats.value?.isEmpty == false)
+            IconButton(
+              tooltip: l10n.statsStory,
+              icon: const Icon(Icons.auto_stories_outlined),
+              onPressed: () => StatsStoryScreen.show(
+                context,
+                storyFrom(stats.requireValue),
+              ),
+            ),
           IconButton(
             tooltip: l10n.statsReadAgain,
             icon: const Icon(Icons.refresh),

@@ -652,5 +652,112 @@
   "updateReleaseNotes": "What changed",
   "@updateReleaseNotes": {
     "description": "The heading above the release notes."
+  },
+  "statsStory": "See it as a story",
+  "@statsStory": {
+    "description": "Opens the statistics as a story."
+  },
+  "storyOpeningTitle": "Your listening, so far",
+  "@storyOpeningTitle": {
+    "description": "The opening card's heading."
+  },
+  "storyOpeningPlays": "{count, plural, =1{1 play} other{{count} plays}}",
+  "@storyOpeningPlays": {
+    "description": "How many plays in total.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "storyOpeningTracks": "across {count, plural, =1{1 track} other{{count} tracks}}",
+  "@storyOpeningTracks": {
+    "description": "How many distinct tracks account for them.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "storyTopArtist": "Your top artist",
+  "@storyTopArtist": {
+    "description": "The heading of the top artist card."
+  },
+  "storyTopAlbum": "Your top record",
+  "@storyTopAlbum": {
+    "description": "The heading of the top album card."
+  },
+  "storyTopTrack": "Your top track",
+  "@storyTopTrack": {
+    "description": "The heading of the top track card."
+  },
+  "storyTopGenre": "Your top genre",
+  "@storyTopGenre": {
+    "description": "The heading of the top genre card."
+  },
+  "storyRankingArtists": "Your artists",
+  "@storyRankingArtists": {
+    "description": "The heading of the artists ranking card."
+  },
+  "storyRankingAlbums": "Your records",
+  "@storyRankingAlbums": {
+    "description": "The heading of the albums ranking card."
+  },
+  "storyRankingTracks": "Your tracks",
+  "@storyRankingTracks": {
+    "description": "The heading of the tracks ranking card."
+  },
+  "storyRankingGenres": "Your genres",
+  "@storyRankingGenres": {
+    "description": "The heading of the genres ranking card."
+  },
+  "storyShareOfPlays": "{percent}% of what you played",
+  "@storyShareOfPlays": {
+    "description": "What share of a ranking's plays the leader accounts for.",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "storySummaryTitle": "That is your Orpheus",
+  "@storySummaryTitle": {
+    "description": "The closing card's heading."
+  },
+  "storyShare": "Share",
+  "@storyShare": {
+    "description": "Hands the card to another application."
+  },
+  "storySave": "Save the picture",
+  "@storySave": {
+    "description": "Writes the card to a file."
+  },
+  "storyShared": "Shared.",
+  "@storyShared": {
+    "description": "Confirms the card was handed on."
+  },
+  "storySaved": "Saved.",
+  "@storySaved": {
+    "description": "Confirms the card was written to a file."
+  },
+  "storyShareFailed": "The picture could not be made.",
+  "@storyShareFailed": {
+    "description": "Shown when rendering or sending the card failed."
+  },
+  "storyClose": "Close the story",
+  "@storyClose": {
+    "description": "The tooltip on the story's close button."
+  },
+  "storyNext": "Next",
+  "@storyNext": {
+    "description": "The tooltip on the forward half of a card."
+  },
+  "storyPrevious": "Previous",
+  "@storyPrevious": {
+    "description": "The tooltip on the back half of a card."
+  },
+  "storyMadeWith": "Made with Orpheus",
+  "@storyMadeWith": {
+    "description": "The line at the foot of a shared card, which travels with the picture."
   }
 }
