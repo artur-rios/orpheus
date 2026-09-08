@@ -517,11 +517,64 @@ Then four artifacts, each built where it can be:
 | Android | `orpheus-<version>-android.apk` | Installed directly, not from a store |
 
 The APK is put through the same permission gate the Verify workflow applies,
-against the package that actually ships. The analyzer and the suite are run
-before anything is built, because a release is not the place to discover the
-suite is red. Every file is checksummed into `SHA256SUMS.txt`, which is the
-only way somebody can tell that what they downloaded is what the workflow
-built — both installers are unsigned.
+against the package that actually ships, and the same is done with its signer
+— see below. The analyzer and the suite are run before anything is built,
+because a release is not the place to discover the suite is red. Every file is
+checksummed into `SHA256SUMS.txt`, which is the only way somebody can tell that
+what they downloaded is what the workflow built — both desktop installers are
+unsigned.
+
+### The Android signing key
+
+Android refuses to install an update whose signer changed. A package signed
+with the debug key would therefore be a package nobody can upgrade to: the
+runner generates a fresh debug key per run, so every release would carry a
+different signer, and an owner would meet the next one as *App not installed*
+with no way forward but uninstalling — losing the library, the statistics and
+the settings that an upgrade is supposed to keep.
+
+So the release workflow signs with a key the project holds, and refuses to
+build without one. Four repository secrets:
+
+| Secret | What it is |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | The keystore file, base64-encoded |
+| `ANDROID_KEYSTORE_PASSWORD` | Its store password |
+| `ANDROID_KEY_ALIAS` | The alias of the key inside it |
+| `ANDROID_KEY_PASSWORD` | That key's password |
+
+Making one, once, and never again:
+
+```sh
+keytool -genkeypair -v -keystore orpheus-release.jks -alias orpheus \
+  -keyalg RSA -keysize 4096 -validity 10000 -storetype pkcs12
+base64 -w0 orpheus-release.jks        # PowerShell: [Convert]::ToBase64String([IO.File]::ReadAllBytes("orpheus-release.jks"))
+```
+
+**Back the `.jks` up somewhere that is not this machine, and keep the
+passwords.** Losing it cannot be undone by generating another: every owner who
+installed a release signed with the old one would have to uninstall first, and
+their catalog, statistics and settings would go with it. It is the one file in
+this project that has no copy in the repository and cannot be rebuilt from it.
+
+Once the first signed release is out, read its fingerprint from the workflow
+log — the *Read the signer back out of the package* step prints it — and set it
+as a repository **variable** named `ANDROID_SIGNING_SHA256`. From then on a
+release signed by anything else fails the job instead of shipping an update
+nobody can install. Optional, and worth the minute.
+
+Building a signed package locally needs none of that. `flutter build apk
+--release` with no key configured falls back to the debug key and works as it
+always did — that is only ever a package for your own device. To sign locally,
+put `android/key.properties` beside the module, which `android/.gitignore`
+already refuses to commit:
+
+```properties
+storeFile=../orpheus-release.jks
+storePassword=...
+keyAlias=orpheus
+keyPassword=...
+```
 
 The Windows portable artifact is an archive rather than a single `.exe`, and
 that is not a shortcut: a Flutter Windows application is an executable beside

@@ -87,6 +87,12 @@ background, and — for the lyrics lookup alone — to reach the network. Nothin
 else. That set is checked by CI against the package that actually ships, and a
 permission that is not on the list fails the build.
 
+A new release installs straight over the one you have, keeping your library,
+your statistics and your settings — there is no need to uninstall first. Every
+release is signed with the same key, which is what Android requires before it
+will treat one package as an update of another; CI reads the signer back out of
+each package and refuses to publish one signed by anything else.
+
 ## Uninstalling
 
 Nothing of yours is removed by an uninstall on any platform. Your library

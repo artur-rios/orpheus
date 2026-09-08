@@ -1,7 +1,60 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// The release signing material, if this machine holds any.
+//
+// Two sources, environment first. The release workflow passes the keystore and
+// its passwords as environment variables, where a password holding a backslash
+// or a colon survives intact — `key.properties` is a Java properties file, in
+// which both of those are escapes, and a mangled password fails as a wrong one.
+// A developer's own machine uses that file instead, which is what Flutter
+// documents and what `android/.gitignore` already refuses to commit.
+//
+// Neither present is not an error: the release build falls back to the debug
+// key, so `flutter build apk --release` still works for anyone who only wants
+// to run the thing. What that costs is the reason the release workflow reads
+// the signer back out of the package it is about to publish rather than
+// trusting this file — a debug-signed release cannot be installed over the
+// previous one, and the owner meets that as "App not installed".
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("key.properties")
+    if (file.exists()) file.inputStream().use(::load)
+}
+
+fun signingValue(variable: String, property: String): String? =
+    (System.getenv(variable) ?: keystoreProperties.getProperty(property))
+        ?.takeIf(String::isNotBlank)
+
+val keystorePath = signingValue("ORPHEUS_KEYSTORE", "storeFile")
+val releaseStorePassword = signingValue("ORPHEUS_KEYSTORE_PASSWORD", "storePassword")
+val releaseKeyAlias = signingValue("ORPHEUS_KEY_ALIAS", "keyAlias")
+val releaseKeyPassword = signingValue("ORPHEUS_KEY_PASSWORD", "keyPassword")
+
+// Half a configuration is a mistake, not a choice, and falling quietly back to
+// the debug key is exactly how an unupgradable package gets published. Said
+// here, where the four values are, rather than left to surface as a signing
+// failure or — worse — as no failure at all.
+val provided = listOfNotNull(
+    keystorePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+)
+require(provided.isEmpty() || provided.size == 4) {
+    "The release signing configuration is incomplete: give all four of " +
+        "ORPHEUS_KEYSTORE, ORPHEUS_KEYSTORE_PASSWORD, ORPHEUS_KEY_ALIAS and " +
+        "ORPHEUS_KEY_PASSWORD (or storeFile, storePassword, keyAlias and " +
+        "keyPassword in android/key.properties), or none of them."
+}
+
+val releaseKeystore = keystorePath?.let(rootProject::file)
+require(releaseKeystore == null || releaseKeystore.exists()) {
+    "The release keystore was named but is not there: $releaseKeystore"
 }
 
 android {
@@ -44,11 +97,24 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = releaseKeystore
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // The debug key where there is no release one — see the note above
+            // the properties. Every published package is checked for which of
+            // the two it actually got.
+            signingConfig = signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
         }
     }
 }
