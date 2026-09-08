@@ -434,4 +434,82 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get settingsUpdates => 'Updates';
+
+  @override
+  String get settingsChecksForUpdatesOnStartup =>
+      'Check for updates when Orpheus starts';
+
+  @override
+  String get settingsChecksForUpdatesOnStartupDetail =>
+      'Asks GitHub once per launch whether a newer release exists. Nothing else is sent, and an update is only ever downloaded after you say so.';
+
+  @override
+  String updateAvailableTitle(String version) {
+    return 'Orpheus $version is available';
+  }
+
+  @override
+  String updateCurrentVersion(String version) {
+    return 'You have $version.';
+  }
+
+  @override
+  String get updateNow => 'Update now';
+
+  @override
+  String get updateLater => 'Not now';
+
+  @override
+  String get updateSkip => 'Skip this version';
+
+  @override
+  String get updateDownloading => 'Downloading…';
+
+  @override
+  String get updateVerifying => 'Checking what was downloaded…';
+
+  @override
+  String get updateHandedOff =>
+      'Orpheus is closing so the installer can replace it.';
+
+  @override
+  String get updateNeedsCommandTitle => 'Almost there';
+
+  @override
+  String get updateNeedsCommandBody =>
+      'Orpheus is installed for everyone on this machine, which needs administrator rights to replace. The update is downloaded and checked; run this in a terminal to finish it:';
+
+  @override
+  String get updateCopyCommand => 'Copy';
+
+  @override
+  String get updateCommandCopied => 'Copied.';
+
+  @override
+  String get updateFailedNoPackage =>
+      'This release has no package for your system.';
+
+  @override
+  String get updateFailedDownload =>
+      'The update could not be downloaded. Your connection may have dropped.';
+
+  @override
+  String get updateFailedChecksum =>
+      'What was downloaded is not what the release published, so it was not run. Try again, or download it from the release page yourself.';
+
+  @override
+  String get updateFailedLaunch =>
+      'The installer was downloaded but would not start.';
+
+  @override
+  String get updateRetry => 'Try again';
+
+  @override
+  String get updateClose => 'Close';
+
+  @override
+  String get updateReleaseNotes => 'What changed';
 }

@@ -102,6 +102,24 @@ you will have to add your music folder again. It is a one-time cost, and it
 cannot be avoided: no key can match one that was generated at random and thrown
 away. Upgrades from 1.0.1 onward install in place and keep everything.
 
+## Keeping it up to date
+
+On Windows and Linux, Orpheus asks once at startup whether a newer release
+exists, and offers it. You can turn that off in the preferences, under
+*Updates*.
+
+Accepting downloads the same installer listed above and checks it against the
+release's own `SHA256SUMS.txt` before running it — nothing is started that does
+not match what was published. Orpheus then closes so the installer can replace
+it, which is the only way it can: the files being replaced are the ones it is
+running from.
+
+If you installed for everyone on the machine, the last step needs
+administrator rights that an application cannot ask for on its own. Orpheus
+downloads and checks the installer, then shows you the one command to run.
+
+On Android there is no such check — install the new APK over the old one.
+
 ## Uninstalling
 
 Nothing of yours is removed by an uninstall on any platform. Your library

@@ -799,6 +799,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no ranking below.} other{{count} played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no ranking below.}}'**
   String statsUntaggedNote(int count);
+
+  /// The updates section of the preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates'**
+  String get settingsUpdates;
+
+  /// The switch for the startup update check.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates when Orpheus starts'**
+  String get settingsChecksForUpdatesOnStartup;
+
+  /// What the startup update check actually does.
+  ///
+  /// In en, this message translates to:
+  /// **'Asks GitHub once per launch whether a newer release exists. Nothing else is sent, and an update is only ever downloaded after you say so.'**
+  String get settingsChecksForUpdatesOnStartupDetail;
+
+  /// The title of the update prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus {version} is available'**
+  String updateAvailableTitle(String version);
+
+  /// Which version is running.
+  ///
+  /// In en, this message translates to:
+  /// **'You have {version}.'**
+  String updateCurrentVersion(String version);
+
+  /// The button that starts the update.
+  ///
+  /// In en, this message translates to:
+  /// **'Update now'**
+  String get updateNow;
+
+  /// The button that closes the prompt for this launch.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get updateLater;
+
+  /// The button that stops this version being offered again.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip this version'**
+  String get updateSkip;
+
+  /// Shown while the package is being fetched.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading…'**
+  String get updateDownloading;
+
+  /// Shown while the package's checksum is being compared.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking what was downloaded…'**
+  String get updateVerifying;
+
+  /// Shown once the installer has been started.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus is closing so the installer can replace it.'**
+  String get updateHandedOff;
+
+  /// The heading shown when the update needs a command run by hand.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost there'**
+  String get updateNeedsCommandTitle;
+
+  /// Why a system-wide Linux install cannot be updated from inside the application.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus is installed for everyone on this machine, which needs administrator rights to replace. The update is downloaded and checked; run this in a terminal to finish it:'**
+  String get updateNeedsCommandBody;
+
+  /// Copies the command to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get updateCopyCommand;
+
+  /// Confirms the command was copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied.'**
+  String get updateCommandCopied;
+
+  /// No asset matches this platform.
+  ///
+  /// In en, this message translates to:
+  /// **'This release has no package for your system.'**
+  String get updateFailedNoPackage;
+
+  /// The download did not finish.
+  ///
+  /// In en, this message translates to:
+  /// **'The update could not be downloaded. Your connection may have dropped.'**
+  String get updateFailedDownload;
+
+  /// The checksum did not match — the one failure that is never retried blindly.
+  ///
+  /// In en, this message translates to:
+  /// **'What was downloaded is not what the release published, so it was not run. Try again, or download it from the release page yourself.'**
+  String get updateFailedChecksum;
+
+  /// The package could not be executed.
+  ///
+  /// In en, this message translates to:
+  /// **'The installer was downloaded but would not start.'**
+  String get updateFailedLaunch;
+
+  /// Retries a failed update.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get updateRetry;
+
+  /// Closes the update prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get updateClose;
+
+  /// The heading above the release notes.
+  ///
+  /// In en, this message translates to:
+  /// **'What changed'**
+  String get updateReleaseNotes;
 }
 
 class _AppLocalizationsDelegate

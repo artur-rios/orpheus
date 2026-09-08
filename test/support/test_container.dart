@@ -10,10 +10,13 @@ import 'package:orpheus/core/settings/settings_store.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/library/domain/music_grouping.dart';
+import 'package:orpheus/features/updates/application/update_controller.dart';
+import 'package:orpheus/features/updates/domain/app_version.dart';
 
 import 'fake_media_player.dart';
 import 'fake_media_session.dart';
 import 'fake_track_probe.dart';
+import 'fake_updates.dart';
 import 'fakes.dart';
 
 /// Everything a test needs bound, and nothing reaching outside the process.
@@ -38,7 +41,14 @@ class Harness {
     FakeFolderPicker? picker,
     int shuffleSeed = 7,
     DateTime? now,
+    ScriptedReleaseSource? releases,
+    ScriptedUpdateInstaller? updates,
+    AppVersion? runningVersion,
   }) : player = FakeMediaPlayer(),
+       releases = releases ?? ScriptedReleaseSource(),
+       updates = updates ?? ScriptedUpdateInstaller(),
+       shutdown = RecordingAppShutdown(),
+       _runningVersion = runningVersion ?? AppVersion.tryParse('1.0.0'),
        session = FakeMediaSession(),
        probe = FakeTrackProbe(missing: {...missingTracks}),
        covers = InMemoryCoverStore(),
@@ -84,6 +94,14 @@ class Harness {
         if (scanner != null) libraryScannerProvider.overrideWithValue(scanner),
         shuffleRandomProvider.overrideWithValue(Random(shuffleSeed)),
         if (now != null) clockProvider.overrideWithValue(() => now),
+        // The second and last thing in this application that reaches a
+        // network, and the one thing in it that would start a process. Both
+        // are bound to doubles here for the same reason every other gateway
+        // is: no test asks GitHub anything, and no test runs an installer.
+        releaseSourceProvider.overrideWithValue(this.releases),
+        updateInstallerProvider.overrideWithValue(this.updates),
+        appShutdownProvider.overrideWithValue(shutdown),
+        runningVersionProvider.overrideWithValue(_runningVersion),
       ],
     );
 
@@ -95,6 +113,17 @@ class Harness {
 
   /// The engine, which records what it was asked to open.
   final FakeMediaPlayer player;
+
+  /// What a release check finds.
+  final ScriptedReleaseSource releases;
+
+  /// What applying an update does.
+  final ScriptedUpdateInstaller updates;
+
+  /// Whether the application was asked to quit so an installer could run.
+  final RecordingAppShutdown shutdown;
+
+  final AppVersion? _runningVersion;
 
   /// The platform's media session, which records what it was shown.
   final FakeMediaSession session;

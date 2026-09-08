@@ -524,6 +524,33 @@ checksummed into `SHA256SUMS.txt`, which is the only way somebody can tell that
 what they downloaded is what the workflow built — both desktop installers are
 unsigned.
 
+### Updating from inside the application
+
+The two desktop builds check for a newer release when they start, and offer it.
+Switched on by default, and switched off in the preferences under *Updates* —
+it is one of the two things in this application that reach a network, and it is
+described where it is turned on rather than in a changelog.
+
+What it does when the owner accepts is fetch the same installer they would have
+downloaded by hand, check its SHA-256 against the `SHA256SUMS.txt` the release
+publishes beside it, and start it. **Nothing is run that has not been
+verified**, and a package whose checksum does not match is not offered a retry:
+what failed there is not the network.
+
+The application cannot replace itself while it is running — on Windows the
+executable and the engine's libraries are open and locked by the process doing
+the replacing — so it quits and lets the installer work. That also means the
+upgrade is the one that has been tested: the same removal of the previous
+version, the same targeted sweep of stale libraries, the same untouched
+catalog and statistics.
+
+One case it cannot finish: a Linux installation under a system prefix needs
+root, and there is no password prompt to raise from a process the desktop
+launched. It downloads and verifies, then hands back the `sudo` line to paste.
+
+Android is not part of this. A package there is installed by the platform, and
+the switch is hidden on it.
+
 ### The Android signing key
 
 Android refuses to install an update whose signer changed. A package signed

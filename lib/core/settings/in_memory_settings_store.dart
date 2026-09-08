@@ -19,6 +19,8 @@ class InMemorySettingsStore implements SettingsStore {
     bool opensPlayerOnPlay = true,
     bool rescansAtStartup = true,
     bool fetchesLyricsOnline = true,
+    bool checksForUpdatesOnStartup = true,
+    String? skippedUpdateVersion,
     double volume = 1,
     Map<String, String>? values,
   }) : _libraryFolders = [...libraryFolders],
@@ -28,6 +30,8 @@ class InMemorySettingsStore implements SettingsStore {
     _opensPlayerOnPlay = opensPlayerOnPlay;
     _rescansAtStartup = rescansAtStartup;
     _fetchesLyricsOnline = fetchesLyricsOnline;
+    _checksForUpdatesOnStartup = checksForUpdatesOnStartup;
+    _skippedUpdateVersion = skippedUpdateVersion;
     _volume = volume;
   }
 
@@ -37,6 +41,8 @@ class InMemorySettingsStore implements SettingsStore {
   late bool _opensPlayerOnPlay;
   late bool _rescansAtStartup;
   late bool _fetchesLyricsOnline;
+  late bool _checksForUpdatesOnStartup;
+  late String? _skippedUpdateVersion;
   late double _volume;
   final Map<String, String> _values;
 
@@ -79,6 +85,20 @@ class InMemorySettingsStore implements SettingsStore {
   @override
   Future<void> setFetchesLyricsOnline(bool value) async =>
       _fetchesLyricsOnline = value;
+
+  @override
+  bool get checksForUpdatesOnStartup => _checksForUpdatesOnStartup;
+
+  @override
+  Future<void> setChecksForUpdatesOnStartup(bool value) async =>
+      _checksForUpdatesOnStartup = value;
+
+  @override
+  String? get skippedUpdateVersion => _skippedUpdateVersion;
+
+  @override
+  Future<void> setSkippedUpdateVersion(String? version) async =>
+      _skippedUpdateVersion = version;
 
   @override
   double get volume => _volume;

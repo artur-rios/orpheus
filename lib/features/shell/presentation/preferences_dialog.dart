@@ -127,6 +127,33 @@ class PreferencesDialog extends ConsumerWidget {
                     unawaited(controller.setFetchesLyricsOnline(value)),
               ),
 
+              // Desktop only, because it is the only place it means
+              // anything: an Android package is installed by the platform, and
+              // this application has no business replacing one.
+              if (ref.watch(hostPlatformProvider).isDesktop) ...[
+                const SizedBox(height: AppSpacing.lg),
+                _Heading(text: l10n.settingsUpdates),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: preferences.checksForUpdatesOnStartup,
+                  title: Text(l10n.settingsChecksForUpdatesOnStartup),
+                  // Carries a subtitle for the reason the lyrics switch does:
+                  // it is the other control here that decides whether anything
+                  // leaves the machine, and what it sends is said where it is
+                  // turned on.
+                  subtitle: Text(
+                    l10n.settingsChecksForUpdatesOnStartupDetail,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  isThreeLine: true,
+                  onChanged: (value) => unawaited(
+                    controller.setChecksForUpdatesOnStartup(value),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: AppSpacing.sm),
               Text(l10n.settingsVolume, style: theme.textTheme.bodyMedium),
               Slider(

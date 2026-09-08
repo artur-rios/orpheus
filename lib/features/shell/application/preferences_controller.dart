@@ -12,6 +12,7 @@ class PreferencesState {
     required this.opensPlayerOnPlay,
     required this.rescansAtStartup,
     required this.fetchesLyricsOnline,
+    required this.checksForUpdatesOnStartup,
     required this.volume,
     this.locale,
     this.unsaved = false,
@@ -32,6 +33,9 @@ class PreferencesState {
   /// Whether a track this machine has no words for is looked up online.
   final bool fetchesLyricsOnline;
 
+  /// Whether the application asks for a newer release when it starts.
+  final bool checksForUpdatesOnStartup;
+
   /// How loud playback is, 0 to 1.
   final double volume;
 
@@ -50,6 +54,7 @@ class PreferencesState {
     bool? opensPlayerOnPlay,
     bool? rescansAtStartup,
     bool? fetchesLyricsOnline,
+    bool? checksForUpdatesOnStartup,
     double? volume,
     bool? unsaved,
   }) => PreferencesState(
@@ -58,6 +63,8 @@ class PreferencesState {
     opensPlayerOnPlay: opensPlayerOnPlay ?? this.opensPlayerOnPlay,
     rescansAtStartup: rescansAtStartup ?? this.rescansAtStartup,
     fetchesLyricsOnline: fetchesLyricsOnline ?? this.fetchesLyricsOnline,
+    checksForUpdatesOnStartup:
+        checksForUpdatesOnStartup ?? this.checksForUpdatesOnStartup,
     volume: volume ?? this.volume,
     unsaved: unsaved ?? this.unsaved,
   );
@@ -77,6 +84,7 @@ class PreferencesController extends Notifier<PreferencesState> {
       opensPlayerOnPlay: settings.opensPlayerOnPlay,
       rescansAtStartup: settings.rescansAtStartup,
       fetchesLyricsOnline: settings.fetchesLyricsOnline,
+      checksForUpdatesOnStartup: settings.checksForUpdatesOnStartup,
       volume: settings.volume,
     );
   }
@@ -111,6 +119,21 @@ class PreferencesController extends Notifier<PreferencesState> {
     await _write(
       () => ref.read(settingsStoreProvider).setRescansAtStartup(value),
     );
+  }
+
+  /// Applies [value].
+  ///
+  /// Turning it off also forgets any version the owner skipped: the switch is
+  /// the coarse answer to the same question, and somebody who turns checking
+  /// back on is asking to be told about whatever is out there — including the
+  /// release they once waved away.
+  Future<void> setChecksForUpdatesOnStartup(bool value) async {
+    state = state.copyWith(checksForUpdatesOnStartup: value, unsaved: false);
+    await _write(() async {
+      final settings = ref.read(settingsStoreProvider);
+      await settings.setChecksForUpdatesOnStartup(value);
+      if (!value) await settings.setSkippedUpdateVersion(null);
+    });
   }
 
   /// Applies [value], and re-asks for the words of whatever is open.

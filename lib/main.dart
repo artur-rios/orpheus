@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'app.dart';
@@ -16,6 +17,8 @@ import 'core/settings/shared_preferences_settings_store.dart';
 import 'features/playback/data/audio_service_media_session.dart';
 import 'features/playback/domain/media_session.dart';
 import 'features/shell/data/desktop_window.dart';
+import 'features/updates/application/update_controller.dart';
+import 'features/updates/domain/app_version.dart';
 
 /// The entry point.
 ///
@@ -51,6 +54,7 @@ Future<void> main() async {
       settingsStoreProvider.overrideWithValue(settings),
       appDirectoriesProvider.overrideWithValue(directories),
       hostPlatformProvider.overrideWithValue(platform),
+      runningVersionProvider.overrideWithValue(await _runningVersion()),
       if (session != null) mediaSessionProvider.overrideWithValue(session),
     ],
   );
@@ -69,6 +73,13 @@ Future<void> main() async {
   // the library the last scan left, and the strip above the bar says what the
   // new one is doing.
   WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Both after the first frame, and for the same reason: the owner gets a
+    // window with their library in it, and the two things that reach outside
+    // the machine happen behind it.
+    unawaited(
+      container.read(updateControllerProvider.notifier).checkAtStartup(),
+    );
+
     if (!container.read(preferencesControllerProvider).rescansAtStartup) return;
 
     unawaited(
@@ -82,6 +93,22 @@ Future<void> main() async {
       child: const OrpheusApp(),
     ),
   );
+}
+
+/// What this build calls itself, or `null` where the platform will not say.
+///
+/// Read once here rather than by the update check, which runs after the first
+/// frame: this is a platform channel call, and the version is also the thing
+/// the check compares against, so a failure to read it is a reason not to
+/// check at all rather than a reason to offer every release as an update.
+Future<AppVersion?> _runningVersion() async {
+  try {
+    return AppVersion.tryParse((await PackageInfo.fromPlatform()).version);
+  } on Object catch (error) {
+    Logger('startup').warning('the running version could not be read', error);
+
+    return null;
+  }
 }
 
 /// Releases what the graph holds natively, and waits for the part that matters.

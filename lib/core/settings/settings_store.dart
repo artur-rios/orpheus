@@ -60,6 +60,28 @@ abstract interface class SettingsStore {
   /// Records [value] for the next launch.
   Future<void> setFetchesLyricsOnline(bool value);
 
+  /// Whether the application looks for a new release when it starts, or
+  /// `true` when the owner has not said.
+  ///
+  /// Desktop only in effect — there is nothing for it to do on Android, where
+  /// a package is installed by the platform rather than by this application —
+  /// but stored for every host, because a preference that means different
+  /// things on different machines is a preference nobody can reason about.
+  bool get checksForUpdatesOnStartup;
+
+  /// Records [value] for the next launch.
+  Future<void> setChecksForUpdatesOnStartup(bool value);
+
+  /// A version the owner said not to ask about again, or `null` for none.
+  ///
+  /// What keeps "not now" from meaning "ask me every launch for ever". It
+  /// holds one version rather than a list: the next release after the skipped
+  /// one is a new question, and the owner has not answered it.
+  String? get skippedUpdateVersion;
+
+  /// Records [version] as unwanted, or forgets any where it is `null`.
+  Future<void> setSkippedUpdateVersion(String? version);
+
   /// How loud playback is, 0 to 1, or 1 when the owner has not said.
   double get volume;
 

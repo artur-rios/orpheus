@@ -36,6 +36,12 @@ class SharedPreferencesSettingsStore implements SettingsStore {
   /// The key the online lyrics lookup is stored under.
   static const String fetchesLyricsOnlineKey = 'fetchesLyricsOnline';
 
+  /// The key the startup update check is stored under.
+  static const String checksForUpdatesOnStartupKey = 'checksForUpdatesOnStartup';
+
+  /// The key a skipped version is stored under.
+  static const String skippedUpdateVersionKey = 'skippedUpdateVersion';
+
   /// The key the volume is stored under.
   static const String volumeKey = 'volume';
 
@@ -106,6 +112,23 @@ class SharedPreferencesSettingsStore implements SettingsStore {
   @override
   Future<void> setFetchesLyricsOnline(bool value) =>
       _preferences.setBool(fetchesLyricsOnlineKey, value);
+
+  @override
+  bool get checksForUpdatesOnStartup =>
+      _preferences.getBool(checksForUpdatesOnStartupKey) ?? true;
+
+  @override
+  Future<void> setChecksForUpdatesOnStartup(bool value) =>
+      _preferences.setBool(checksForUpdatesOnStartupKey, value);
+
+  @override
+  String? get skippedUpdateVersion =>
+      _preferences.getString(skippedUpdateVersionKey);
+
+  @override
+  Future<void> setSkippedUpdateVersion(String? version) => version == null
+      ? _preferences.remove(skippedUpdateVersionKey)
+      : _preferences.setString(skippedUpdateVersionKey, version);
 
   @override
   double get volume => _preferences.getDouble(volumeKey) ?? 1;

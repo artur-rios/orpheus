@@ -8,6 +8,7 @@ import 'core/theme/app_theme.dart';
 import 'features/playback/presentation/media_session_names_scope.dart';
 import 'features/shell/domain/shell_destination.dart';
 import 'features/shell/presentation/shell_screen.dart';
+import 'features/updates/presentation/update_prompt.dart';
 
 /// The application root.
 ///
@@ -45,7 +46,9 @@ class OrpheusApp extends ConsumerWidget {
       GlobalCupertinoLocalizations.delegate,
     ],
 
-    home: const _ShellWithBack(),
+    // Inside the `MaterialApp`, because the prompt it raises is a dialog and a
+    // dialog needs a navigator over whatever asked for one.
+    home: const UpdatePromptScope(child: _ShellWithBack()),
   );
 }
 

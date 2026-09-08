@@ -64,7 +64,13 @@ import '../../features/stats/application/play_recorder.dart';
 import '../../features/stats/data/json_play_history_store.dart';
 import '../../features/stats/domain/music_stats.dart';
 import '../../features/stats/domain/play_history.dart';
+import '../../features/updates/application/update_controller.dart';
+import '../../features/updates/data/github_release_source.dart';
+import '../../features/updates/data/installer_update.dart';
+import '../../features/updates/domain/release_source.dart';
+import '../../features/updates/domain/update_installer.dart';
 import '../app_directories.dart';
+import '../platform/app_shutdown.dart';
 import '../platform/host_platform.dart';
 import '../settings/settings_store.dart';
 
@@ -349,6 +355,34 @@ final preferencesControllerProvider =
 final themeModeProvider = Provider<ThemeMode>(
   (ref) => ref.watch(preferencesControllerProvider).themeMode,
 );
+
+/// Where the application looks to see whether it is out of date.
+///
+/// Built on first use and closed with the container, for the reason the lyrics
+/// source is: it holds pooled connections, and it is asked once a launch.
+///
+/// Every test overrides it. This and the lyrics lookup are the only two things
+/// here that reach a network, and no test in this suite opens a socket.
+final releaseSourceProvider = Provider<ReleaseSource>((ref) {
+  final source = GitHubReleaseSource();
+  ref.onDispose(source.close);
+
+  return source;
+});
+
+/// What fetches an update and starts it.
+final updateInstallerProvider = Provider<UpdateInstaller>(
+  (ref) => InstallerUpdate(platform: ref.watch(hostPlatformProvider)),
+);
+
+/// How the application closes itself when an installer is about to replace it.
+final appShutdownProvider = Provider<AppShutdown>(
+  (ref) => const WindowShutdown(),
+);
+
+/// The update check, and the offer it produces.
+final updateControllerProvider =
+    NotifierProvider<UpdateController, UpdateState>(UpdateController.new);
 
 /// The chosen language, or `null` to follow the system.
 final localeProvider = Provider<Locale?>(

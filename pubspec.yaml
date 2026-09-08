@@ -42,6 +42,21 @@ dependencies:
   # socket.
   http: ^1.6.0
 
+  # The SHA-256 of a downloaded update, checked against the SHA256SUMS.txt the
+  # release publishes beside it. Already in the tree as somebody else's
+  # transitive dependency; named here because this application now depends on
+  # it directly, and the one thing that must never silently change version is
+  # the thing deciding whether a downloaded executable is the one that was
+  # built.
+  crypto: ^3.0.6
+
+  # What the running build calls itself, which is the other half of the update
+  # check: a release is only newer than something, and that something is this.
+  # A plugin rather than a constant generated from `pubspec.yaml`, because a
+  # constant is a second place to remember to change and this reads the version
+  # the build actually carries.
+  package_info_plus: ^10.2.1
+
   # Structured logging.
   logging: ^1.3.0
 

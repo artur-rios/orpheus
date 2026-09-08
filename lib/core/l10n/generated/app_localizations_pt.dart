@@ -436,4 +436,81 @@ class AppLocalizationsPt extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get settingsUpdates => 'Atualizações';
+
+  @override
+  String get settingsChecksForUpdatesOnStartup =>
+      'Procurar atualizações ao iniciar o Orpheus';
+
+  @override
+  String get settingsChecksForUpdatesOnStartupDetail =>
+      'Pergunta ao GitHub uma vez por inicialização se existe uma versão mais nova. Nada mais é enviado, e uma atualização só é baixada depois que você aceitar.';
+
+  @override
+  String updateAvailableTitle(String version) {
+    return 'O Orpheus $version está disponível';
+  }
+
+  @override
+  String updateCurrentVersion(String version) {
+    return 'Você tem a versão $version.';
+  }
+
+  @override
+  String get updateNow => 'Atualizar agora';
+
+  @override
+  String get updateLater => 'Agora não';
+
+  @override
+  String get updateSkip => 'Ignorar esta versão';
+
+  @override
+  String get updateDownloading => 'Baixando…';
+
+  @override
+  String get updateVerifying => 'Verificando o que foi baixado…';
+
+  @override
+  String get updateHandedOff =>
+      'O Orpheus está fechando para que o instalador possa substituí-lo.';
+
+  @override
+  String get updateNeedsCommandTitle => 'Quase lá';
+
+  @override
+  String get updateNeedsCommandBody =>
+      'O Orpheus está instalado para todos neste computador, e substituí-lo exige permissões de administrador. A atualização foi baixada e verificada; execute isto em um terminal para concluir:';
+
+  @override
+  String get updateCopyCommand => 'Copiar';
+
+  @override
+  String get updateCommandCopied => 'Copiado.';
+
+  @override
+  String get updateFailedNoPackage =>
+      'Esta versão não tem um pacote para o seu sistema.';
+
+  @override
+  String get updateFailedDownload =>
+      'Não foi possível baixar a atualização. Sua conexão pode ter caído.';
+
+  @override
+  String get updateFailedChecksum =>
+      'O que foi baixado não corresponde ao que a versão publicou, então não foi executado. Tente novamente ou baixe da página da versão você mesmo.';
+
+  @override
+  String get updateFailedLaunch => 'O instalador foi baixado, mas não iniciou.';
+
+  @override
+  String get updateRetry => 'Tentar novamente';
+
+  @override
+  String get updateClose => 'Fechar';
+
+  @override
+  String get updateReleaseNotes => 'O que mudou';
 }

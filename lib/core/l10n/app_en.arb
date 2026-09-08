@@ -554,5 +554,103 @@
         "type": "int"
       }
     }
+  },
+  "settingsUpdates": "Updates",
+  "@settingsUpdates": {
+    "description": "The updates section of the preferences."
+  },
+  "settingsChecksForUpdatesOnStartup": "Check for updates when Orpheus starts",
+  "@settingsChecksForUpdatesOnStartup": {
+    "description": "The switch for the startup update check."
+  },
+  "settingsChecksForUpdatesOnStartupDetail": "Asks GitHub once per launch whether a newer release exists. Nothing else is sent, and an update is only ever downloaded after you say so.",
+  "@settingsChecksForUpdatesOnStartupDetail": {
+    "description": "What the startup update check actually does."
+  },
+  "updateAvailableTitle": "Orpheus {version} is available",
+  "@updateAvailableTitle": {
+    "description": "The title of the update prompt.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateCurrentVersion": "You have {version}.",
+  "@updateCurrentVersion": {
+    "description": "Which version is running.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateNow": "Update now",
+  "@updateNow": {
+    "description": "The button that starts the update."
+  },
+  "updateLater": "Not now",
+  "@updateLater": {
+    "description": "The button that closes the prompt for this launch."
+  },
+  "updateSkip": "Skip this version",
+  "@updateSkip": {
+    "description": "The button that stops this version being offered again."
+  },
+  "updateDownloading": "Downloading…",
+  "@updateDownloading": {
+    "description": "Shown while the package is being fetched."
+  },
+  "updateVerifying": "Checking what was downloaded…",
+  "@updateVerifying": {
+    "description": "Shown while the package's checksum is being compared."
+  },
+  "updateHandedOff": "Orpheus is closing so the installer can replace it.",
+  "@updateHandedOff": {
+    "description": "Shown once the installer has been started."
+  },
+  "updateNeedsCommandTitle": "Almost there",
+  "@updateNeedsCommandTitle": {
+    "description": "The heading shown when the update needs a command run by hand."
+  },
+  "updateNeedsCommandBody": "Orpheus is installed for everyone on this machine, which needs administrator rights to replace. The update is downloaded and checked; run this in a terminal to finish it:",
+  "@updateNeedsCommandBody": {
+    "description": "Why a system-wide Linux install cannot be updated from inside the application."
+  },
+  "updateCopyCommand": "Copy",
+  "@updateCopyCommand": {
+    "description": "Copies the command to the clipboard."
+  },
+  "updateCommandCopied": "Copied.",
+  "@updateCommandCopied": {
+    "description": "Confirms the command was copied."
+  },
+  "updateFailedNoPackage": "This release has no package for your system.",
+  "@updateFailedNoPackage": {
+    "description": "No asset matches this platform."
+  },
+  "updateFailedDownload": "The update could not be downloaded. Your connection may have dropped.",
+  "@updateFailedDownload": {
+    "description": "The download did not finish."
+  },
+  "updateFailedChecksum": "What was downloaded is not what the release published, so it was not run. Try again, or download it from the release page yourself.",
+  "@updateFailedChecksum": {
+    "description": "The checksum did not match — the one failure that is never retried blindly."
+  },
+  "updateFailedLaunch": "The installer was downloaded but would not start.",
+  "@updateFailedLaunch": {
+    "description": "The package could not be executed."
+  },
+  "updateRetry": "Try again",
+  "@updateRetry": {
+    "description": "Retries a failed update."
+  },
+  "updateClose": "Close",
+  "@updateClose": {
+    "description": "Closes the update prompt."
+  },
+  "updateReleaseNotes": "What changed",
+  "@updateReleaseNotes": {
+    "description": "The heading above the release notes."
   }
 }
