@@ -14,6 +14,7 @@ import '../../playback/domain/playback_queue.dart';
 import '../../playback/presentation/album_art.dart';
 import '../../playback/presentation/music_display_name.dart';
 import '../../playback/presentation/now_playing_screen.dart';
+import '../../playback/presentation/sliding_text.dart';
 
 /// The persistent playback bar.
 ///
@@ -139,11 +140,13 @@ class _Bar extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  // The one line in the application that slides rather than
+                  // ellipsising: on a phone this box is a hundred and fifty
+                  // pixels wide, and half a track's name with a full stop
+                  // after it is not a name.
+                  SlidingText(
                     musicTitleForFile(ref, current, l10n),
                     style: theme.textTheme.bodyMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     queueLabelOf(state.queue, l10n) ??
@@ -167,15 +170,22 @@ class _Bar extends ConsumerWidget {
         if (!compact) ...[
           _Position(status: state.status),
           const SizedBox(width: AppSpacing.sm),
-          // Never disabled: pressing back near the start of a track steps to
-          // the one before it and pressing it later restarts this one, so
-          // there is no point in a queue where it does nothing.
-          IconButton(
-            tooltip: l10n.audioPrevious,
-            icon: const Icon(Icons.skip_previous),
-            onPressed: () => unawaited(controller.previous()),
-          ),
         ],
+        // On every arrangement, including the phone, which it was not on
+        // before. Stop and the chevron are still desktop-only — one is the
+        // full player, one tap away on a phone, and the other is a button
+        // nobody reaches for mid-song — but back is transport, and a bar
+        // offering only forward is a bar that cannot return to the track that
+        // just played.
+        //
+        // Never disabled: pressing back near the start of a track steps to the
+        // one before it and pressing it later restarts this one, so there is
+        // no point in a queue where it does nothing.
+        IconButton(
+          tooltip: l10n.audioPrevious,
+          icon: const Icon(Icons.skip_previous),
+          onPressed: () => unawaited(controller.previous()),
+        ),
         IconButton(
           tooltip: state.isPlaying ? l10n.audioPause : l10n.audioPlay,
           icon: Icon(state.isPlaying ? Icons.pause : Icons.play_arrow),

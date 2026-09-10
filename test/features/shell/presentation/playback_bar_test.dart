@@ -152,7 +152,7 @@ void main() {
   );
 
   testWidgets(
-    'GivenAPhoneSizedWindow_WhenTheBarIsShown_ThenOnlyTheControlsAThumbNeedsAreOnIt',
+    'GivenAPhoneSizedWindow_WhenTheBarIsShown_ThenTheWholeTransportIsOnIt',
     (tester) async {
       final harness = Harness(library: library);
       await harness.library();
@@ -163,8 +163,12 @@ void main() {
       await tester.pumpHarness(harness, bar(), window: phoneWindow);
 
       expect(find.byIcon(Icons.skip_next), findsOneWidget);
-      // Stop, previous and the open-the-player chevron are the desktop bar's;
-      // on a phone the full player is one tap on the sleeve away.
+      // Back is transport, and it is here for the same reason forward is: a
+      // bar that can only go on cannot return to the track that just played,
+      // and on a phone this bar is the only transport on screen.
+      expect(find.byIcon(Icons.skip_previous), findsOneWidget);
+      // Stop and the open-the-player chevron are the desktop bar's; on a
+      // phone the full player is one tap on the sleeve away.
       expect(find.byIcon(Icons.stop), findsNothing);
       expect(find.byIcon(Icons.expand_less), findsNothing);
     },
