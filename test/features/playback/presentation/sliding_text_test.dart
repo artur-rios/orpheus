@@ -111,4 +111,53 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'GivenAColumnThatOffersNoHeight_WhenTheNameIsTooLong_ThenItIsStillDrawn',
+    (tester) async {
+      // The shape the playback bar actually puts it in: a column, which hands
+      // its children all the width and no height at all. Measured against a
+      // box of unbounded height, the sliding line was laid out into infinity
+      // and drawn nowhere — a bar with a sleeve, a transport, and a blank
+      // space where the name of every long-titled track should have been.
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: MediaQuery(
+            data: MediaQueryData(),
+            child: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 160,
+                  height: 90,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SlidingText(long),
+                            Text('Godspeed You! Black Emperor'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text(long), findsOneWidget);
+      final drawn = tester.getSize(find.text(long));
+      expect(drawn.height, greaterThan(0));
+      expect(drawn.height, lessThan(90));
+
+      // Left with nothing to travel, so no ticker is running at teardown.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    },
+  );
 }

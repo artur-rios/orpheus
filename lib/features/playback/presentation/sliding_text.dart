@@ -74,7 +74,8 @@ class _SlidingTextState extends State<SlidingText>
 
     return LayoutBuilder(
       builder: (context, box) {
-        final width = _widthOf(widget.text, style, box.maxWidth);
+        final wanted = _sizeOf(widget.text, style, box.maxWidth);
+        final width = wanted.width;
         final overflow = still ? 0.0 : (width - box.maxWidth).clamp(0.0, width);
 
         // In a post-frame callback rather than here: this runs during layout,
@@ -97,21 +98,33 @@ class _SlidingTextState extends State<SlidingText>
         // The whole name is drawn, and the box is what hides the part of it
         // that is off the end — so what slides is the same single line rather
         // than a second copy of a truncated one.
-        return ClipRect(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) => Transform.translate(
-              offset: Offset(-_travelled(overflow), 0),
-              child: child,
-            ),
-            child: OverflowBox(
-              alignment: Alignment.centerLeft,
-              maxWidth: width,
-              child: Text(
-                widget.text,
-                style: style,
-                maxLines: 1,
-                softWrap: false,
+        //
+        // The measured height is given back explicitly, because an
+        // `OverflowBox` takes the largest size its constraints allow and the
+        // one place this widget is actually used — a column inside the
+        // playback bar — offers it no height at all. Left to take the biggest
+        // of that, the line was laid out into an unbounded box and drawn
+        // nowhere: on a phone the bar showed a sleeve, a transport and a blank
+        // space where the name of every long-titled track should have been.
+        return SizedBox(
+          height: wanted.height,
+          child: ClipRect(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) => Transform.translate(
+                offset: Offset(-_travelled(overflow), 0),
+                child: child,
+              ),
+              child: OverflowBox(
+                alignment: Alignment.centerLeft,
+                maxWidth: width,
+                maxHeight: wanted.height,
+                child: Text(
+                  widget.text,
+                  style: style,
+                  maxLines: 1,
+                  softWrap: false,
+                ),
               ),
             ),
           ),
@@ -120,13 +133,14 @@ class _SlidingTextState extends State<SlidingText>
     );
   }
 
-  /// How wide [text] wants to be, measured rather than guessed.
+  /// How large [text] wants to be on one line, measured rather than guessed.
   ///
-  /// [ceiling] bounds the measurement so that a pathological name does not lay
-  /// out to tens of thousands of pixels before being asked how wide it is; it
-  /// is generous enough that nothing an owner would recognise as a title
-  /// reaches it.
-  double _widthOf(String text, TextStyle style, double ceiling) {
+  /// [ceiling] bounds the width so that a pathological name does not lay out
+  /// to tens of thousands of pixels before being asked how wide it is; it is
+  /// generous enough that nothing an owner would recognise as a title reaches
+  /// it. The height is taken as it comes, and matters as much as the width:
+  /// it is what the sliding line is given to sit in.
+  Size _sizeOf(String text, TextStyle style, double ceiling) {
     final painter = TextPainter(
       text: TextSpan(text: text, style: style),
       maxLines: 1,
@@ -134,10 +148,12 @@ class _SlidingTextState extends State<SlidingText>
       textScaler: MediaQuery.textScalerOf(context),
     )..layout(maxWidth: double.infinity);
 
-    final width = painter.width;
+    final size = Size(painter.width, painter.height);
     painter.dispose();
 
-    return ceiling.isFinite ? width.clamp(0.0, ceiling * 20) : width;
+    return ceiling.isFinite
+        ? Size(size.width.clamp(0.0, ceiling * 20), size.height)
+        : size;
   }
 
   /// Where the line has got to, given how far it has to go.

@@ -113,6 +113,23 @@ json.dump({
 }, open(prefs, 'w'))
 ```
 
+### Getting the phone arrangement
+
+Below 600 logical pixels the shell moves its destinations to the bottom and the
+playback bar drops what a phone has no room for, and **that arrangement is
+where the mobile bugs are**. There is no window manager to drag a corner with,
+so seed the geometry the window restores itself to — same file, one more key,
+and the value is a JSON string rather than an object:
+
+```python
+data['flutter.windowBounds'] = json.dumps(
+    {'x': 30, 'y': 40, 'width': 430, 'height': 860})
+```
+
+Anything under `Breakpoint.minimumWindowSize` (420x560) is discarded rather
+than clamped, so a width of 430 is about as narrow as it will go. Start Xvfb
+big enough to hold the window at its offset and crop the screenshot.
+
 Delete `catalog.json`, `play-history.json`, `covers/`, `energy/` and
 `scratch/` from that directory for a genuinely first-run state — and delete
 what you seeded afterwards, or the developer's own app starts pointing at a
