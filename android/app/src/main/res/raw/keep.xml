@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Keeps the notification's icons out of the resource shrinker.
+
+  `ic_notification` is named as a string — "drawable/ic_notification" in the
+  media session's configuration — and audio_service's own transport icons are
+  reached the same way, so nothing in the compiled code refers to either. A
+  build that shrank resources would drop them both, and what an owner would
+  meet is a notification with no icon on it or none at all. Asked for by
+  audio_service's own setup notes, and cheap enough to keep whether or not
+  shrinking is ever turned on.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_notification,@drawable/audio_service_*" />

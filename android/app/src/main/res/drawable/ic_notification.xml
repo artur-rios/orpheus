@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The small icon on the playback notification and the lock screen.
+
+  A separate mark from the launcher icon, and it has to be. Android draws a
+  notification's small icon from its alpha channel alone — it is a stencil the
+  system tints and shrinks to 24dp — so the launcher icon cannot serve: on
+  Android 8 and later `@mipmap/ic_launcher` resolves to the adaptive icon,
+  which is two layered pictures rather than a stencil, and what the shade shows
+  for one is a grey blob where the mark should be.
+
+  So this is the other half of the application's own motif: the sound bars from
+  the player screen, standing at the uneven heights a level meter stands at,
+  flat and white with nothing behind them. Round caps because that is the shape
+  the player draws its bars with.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M4,13.5 L4,19.5"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M9.33,5.5 L9.33,19.5"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M14.67,9.5 L14.67,19.5"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M20,15.5 L20,19.5"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+</vector>

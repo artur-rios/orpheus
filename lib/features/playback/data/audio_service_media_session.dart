@@ -44,12 +44,24 @@ class AudioServiceMediaSession implements MediaSession {
         // advertisement: this is the only notification this application ever
         // posts, and it says what is playing.
         androidNotificationChannelDescription: 'What Orpheus is playing',
-        // Ongoing while playing, and dismissible once paused. Together these
-        // two are what "a music player's notification" means: it cannot be
-        // swiped away mid-song by accident, and it does not become a permanent
-        // fixture after the owner has stopped listening.
-        androidNotificationOngoing: true,
-        androidStopForegroundOnPause: true,
+        // The application's own mark, flat and white, rather than the default
+        // — which is the launcher icon, and on Android 8 and later that is an
+        // adaptive icon rather than the stencil a small icon has to be. See
+        // res/drawable/ic_notification.xml.
+        androidNotificationIcon: 'drawable/ic_notification',
+        // The service stays in the foreground through a pause, and the
+        // notification stays dismissible. The two go together — the plugin
+        // refuses an ongoing notification that is allowed to leave the
+        // foreground — and the reason to want them this way round is what
+        // Android 12 did to the alternative: a service taken out of the
+        // foreground on pause cannot put itself back into it from the
+        // background, so pressing play on the notification after a pause
+        // throws rather than resuming. Worse, a process with no foreground
+        // service is one the system may reclaim whenever it likes, and what
+        // an owner meets when it does is a player that has forgotten its
+        // queue.
+        androidNotificationOngoing: false,
+        androidStopForegroundOnPause: false,
       ),
     );
 
@@ -140,9 +152,26 @@ class AudioServiceMediaSession implements MediaSession {
   /// resumes by itself. Becoming noisy is the headphones leaving the socket,
   /// and it never resumes: the owner took them out, and a record starting up
   /// out of the speaker is exactly what they were avoiding.
+  ///
+  /// Never fatal. A session that started is what keeps playback alive once the
+  /// application leaves the screen, and giving that up because the system
+  /// would not talk about audio focus would trade the notification, the lock
+  /// screen and background playback for a pause that does not happen when a
+  /// call arrives.
   Future<void> _followAudioFocus() async {
-    final session = await focus.AudioSession.instance;
-    await session.configure(const focus.AudioSessionConfiguration.music());
+    final focus.AudioSession session;
+    try {
+      session = await focus.AudioSession.instance;
+      await session.configure(const focus.AudioSessionConfiguration.music());
+    } on Object catch (error) {
+      _log.warning(
+        'audio focus could not be followed; playback will not pause itself '
+        'for a call or for headphones pulled out',
+        error,
+      );
+
+      return;
+    }
 
     _subscriptions.addAll([
       session.interruptionEventStream.listen((event) {
