@@ -42,6 +42,17 @@ class MediaKitPlayer implements MediaPlayer {
       // throwing from `open`, which is why an unplayable file is a status here
       // rather than an exception.
       _player.stream.error.listen((_) {
+        // Once per file, whatever mpv has to say about it. That stream is not
+        // one error per unplayable file: a single bad open can write several
+        // lines, and so can an output device taken away underneath a file that
+        // is perfectly decodable. Above this line each one costs a track — the
+        // queue skips the file it is on and opens the next — so a handful of
+        // lines about one file used to walk a shuffled library several tracks
+        // forward, and a burst of them could walk it to the end and leave the
+        // player with nothing queued and nothing playing.
+        if (_failedThisFile) return;
+        _failedThisFile = true;
+
         // Not playing any more is state; failing to decode is an event, and is
         // announced rather than kept for the reason `hasEnded` is.
         _update(_status.copyWith(isPlaying: false));
@@ -71,6 +82,12 @@ class MediaKitPlayer implements MediaPlayer {
   PlaybackStatus _status = const PlaybackStatus();
   bool _disposed = false;
 
+  /// Whether the file now open has already been reported as undecodable.
+  ///
+  /// Cleared by [open] and by [stop], because it is a fact about one file and
+  /// nothing else.
+  bool _failedThisFile = false;
+
   @override
   Stream<PlaybackStatus> get status => _statuses.stream;
 
@@ -81,6 +98,7 @@ class MediaKitPlayer implements MediaPlayer {
   Future<void> open(String path, {Duration startAt = Duration.zero}) async {
     // A fresh status per file: the previous file's duration and its decode
     // failure say nothing about this one.
+    _failedThisFile = false;
     _update(const PlaybackStatus(isPlaying: true));
 
     await _player.open(mk.Media(path));
@@ -98,6 +116,7 @@ class MediaKitPlayer implements MediaPlayer {
 
   @override
   Future<void> stop() async {
+    _failedThisFile = false;
     await _player.stop();
     _update(const PlaybackStatus());
   }
