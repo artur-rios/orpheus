@@ -39,10 +39,30 @@ class IsolateLibraryScanner implements LibraryScanner {
     final errors = ReceivePort();
     Isolate? isolate;
 
-    Future<void> close() async {
+    /// Lets go of the isolate and the two ports it answers on.
+    ///
+    /// Kept apart from closing [events], and the separation is the whole of
+    /// why this exists: this also runs when the *subscriber* walks away, and
+    /// there the controller must not be closed. Closing a controller waits for
+    /// its done event to be delivered, and a subscription being cancelled is
+    /// precisely the thing that stops one ever being — so a cancel handler
+    /// that awaited it waited forever, and `cancel` never answered.
+    ///
+    /// What that cost is a scan controller that cancels the previous
+    /// subscription on its way into the next scan: the first scan of a session
+    /// worked, and every one after it stopped on that line with the strip
+    /// saying "scanning" and no scan running. Adding a folder, removing one,
+    /// or pressing the button reported a scan that never finished and never
+    /// found anything.
+    void release() {
       messages.close();
       errors.close();
       isolate?.kill(priority: Isolate.immediate);
+    }
+
+    /// The scan is over: let go, and tell whoever is listening.
+    Future<void> close() async {
+      release();
       await events.close();
     }
 
@@ -77,7 +97,7 @@ class IsolateLibraryScanner implements LibraryScanner {
       unawaited(close());
     });
 
-    events.onCancel = close;
+    events.onCancel = release;
 
     unawaited(
       Isolate.spawn(
