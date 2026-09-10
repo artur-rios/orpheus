@@ -11,6 +11,24 @@ abstract interface class LibraryAccess {
   /// immediately and without a dialog.
   Future<LibraryAccessDecision> request();
 
+  /// Whether the platform will let this application read a folder anywhere on
+  /// the device, rather than only the storage it hands out by default.
+  ///
+  /// The question a memory card or a drive plugged into the phone raises, and
+  /// only there: Android mounts those outside the volume an application's
+  /// audio permission covers, so a folder on one is a folder that does not
+  /// exist as far as an ordinary read is concerned. Answers true on the two
+  /// desktops, where a folder the owner pointed at is a folder this
+  /// application may read.
+  Future<bool> readsEveryFolder();
+
+  /// Asks for that, and answers whether it was given.
+  ///
+  /// On Android this is not a dialog but a settings screen the owner is taken
+  /// to and comes back from, which is why the answer arrives as a future
+  /// rather than a decision made in place.
+  Future<bool> askToReadEveryFolder();
+
   /// Opens the system settings where a permanently refused permission can be
   /// granted, where the platform offers such a screen.
   Future<void> openSettings();

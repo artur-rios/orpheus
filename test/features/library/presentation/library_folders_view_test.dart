@@ -189,4 +189,79 @@ void main() {
       expect(find.text('/music/broken.mp3'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'GivenAFolderAndroidWillNotHandOver_WhenTheScanReportsIt_ThenTheWayThroughIsOffered',
+    (tester) async {
+      // A pen drive: mounted where an audio permission does not reach, so the
+      // walk finds nothing and reports the folder as one that is not there.
+      // True, and not what the owner needs to know.
+      final access = FakeLibraryAccess()
+        ..readsEverything = false
+        ..grantsEverything = true;
+      final harnessScanner = ScriptedScanner([
+        ScanCompleted(
+          catalog: MusicCatalog.empty,
+          report: const ScanReport(
+            tracks: 0,
+            added: 0,
+            removed: 0,
+            reused: 0,
+            unreachableFolders: ['/storage/1A2B-3C4D/Music'],
+          ),
+        ),
+      ]);
+      final harness = Harness(
+        access: access,
+        scanner: harnessScanner,
+        settings: InMemorySettingsStore(
+          libraryFolders: const ['/storage/1A2B-3C4D/Music'],
+        ),
+      );
+      await harness.read(scanControllerProvider.notifier).scan();
+
+      await tester.pumpHarness(harness, view());
+
+      expect(find.text('Android will not hand this folder over'), findsOneWidget);
+
+      await tester.tap(find.text('Allow all files'));
+      await tester.pumpAndSettle();
+
+      expect(access.everyFolderRequests, 1);
+      // And the offer is gone, because there is nothing left to offer: the
+      // scan that follows is the folders controller's own flow, exercised
+      // where scans are exercised.
+      expect(find.text('Allow all files'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'GivenEveryFolderIsAlreadyReadable_WhenAFolderIsUnreachable_ThenNoPermissionIsOffered',
+    (tester) async {
+      // A desktop, or an Android device that has already granted it: the
+      // folder is simply not there, and a button to grant what is granted
+      // would be a button that reports nothing happened.
+      final harness = Harness(
+        scanner: ScriptedScanner([
+          ScanCompleted(
+            catalog: MusicCatalog.empty,
+            report: const ScanReport(
+              tracks: 0,
+              added: 0,
+              removed: 0,
+              reused: 0,
+              unreachableFolders: ['/music'],
+            ),
+          ),
+        ]),
+        settings: InMemorySettingsStore(libraryFolders: const ['/music']),
+      );
+      await harness.read(scanControllerProvider.notifier).scan();
+
+      await tester.pumpHarness(harness, view());
+
+      expect(find.textContaining('/music'), findsWidgets);
+      expect(find.text('Allow all files'), findsNothing);
+    },
+  );
 }

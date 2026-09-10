@@ -49,6 +49,28 @@ class PermissionLibraryAccess implements LibraryAccess {
   }
 
   @override
+  Future<bool> readsEveryFolder() async {
+    if (!platform.needsStoragePermission) return true;
+
+    return Permission.manageExternalStorage.isGranted;
+  }
+
+  @override
+  Future<bool> askToReadEveryFolder() async {
+    if (!platform.needsStoragePermission) return true;
+
+    // A settings screen rather than a dialog — Android has never let an
+    // application ask for this one in place — so what comes back is the
+    // status after the owner has been there and returned.
+    final decision = await Permission.manageExternalStorage.request();
+    if (!decision.isGranted) {
+      _log.info('access to every folder was refused');
+    }
+
+    return decision.isGranted;
+  }
+
+  @override
   Future<void> openSettings() async {
     if (!platform.needsStoragePermission) return;
 

@@ -148,11 +148,34 @@ class FakeLibraryAccess implements LibraryAccess {
   /// Whether the settings screen was opened.
   bool openedSettings = false;
 
+  /// Whether the platform already lets every folder be read.
+  ///
+  /// True by default, which is what the two desktops answer and what keeps
+  /// every test that is not about a memory card free of the question.
+  bool readsEverything = true;
+
+  /// What the owner will say to the all-files settings screen.
+  bool grantsEverything = false;
+
+  /// How many times that screen was asked for.
+  int everyFolderRequests = 0;
+
   @override
   Future<LibraryAccessDecision> request() async {
     requests++;
 
     return decision;
+  }
+
+  @override
+  Future<bool> readsEveryFolder() async => readsEverything;
+
+  @override
+  Future<bool> askToReadEveryFolder() async {
+    everyFolderRequests++;
+    readsEverything = grantsEverything;
+
+    return grantsEverything;
   }
 
   @override

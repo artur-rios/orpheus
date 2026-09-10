@@ -464,6 +464,18 @@
       }
     }
   },
+  "foldersEveryFolderTitle": "Android will not hand this folder over",
+  "@foldersEveryFolderTitle": {
+    "description": "Heading of the offer shown when a registered folder could not be read because it is on removable storage."
+  },
+  "foldersEveryFolderBody": "A memory card, or a drive plugged into the phone, is mounted outside the storage Android gives an application by default \u2014 so a folder on one reads as a folder that is not there. Reading it needs all-files access, which is granted in the system settings and can be taken back there at any time. Orpheus still reads only the folders you have registered, and still never writes to them.",
+  "@foldersEveryFolderBody": {
+    "description": "Explains why a folder on removable storage could not be read, and what granting all-files access does and does not allow."
+  },
+  "foldersEveryFolderGrant": "Allow all files",
+  "@foldersEveryFolderGrant": {
+    "description": "Opens the system screen where all-files access is granted."
+  },
   "scanTracksFound": "{count, plural, =0{No tracks} =1{1 track} other{{count} tracks}} in the library.",
   "@scanTracksFound": {
     "description": "How large the library is.",

@@ -94,6 +94,11 @@ class LibraryFoldersView extends ConsumerWidget {
                 ),
               ),
             ),
+          // Only where a folder actually failed. An owner whose music is
+          // where Android expects it should never be asked for a permission
+          // this broad, and offering it on a screen nothing has gone wrong on
+          // would be asking for the run of the device on the off chance.
+          if (report.unreachableFolders.isNotEmpty) const _EveryFolderOffer(),
           if (report.unreadable.isNotEmpty)
             _Unreadable(paths: report.unreadable),
         ],
@@ -239,6 +244,78 @@ class _ScanFailure extends ConsumerWidget {
                 child: Text(l10n.openSettings),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The way to read a folder Android will not hand over by path.
+///
+/// A memory card, or a drive plugged into the phone: both are mounted outside
+/// the storage an audio permission covers, so the walk finds nothing and
+/// reports the folder as one that is not there. That report is true as far as
+/// an ordinary read can tell, and it is also not what the owner needs to know
+/// — which is that there is a way, and what it costs.
+///
+/// Absent on the desktops and absent once it has been granted, because in both
+/// cases there is nothing left to offer: the access seam answers that every
+/// folder is already readable, and a button to grant what is already granted
+/// is a button that reports nothing happened.
+class _EveryFolderOffer extends ConsumerWidget {
+  const _EveryFolderOffer();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
+    // Only once the platform has answered, and only where the answer is no.
+    // While it is still being asked there is nothing to say, and an offer that
+    // flickered into a screen a moment after it was opened would be worse than
+    // one that arrives with the rest of it.
+    if (ref.watch(everyFolderAccessProvider).value != false) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      color: theme.colorScheme.surfaceContainerHigh,
+      margin: const EdgeInsets.only(top: AppSpacing.md),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.foldersEveryFolderTitle,
+              style: theme.textTheme.titleSmall,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.foldersEveryFolderBody,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            FilledButton(
+              onPressed: () async {
+                // Both read before the asking, because granting it takes this
+                // card off the screen: the answer arriving is what makes the
+                // offer moot, and a `ref` reached for afterwards would be one
+                // belonging to a widget that is no longer there.
+                final access = ref.read(everyFolderAccessProvider.notifier);
+                final scan = ref.read(scanControllerProvider.notifier);
+
+                // Straight into a scan, because the folder the owner is
+                // standing in front of is the reason they granted it — and
+                // asking them to press the other button afterwards would be
+                // this screen knowing what to do next and not doing it.
+                if (await access.ask()) await scan.scan();
+              },
+              child: Text(l10n.foldersEveryFolderGrant),
+            ),
           ],
         ),
       ),

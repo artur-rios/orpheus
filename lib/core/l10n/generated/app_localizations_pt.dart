@@ -351,6 +351,16 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get foldersEveryFolderTitle => 'O Android não entrega esta pasta';
+
+  @override
+  String get foldersEveryFolderBody =>
+      'Um cartão de memória, ou um pen drive ligado ao celular, é montado fora do armazenamento que o Android dá a um aplicativo por padrão — então uma pasta em um deles aparece como uma pasta que não existe. Para lê-la é preciso o acesso a todos os arquivos, concedido nas configurações do sistema e revogável lá a qualquer momento. O Orpheus continua lendo apenas as pastas que você registrou, e continua nunca escrevendo nelas.';
+
+  @override
+  String get foldersEveryFolderGrant => 'Permitir todos os arquivos';
+
+  @override
   String scanTracksFound(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -14,6 +14,30 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"/>
 
+    <!-- The memory card, and the drive plugged into the phone.
+
+         Declared, and asked for at one moment only: a folder the owner
+         registered has been walked, has turned out to be unreadable, and the
+         folders screen has said why and offered this as the way through. An
+         owner whose music sits where Android expects it is never asked, and
+         never has to be — READ_MEDIA_AUDIO above covers that storage on its
+         own.
+
+         What it exists for is the one thing that permission cannot reach.
+         Android mounts a memory card and a USB drive on volumes outside the
+         storage it hands an application by default, and there is no narrower
+         permission for them: a folder on one either reads as a folder that is
+         not there, or it reads with this.
+
+         It changes nothing about what this application does with what it
+         reads. Orpheus walks the folders the owner registered and no others,
+         it opens audio files to read their tags and play them, and the one
+         thing it ever writes into a music folder is a .lrc beside a track
+         whose words were looked up. That is true with this permission exactly
+         as it was without it. It can be taken back in the system settings at
+         any time. -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+
     <!-- The lyrics lookup, and nothing else.
 
          This is the one permission here that reaches off the device, and it

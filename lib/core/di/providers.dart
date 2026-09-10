@@ -227,6 +227,13 @@ final libraryAccessControllerProvider =
       LibraryAccessController.new,
     );
 
+/// Whether it may read a folder anywhere on the device — a memory card, or a
+/// drive plugged into the phone.
+final everyFolderAccessProvider =
+    AsyncNotifierProvider<EveryFolderAccessController, bool>(
+      EveryFolderAccessController.new,
+    );
+
 /// The library itself.
 final musicLibraryControllerProvider =
     AsyncNotifierProvider<MusicLibraryController, MusicCatalog>(

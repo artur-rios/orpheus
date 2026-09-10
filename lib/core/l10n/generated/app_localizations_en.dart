@@ -349,6 +349,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get foldersEveryFolderTitle =>
+      'Android will not hand this folder over';
+
+  @override
+  String get foldersEveryFolderBody =>
+      'A memory card, or a drive plugged into the phone, is mounted outside the storage Android gives an application by default — so a folder on one reads as a folder that is not there. Reading it needs all-files access, which is granted in the system settings and can be taken back there at any time. Orpheus still reads only the folders you have registered, and still never writes to them.';
+
+  @override
+  String get foldersEveryFolderGrant => 'Allow all files';
+
+  @override
   String scanTracksFound(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

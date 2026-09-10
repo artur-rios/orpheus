@@ -686,6 +686,24 @@ abstract class AppLocalizations {
   /// **'This folder was not there: {path}'**
   String scanUnreachable(String path);
 
+  /// Heading of the offer shown when a registered folder could not be read because it is on removable storage.
+  ///
+  /// In en, this message translates to:
+  /// **'Android will not hand this folder over'**
+  String get foldersEveryFolderTitle;
+
+  /// Explains why a folder on removable storage could not be read, and what granting all-files access does and does not allow.
+  ///
+  /// In en, this message translates to:
+  /// **'A memory card, or a drive plugged into the phone, is mounted outside the storage Android gives an application by default — so a folder on one reads as a folder that is not there. Reading it needs all-files access, which is granted in the system settings and can be taken back there at any time. Orpheus still reads only the folders you have registered, and still never writes to them.'**
+  String get foldersEveryFolderBody;
+
+  /// Opens the system screen where all-files access is granted.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow all files'**
+  String get foldersEveryFolderGrant;
+
   /// How large the library is.
   ///
   /// In en, this message translates to:

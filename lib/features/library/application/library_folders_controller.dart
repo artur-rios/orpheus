@@ -106,3 +106,30 @@ class LibraryAccessController extends Notifier<LibraryAccessDecision?> {
   /// Opens the system settings, where a permanent refusal can be undone.
   Future<void> openSettings() => ref.read(libraryAccessProvider).openSettings();
 }
+
+/// Whether the application may read a folder anywhere on the device.
+///
+/// A second question from [LibraryAccessController]'s and deliberately apart
+/// from it, because it is asked at a different moment and for a different
+/// reason. The audio permission is what every scan needs and is asked for on
+/// the way into one. This is what a memory card or a drive plugged into the
+/// phone needs, it is a settings screen rather than a dialog, and an owner who
+/// keeps their music where Android expects it should never meet it — so it is
+/// asked for only once a folder has actually turned out to be unreadable.
+///
+/// Asynchronous because the answer is: the platform is asked, and until it
+/// replies there is nothing to say about a folder that has not failed yet.
+class EveryFolderAccessController extends AsyncNotifier<bool> {
+  @override
+  Future<bool> build() => ref.read(libraryAccessProvider).readsEveryFolder();
+
+  /// Asks for it, and remembers what came back.
+  Future<bool> ask() async {
+    final granted = await ref
+        .read(libraryAccessProvider)
+        .askToReadEveryFolder();
+    state = AsyncData(granted);
+
+    return granted;
+  }
+}
