@@ -103,6 +103,15 @@ and then from a card on the folders screen that says what it allows. Granting
 it widens nothing about what the application does: the folders walked are the
 folders registered, and `BR-03` is unchanged.
 
+Granting it is also not always enough within the run that asked. Android fixes
+a process's view of the mounted volumes when the process starts, so a volume
+mounted after that — and, on the devices that do not remount a running
+application, the permission itself granted after that — is outside the view
+the run holds, and the folder stays unreachable until the next launch. The
+folders screen therefore has a second card, shown where the permission is
+already granted and a folder is still unreachable, and what it asks for is the
+next launch rather than a permission there is nothing left to grant.
+
 **IR-13** — The package declares **`INTERNET`, and only for the lyrics lookup**
 (`BR-29a`, `FR-LY-13`). The manifest says so at the declaration, in terms of
 what is sent and what is not. The enforceable form of `BR-03` and `NFR-02` is

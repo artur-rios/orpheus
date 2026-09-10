@@ -361,6 +361,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get foldersEveryFolderGrant => 'Permitir todos os arquivos';
 
   @override
+  String get foldersEveryFolderGrantedTitle =>
+      'O Orpheus já lê todas as pastas';
+
+  @override
+  String get foldersEveryFolderGrantedBody =>
+      'O acesso a todos os arquivos já está concedido, então uma pasta que ainda aparece como uma pasta que não existe é uma pasta que esta execução do Orpheus não enxerga. O Android decide qual armazenamento um aplicativo alcança no momento em que ele inicia: um cartão ou um pen drive montado depois disso — ou esta permissão concedida depois disso — fica fora do que esta execução recebeu. Com o cartão ou o pen drive conectado, feche o Orpheus, abra de novo e escaneie.';
+
+  @override
   String scanTracksFound(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

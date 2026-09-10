@@ -476,6 +476,14 @@
   "@foldersEveryFolderGrant": {
     "description": "Opens the system screen where all-files access is granted."
   },
+  "foldersEveryFolderGrantedTitle": "Orpheus already reads every folder",
+  "@foldersEveryFolderGrantedTitle": {
+    "description": "Heading shown when a folder is still unreachable although all-files access has already been granted."
+  },
+  "foldersEveryFolderGrantedBody": "All-files access is already granted, so a folder that still reads as one that is not there is one this run of Orpheus cannot see. Android settles what storage an application may reach at the moment it starts: a card or a drive mounted after that — or this permission granted after that — is outside the view this run was given. With the card or the drive plugged in, close Orpheus, open it again, and scan.",
+  "@foldersEveryFolderGrantedBody": {
+    "description": "Explains that a removable volume mounted, or the permission granted, after the application started is only picked up on the next launch."
+  },
   "scanTracksFound": "{count, plural, =0{No tracks} =1{1 track} other{{count} tracks}} in the library.",
   "@scanTracksFound": {
     "description": "How large the library is.",

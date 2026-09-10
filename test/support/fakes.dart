@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:orpheus/core/platform/host_platform.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 import 'package:orpheus/features/library/domain/catalog_store.dart';
 import 'package:orpheus/features/library/domain/cover_store.dart';
@@ -132,6 +133,39 @@ class ScriptedScanner implements LibraryScanner {
 
     return Stream.fromIterable(events);
   }
+}
+
+/// A [HostPlatform] that is whatever the test says it is.
+///
+/// Linux by default, which is the desktop the suite runs on and keeps every
+/// test that is not about a platform reading exactly as it did. A test about
+/// Android — a storage permission, a card mounted out of reach — asks for it.
+class FakeHostPlatform implements HostPlatform {
+  /// Creates a host reporting the platform the test names.
+  const FakeHostPlatform({
+    this.isAndroid = false,
+    this.isWindows = false,
+    this.isLinux = true,
+    this.homeDirectory = '/home/test',
+  });
+
+  @override
+  final bool isAndroid;
+
+  @override
+  final bool isWindows;
+
+  @override
+  final bool isLinux;
+
+  @override
+  final String? homeDirectory;
+
+  @override
+  bool get isDesktop => isWindows || isLinux;
+
+  @override
+  bool get needsStoragePermission => isAndroid;
 }
 
 /// A [LibraryAccess] that answers what the test set.

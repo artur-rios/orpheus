@@ -476,6 +476,14 @@
   "@foldersEveryFolderGrant": {
     "description": "Opens the system screen where all-files access is granted."
   },
+  "foldersEveryFolderGrantedTitle": "O Orpheus já lê todas as pastas",
+  "@foldersEveryFolderGrantedTitle": {
+    "description": "Heading shown when a folder is still unreachable although all-files access has already been granted."
+  },
+  "foldersEveryFolderGrantedBody": "O acesso a todos os arquivos já está concedido, então uma pasta que ainda aparece como uma pasta que não existe é uma pasta que esta execução do Orpheus não enxerga. O Android decide qual armazenamento um aplicativo alcança no momento em que ele inicia: um cartão ou um pen drive montado depois disso — ou esta permissão concedida depois disso — fica fora do que esta execução recebeu. Com o cartão ou o pen drive conectado, feche o Orpheus, abra de novo e escaneie.",
+  "@foldersEveryFolderGrantedBody": {
+    "description": "Explains that a removable volume mounted, or the permission granted, after the application started is only picked up on the next launch."
+  },
   "scanTracksFound": "{count, plural, =0{Nenhuma faixa} =1{1 faixa} other{{count} faixas}} na biblioteca.",
   "@scanTracksFound": {
     "description": "How large the library is.",

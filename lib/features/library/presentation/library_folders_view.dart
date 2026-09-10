@@ -98,7 +98,10 @@ class LibraryFoldersView extends ConsumerWidget {
           // where Android expects it should never be asked for a permission
           // this broad, and offering it on a screen nothing has gone wrong on
           // would be asking for the run of the device on the off chance.
-          if (report.unreachableFolders.isNotEmpty) const _EveryFolderOffer(),
+          if (report.unreachableFolders.isNotEmpty) ...[
+            const _EveryFolderOffer(),
+            const _EveryFolderAlreadyGranted(),
+          ],
           if (report.unreadable.isNotEmpty)
             _Unreadable(paths: report.unreadable),
         ],
@@ -315,6 +318,68 @@ class _EveryFolderOffer extends ConsumerWidget {
                 if (await access.ask()) await scan.scan();
               },
               child: Text(l10n.foldersEveryFolderGrant),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// What is left to try once all-files access is already granted.
+///
+/// The other half of [_EveryFolderOffer], and the half an owner reaches by
+/// doing exactly what that card asked: the permission is granted, the scan
+/// runs again, and the folder on the pen drive still reports as one that is
+/// not there. Nothing on this screen used to say why, because the offer takes
+/// itself off the screen the moment it is granted — which left the true and
+/// useless sentence about a folder that was not there as the last word.
+///
+/// Why it happens is the mount, not the permission. Android settles what
+/// storage a process may reach when the process starts, so a volume mounted
+/// after that — a card slotted in, a drive plugged in — and a permission
+/// granted after that are both outside the view this run was handed. The next
+/// launch is given a new one, and that is the whole of the fix.
+///
+/// Android only. On the desktops the access seam answers that every folder is
+/// readable because there is nothing to ask, and a folder that is missing
+/// there is a folder that is genuinely missing.
+class _EveryFolderAlreadyGranted extends ConsumerWidget {
+  const _EveryFolderAlreadyGranted();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
+    if (!ref.watch(hostPlatformProvider).needsStoragePermission) {
+      return const SizedBox.shrink();
+    }
+    // Granted, and only granted: while the platform is still being asked there
+    // is nothing to say, and where the answer is no the offer above is what
+    // belongs on the screen.
+    if (ref.watch(everyFolderAccessProvider).value != true) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      color: theme.colorScheme.surfaceContainerHigh,
+      margin: const EdgeInsets.only(top: AppSpacing.md),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.foldersEveryFolderGrantedTitle,
+              style: theme.textTheme.titleSmall,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.foldersEveryFolderGrantedBody,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),

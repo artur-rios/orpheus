@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/app_directories.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
+import 'package:orpheus/core/platform/host_platform.dart';
 import 'package:orpheus/core/settings/settings_store.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
@@ -46,6 +47,7 @@ class Harness {
     ScriptedUpdateInstaller? updates,
     RecordingStoryShare? storyShare,
     AppVersion? runningVersion,
+    HostPlatform? platform,
   }) : player = FakeMediaPlayer(),
        storyShare = storyShare ?? RecordingStoryShare(),
        releases = releases ?? ScriptedReleaseSource(),
@@ -63,6 +65,7 @@ class Harness {
        plays = InMemoryPlayHistoryStore(),
        access = access ?? FakeLibraryAccess(),
        picker = picker ?? FakeFolderPicker(),
+       platform = platform ?? const FakeHostPlatform(),
        settings = settings ?? InMemorySettingsStore(),
        catalogs = InMemoryCatalogStore(
          MusicCatalog(
@@ -94,6 +97,7 @@ class Harness {
         trackProbeProvider.overrideWithValue(probe),
         libraryAccessProvider.overrideWithValue(this.access),
         folderPickerProvider.overrideWithValue(this.picker),
+        hostPlatformProvider.overrideWithValue(this.platform),
         if (scanner != null) libraryScannerProvider.overrideWithValue(scanner),
         shuffleRandomProvider.overrideWithValue(Random(shuffleSeed)),
         if (now != null) clockProvider.overrideWithValue(() => now),
@@ -111,6 +115,14 @@ class Harness {
 
     addTearDown(container.dispose);
   }
+
+  /// Which host the code under test believes it is running on.
+  ///
+  /// A double rather than the machine the suite happens to run on, because
+  /// the decisions that turn on it — a window to manage, a storage
+  /// permission to ask for, a card Android mounts out of reach — are
+  /// decisions no developer's own platform should be the one to make.
+  final HostPlatform platform;
 
   /// The provider graph under test.
   late final ProviderContainer container;

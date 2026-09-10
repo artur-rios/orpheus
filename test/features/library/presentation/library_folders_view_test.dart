@@ -236,11 +236,52 @@ void main() {
   );
 
   testWidgets(
+    'GivenAllFilesAccessIsGranted_WhenAFolderIsStillUnreachable_ThenTheNextLaunchIsWhatIsAskedFor',
+    (tester) async {
+      // What the owner reaches by doing what the offer above asked. The
+      // permission is granted and the pen drive still reads as a folder that
+      // is not there, because Android settled what this run may reach when it
+      // started — so the screen says so rather than repeating that the folder
+      // was not there.
+      final harness = Harness(
+        access: FakeLibraryAccess()..readsEverything = true,
+        platform: const FakeHostPlatform(isAndroid: true, isLinux: false),
+        scanner: ScriptedScanner([
+          ScanCompleted(
+            catalog: MusicCatalog.empty,
+            report: const ScanReport(
+              tracks: 0,
+              added: 0,
+              removed: 0,
+              reused: 0,
+              unreachableFolders: ['/storage/3F52-7E62/Audioteca'],
+            ),
+          ),
+        ]),
+        settings: InMemorySettingsStore(
+          libraryFolders: const ['/storage/3F52-7E62/Audioteca'],
+        ),
+      );
+      await harness.read(scanControllerProvider.notifier).scan();
+
+      await tester.pumpHarness(harness, view());
+
+      expect(find.text('Orpheus already reads every folder'), findsOneWidget);
+      expect(
+        find.textContaining('close Orpheus, open it again, and scan'),
+        findsOneWidget,
+      );
+      // And not the offer, which has nothing left to offer.
+      expect(find.text('Allow all files'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'GivenEveryFolderIsAlreadyReadable_WhenAFolderIsUnreachable_ThenNoPermissionIsOffered',
     (tester) async {
-      // A desktop, or an Android device that has already granted it: the
-      // folder is simply not there, and a button to grant what is granted
-      // would be a button that reports nothing happened.
+      // A desktop: the folder is simply not there, a button to grant what
+      // needs no granting would be a button that reports nothing happened,
+      // and nothing here is about how Android mounts anything.
       final harness = Harness(
         scanner: ScriptedScanner([
           ScanCompleted(
@@ -262,6 +303,7 @@ void main() {
 
       expect(find.textContaining('/music'), findsWidgets);
       expect(find.text('Allow all files'), findsNothing);
+      expect(find.text('Orpheus already reads every folder'), findsNothing);
     },
   );
 }

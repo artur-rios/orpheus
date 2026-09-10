@@ -704,6 +704,18 @@ abstract class AppLocalizations {
   /// **'Allow all files'**
   String get foldersEveryFolderGrant;
 
+  /// Heading shown when a folder is still unreachable although all-files access has already been granted.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus already reads every folder'**
+  String get foldersEveryFolderGrantedTitle;
+
+  /// Explains that a removable volume mounted, or the permission granted, after the application started is only picked up on the next launch.
+  ///
+  /// In en, this message translates to:
+  /// **'All-files access is already granted, so a folder that still reads as one that is not there is one this run of Orpheus cannot see. Android settles what storage an application may reach at the moment it starts: a card or a drive mounted after that — or this permission granted after that — is outside the view this run was given. With the card or the drive plugged in, close Orpheus, open it again, and scan.'**
+  String get foldersEveryFolderGrantedBody;
+
   /// How large the library is.
   ///
   /// In en, this message translates to:

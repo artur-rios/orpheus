@@ -150,6 +150,13 @@ there. The Folders screen then says so and offers the way through, which is
 all-files access — a system settings screen you are taken to, and can take the
 permission back on at any time.
 
+Granting it may not be the end of it, and the Folders screen says that too.
+Android settles which storage an application may reach at the moment that
+application starts, so a card slotted in — or a drive plugged in, or this
+permission granted — after Orpheus was already running is outside the view
+that run was handed, and the folder goes on reading as one that is not there.
+With the card or the drive in place, close Orpheus, open it again, and scan.
+
 ## How it works
 
 Eight things happen, and they are worth reading in this order.

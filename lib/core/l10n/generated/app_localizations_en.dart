@@ -360,6 +360,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get foldersEveryFolderGrant => 'Allow all files';
 
   @override
+  String get foldersEveryFolderGrantedTitle =>
+      'Orpheus already reads every folder';
+
+  @override
+  String get foldersEveryFolderGrantedBody =>
+      'All-files access is already granted, so a folder that still reads as one that is not there is one this run of Orpheus cannot see. Android settles what storage an application may reach at the moment it starts: a card or a drive mounted after that — or this permission granted after that — is outside the view this run was given. With the card or the drive plugged in, close Orpheus, open it again, and scan.';
+
+  @override
   String scanTracksFound(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
