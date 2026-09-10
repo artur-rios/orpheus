@@ -91,6 +91,17 @@ developer happens to have.
 | `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | Playback that continues off screen. |
 | `POST_NOTIFICATIONS` | The playback notification. |
 | `WAKE_LOCK` | Keeping the processor running through a track with the screen off. |
+| `MANAGE_EXTERNAL_STORAGE` | A registered folder on a memory card or a drive plugged into the phone. |
+
+The last of those is the broad one, and it is bounded by when it is asked for
+rather than by its own scope: Android mounts removable volumes outside the
+storage `READ_MEDIA_AUDIO` covers and offers no narrower permission for them,
+so a folder on one is unreadable until this is granted. It is never requested
+on a launch, never on a scan, and never on the way into a folder picker — only
+once a folder the owner registered has been walked and reported unreachable,
+and then from a card on the folders screen that says what it allows. Granting
+it widens nothing about what the application does: the folders walked are the
+folders registered, and `BR-03` is unchanged.
 
 **IR-13** — The package declares **`INTERNET`, and only for the lyrics lookup**
 (`BR-29a`, `FR-LY-13`). The manifest says so at the declaration, in terms of

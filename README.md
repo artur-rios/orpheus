@@ -60,8 +60,14 @@ result in a file beside its own settings.
 - **Almost no network.** No streaming, no scrobbling, no telemetry, no
   analytics, no crash reporting, no cover art fetched from anywhere. The single
   exception is the lyrics lookup described above, which you can turn off. The
-  Android package declares exactly seven permissions and CI fails the build on
-  an eighth, which is the version of this promise a machine can check.
+  Android package declares exactly eight permissions and CI fails the build on
+  a ninth, which is the version of this promise a machine can check. The
+  broadest of the eight is all-files access, and it is asked for at one moment
+  only: a folder you registered has turned out to be on a memory card or a
+  drive plugged into the phone, which Android mounts where no narrower
+  permission reaches. A library that lives where Android expects it never meets
+  it, and granting it changes nothing about the promise above — the folders
+  read are still the folders you registered.
 - **No accounts, no sync, no cloud.** One person, one machine, one library.
   Nothing Orpheus sends identifies you, or persists between requests: there is
   no account, no key, and no identifier of any kind.
@@ -136,6 +142,13 @@ for once you have registered a folder, never before. Android also asks to be
 allowed to post the playback notification, and that one is asked for the first
 time you press play. Refusing it costs the notification and nothing else —
 playback still runs, and still runs in the background.
+
+A folder on a memory card or on a drive plugged into the phone is the one case
+that permission does not cover: Android mounts those on volumes outside it, so
+the scan walks the folder, finds nothing, and reports it as one that was not
+there. The Folders screen then says so and offers the way through, which is
+all-files access — a system settings screen you are taken to, and can take the
+permission back on at any time.
 
 ## How it works
 
@@ -443,7 +456,7 @@ form, plus `-Installer`.
 `.github/workflows/verify.yml` is what makes the `n/a` rows add up to nothing: it
 runs `verify.sh --strict` on Linux (Linux + Android) and `verify.ps1 -Strict` on
 Windows (Windows + the installer). It also reads the built APK's permissions back
-out and **fails the build if they are not exactly the seven declared in
+out and **fails the build if they are not exactly the eight declared in
 `AndroidManifest.xml`** — which is the promise at the top of this file,
 enforced rather than asserted. A deny list would only catch the permissions
 somebody thought to forbid; pinning the whole set catches the next one

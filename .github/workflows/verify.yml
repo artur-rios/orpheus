@@ -90,6 +90,7 @@ jobs:
           android.permission.FOREGROUND_SERVICE
           android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
           android.permission.INTERNET
+          android.permission.MANAGE_EXTERNAL_STORAGE
           android.permission.POST_NOTIFICATIONS
           android.permission.READ_EXTERNAL_STORAGE
           android.permission.READ_MEDIA_AUDIO
