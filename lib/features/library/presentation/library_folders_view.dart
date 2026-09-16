@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -11,6 +12,7 @@ import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../shell/presentation/confirmation_dialog.dart';
 import '../data/default_music_folders.dart';
+import '../data/storage_probe.dart';
 
 /// The folders the library is built from, and what the last scan found.
 ///
@@ -101,6 +103,7 @@ class LibraryFoldersView extends ConsumerWidget {
           if (report.unreachableFolders.isNotEmpty) ...[
             const _EveryFolderOffer(),
             const _EveryFolderAlreadyGranted(),
+            _StorageProbe(folder: report.unreachableFolders.first),
           ],
           if (report.unreadable.isNotEmpty)
             _Unreadable(paths: report.unreadable),
@@ -421,6 +424,80 @@ class _Unreadable extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// What this process can actually see of the folder that would not open.
+///
+/// A diagnostic, and deliberately an ugly one: it exists to be read off a
+/// phone that cannot be plugged into a machine with `adb` on it, and what it
+/// prints is the errno at every level of the path. Not a shipping feature.
+class _StorageProbe extends StatefulWidget {
+  const _StorageProbe({required this.folder});
+
+  final String folder;
+
+  @override
+  State<_StorageProbe> createState() => _StorageProbeState();
+}
+
+class _StorageProbeState extends State<_StorageProbe> {
+  late Future<String> _report = probeStorage(widget.folder);
+
+  @override
+  void didUpdateWidget(covariant _StorageProbe old) {
+    super.didUpdateWidget(old);
+    if (old.folder != widget.folder) {
+      _report = probeStorage(widget.folder);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      color: theme.colorScheme.surfaceContainerHigh,
+      margin: const EdgeInsets.only(top: AppSpacing.md),
+      child: ExpansionTile(
+        title: const Text('Diagnostics'),
+        childrenPadding: const EdgeInsets.all(AppSpacing.md),
+        children: [
+          FutureBuilder<String>(
+            future: _report,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final text = snapshot.hasError
+                  ? 'probe failed: ${snapshot.error}'
+                  : snapshot.data ?? '(nothing)';
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SelectableText(
+                    text,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  OutlinedButton(
+                    onPressed: () => Clipboard.setData(
+                      ClipboardData(text: text),
+                    ),
+                    child: const Text('Copy'),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
