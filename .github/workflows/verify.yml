@@ -49,7 +49,14 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # `platform-tools` alone. The action's default is `tools platform-tools`,
+      # and `tools` is the long-obsolete SDK package Google has now withdrawn
+      # from the repository: `sdkmanager` fails to find it, exits non-zero, and
+      # takes the whole job with it. Nothing here ever used it — the build
+      # wants the platform tools and the build tools Gradle resolves itself.
       - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
 
       # No --only: this runner builds both the targets it can. --strict turns
       # a missing toolchain into a failing job; the Windows target is reported
