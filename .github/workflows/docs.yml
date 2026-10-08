@@ -7,9 +7,11 @@ name: Docs
 # needs Go as well as Hugo, and Hugo has to be the extended build because Docsy
 # is written in SCSS.
 #
-# It runs on a push that touches the site, and can be run by hand. It does not
-# run on every push: nothing else in this repository changes what the site
-# renders, and a docs deploy on a commit that only moved Dart around is noise.
+# It runs on a push that touches the site — or CHANGELOG.md or CONTRIBUTING.md,
+# which the site renders from the repository root rather than keeping copies of
+# — and can be run by hand. It does not run on every push: nothing else in this
+# repository changes what the site renders, and a docs deploy on a commit that
+# only moved Dart around is noise.
 
 on:
   push:
@@ -17,6 +19,9 @@ on:
     paths:
       - 'docs/site/**'
       - '.github/workflows/docs.yml'
+      # Rendered by the site's Changelog and Contributing pages.
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
   workflow_dispatch:
 
 # One deployment at a time, and never cancel one half-done: a cancelled deploy
@@ -90,6 +95,12 @@ jobs:
           test -f public/index.html            || { echo "::error::no home page"; exit 1; }
           test -f public/downloads/index.html  || { echo "::error::no downloads page"; exit 1; }
 
+          # Rendered from the repository root's own files, not from copies.
+          grep -q 'Keep a Changelog' public/docs/changelog/index.html ||
+            { echo "::error::the changelog page does not carry CHANGELOG.md"; exit 1; }
+          grep -q 'The Android signing key' public/docs/contributing/index.html ||
+            { echo "::error::the contributing page does not carry CONTRIBUTING.md"; exit 1; }
+
           # Quote-agnostic, and only the rendered pages. --minify strips the
           # quotes from attribute values, so a pattern written as class="mermaid
           # matches when built locally and misses everything in CI — which is
@@ -106,7 +117,7 @@ jobs:
           grep -q 'mermaid@11' public/docs/architecture/index.html ||
             { echo "::error::mermaid is not pinned to the expected major version"; exit 1; }
 
-          echo "Home, downloads, $diagrams diagram pages, the theme control, and a pinned mermaid."
+          echo "Home, downloads, changelog, contributing, $diagrams diagram pages, the theme control, and a pinned mermaid."
 
       - uses: actions/upload-pages-artifact@v5
         with:
