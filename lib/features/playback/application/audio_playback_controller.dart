@@ -621,6 +621,25 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
     unawaited(_statuses?.cancel());
 
     _statuses = _player.status.listen((status) async {
+      // While the owner is being asked whether to resume, the engine is still
+      // reporting on whatever was playing before they chose — and the queue in
+      // the state is already the one on offer. Nothing the engine says now is
+      // about that queue: advancing it at the old track's end would open the
+      // offered track from the top without an answer, a play would be counted
+      // against it, and a status written through `copyWith` without carrying
+      // [AudioPlaybackState.resumeFrom] would clear the very position being
+      // offered — leaving a prompt that read 0:00 and a resume that did
+      // nothing.
+      if (state.stage == AudioStage.offeringResume) {
+        state = state.copyWith(
+          status: status,
+          resumeFrom: state.resumeFrom,
+          lastSkipped: state.lastSkipped,
+        );
+
+        return;
+      }
+
       if (status.failedToDecode) {
         final file = state.queue.current;
         if (file == null) return;

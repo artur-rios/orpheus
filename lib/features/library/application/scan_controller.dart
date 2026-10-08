@@ -54,6 +54,15 @@ class ScanController extends Notifier<ScanState> {
 
   StreamSubscription<ScanEvent>? _events;
 
+  /// Whether a scan has been asked for and is still waiting on the access
+  /// question, before it is [ScanState.isRunning].
+  ///
+  /// The question is asynchronous — on Android it is a dialog — and a second
+  /// request arriving while it is open would otherwise find nothing running
+  /// and start a walk of its own, cancelling the first one's subscription on
+  /// its way in and leaving whoever awaited the first waiting for good.
+  bool _asking = false;
+
   @override
   ScanState build() {
     ref.onDispose(() => unawaited(_events?.cancel()));
@@ -85,7 +94,7 @@ class ScanController extends Notifier<ScanState> {
   /// returns before the question is asked, so a fresh install does not open on
   /// a permission dialog for files it has not been pointed at.
   Future<void> scan({bool askForAccess = true, bool quick = false}) async {
-    if (state.isRunning) return;
+    if (state.isRunning || _asking) return;
 
     final folders = ref.read(libraryFoldersControllerProvider);
     if (folders.isEmpty) {
@@ -99,9 +108,15 @@ class ScanController extends Notifier<ScanState> {
     }
 
     if (askForAccess) {
-      final decision = await ref
-          .read(libraryAccessControllerProvider.notifier)
-          .ensure();
+      final LibraryAccessDecision decision;
+      _asking = true;
+      try {
+        decision = await ref
+            .read(libraryAccessControllerProvider.notifier)
+            .ensure();
+      } finally {
+        _asking = false;
+      }
       if (!decision.isGranted) {
         state = ScanState(
           failure: StoragePermissionDenied(

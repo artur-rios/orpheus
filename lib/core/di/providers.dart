@@ -136,7 +136,9 @@ final lyricsSourceProvider = Provider<LyricsSource>(
 /// Every test overrides it, as every test overrides the engine and the media
 /// session: no test in this suite opens a socket.
 final remoteLyricsSourceProvider = Provider<RemoteLyricsSource>((ref) {
-  final source = LrclibLyricsSource();
+  final source = LrclibLyricsSource(
+    version: ref.watch(runningVersionProvider)?.toString(),
+  );
   ref.onDispose(source.close);
 
   return source;

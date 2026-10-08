@@ -13,7 +13,11 @@ import 'tag_reading.dart';
 /// What one run of [scanFolders] produced.
 class ScanOutcome {
   /// Creates an outcome.
-  const ScanOutcome({required this.entries, required this.report});
+  const ScanOutcome({
+    required this.entries,
+    required this.report,
+    required this.startedAt,
+  });
 
   /// The library, one entry per file found.
   ///
@@ -24,6 +28,16 @@ class ScanOutcome {
 
   /// What changed, and what could not be read.
   final ScanReport report;
+
+  /// When the walk began, which is the moment the catalog describes.
+  ///
+  /// The start rather than the end, because it is what the next cheap walk
+  /// measures folders against: a folder changed while this scan was running —
+  /// after the walk had passed it, before the scan finished — is newer than
+  /// the start and older than the end, and measuring against the end would
+  /// let the next launch take it on trust and keep the tags this scan read
+  /// before the change.
+  final DateTime startedAt;
 }
 
 /// Walks [folders] and reads the tags of every audio file under them.
@@ -44,7 +58,8 @@ class ScanOutcome {
 /// but not per file — see [progressInterval].
 ///
 /// [unchangedSince] turns on the cheap walk, and is the moment the last scan
-/// ran. A directory whose own timestamp is older than that has had nothing
+/// began. A directory whose own timestamp is older than that — by more than
+/// [timestampSlack], for the file systems that round it — has had nothing
 /// added to it, removed from it or renamed inside it since, so the files in it
 /// are the files the last scan recorded, and their sizes and timestamps are
 /// taken from [previous] instead of from the disk. What that saves is one
@@ -64,7 +79,7 @@ ScanOutcome scanFolders({
   void Function(ScanProgress progress)? onProgress,
   DateTime? unchangedSince,
 }) {
-  /// How many files pass between progress reports.
+  final startedAt = DateTime.now();
   final covers = FileCoverStore(coverDirectory);
   final known = {for (final entry in previous) entry.file.path: entry};
 
@@ -89,7 +104,12 @@ ScanOutcome scanFolders({
       continue;
     }
 
-    _walk(
+    // A registered folder that is there and cannot be listed is as unreachable
+    // as one that is not there at all, and is reported the same way. Stepped
+    // over silently, it read as a folder with nothing in it: every track the
+    // catalog held from it was counted as removed, and the folders screen never
+    // offered the access that would have let it be read.
+    final listed = _walk(
       directory,
       found: found,
       visited: visited,
@@ -101,6 +121,7 @@ ScanOutcome scanFolders({
               ScanProgress(filesFound: found.length, folder: folder),
             ),
     );
+    if (!listed) unreachable.add(folder);
   }
 
   // Deterministic order, so two scans of the same library produce the same
@@ -135,7 +156,7 @@ ScanOutcome scanFolders({
     final carried = known[file.path];
     if (carried != null &&
         carried.file.sizeInBytes == file.sizeInBytes &&
-        carried.file.modifiedAt == file.modifiedAt) {
+        _sameMillisecond(carried.file.modifiedAt, file.modifiedAt)) {
       entries.add(MusicEntry(file: file, metadata: carried.metadata));
       reused++;
       continue;
@@ -161,6 +182,7 @@ ScanOutcome scanFolders({
   );
 
   return ScanOutcome(
+    startedAt: startedAt,
     entries: entries,
     report: ScanReport(
       tracks: entries.length,
@@ -172,6 +194,25 @@ ScanOutcome scanFolders({
     ),
   );
 }
+
+/// Whether [a] and [b] are the same moment to the millisecond.
+///
+/// The catalog document stores a file's timestamp in milliseconds, and the
+/// file system reports it in microseconds. Compared exactly, a catalog read
+/// back from disk matched almost none of the files it described, so the first
+/// full scan of every launch re-read the tags of the whole library and
+/// reported every track in it as added.
+bool _sameMillisecond(DateTime a, DateTime b) =>
+    a.millisecondsSinceEpoch == b.millisecondsSinceEpoch;
+
+/// How far a folder's timestamp may lag a change made inside it.
+///
+/// FAT, which is what most memory cards and pen drives are formatted with,
+/// keeps a timestamp to the nearest two seconds, rounded down. A folder changed
+/// a second after a scan began can therefore read as older than the scan, and
+/// the cheap walk would take it on trust; only a folder older than this margin
+/// as well is treated as settled.
+const Duration timestampSlack = Duration(seconds: 2);
 
 /// How many files pass between progress reports.
 ///
@@ -263,13 +304,18 @@ String? _sidecarCover(
 
 /// Adds every audio file under [directory] to [found], depth first.
 ///
+/// Answers whether [directory] itself could be listed — or had already been,
+/// through another registered folder. A folder below it that cannot be listed
+/// is stepped over; only the caller knows whether the top one not opening is
+/// worth reporting.
+///
 /// Written out rather than `listSync(recursive: true)` for two reasons. One
 /// unreadable folder inside a library makes the recursive call throw and
 /// abandon the rest of the walk, where this steps over it and carries on. And
 /// progress can be reported while the walk runs, which on a library of tens of
 /// thousands of files is the difference between a strip that moves and one
 /// that sits still for a minute.
-void _walk(
+bool _walk(
   Directory directory, {
   required List<AudioFile> found,
   required Set<String> visited,
@@ -287,9 +333,9 @@ void _walk(
   try {
     resolved = directory.resolveSymbolicLinksSync();
   } on Object {
-    return;
+    return false;
   }
-  if (!seen.add(resolved)) return;
+  if (!seen.add(resolved)) return true;
 
   final List<FileSystemEntity> children;
   try {
@@ -297,7 +343,7 @@ void _walk(
   } on Object {
     // A folder the process may not read is a folder with nothing in it, as far
     // as the rest of the walk is concerned.
-    return;
+    return false;
   }
 
   // Whether the files here can be taken from the last catalog rather than
@@ -306,7 +352,9 @@ void _walk(
   var settled = false;
   if (unchangedSince != null) {
     try {
-      settled = directory.statSync().modified.isBefore(unchangedSince);
+      settled = directory.statSync().modified.isBefore(
+        unchangedSince.subtract(timestampSlack),
+      );
     } on Object {
       settled = false;
     }
@@ -358,4 +406,6 @@ void _walk(
 
     if (found.length % progressInterval == 0) onProgress?.call();
   }
+
+  return true;
 }
