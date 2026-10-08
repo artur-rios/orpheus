@@ -11,6 +11,7 @@ import 'package:orpheus/features/updates/data/installer_update.dart';
 import 'package:orpheus/features/updates/domain/app_release.dart';
 import 'package:orpheus/features/updates/domain/app_version.dart';
 import 'package:orpheus/features/updates/domain/update_installer.dart';
+import 'package:path/path.dart' as p;
 
 /// What is downloaded, and what is refused.
 ///
@@ -269,7 +270,9 @@ void main() {
       // The system's temporary directory is shared by every account on a
       // Linux machine, so a file waiting at the name the installer would be
       // given is somebody else's file — or a link to somewhere else entirely.
-      final waiting = File('${downloads.path}/orpheus-setup-9.9.9.exe')
+      // Joined with the host's separator: the paths a directory listing
+      // returns use it, and the planted file is told apart by its path.
+      final waiting = File(p.join(downloads.path, 'orpheus-setup-9.9.9.exe'))
         ..writeAsStringSync('not yours');
       final client = clientServing('$digest  orpheus-setup-9.9.9.exe\n');
 
@@ -286,10 +289,10 @@ void main() {
 
       expect(waiting.readAsStringSync(), 'not yours');
       final written = downloaded('orpheus-setup-9.9.9.exe')
-          .where((file) => file.path != waiting.path)
+          .where((file) => !p.equals(file.path, waiting.path))
           .single;
       expect(written.readAsBytesSync(), package);
-      expect(written.parent.path, isNot(downloads.path));
+      expect(p.equals(written.parent.path, downloads.path), isFalse);
     },
   );
 
