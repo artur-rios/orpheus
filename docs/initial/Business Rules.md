@@ -46,8 +46,11 @@ the `.lrc` a lyrics lookup writes beside a track (`BR-29a`). That is a new file
 next to the audio, never a change to the audio, and never a replacement for a
 sidecar the owner wrote.
 
-**BR-03 — One thing leaves the machine, and it is named.** The lyrics lookup
-(`BR-29a`) and nothing else. No upload, no telemetry, no analytics, no crash
+**BR-03 — Two things leave the machine, and they are named.** The lyrics lookup
+(`BR-29a`), and — on Windows and Linux only, switchable off in the preferences —
+the check for a newer release of this application: one unauthenticated request
+to GitHub's releases API at startup, and the download of the installer and its
+checksums when the owner accepts the offer. Nothing else. No upload, no telemetry, no analytics, no crash
 reporting, no scrobbling, no cover art, no metadata lookup of any other kind,
 and nothing that identifies the owner or persists between requests — no
 account, no key, no identifier. The enforceable form of this rule is that the

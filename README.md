@@ -11,12 +11,12 @@ reads its catalog from a Rust core over FFI; Orpheus has no core and no server.
 It walks the folders it is pointed at, reads the tags itself, and keeps the
 result in a file beside its own settings.
 
-> **Status:** complete and tested. 422 unit and widget tests; `flutter analyze`
-> clean. Every use case in the [specifications](#specifications) is implemented
-> — see the [roadmap](#roadmap). All three release builds and the Windows
-> installer are produced and verified by CI on every push. Verified *running*
-> on Linux only; Windows and Android build but have not been launched on a
-> machine or a device.
+> **Status:** complete and tested — the unit and widget suite green and
+> `flutter analyze` clean. Every use case in the [specifications](#specifications)
+> is implemented — see the [roadmap](#roadmap). All three release builds and the
+> Windows installer are produced and verified by CI on every pull request. It
+> runs on Linux, Windows and Android: the fixes released since 1.0.0 came from
+> running it on a Windows machine and an Android phone.
 
 ## What it does
 
@@ -39,7 +39,8 @@ result in a file beside its own settings.
   `.lrc` beside the track, or the track's own lyrics tag. For a track that has
   neither, Orpheus looks the words up online and saves them as a `.lrc` beside
   it, so it only ever asks once; that lookup is a switch in the preferences and
-  it sends the track's artist and title and nothing else. The line being sung
+  it sends the track's artist and title — with its record and length where the
+  tags give them — and nothing else. The line being sung
   is lit, the sheet scrolls itself, and tapping a line plays from there.
 - **Searches** across titles, artists and albums, ranked so a match at the start
   of a title comes above one buried in the middle of something else.
@@ -58,8 +59,10 @@ result in a file beside its own settings.
   track whose words it looked up — a new file, never a replacement for one you
   wrote, and never the track itself.
 - **Almost no network.** No streaming, no scrobbling, no telemetry, no
-  analytics, no crash reporting, no cover art fetched from anywhere. The single
-  exception is the lyrics lookup described above, which you can turn off. The
+  analytics, no crash reporting, no cover art fetched from anywhere. There are
+  two exceptions, and both can be turned off: the lyrics lookup described
+  above, and on Windows and Linux the check for a newer release
+  ([below](#updating-from-inside-the-application)). The
   Android package declares exactly eight permissions and CI fails the build on
   a ninth, which is the version of this promise a machine can check. The
   broadest of the eight is all-files access, and it is asked for at one moment
@@ -103,8 +106,11 @@ The library, and a record opened inside it:
 
 ## Installing and running
 
-Orpheus is a Flutter application. There are no published packages yet; build it
-from source.
+Every release publishes a Windows installer, a portable Windows archive, a Linux
+installer and an Android APK on the
+[releases page](https://github.com/artur-rios/orpheus/releases) — see
+[Downloads](#downloads) below. Orpheus is a Flutter application, and it can also
+be built from source:
 
 ```bash
 flutter pub get
@@ -112,7 +118,7 @@ flutter run -d linux      # or -d windows, or a connected Android device
 ```
 
 If you are going to change the code rather than just run it, use
-[`tools/dev.sh`](#running-it-while-you-work-on-it) instead — it picks the
+[`tools/dev.sh`](CONTRIBUTING.md#running-it-while-you-work-on-it) instead — it picks the
 device, checks what the platform needs, and can reset the application to a
 first launch.
 
@@ -130,7 +136,54 @@ package rather than asserted, and set by the plugins rather than by the engine.
 **Windows** needs no extra dependency either — the engine's DLLs are bundled by
 `media_kit_libs_audio`. For a Windows machine you would rather not build on,
 `tools\build-windows-installer.ps1` produces a normal setup executable —
-see [The Windows installer](#the-windows-installer).
+see [The Windows installer](CONTRIBUTING.md#the-windows-installer).
+
+### Downloads
+
+Each release carries four artifacts:
+
+| Platform | File | What it is |
+| --- | --- | --- |
+| Windows | `orpheus-setup-<version>.exe` | The installer, from Inno Setup |
+| Windows | `orpheus-<version>-windows-x64-portable.zip` | Unpack and run; nothing installed |
+| Linux | `orpheus-installer-<version>.sh` | The shell installer below |
+| Android | `orpheus-<version>-android.apk` | Installed directly, not from a store |
+
+Every file is checksummed into `SHA256SUMS.txt`, which is the only way somebody
+can tell that what they downloaded is what the workflow built — both desktop
+installers are unsigned.
+
+The Windows portable artifact is an archive rather than a single `.exe`, and
+that is not a shortcut: a Flutter Windows application is an executable beside
+the engine's DLLs and a `data` directory, and it does not run without them.
+
+The Windows installer offers a per-machine or per-user install, an optional desktop
+icon, and both languages the application ships. Upgrading over an existing
+installation removes the old one first — including one left in a different
+directory, if you moved it — and the removal is targeted at the files this
+payload writes rather than being a wipe of a directory you chose by hand.
+
+**Your library, catalog, statistics and settings are never touched by
+installing, upgrading or uninstalling.** They live in the application-support
+directory; an uninstall is not a request to forget what you listened to.
+
+The Windows installer is **unsigned**. SmartScreen will warn on first run until the
+project holds a code-signing certificate, which it does not.
+
+What the Linux installer does:
+
+```sh
+./orpheus-installer-1.0.0.sh              # just for you, under ~/.local
+./orpheus-installer-1.0.0.sh --system     # for everyone, under /usr/local
+./orpheus-installer-1.0.0.sh --prefix DIR # somewhere you choose
+./orpheus-installer-1.0.0.sh --uninstall  # remove it again
+```
+
+It unpacks the bundle, links the binary onto `PATH`, writes a desktop entry and
+an icon so it appears in the applications menu, and keeps a copy of itself
+beside the payload so uninstalling later needs nothing downloaded. The per-user
+install needs no root and is the default. Uninstalling removes only what it put
+down, and never the owner's catalog, statistics or settings.
 
 ### First run
 
@@ -156,6 +209,34 @@ application starts, so a card slotted in — or a drive plugged in, or this
 permission granted — after Orpheus was already running is outside the view
 that run was handed, and the folder goes on reading as one that is not there.
 With the card or the drive in place, close Orpheus, open it again, and scan.
+
+### Updating from inside the application
+
+The two desktop builds check for a newer release when they start, and offer it.
+A full release is only ever offered full releases; a beta is offered the next
+beta and then the release it leads to. Switched on by default, and switched off in the preferences under *Updates* —
+it is one of the two things in this application that reach a network, and it is
+described where it is turned on rather than in a changelog.
+
+What it does when the owner accepts is fetch the same installer they would have
+downloaded by hand, check its SHA-256 against the `SHA256SUMS.txt` the release
+publishes beside it, and start it. **Nothing is run that has not been
+verified**, and a package whose checksum does not match is not offered a retry:
+what failed there is not the network.
+
+The application cannot replace itself while it is running — on Windows the
+executable and the engine's libraries are open and locked by the process doing
+the replacing — so it quits and lets the installer work. That also means the
+upgrade is the one that has been tested: the same removal of the previous
+version, the same targeted sweep of stale libraries, the same untouched
+catalog and statistics.
+
+One case it cannot finish: a Linux installation under a system prefix needs
+root, and there is no password prompt to raise from a process the desktop
+launched. It downloads and verifies, then hands back the `sudo` line to paste.
+
+Android is not part of this. A package there is installed by the platform, and
+the switch is hidden on it.
 
 ## How it works
 
@@ -279,8 +360,8 @@ and the code says so where it is defined.
 
 ### The words
 
-Synced lyrics come from the machine the music is on, because there is nowhere
-else for them to come from here. Three places are looked in, in this order: an
+Synced lyrics come from the machine the music is on first. Three places are
+looked in, in this order: an
 `.lrc` file beside the track and named after it; the track's `SYLT` frame; and
 the track's lyrics text tag — `USLT` in an MP3, `©lyr` in an MP4, `LYRICS` in a
 Vorbis comment or an APE tag. The sidecar wins over both, because it is the one
@@ -308,6 +389,17 @@ because this lights a line at a time. A file with no times in it at all is read
 as a plain sheet and said to be one, rather than rejected or given invented
 times — nothing here guesses when a line is sung.
 
+Only when none of the three has anything, and only while the lookup is left on
+in the preferences, is a lyrics service — [LRCLIB](https://lrclib.net) — asked,
+with the track's artist and title and, where the tags give them, its record and
+length. A sheet that comes back is written beside the track as a new `.lrc`, so
+the next play finds it in the first place looked and asks nobody anything; a
+`.lrc` already there is never replaced. A track whose tags do not give both an
+artist and a title is not looked up at all.
+(`features/lyrics/application/lyrics_controller.dart`,
+`features/lyrics/data/lrclib_lyrics_source.dart`,
+`features/lyrics/data/file_lyrics_sidecar.dart`)
+
 On the player the words take the sleeve's place rather than sitting under it —
 both want the same room — the line being sung is lit and brought into view by
 itself, tapping a line plays from there, and the panel leaves you where you
@@ -317,417 +409,20 @@ scrolled to for a few seconds so that reading ahead is possible.
 `features/lyrics/data/file_lyrics_source.dart`,
 `features/lyrics/domain/lyrics.dart`)
 
-## Layout
-
-```
-lib/
-  core/            themes, spacing, breakpoints, settings, failures, l10n,
-                   and the single composition root in core/di/providers.dart
-  features/
-    library/       folders, scanning, tags, cover and catalog storage
-    playback/      the queue, the engine and media-session boundaries, and
-                   the music area
-    lyrics/        finding a track's words on this machine, and reading along
-    stats/         the play threshold, the history, and the rankings
-    shell/         the frame: navigation, the playback bar, preferences
-
-tools/             dev.sh / dev.ps1 to run it, verify.sh / verify.ps1 to
-                   check it, and the two installer builds
-packaging/windows/ the Inno Setup script the installer is compiled from
-packaging/linux/   the shell installer the Linux payload is wrapped in
-packaging/icon/    the application icon, and the script that draws it
-```
-
-Each feature is `domain` (no Flutter, no IO), `data` (the outward edges),
-`application` (the controllers), `presentation` (the widgets). Nothing outward
-is constructed anywhere but `core/di/providers.dart`, which is what lets a test
-override a binding rather than patching a global.
-
-## Building and testing
-
-```bash
-flutter analyze              # must be clean; there is no known-warnings list
-flutter test                 # 354 unit and widget tests
-flutter build linux --release
-flutter build windows --release
-flutter build apk --release
-```
-
-### Running it while you work on it
-
-```bash
-./tools/dev.sh               # Linux and macOS
-.\tools\dev.ps1              # Windows
-```
-
-Picks a device, checks what it needs, and starts the application. With no
-arguments it runs on this host's desktop; with one device attached and no
-desktop target, on that one; with several, it refuses and lists them rather
-than guessing — being handed a phone when you meant the desktop costs more time
-than typing `--device`.
-
-**The loop is Flutter's own.** While it runs, `r` hot-reloads, `R` hot-restarts,
-`q` quits — so *change the code and see it* is one keystroke, not another run of
-the script. Start it again for the things hot reload cannot carry: a new
-dependency, a native or platform file, or a change to either `.arb` catalog
-(then use `--generate`).
-
-| Flag | |
-| --- | --- |
-| `--device ID` / `--android` | Where to run. `--android` takes the attached device or emulator, whatever its id. |
-| `--clean` | Delete this application's own data — the catalog, cover cache, analysed spectra, play history and preferences — so the next start is a first launch. **Never touches your music**, names exactly what it will delete, and asks first unless `--yes`. On Android it clears the app's data on the device. |
-| `--generate` | Regenerate the localizations first. |
-| `--test` | Run the suite first, and stop if it is red. |
-| `--profile` / `--release` | Run the way an owner would get it. Neither has hot reload — that is debug only, and the script says so rather than letting you press `r` into silence. |
-| `--no-run` | Do everything else and stop. |
-
-On Linux it also checks for libmpv up front, because without it playback fails
-at the first press of play rather than at startup — which is a long way from the
-cause.
-
-On Windows the first build in a fresh build directory prints `Nuget.exe not
-found, trying to download or use cached version.` That is CMake, not this
-application: `permission_handler_windows` compiles against the CppWinRT NuGet
-package and fetches a pinned, checksummed `nuget.exe` when one is not on `PATH`.
-It is a status line rather than a warning — a real failure stops the build with
-`Failed to install nuget package Microsoft.Windows.CppWinRT` — and it prints
-once per clean build directory. `winget install Microsoft.NuGet` silences it.
-The plugin itself does nothing on Windows; it arrives as the endorsed Windows
-implementation of the `permission_handler` that Android needs, and Flutter
-builds every plugin registered for a platform whether or not it is used.
-
-`tools/dev.ps1` takes the same flags in long form (`-Device`, `-Clean`, `-Yes`).
-
-### The icon
-
-The application icon is a lyre — Orpheus's own instrument — whose strings are
-the sound bars from the player screen, standing at the uneven heights a level
-meter stands at.
-
-It is **drawn in code**, not kept as a binary nobody can edit: a change to the
-palette, the proportions or the string heights is a diff in one Python file,
-and every size every platform wants is regenerated from it.
-
-```bash
-python3 packaging/icon/make_icon.py     # needs Pillow, and nothing else
-```
-
-That writes the Android launcher icons at all five densities — the square one
-for releases before Android 8, and the adaptive icon's foreground layer, drawn
-without its background so the launcher can mask the pair into whatever shape
-the device uses — the Windows `.ico`, the Linux window icon, and the 1024px
-master in `packaging/icon/`.
-
-The two smallest `.ico` frames are drawn from **separate, simpler artwork**.
-At sixteen and thirty-two pixels the arms and the yoke are a stroke under two
-pixels wide, which is not a lyre, it is grey fringing; what those frames show
-instead is what the mark is about — three bars at three heights on their
-soundbox. An `.ico` saved from one image is that image downsampled six times,
-and the two smallest of those are the mush this avoids.
-
-Flutter's Linux runner ships no icon at all, so `linux/CMakeLists.txt` installs
-the PNG beside the bundle's data and `my_application.cc` loads it into the
-window. Beside the bundle rather than into a `hicolor` theme deliberately: this
-is the icon of the window this binary opens, which is a different thing from
-the icon a packaged application registers with the desktop, and only the first
-is the build's to decide.
-
-### Verifying everything at once
-
-```bash
-./tools/verify.sh            # Linux and macOS
-.\tools\verify.ps1           # Windows
-```
-
-Each runs the analyzer, the suite, and a release build of every target its host
-can build — then prints one summary saying what passed, what was skipped, and
-what this operating system could never have done in the first place.
-
-That last distinction is the point of the script. **No single machine can build
-all three targets**: Windows binaries need Windows and MSVC, Linux binaries need
-Linux and GTK. So a run reports three outcomes rather than two —
-
-| | Meaning | Under `--strict` |
-| --- | --- | --- |
-| `PASS` | It ran and it passed. | passes |
-| `SKIP` | A toolchain that could have been here was not — no Android SDK, no `libgtk-3-dev`. | **fails** |
-| `n/a` | This operating system cannot build that target at all. | passes |
-
-— because a missing Android SDK is something you can fix, and a Linux machine
-not producing a Windows binary is not.
-
-Useful flags: `--no-build` for the fast loop, `--only linux|android|windows` for
-one target, `--strict` for CI. `tools/verify.ps1` takes the same ones in long
-form, plus `-Installer`.
-
-`.github/workflows/verify.yml` is what makes the `n/a` rows add up to nothing: it
-runs `verify.sh --strict` on Linux (Linux + Android) and `verify.ps1 -Strict` on
-Windows (Windows + the installer). It also reads the built APK's permissions back
-out and **fails the build if they are not exactly the eight declared in
-`AndroidManifest.xml`** — which is the promise at the top of this file,
-enforced rather than asserted. A deny list would only catch the permissions
-somebody thought to forbid; pinning the whole set catches the next one
-whatever it is, including one merged in by a dependency.
-
-### The Windows installer
-
-```powershell
-.\tools\build-windows-installer.ps1
-```
-
-Builds the Windows release and compiles `packaging\windows\installer.iss` into
-`dist\orpheus-setup-<version>.exe`. It needs [Inno Setup](https://jrsoftware.org/isdl.php)
-(`winget install JRSoftware.InnoSetup`); the script looks for `ISCC.exe` on
-`PATH` and in both standard install directories, and takes `-InnoSetupPath` if
-it is somewhere else. `-SkipBuild` reuses an existing release build.
-
-### The Linux installer
-
-```sh
-./tools/build-linux-installer.sh
-```
-
-Builds the Linux release and wraps it in `dist/orpheus-installer-<version>.sh`
-— a shell script with the release bundle compressed onto the end of it.
-`--skip-build` reuses an existing release build.
-
-A self-extracting script rather than a `.deb`, a Flatpak or an AppImage, and
-the reason is what each of those assumes. A `.deb` assumes `apt`, which leaves
-out every distribution that does not use it. A Flatpak assumes Flatpak is set
-up, and adds a sandbox that would have to be punched through for the one thing
-this application does — read music folders the owner chose, anywhere on their
-disk. An AppImage is a portable binary rather than an installation: no launcher
-entry, no icon.
-
-What the installer does:
-
-```sh
-./orpheus-installer-1.0.0.sh              # just for you, under ~/.local
-./orpheus-installer-1.0.0.sh --system     # for everyone, under /usr/local
-./orpheus-installer-1.0.0.sh --prefix DIR # somewhere you choose
-./orpheus-installer-1.0.0.sh --uninstall  # remove it again
-```
-
-It unpacks the bundle, links the binary onto `PATH`, writes a desktop entry and
-an icon so it appears in the applications menu, and keeps a copy of itself
-beside the payload so uninstalling later needs nothing downloaded. The per-user
-install needs no root and is the default. Uninstalling removes only what it put
-down, and never the owner's catalog, statistics or settings.
-
-## Releases
-
-```sh
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-`.github/workflows/release.yml` does the rest. It refuses immediately if the
-tag and `pubspec.yaml` disagree about the version — a release whose file names,
-installer wizard and application each state something different is worth
-failing a job over. A tag like `v1.0.0-beta.1` names version `1.0.0` and is
-published as a pre-release.
-
-Then four artifacts, each built where it can be:
-
-| Platform | File | What it is |
-| --- | --- | --- |
-| Windows | `orpheus-setup-<version>.exe` | The installer, from Inno Setup |
-| Windows | `orpheus-<version>-windows-x64-portable.zip` | Unpack and run; nothing installed |
-| Linux | `orpheus-installer-<version>.sh` | The shell installer above |
-| Android | `orpheus-<version>-android.apk` | Installed directly, not from a store |
-
-The APK is put through the same permission gate the Verify workflow applies,
-against the package that actually ships, and the same is done with its signer
-— see below. The analyzer and the suite are run before anything is built,
-because a release is not the place to discover the suite is red. Every file is
-checksummed into `SHA256SUMS.txt`, which is the only way somebody can tell that
-what they downloaded is what the workflow built — both desktop installers are
-unsigned.
-
-### Updating from inside the application
-
-The two desktop builds check for a newer release when they start, and offer it.
-Switched on by default, and switched off in the preferences under *Updates* —
-it is one of the two things in this application that reach a network, and it is
-described where it is turned on rather than in a changelog.
-
-What it does when the owner accepts is fetch the same installer they would have
-downloaded by hand, check its SHA-256 against the `SHA256SUMS.txt` the release
-publishes beside it, and start it. **Nothing is run that has not been
-verified**, and a package whose checksum does not match is not offered a retry:
-what failed there is not the network.
-
-The application cannot replace itself while it is running — on Windows the
-executable and the engine's libraries are open and locked by the process doing
-the replacing — so it quits and lets the installer work. That also means the
-upgrade is the one that has been tested: the same removal of the previous
-version, the same targeted sweep of stale libraries, the same untouched
-catalog and statistics.
-
-One case it cannot finish: a Linux installation under a system prefix needs
-root, and there is no password prompt to raise from a process the desktop
-launched. It downloads and verifies, then hands back the `sudo` line to paste.
-
-Android is not part of this. A package there is installed by the platform, and
-the switch is hidden on it.
-
-### The Android signing key
-
-Android refuses to install an update whose signer changed. A package signed
-with the debug key would therefore be a package nobody can upgrade to: the
-runner generates a fresh debug key per run, so every release would carry a
-different signer, and an owner would meet the next one as *App not installed*
-with no way forward but uninstalling — losing the library, the statistics and
-the settings that an upgrade is supposed to keep.
-
-So the release workflow signs with a key the project holds, and refuses to
-build without one.
-
-**1. Make the keystore.** Once, and never again. `keytool` ships with the JDK
-that Android Studio installed, so it is already on your machine.
-
-On Windows, in PowerShell:
-
-```powershell
-keytool -genkeypair -v -keystore orpheus-release.jks -alias orpheus `
-  -keyalg RSA -keysize 4096 -validity 10000 -storetype pkcs12
-```
-
-On Linux or macOS:
-
-```sh
-keytool -genkeypair -v -keystore orpheus-release.jks -alias orpheus \
-  -keyalg RSA -keysize 4096 -validity 10000 -storetype pkcs12
-```
-
-It asks for a password, then for a name, an organisation and a country. None of
-those answers are checked by anything or shown to anyone; the password is the
-part that matters. **Write the password down before you press enter** — there is
-no way to recover it and no way to replace the keystore later.
-
-**2. Encode it.** The secret holds the file's bytes as text, because a GitHub
-secret is a string.
-
-On Windows, which has no `base64` command — this writes the file and puts the
-same text on your clipboard, ready to paste:
-
-```powershell
-$encoded = [Convert]::ToBase64String([IO.File]::ReadAllBytes("orpheus-release.jks"))
-$encoded | Set-Content -NoNewline keystore.base64.txt
-$encoded | Set-Clipboard
-```
-
-On Linux or macOS:
-
-```sh
-base64 -w0 orpheus-release.jks > keystore.base64.txt
-```
-
-Not `certutil -encode`: it wraps its output in `-----BEGIN CERTIFICATE-----`
-lines, which are not part of the data and will not decode.
-
-**3. Put four secrets in the repository.** *Settings → Secrets and variables →
-Actions → New repository secret*. The names are case-sensitive and must be
-exactly these:
-
-| Secret | What to paste into it |
-| --- | --- |
-| `ANDROID_KEYSTORE_BASE64` | The entire contents of `keystore.base64.txt` — one long run of letters, digits, `+` and `/`, possibly ending in `=`. Paste what step 2 put on the clipboard, or open the file and select all. Not the `.jks` itself: a secret is text. Line breaks in it are harmless, the workflow strips them. |
-| `ANDROID_KEYSTORE_PASSWORD` | The password you typed at *Enter keystore password*. |
-| `ANDROID_KEY_ALIAS` | `orpheus` — whatever followed `-alias` in the command above. |
-| `ANDROID_KEY_PASSWORD` | **The same password again.** A PKCS12 keystore holds one password for both; keytool warns and ignores a `-keypass` that differs from the store password, so there is no second password to give. |
-
-Then delete `keystore.base64.txt` — it is the keystore in another form, sitting
-in the repository directory. `.gitignore` refuses to commit it, and the `.jks`
-beside it, but neither belongs there once the secret is set.
-
-**Back the `.jks` up somewhere that is not this machine, and keep the
-passwords.** Losing it cannot be undone by generating another: every owner who
-installed a release signed with the old one would have to uninstall first, and
-their catalog, statistics and settings would go with it. It is the one file in
-this project that has no copy in the repository and cannot be rebuilt from it.
-
-**4. Optional, once the first signed release is out.** Read its fingerprint out
-of the workflow log — the *Read the signer back out of the package* step prints
-`Signed with SHA-256 <64 hex characters>` — and set it under *Variables*, not
-*Secrets*, as `ANDROID_SIGNING_SHA256`. From then on a release signed by
-anything else fails the job instead of shipping an update nobody can install.
-
-Building a signed package locally needs none of that. `flutter build apk
---release` with no key configured falls back to the debug key and works as it
-always did — that is only ever a package for your own device. To sign locally,
-put `android/key.properties` beside the module, which `android/.gitignore`
-already refuses to commit:
-
-```properties
-storeFile=../orpheus-release.jks
-storePassword=...
-keyAlias=orpheus
-keyPassword=...
-```
-
-The Windows portable artifact is an archive rather than a single `.exe`, and
-that is not a shortcut: a Flutter Windows application is an executable beside
-the engine's DLLs and a `data` directory, and it does not run without them.
-
-The installer offers a per-machine or per-user install, an optional desktop
-icon, and both languages the application ships. Upgrading over an existing
-installation removes the old one first — including one left in a different
-directory, if you moved it — and the removal is targeted at the files this
-payload writes rather than being a wipe of a directory you chose by hand.
-
-**Your library, catalog, statistics and settings are never touched by
-installing, upgrading or uninstalling.** They live in the application-support
-directory; an uninstall is not a request to forget what you listened to.
-
-The installer is **unsigned**. SmartScreen will warn on first run until the
-project holds a code-signing certificate, which it does not.
-
-Every push builds it: the `Verify` workflow's Windows job uploads
-`orpheus-setup-<version>.exe` as an artifact, so the latest one is a download
-away from the run that produced it.
-
-Tests are named Given-When-Then, one behaviour apiece, and follow the source
-tree: `lib/x/y.dart` is tested by `test/x/y_test.dart`. Nothing in the suite
-reads the developer's own preferences, writes into their application-support
-folder, records against their listening statistics, opens the native playback
-engine, starts a platform media service, or reaches the network — every one of
-those is a provider, and every one is overridden by the harness in
-`test/support/test_container.dart`.
-
-Two of the tests are guards rather than assertions about behaviour, and they
-exist because a rule nobody checks is a comment:
-
-- `test/core/theme/no_colour_literal_test.dart` — every colour comes from the
-  theme's single seed, and nothing outside `lib/core/theme/` may declare one.
-- `test/core/l10n/catalog_parity_test.dart` — both languages stay complete, every
-  message carries a description, and a translation uses the same placeholders as
-  its original.
-
-The scanner and the tag reader are tested against real files in a temporary
-directory, built by `test/support/flac_fixture.dart` — a genuine FLAC header
-with real Vorbis comments and a real embedded picture, small enough to write
-from a test.
-
 ## Known limits
 
-- **The Android media session is written and built, but unrun on a device.**
-  The foreground service, the notification, the lock screen controls and the
-  audio-focus handling are all there and are covered by tests against a stand-in
-  session; what no test on a build machine can tell you is how the real one
-  behaves on real hardware. It is the part of this application most in need of a
-  phone.
 - **No media session on Windows or Linux.** Neither desktop gets transport keys
   or a system now-playing panel. The seam that would carry them exists and is
   bound to a session that shows nothing, so this is an implementation to write
   rather than a design to change.
-- **Lyrics are read, never fetched or written.** A track whose words are on
-  neither side of it — no `.lrc`, no `SYLT`, no lyrics text tag — shows a panel
-  that says so and says where words would have to come from. Nothing is
-  corrected, re-timed or saved back, and a `SYLT` frame whose times are counted
-  in MPEG frames rather than milliseconds is declined rather than approximated:
-  turning those into a position needs the frame rate of the audio behind them,
-  and this reads headers, not streams.
+- **Lyrics are found, never edited.** A track whose words are on neither side
+  of it — no `.lrc`, no `SYLT`, no lyrics text tag — and that the lookup finds
+  nothing for, or that is not looked up because the lookup is off or the tags
+  lack an artist or a title, shows a panel that says so. Nothing is corrected
+  or re-timed, the only thing ever saved is the new `.lrc` a lookup writes, and
+  a `SYLT` frame whose times are counted in MPEG frames rather than milliseconds
+  is declined rather than approximated: turning those into a position needs the
+  frame rate of the audio behind them, and this reads headers, not streams.
 - **No playlists.** Queues are built from a track, a record, an artist, or the
   whole library shuffled. There is nothing to save and name yet.
 - **The statistics are all-time, with no windows.** "This month" is a control, a
@@ -749,15 +444,11 @@ from a test.
   no album-artist tag anywhere lands under whichever performer has the most
   tracks on it.
 - **The Windows installer is built but never installed.** CI compiles
-  `packaging/windows/installer.iss` on a Windows runner on every push, so the
+  `packaging/windows/installer.iss` on a Windows runner for every pull request, so the
   setup executable is known to build and to carry the whole payload. What nobody
   has done is *run* it — install, upgrade over an older install, and uninstall
   are specified and reviewed but unexercised. The upgrade path in its `[Code]`
   section is the part most worth someone's attention.
-- **Windows and Android build but are unrun.** Both release packages are
-  produced by CI from this source, and the Android package's permissions are
-  read back out of the built APK rather than asserted. Neither has been launched
-  on a machine or a device.
 
 ## Roadmap
 
@@ -864,6 +555,16 @@ Built, tested and specified, and merged.
 | --- | --- | --- |
 | [#33](https://github.com/artur-rios/orpheus/issues/33) | UC-32 — See the music move — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
-## Licence
+## Changelog
 
-MIT.
+Notable changes in each release are recorded in [CHANGELOG.md](./CHANGELOG.md). Releases follow
+[Semantic Versioning](https://semver.org/).
+
+## Contributing
+
+Building from source, running the tests, the development tooling, the branching model and the release process are
+described in [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## Legal
+
+This project is licensed under the terms of the [MIT License](./LICENSE). Copyright (c) 2026 Artur Rios.

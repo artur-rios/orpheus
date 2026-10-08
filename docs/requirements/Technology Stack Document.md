@@ -39,7 +39,10 @@ A dependency added without a row here is a Definition of Done failure.
 | `file_picker` | `^12.2.0` | The folder picker. Chosen over `file_selector` because `getDirectoryPath` answers on Android as well as on both desktops, and this project has a mobile target. |
 | `permission_handler` | `^13.0.1` | Android's `READ_MEDIA_AUDIO`, its pre-13 predecessor, and the notification permission. Asked for on Android and nowhere else. |
 | `window_manager` | `^0.5.2` | The desktop window's minimum size and restored geometry. Desktop-only by nature and guarded as such at every call. |
-| `http` | `^1.6.0` | The lyrics lookup (`FR-LY-13`), and nothing else. Chosen over `dart:io`'s `HttpClient` because its `Client` is an interface: the one call this application makes over a network sits behind a seam the suite stands a scripted client in front of, so no test opens a socket (`NFR-08`). |
+| `http` | `^1.6.0` | The lyrics lookup (`FR-LY-13`) and the desktop release check (`BR-03`), and nothing else. Chosen over `dart:io`'s `HttpClient` because its `Client` is an interface: the two calls this application makes over a network sit behind seams the suite stands a scripted client in front of, so no test opens a socket (`NFR-08`). |
+| `crypto` | `^3.0.6` | The SHA-256 a downloaded installer is checked against before it is run, from the release's `SHA256SUMS.txt`. |
+| `package_info_plus` | `^10.2.1` | The running application's own version, which the release check compares against the latest release. |
+| `share_plus` | `^13.3.0` | The platform's share sheet, or a save dialog, for a card of the listening statistics told as a story. |
 | `logging` | `^1.3.0` | Structured logging, one logger per feature area. |
 | `intl` | `^0.20.2` | Localization support for the generated catalogs. |
 | `flutter_localizations` | SDK | English and Brazilian Portuguese. |
@@ -71,8 +74,8 @@ there is one, warnings stop being read.
 
 | Not used | Why |
 | --- | --- |
-| Any HTTP client beyond `http` | `http` serves the one network call this application makes, the lyrics lookup (`FR-LY-13`). It was chosen over `dart:io`'s `HttpClient` because its `Client` is an interface, which is what lets that call sit behind a seam a test can stand in front of (`NFR-08`). Nothing else may use it (`NFR-02`). |
+| Any HTTP client beyond `http` | `http` serves the two network calls this application makes, the lyrics lookup (`FR-LY-13`) and the desktop release check (`BR-03`). It was chosen over `dart:io`'s `HttpClient` because its `Client` is an interface, which is what lets those calls sit behind a seam a test can stand in front of (`NFR-08`). Nothing else may use it (`NFR-02`). |
 | Any database | The whole library is read at once and never queried piecemeal; JSON documents answer everything a database would. |
 | Any code generator beyond `gen_l10n` | Generated state classes and models would add a build step for no behaviour this project needs. |
-| Any crash or analytics reporter | Nothing leaves the machine but a track's artist and title, and only to find its words (`BR-03`, `BR-29a`). |
+| Any crash or analytics reporter | Nothing leaves the machine but a lyrics query, to find a track's words, and the desktop release check (`BR-03`, `BR-29a`). |
 | A Rust core over FFI | This is the dependency Orpheus exists to shed; it has no Android build, which is what kept Alexandria's music on the desk. |

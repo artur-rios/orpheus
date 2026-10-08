@@ -7,13 +7,25 @@ disagree, this one is correct.
 
 | | |
 | --- | --- |
-| **Default branch** | `main` |
-| **Pattern** | `<type>/uc-<number>-<short-name>` |
-| **Types** | `feat`, `fix`, `refactor`, `docs`, `build`, `chore`, `test`, `ci`, `perf` |
-| **Example** | `feat/uc-14-resume-a-track` |
+| **Default branch** | `develop` |
+| **Pattern** | `<kind>/uc-<number>-<short-name>`, cut from `develop` |
+| **Kinds** | `feature`, or `fix` for a defect |
+| **Example** | `feature/uc-14-resume-a-track` |
 
 Work that is not a use case takes the same pattern without the `uc-` segment:
-`fix/scan-progress-strip`.
+`fix/scan-progress-strip`. Names are lowercase: letters, digits, `.`, `_` and
+`-`.
+
+Work branches merge into `develop` by pull request. A release is a
+`release/<major>.<minor>.<patch>` branch cut from `develop` and merged into
+`main` by pull request; it carries no commits of its own, so the version bump
+and the changelog for a release land on `develop` first, through a work branch.
+The release is tagged `v<version>` on its merge commit on `main`, where
+`<version>` is the `version:` in `pubspec.yaml` without its build number — a
+pre-release included: `v1.3.0-beta.1` is built from `1.3.0-beta.1+<build>`.
+`.github/workflows/branch-policy.yml` enforces all of this on every pull request
+into `develop` or `main`, and the steps are in
+[CONTRIBUTING.md](../../CONTRIBUTING.md#releasing).
 
 One branch per issue. A branch carrying two use cases cannot be reviewed against
 either specification.
@@ -21,7 +33,9 @@ either specification.
 ## 2. Commits
 
 Conventional Commits, all lower case, subject in the imperative mood and no
-longer than 50 characters including the type prefix. A blank second line, then a
+longer than 50 characters including the type prefix. The type is one of `feat`,
+`fix`, `refactor`, `docs`, `build`, `chore`, `test`, `ci` or `perf`, whatever
+the branch is called. A blank second line, then a
 body wrapped at 72 characters where the subject leaves a *why* unanswered.
 
 ```
@@ -67,6 +81,7 @@ misreading.
 - The body says what was built, which flows are covered, which alternative flows
   were implemented, and what was deliberately left out.
 - The issue is linked so merging closes it.
+- Opened against `develop`. Only a `release/` branch is opened against `main`.
 - Nothing is merged with a failing analyzer or a failing suite.
 
 ## 6. Definition of Done
@@ -92,14 +107,15 @@ An issue is done when **all** of the following hold.
 
 ## 7. What is never done on a branch
 
-- Committing to `main` directly.
+- Committing to `develop` or `main` directly.
 - Adding a dependency without recording it in the
   [Technology Stack Document](Technology%20Stack%20Document.md).
 - Widening a platform permission without saying so in the manifest comment and
   in the README.
-- Adding a network call. The lyrics lookup (`FR-LY-13`) is the only one, and
-  there is no circumstance under which a second is in scope without amending
-  `NFR-02`, `BR-03` and the manifest first.
+- Adding a network call. The lyrics lookup (`FR-LY-13`) and the desktop
+  release check (`BR-03`) are the only two, and there is no circumstance under
+  which a third is in scope without amending `NFR-02`, `BR-03` and the manifest
+  first.
 - Adding a permission to the Android package. CI pins the whole set, so this
   fails the build until it has been argued for in the manifest, the README and
   the Operations & Infrastructure Document.
