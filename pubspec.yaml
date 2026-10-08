@@ -77,7 +77,7 @@ dependencies:
 
   # Android's audio-media read permission. Asked for on Android and nowhere
   # else — the desktops have no such gate.
-  permission_handler: ^13.0.1
+  permission_handler: ^13.0.2
 
   # The Android media session: the foreground service that keeps playback
   # alive once the application is backgrounded, and the notification and lock
