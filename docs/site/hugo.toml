@@ -24,6 +24,34 @@ enableRobotsTXT = true
     path = 'github.com/google/docsy'
   [[module.imports]]
     path = 'github.com/google/docsy/dependencies'
+  # Declaring any mount replaces Hugo's default mount for that directory, so
+  # the site's own directories are mounted here explicitly as well.
+  [[module.mounts]]
+    source = 'content/en'
+    target = 'content'
+  [[module.mounts]]
+    source = 'static'
+    target = 'static'
+  [[module.mounts]]
+    source = 'layouts'
+    target = 'layouts'
+  [[module.mounts]]
+    source = 'data'
+    target = 'data'
+  [[module.mounts]]
+    source = 'i18n'
+    target = 'i18n'
+  [[module.mounts]]
+    source = 'assets'
+    target = 'assets'
+  # CHANGELOG.md and CONTRIBUTING.md live at the repository root; the site renders them
+  # (see layouts/shortcodes/repo-file.html) instead of keeping copies.
+  [[module.mounts]]
+    source = '../../CHANGELOG.md'
+    target = 'assets/repo/CHANGELOG.md'
+  [[module.mounts]]
+    source = '../../CONTRIBUTING.md'
+    target = 'assets/repo/CONTRIBUTING.md'
 
 # Mermaid diagrams are rendered from fenced code blocks, so the diagram in the
 # source is the diagram a reader sees — reviewable in a diff rather than an

@@ -42,8 +42,10 @@ whose words it looked up — a new file, never a replacement for one you wrote,
 and never the track itself.
 
 **Almost no network.** No streaming, no scrobbling, no telemetry, no analytics,
-no crash reporting, no cover art fetched from anywhere. The single exception is
-the lyrics lookup, which you can turn off.
+no crash reporting, no cover art fetched from anywhere. There are two
+exceptions, and both can be turned off: the lyrics lookup, and on Windows and
+Linux the check for a newer release
+([Keeping it up to date]({{< relref "/downloads#keeping-it-up-to-date" >}})).
 
 That last promise is enforced rather than asserted. The Android package declares
 an exact set of permissions, and CI reads them back out of the built package and
@@ -57,7 +59,7 @@ no key, no identifier of any kind.
 **No library management.** Organising, tagging and de-duplicating a music
 collection is a different program. This one reads what is there.
 
-## The one thing that leaves the machine
+## What leaves the machine for the words
 
 For a track with no words on your machine — no `.lrc` beside it, no `SYLT`
 frame, no lyrics tag — and only while you leave the lookup on, Orpheus asks a
