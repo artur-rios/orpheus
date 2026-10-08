@@ -61,7 +61,7 @@ dependencies:
   # A plugin rather than a constant generated from `pubspec.yaml`, because a
   # constant is a second place to remember to change and this reads the version
   # the build actually carries.
-  package_info_plus: ^10.2.1
+  package_info_plus: ^10.2.2
 
   # Structured logging.
   logging: ^1.3.0
