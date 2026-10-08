@@ -16,12 +16,16 @@ class ScriptedReleaseSource implements ReleaseSource {
   /// made when the preference is off.
   int checks = 0;
 
+  /// Whether each check asked for pre-releases too, in order.
+  final List<bool> askedForPreReleases = [];
+
   /// Whether the connection was released.
   bool closed = false;
 
   @override
-  Future<AppRelease?> latest() async {
+  Future<AppRelease?> latest({bool includePreReleases = false}) async {
     checks++;
+    askedForPreReleases.add(includePreReleases);
 
     return release;
   }

@@ -109,8 +109,20 @@ class UpdateController extends Notifier<UpdateState> {
       return;
     }
 
-    final release = await ref.read(releaseSourceProvider).latest();
+    // A pre-release is offered only to somebody already running one: they
+    // chose to test, and are offered the next beta and then the release it
+    // leads to. Everybody else is offered full releases and nothing else,
+    // whatever the source answers.
+    final release = await ref
+        .read(releaseSourceProvider)
+        .latest(includePreReleases: current.isPreRelease);
     if (release == null) return;
+
+    if (release.version.isPreRelease && !current.isPreRelease) {
+      _log.fine('the newest release, ${release.version}, is a pre-release');
+
+      return;
+    }
 
     if (!release.version.isAfter(current)) {
       _log.fine('the newest release, ${release.version}, is not after $current');

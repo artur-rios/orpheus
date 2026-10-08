@@ -7,12 +7,12 @@ import 'package:orpheus/features/updates/data/github_release_source.dart';
 
 /// Reading the release listing, and answering nothing rather than failing.
 void main() {
-  String listing({
+  Map<String, Object> entry({
     String tag = 'v1.2.0',
     bool prerelease = false,
     bool draft = false,
     List<String> assets = const ['orpheus-setup-1.2.0.exe', 'SHA256SUMS.txt'],
-  }) => jsonEncode({
+  }) => {
     'tag_name': tag,
     'prerelease': prerelease,
     'draft': draft,
@@ -25,7 +25,13 @@ void main() {
           'browser_download_url': 'https://github.com/x/y/releases/$name',
         },
     ],
-  });
+  };
+
+  String listing({
+    String tag = 'v1.2.0',
+    bool prerelease = false,
+    bool draft = false,
+  }) => jsonEncode(entry(tag: tag, prerelease: prerelease, draft: draft));
 
   test(
     'GivenAPublishedRelease_WhenTheLatestIsRead_ThenItsVersionAndPackagesComeBack',
@@ -59,6 +65,86 @@ void main() {
         );
 
         expect(await source.latest(), isNull);
+      }
+    },
+  );
+
+  test(
+    'GivenAStableBuild_WhenTheLatestIsRead_ThenOnlyTheLatestReleaseIsAskedFor',
+    () async {
+      final asked = <Uri>[];
+      final source = GitHubReleaseSource(
+        client: MockClient((request) async {
+          asked.add(request.url);
+
+          return http.Response(listing(), 200);
+        }),
+      );
+
+      await source.latest();
+
+      expect(asked.single.path, '/repos/artur-rios/orpheus/releases/latest');
+    },
+  );
+
+  test(
+    'GivenAPreReleaseBuild_WhenTheNewestIsRead_ThenTheHighestVersionPublishedComesBack',
+    () async {
+      // Somebody testing a beta is offered the next beta and then the release
+      // it leads to — in SemVer order, not in the order GitHub lists them, and
+      // never a draft or a tag that names no version.
+      final asked = <Uri>[];
+      final listings = [
+        [
+          entry(tag: 'v1.3.0-beta.2', prerelease: true),
+          entry(tag: 'v1.3.0', assets: ['orpheus-setup-1.3.0.exe']),
+          entry(tag: 'v1.3.0-beta.10', prerelease: true),
+          entry(tag: 'v1.4.0', draft: true),
+          entry(tag: 'nightly', prerelease: true),
+          entry(tag: 'v1.2.1'),
+        ],
+        [
+          entry(tag: 'v1.3.0-beta.2', prerelease: true),
+          entry(tag: 'v1.3.0-beta.10', prerelease: true),
+          entry(tag: 'v1.2.1'),
+        ],
+      ];
+      final expected = ['1.3.0', '1.3.0-beta.10'];
+
+      for (var index = 0; index < listings.length; index++) {
+        final source = GitHubReleaseSource(
+          client: MockClient((request) async {
+            asked.add(request.url);
+
+            return http.Response(jsonEncode(listings[index]), 200);
+          }),
+        );
+
+        final release = await source.latest(includePreReleases: true);
+
+        expect(release!.version.toString(), expected[index]);
+      }
+
+      expect(asked.first.path, '/repos/artur-rios/orpheus/releases');
+    },
+  );
+
+  test(
+    'GivenTheListCannotBeRead_WhenTheNewestIsReadForAPreRelease_ThenItAnswersNothingRatherThanThrowing',
+    () async {
+      final clients = [
+        MockClient((_) async => http.Response('', 500)),
+        MockClient((_) async => http.Response(listing(), 200)),
+        MockClient((_) async => http.Response('[]', 200)),
+        MockClient((_) async => http.Response('[1, "two"]', 200)),
+        MockClient((_) async => throw const SocketExceptionStub()),
+      ];
+
+      for (final client in clients) {
+        expect(
+          await GitHubReleaseSource(client: client).latest(includePreReleases: true),
+          isNull,
+        );
       }
     },
   );
