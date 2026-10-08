@@ -26,7 +26,7 @@ dependencies:
   # Tags and embedded cover art, in pure Dart. Pure Dart matters here: it is
   # the one component that would otherwise need a native build per target, and
   # a reader that cannot run in a test is a reader whose parsing nobody checks.
-  audio_metadata_reader: ^1.7.1
+  audio_metadata_reader: ^1.8.0
 
   # Where the catalog, the settings and the cover cache live on each platform.
   path: ^1.9.1
