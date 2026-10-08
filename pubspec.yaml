@@ -73,7 +73,7 @@ dependencies:
   # application has a mobile target: `getDirectoryPath` is the one call the
   # library-folder flow needs, and only this package answers it on Android as
   # well as on the two desktops.
-  file_picker: ^12.2.0
+  file_picker: ^13.1.0
 
   # Android's audio-media read permission. Asked for on Android and nowhere
   # else — the desktops have no such gate.
