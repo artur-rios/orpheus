@@ -15,7 +15,7 @@ dependencies:
   # Composition root and state management. The same choice the Alexandria UI
   # made, for the same reason: the player outlives the screen that started it,
   # so the queue has to live somewhere that is not a widget.
-  flutter_riverpod: ^3.0.0
+  flutter_riverpod: ^3.4.3
 
   # The playback engine. libmpv-backed, and the one engine in this class that
   # covers all three targets — Windows, Linux and Android — with the same API
