@@ -121,6 +121,69 @@ void main() {
         expect(positions.positionFor(okComputer.first.file.path), isNull);
       },
     );
+    test(
+      'GivenAnotherTrackIsPlaying_WhenTheOwnerIsOfferedAResumeAndTheEngineReports_ThenTheOfferStillResumesWhereItStopped',
+      () async {
+        // The engine goes on reporting on the track that was already playing
+        // while the owner is being asked. Each of those reports used to clear
+        // the position on offer, so the prompt read "resume from 0:00" a tick
+        // later and pressing it did nothing at all.
+        final harness = Harness(library: library);
+        final player = await playerOf(harness);
+        await player.playTrack(other.first.file);
+        await harness.read(playbackPositionsProvider).record(
+          PlaybackPosition(
+            path: okComputer.first.file.path,
+            position: const Duration(minutes: 2),
+            updatedAt: DateTime.utc(2026),
+          ),
+        );
+        await player.playTrack(okComputer.first.file);
+
+        await report(
+          harness,
+          const PlaybackStatus(
+            isPlaying: true,
+            position: Duration(seconds: 30),
+            duration: Duration(minutes: 9),
+          ),
+        );
+
+        expect(stateOf(harness).stage, AudioStage.offeringResume);
+        expect(stateOf(harness).resumeFrom, const Duration(minutes: 2));
+
+        await player.resume();
+
+        expect(harness.player.opened.last, okComputer.first.file.path);
+        expect(harness.player.startedAt.last, const Duration(minutes: 2));
+      },
+    );
+
+    test(
+      'GivenTheOwnerIsOfferedAResume_WhenTheTrackBeforeItEnds_ThenNothingOpensUntilTheyAnswer',
+      () async {
+        final harness = Harness(library: library);
+        final player = await playerOf(harness);
+        await player.cycleRepeat();
+        await player.cycleRepeat(); // QueueRepeat.one
+        await player.playTrack(other.first.file);
+        await harness.read(playbackPositionsProvider).record(
+          PlaybackPosition(
+            path: okComputer.first.file.path,
+            position: const Duration(minutes: 2),
+            updatedAt: DateTime.utc(2026),
+          ),
+        );
+        await player.playTrack(okComputer.first.file);
+
+        await report(harness, const PlaybackStatus(hasEnded: true));
+
+        // The offer is still what is on screen, and the track on offer was not
+        // opened from the top behind the owner's back.
+        expect(stateOf(harness).stage, AudioStage.offeringResume);
+        expect(harness.player.opened, [other.first.file.path]);
+      },
+    );
   });
 
   group('playing a record', () {

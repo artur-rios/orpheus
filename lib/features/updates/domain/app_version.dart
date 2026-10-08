@@ -7,11 +7,13 @@
 /// the running build reports — are both produced by this repository and no
 /// other.
 ///
-/// The ordering is the part of semantic versioning that applies here:
-/// numbers compare as numbers, so 1.10.0 is after 1.9.0 rather than before it;
-/// and a pre-release is *earlier* than the release it leads to, so
-/// `1.1.0-beta.1` never offers itself as an update to somebody running
-/// `1.1.0`.
+/// The ordering is SemVer 2.0.0 precedence, whole: numbers compare as
+/// numbers, so 1.10.0 is after 1.9.0 rather than before it; a pre-release is
+/// *earlier* than the release it leads to, so `1.1.0-beta.1` never offers
+/// itself as an update to somebody running `1.1.0`, while somebody running it
+/// is offered `1.1.0-beta.2` and then `1.1.0`; and build metadata is ignored.
+/// The running build's half of that comparison carries its pre-release only
+/// because `pubspec.yaml` does — see CONTRIBUTING.md, *Versioning*.
 class AppVersion implements Comparable<AppVersion> {
   /// Creates a version from its parts.
   const AppVersion(
@@ -23,31 +25,57 @@ class AppVersion implements Comparable<AppVersion> {
 
   /// The version this string names, or `null` where it names none.
   ///
-  /// A leading `v` is accepted because that is how the tags are written, and
-  /// build metadata after `+` is dropped because it never affects precedence —
+  /// The text has to be a SemVer 2.0.0 version, optionally after a leading
+  /// `v`, because that is how the tags are written. Build metadata after `+`
+  /// is checked and then dropped, because it never affects precedence —
   /// `1.0.1+2` and `1.0.1+7` are the same release, differing only in a number
   /// Android reads.
   static AppVersion? tryParse(String text) {
     var rest = text.trim();
     if (rest.startsWith('v') || rest.startsWith('V')) rest = rest.substring(1);
 
-    rest = rest.split('+').first;
+    final match = _semVer.firstMatch(rest);
+    if (match == null) return null;
 
-    final parts = rest.split('-');
-    final numbers = parts.first.split('.');
-    if (numbers.length != 3) return null;
+    final numbers = [
+      for (final group in [1, 2, 3]) int.tryParse(match.group(group)!),
+    ];
+    // Valid SemVer, but beyond what a version of this application will ever
+    // reach; refusing it is safer than comparing it wrongly.
+    if (numbers.any((number) => number == null)) return null;
 
-    final parsed = [for (final number in numbers) int.tryParse(number)];
-    if (parsed.any((number) => number == null || number < 0)) return null;
+    final preRelease = match.group(4);
 
     return AppVersion(
-      parsed[0]!,
-      parsed[1]!,
-      parsed[2]!,
-      preRelease: parts.length > 1
-          ? parts.sublist(1).join('-').split('.')
-          : const [],
+      numbers[0]!,
+      numbers[1]!,
+      numbers[2]!,
+      preRelease: preRelease == null ? const [] : preRelease.split('.'),
     );
+  }
+
+  /// SemVer 2.0.0's own grammar (semver.org, "Is there a suggested regular
+  /// expression"): no leading zeros in a number, no empty identifier, and
+  /// nothing but `[0-9A-Za-z-]` in one.
+  static final RegExp _semVer = RegExp(
+    r'^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)'
+    r'(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)'
+    r'(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?'
+    r'(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$',
+  );
+
+  /// Whether a pre-release identifier is numeric: digits and nothing else.
+  ///
+  /// Not `int.tryParse`, which also accepts `-1`, `+1` and `0x1` — all of
+  /// them alphanumeric identifiers to SemVer.
+  static final RegExp _numeric = RegExp(r'^[0-9]+$');
+
+  /// Two numeric identifiers in numeric order, at any length: the grammar has
+  /// already ruled out leading zeros, so the longer one is the larger.
+  static int _compareNumerically(String mine, String theirs) {
+    final byLength = mine.length.compareTo(theirs.length);
+
+    return byLength != 0 ? byLength : mine.compareTo(theirs);
   }
 
   /// The first number: an incompatible change.
@@ -94,15 +122,17 @@ class AppVersion implements Comparable<AppVersion> {
       final theirs = other.preRelease[index];
       if (mine == theirs) continue;
 
-      final mineNumber = int.tryParse(mine);
-      final theirsNumber = int.tryParse(theirs);
+      final mineIsNumeric = _numeric.hasMatch(mine);
+      final theirsIsNumeric = _numeric.hasMatch(theirs);
 
-      if (mineNumber != null && theirsNumber != null) {
-        return mineNumber.compareTo(theirsNumber);
+      if (mineIsNumeric && theirsIsNumeric) {
+        return _compareNumerically(mine, theirs);
       }
-      if (mineNumber != null) return -1;
-      if (theirsNumber != null) return 1;
+      if (mineIsNumeric) return -1;
+      if (theirsIsNumeric) return 1;
 
+      // ASCII order, which is what SemVer asks for: the grammar admits
+      // nothing outside ASCII, so code units are characters here.
       return mine.compareTo(theirs);
     }
 

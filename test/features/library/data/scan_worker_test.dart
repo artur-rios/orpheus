@@ -1,9 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:orpheus/features/library/data/json_catalog_store.dart';
 import 'package:orpheus/features/library/data/scan_worker.dart';
 import 'package:orpheus/features/library/domain/audio_file.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
+import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/library/domain/track_metadata.dart';
 import 'package:path/path.dart' as p;
@@ -370,6 +372,94 @@ void main() {
     },
   );
 
+  test(
+    'GivenARegisteredFolderThatCannotBeListed_WhenTheLibraryIsScanned_ThenItIsNamedAsUnreachable',
+    () {
+      // Through IOOverrides rather than a permission bit, because the suite
+      // may run as a user every permission bit gives way to.
+      writeTrack('locked/a.flac', {'TITLE': 'Behind a door'});
+      final locked = p.join(root.path, 'locked');
+
+      final outcome = IOOverrides.runZoned(
+        () => scanFolders(
+          folders: [locked],
+          previous: const [],
+          coverDirectory: covers.path,
+        ),
+        createDirectory: (path) => path == locked
+            ? _Unlistable(path)
+            : _RealDirectory.of(path),
+      );
+
+      expect(outcome.report.unreachableFolders, [locked]);
+      expect(outcome.report.tracks, 0);
+    },
+  );
+
+  test(
+    'GivenACatalogReadBackFromDisk_WhenTheLibraryIsScannedInFull_ThenUnchangedFilesAreCarriedOver',
+    () async {
+      final file = writeFile(
+        'a.flac',
+        taggedFlac(tags: {'TITLE': 'Airbag'}),
+      );
+      // The file system keeps a timestamp to the microsecond and the catalog
+      // document keeps it to the millisecond. A file whose timestamp happens to
+      // fall on a whole millisecond would hide the difference, so make sure
+      // this one does not.
+      for (var attempt = 0;
+          attempt < 20 && file.statSync().modified.microsecond == 0;
+          attempt++) {
+        file.writeAsBytesSync(file.readAsBytesSync());
+      }
+
+      final first = scan();
+      final store = JsonCatalogStore(p.join(root.path, '.state'));
+      await store.write(
+        MusicCatalog(entries: first.entries, scannedAt: first.startedAt),
+      );
+      final readBack = await store.read();
+
+      final outcome = scan(previous: readBack.entries);
+
+      expect(outcome.report.reused, 1);
+      expect(outcome.report.added, 0);
+    },
+  );
+
+  test(
+    'GivenAFolderChangedWhileTheScanWasRunning_WhenTheNextScanWalksCheaply_ThenTheChangeIsRead',
+    () {
+      writeTrack('a.flac', {'TITLE': 'Airbag'});
+
+      // The change lands after every tag has been read and before the scan
+      // hands its outcome back: a tagger writing a new copy and renaming it
+      // over the original, which moves the folder's timestamp.
+      var changed = false;
+      final first = scanFolders(
+        folders: [root.path],
+        previous: const [],
+        coverDirectory: covers.path,
+        onProgress: (progress) {
+          if (changed || progress.walking) return;
+          if (progress.filesRead < progress.filesFound) return;
+          changed = true;
+          writeFile('a.flac.part', taggedFlac(tags: {'TITLE': 'Retagged'}))
+              .renameSync(p.join(root.path, 'a.flac'));
+        },
+      );
+      expect(changed, isTrue);
+      expect(first.entries.single.title, 'Airbag');
+
+      final outcome = scan(
+        previous: first.entries,
+        unchangedSince: first.startedAt,
+      );
+
+      expect(outcome.entries.single.title, 'Retagged');
+    },
+  );
+
   group('the cheap walk', () {
     /// A moment after everything written so far, which is what a folder's
     /// timestamp is compared against.
@@ -476,4 +566,45 @@ void main() {
       },
     );
   });
+}
+
+/// The real directory at a path, built outside any [IOOverrides] in force.
+abstract final class _RealDirectory {
+  static Directory of(String path) =>
+      IOOverrides.runWithIOOverrides(() => Directory(path), _NoOverrides());
+}
+
+final class _NoOverrides extends IOOverrides {}
+
+/// A directory that is there and refuses to be listed — what a folder this
+/// process may not read looks like to the walk.
+class _Unlistable implements Directory {
+  _Unlistable(this.path) : _real = _RealDirectory.of(path);
+
+  final Directory _real;
+
+  @override
+  final String path;
+
+  @override
+  bool existsSync() => _real.existsSync();
+
+  @override
+  String resolveSymbolicLinksSync() => _real.resolveSymbolicLinksSync();
+
+  @override
+  FileStat statSync() => _real.statSync();
+
+  @override
+  List<FileSystemEntity> listSync({
+    bool recursive = false,
+    bool followLinks = true,
+  }) => throw FileSystemException(
+    'Directory listing failed',
+    path,
+    const OSError('Permission denied', 13),
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

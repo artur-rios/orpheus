@@ -79,7 +79,10 @@ class IsolateLibraryScanner implements LibraryScanner {
                 // the same derivation — one place decides whose record a track
                 // is on, and it is not duplicated across the boundary.
                 entries: albumArtistsAcross(message.entries),
-                scannedAt: DateTime.now(),
+                // When the walk began, not when it ended: see
+                // [ScanOutcome.startedAt], and the cheap walk that measures
+                // the next launch's folders against this.
+                scannedAt: message.startedAt,
               ),
               report: message.report,
             ),

@@ -17,8 +17,12 @@ import '../domain/release_source.dart';
 ///
 /// `/releases/latest` rather than the list, deliberately: GitHub excludes
 /// pre-releases and drafts from it, so a `v1.1.0-beta.1` published for testing
-/// is not offered to everybody running the stable build. Nothing here has to
-/// filter for that.
+/// is not offered to everybody running the stable build.
+///
+/// A build that is itself a pre-release asks for the list instead — still one
+/// request — and takes the highest version on its first page that is not a
+/// draft, so a beta tester is offered the next beta and then the release it
+/// leads to. GitHub lists by date, not by version, so the order is SemVer's.
 ///
 /// Nothing throws. Every outcome that is not a release is `null` — see
 /// [ReleaseSource.latest] for why that is the right answer rather than an
@@ -51,12 +55,22 @@ class GitHubReleaseSource implements ReleaseSource {
   /// playable, and this decides whether one dialog appears.
   final Duration timeout;
 
+  /// How many releases the pre-release check reads: GitHub's first page,
+  /// newest first, which reaches far further back than any release a beta
+  /// tester would still be waiting on.
+  static const int _listed = 30;
+
   @override
-  Future<AppRelease?> latest() async {
+  Future<AppRelease?> latest({bool includePreReleases = false}) async {
     try {
       final response = await _client
           .get(
-            _base.replace(path: '/repos/$repository/releases/latest'),
+            includePreReleases
+                ? _base.replace(
+                    path: '/repos/$repository/releases',
+                    queryParameters: {'per_page': '$_listed'},
+                  )
+                : _base.replace(path: '/repos/$repository/releases/latest'),
             headers: const {
               'Accept': 'application/vnd.github+json',
               'X-GitHub-Api-Version': '2022-11-28',
@@ -70,9 +84,11 @@ class GitHubReleaseSource implements ReleaseSource {
         return null;
       }
 
-      return _releaseFrom(
-        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
-      );
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+
+      return includePreReleases
+          ? _newestOf(body)
+          : _releaseFrom(body as Map<String, dynamic>, allowPreRelease: false);
     } on Object catch (error) {
       _log.fine('the release check did not complete', error);
 
@@ -80,13 +96,42 @@ class GitHubReleaseSource implements ReleaseSource {
     }
   }
 
+  /// The highest version in the listing [body], or `null` where it holds
+  /// none this can offer.
+  AppRelease? _newestOf(Object? body) {
+    if (body is! List) {
+      _log.fine('the release listing is not a list');
+
+      return null;
+    }
+
+    AppRelease? newest;
+    for (final entry in body) {
+      if (entry is! Map<String, dynamic>) continue;
+
+      final release = _releaseFrom(entry, allowPreRelease: true);
+      if (release == null) continue;
+      if (newest == null || release.version.isAfter(newest.version)) {
+        newest = release;
+      }
+    }
+
+    return newest;
+  }
+
   /// The release [body] describes, or `null` where it describes nothing usable.
-  AppRelease? _releaseFrom(Map<String, dynamic> body) {
-    if (body['draft'] == true || body['prerelease'] == true) return null;
+  ///
+  /// A draft never is, and a pre-release only where [allowPreRelease] says so.
+  AppRelease? _releaseFrom(
+    Map<String, dynamic> body, {
+    required bool allowPreRelease,
+  }) {
+    if (body['draft'] == true) return null;
+    if (body['prerelease'] == true && !allowPreRelease) return null;
 
     final version = AppVersion.tryParse('${body['tag_name']}');
     if (version == null) {
-      _log.fine('the latest release names no version this understands');
+      _log.fine('a release names no version this understands');
 
       return null;
     }

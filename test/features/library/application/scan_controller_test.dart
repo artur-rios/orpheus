@@ -31,6 +31,29 @@ void main() {
       );
 
   test(
+    'GivenTwoScansAskedForAtOnce_WhenBothRun_ThenOnlyOneWalksAndBothCallersAreAnswered',
+    () async {
+      // The startup scan and the one a newly added folder asks for can arrive
+      // together, and the first is still waiting on the access question when
+      // the second checks whether a scan is running. Both used to walk, and the
+      // second cancelled the first's subscription on its way in — so the
+      // first caller's await never came back.
+      final scanner = ScriptedScanner([
+        ScanCompleted(catalog: scanned, report: report),
+      ]);
+      final harness = harnessWith(scanner);
+      final controller = harness.read(scanControllerProvider.notifier);
+
+      await expectLater(
+        Future.wait([controller.scan(), controller.scan()])
+            .timeout(const Duration(seconds: 5)),
+        completes,
+      );
+      expect(scanner.requests, hasLength(1));
+    },
+  );
+
+  test(
     'GivenAScanChangedNothing_WhenTheDocumentIsNotRewritten_ThenTheTimeOfTheScanIsStillRecorded',
     () async {
       // The document is the expensive thing and is skipped when nothing
