@@ -339,6 +339,7 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$count files had tags that could not be read.',
       one: '1 file had tags that could not be read.',
+      zero: 'No file had tags that could not be read.',
     );
     return '$_temp0';
   }
@@ -450,6 +451,7 @@ class AppLocalizationsEn extends AppLocalizations {
       other:
           '$count played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no ranking below.',
       one: '1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no ranking below.',
+      zero: 'Every played track carries an artist, record or genre tag, so each appears in some ranking below.',
     );
     return '$_temp0';
   }

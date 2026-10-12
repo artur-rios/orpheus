@@ -446,7 +446,7 @@
       }
     }
   },
-  "scanUnreadable": "{count, plural, =1{1 arquivo tinha tags ilegíveis.} other{{count} arquivos tinham tags ilegíveis.}}",
+  "scanUnreadable": "{count, plural, =0{Nenhum arquivo tinha tags ilegíveis.} =1{1 arquivo tinha tags ilegíveis.} other{{count} arquivos tinham tags ilegíveis.}}",
   "@scanUnreadable": {
     "description": "How many files were listed but not understood.",
     "placeholders": {
@@ -557,7 +557,7 @@
   "@statsEmptyBody": {
     "description": "Explains what has to happen before a statistic appears."
   },
-  "statsPlaysCount": "{count, plural, =1{1 reprodução} other{{count} reproduções}}",
+  "statsPlaysCount": "{count, plural, =0{0 reproduções} =1{1 reprodução} other{{count} reproduções}}",
   "@statsPlaysCount": {
     "description": "How many plays one row of a ranking accounts for.",
     "placeholders": {
@@ -566,7 +566,7 @@
       }
     }
   },
-  "statsUntaggedNote": "{count, plural, =1{1 faixa tocada não tem tag de artista, disco ou gênero, então ela é contada nos totais acima mas não aparece em nenhum ranking abaixo.} other{{count} faixas tocadas não têm tag de artista, disco ou gênero, então elas são contadas nos totais acima mas não aparecem em nenhum ranking abaixo.}}",
+  "statsUntaggedNote": "{count, plural, =0{Toda faixa tocada tem tag de artista, disco ou gênero, então todas aparecem em algum ranking abaixo.} =1{1 faixa tocada não tem tag de artista, disco ou gênero, então ela é contada nos totais acima mas não aparece em nenhum ranking abaixo.} other{{count} faixas tocadas não têm tag de artista, disco ou gênero, então elas são contadas nos totais acima mas não aparecem em nenhum ranking abaixo.}}",
   "@statsUntaggedNote": {
     "description": "Explains why the totals can be larger than the rankings.",
     "placeholders": {
@@ -681,7 +681,7 @@
   "@storyOpeningTitle": {
     "description": "The opening card's heading."
   },
-  "storyOpeningPlays": "{count, plural, =1{1 reprodução} other{{count} reproduções}}",
+  "storyOpeningPlays": "{count, plural, =0{0 reproduções} =1{1 reprodução} other{{count} reproduções}}",
   "@storyOpeningPlays": {
     "description": "How many plays in total.",
     "placeholders": {
@@ -690,7 +690,7 @@
       }
     }
   },
-  "storyOpeningTracks": "em {count, plural, =1{1 faixa} other{{count} faixas}}",
+  "storyOpeningTracks": "em {count, plural, =0{0 faixas} =1{1 faixa} other{{count} faixas}}",
   "@storyOpeningTracks": {
     "description": "How many distinct tracks account for them.",
     "placeholders": {

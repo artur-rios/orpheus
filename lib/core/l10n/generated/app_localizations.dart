@@ -677,7 +677,7 @@ abstract class AppLocalizations {
   /// How many files were listed but not understood.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 file had tags that could not be read.} other{{count} files had tags that could not be read.}}'**
+  /// **'{count, plural, =0{No file had tags that could not be read.} =1{1 file had tags that could not be read.} other{{count} files had tags that could not be read.}}'**
   String scanUnreadable(int count);
 
   /// Names a registered folder the scan could not walk.
@@ -827,7 +827,7 @@ abstract class AppLocalizations {
   /// Explains why the totals can be larger than the rankings.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no ranking below.} other{{count} played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no ranking below.}}'**
+  /// **'{count, plural, =0{Every played track carries an artist, record or genre tag, so each appears in some ranking below.} =1{1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no ranking below.} other{{count} played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no ranking below.}}'**
   String statsUntaggedNote(int count);
 
   /// The updates section of the preferences.

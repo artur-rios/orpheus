@@ -19,6 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - A beta on Windows or Linux reported itself as the release it leads to (`1.3.0` for `v1.3.0-beta.1`), so it was
   never offered that release when it shipped.
+- In Portuguese, a count of zero no longer reads as one: the unreadable-files line, the play counts in the rankings and
+  on the story card, the story card's track count and the untagged-tracks note each say zero.
 
 - A full scan no longer re-reads the tags of every track after a restart and reports the whole library as added.
   Files that have not changed are carried over, as they are within one session.

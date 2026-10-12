@@ -341,6 +341,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count arquivos tinham tags ilegíveis.',
       one: '1 arquivo tinha tags ilegíveis.',
+      zero: 'Nenhum arquivo tinha tags ilegíveis.',
     );
     return '$_temp0';
   }
@@ -439,6 +440,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count reproduções',
       one: '1 reprodução',
+      zero: '0 reproduções',
     );
     return '$_temp0';
   }
@@ -451,6 +453,7 @@ class AppLocalizationsPt extends AppLocalizations {
       other:
           '$count faixas tocadas não têm tag de artista, disco ou gênero, então elas são contadas nos totais acima mas não aparecem em nenhum ranking abaixo.',
       one: '1 faixa tocada não tem tag de artista, disco ou gênero, então ela é contada nos totais acima mas não aparece em nenhum ranking abaixo.',
+      zero: 'Toda faixa tocada tem tag de artista, disco ou gênero, então todas aparecem em algum ranking abaixo.',
     );
     return '$_temp0';
   }
@@ -545,6 +548,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count reproduções',
       one: '1 reprodução',
+      zero: '0 reproduções',
     );
     return '$_temp0';
   }
@@ -556,6 +560,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count faixas',
       one: '1 faixa',
+      zero: '0 faixas',
     );
     return 'em $_temp0';
   }
