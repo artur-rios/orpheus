@@ -88,6 +88,10 @@ class FakeTagWriter implements TagWriter {
   /// refusal.
   final Map<String, WriteOutcome> refusals = {};
 
+  /// Held until completed, where a test wants a write in flight. Awaited at
+  /// the start of each write.
+  Future<void>? hold;
+
   /// Every write, in order: the path and what was written.
   final List<(String, Map<AutofillField, Object?>)> writes = [];
 
@@ -101,6 +105,7 @@ class FakeTagWriter implements TagWriter {
     Map<AutofillField, Object?> values, {
     required AudioFile expected,
   }) async {
+    await hold;
     final refused = refusals[path];
     if (refused != null) return refused;
 

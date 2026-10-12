@@ -84,6 +84,13 @@ void main() {
     return harness;
   }
 
+  ScriptedScanner completingScanner() => ScriptedScanner([
+    ScanCompleted(
+      catalog: MusicCatalog(entries: albumArtistsAcross(record)),
+      report: const ScanReport(tracks: 2, added: 0, updated: 2, removed: 0, reused: 0),
+    ),
+  ]);
+
   AutofillController controllerOf(Harness harness) {
     // Kept alive for the test, as the review screen keeps it alive.
     harness.container.listen(autofillControllerProvider, (_, _) {});
@@ -227,10 +234,99 @@ void main() {
 
     final started = controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
     subscription.close();
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
+    expect(harness.container.exists(autofillControllerProvider), isFalse);
     held.complete();
 
     await expectLater(started, completes);
+  });
+
+  test('GivenTheOwnerClosesTheScreenMidRelease_WhenTheAnswerArrives_ThenNothingThrows', () async {
+    final harness = harnessFor();
+    final subscription = harness.container.listen(autofillControllerProvider, (_, _) {});
+    final controller = harness.read(autofillControllerProvider.notifier);
+    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    final held = Completer<void>();
+    harness.metadata.hold = held.future;
+
+    final chosen = controller.chooseRelease('rel-2');
+    await pumpEventQueue();
+    subscription.close();
+    await pumpEventQueue();
+    expect(harness.container.exists(autofillControllerProvider), isFalse);
+    held.complete();
+
+    await expectLater(chosen, completes);
+  });
+
+  test('GivenTheOwnerClosesTheScreenMidWrite_WhenTheWriteArrives_ThenEveryConfirmedFileIsWrittenAndTheLibraryRescanned', () async {
+    final scanner = completingScanner();
+    final harness = harnessFor(scanner: scanner);
+    final subscription = harness.container.listen(autofillControllerProvider, (_, _) {});
+    final controller = harness.read(autofillControllerProvider.notifier);
+    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    final held = Completer<void>();
+    harness.tagWriter.hold = held.future;
+
+    final writing = controller.write();
+    await pumpEventQueue();
+    subscription.close();
+    await pumpEventQueue();
+    expect(harness.container.exists(autofillControllerProvider), isFalse);
+    held.complete();
+
+    await expectLater(writing, completes);
+    await pumpEventQueue();
+    expect(harness.tagWriter.writes.map((w) => w.$1), [record[0].file.path, record[1].file.path]);
+    expect(scanner.requests, hasLength(1));
+  });
+
+  test('GivenATrackIsPlaying_WhenTheOwnerWrites_ThenItIsWrittenLast', () async {
+    final harness = harnessFor();
+    final controller = controllerOf(harness);
+    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    await harness.read(audioPlaybackControllerProvider.notifier).playTrack(record.first.file);
+
+    await controller.write();
+
+    expect(harness.tagWriter.writes.map((w) => w.$1), [record[1].file.path, record[0].file.path]);
+  });
+
+  test('GivenEveryWriteIsRefused_WhenTheyFinish_ThenNoRescanIsRequested', () async {
+    final scanner = completingScanner();
+    final harness = harnessFor(scanner: scanner);
+    for (final e in record) {
+      harness.tagWriter.refusals[e.file.path] = WriteOutcome.inUse;
+    }
+    final controller = controllerOf(harness);
+    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+
+    await controller.write();
+    await pumpEventQueue();
+
+    expect(stateOf(harness).stage, AutofillStage.finished);
+    expect(harness.tagWriter.writes, isEmpty);
+    expect(scanner.requests, isEmpty);
+  });
+
+  test('GivenTheOwnerCancels_WhenTheFileBeingWrittenFinishes_ThenTheRestAreLeftAndTheLibraryIsRescanned', () async {
+    final scanner = completingScanner();
+    final harness = harnessFor(scanner: scanner);
+    final controller = controllerOf(harness);
+    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    final held = Completer<void>();
+    harness.tagWriter.hold = held.future;
+
+    final writing = controller.write();
+    await pumpEventQueue();
+    controller.cancel();
+    held.complete();
+    await writing;
+    await pumpEventQueue();
+
+    expect(harness.tagWriter.writes, hasLength(1));
+    expect(stateOf(harness).stage, AutofillStage.finished);
+    expect(scanner.requests, hasLength(1));
   });
 
   test('GivenAChoiceOfFields_WhenAnAutofillStarts_ThenItIsRememberedForTheNextOne', () async {

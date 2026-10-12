@@ -150,6 +150,9 @@ class AutofillState {
 /// Auto-disposed: it lives exactly as long as the review screen watching it.
 /// Every await is followed by a check that it still does, because the owner
 /// can close the screen while MusicBrainz is still answering.
+///
+/// Writing is the exception: a closed screen finishes the writes the owner
+/// confirmed and still asks for the rescan, and only [cancel] stops them.
 class AutofillController extends Notifier<AutofillState> {
   static final Logger _log = Logger('autofill');
 
@@ -367,7 +370,11 @@ class AutofillController extends Notifier<AutofillState> {
     final outcomes = {...keep};
     state = state.copyWith(stage: AutofillStage.writing, written: 0, total: ordered.length, outcomes: outcomes);
 
+    // Both resolved now: once the screen closes `ref` can no longer be read,
+    // and the writes the owner confirmed are still to be finished and
+    // followed by a rescan.
     final writer = ref.read(tagWriterProvider);
+    final scan = ref.read(scanControllerProvider.notifier);
     var done = 0;
     var any = false;
     for (final proposal in ordered) {
@@ -382,11 +389,12 @@ class AutofillController extends Notifier<AutofillState> {
       outcomes[path] = outcome;
       any = any || outcome == WriteOutcome.written;
       done++;
-      if (!ref.mounted) break;
-      state = state.copyWith(written: done, outcomes: {...outcomes});
+      if (ref.mounted) {
+        state = state.copyWith(written: done, outcomes: {...outcomes});
+      }
     }
 
-    if (any) unawaited(ref.read(scanControllerProvider.notifier).rescanSoon());
+    if (any) unawaited(scan.rescanSoon());
     if (!ref.mounted) return;
 
     state = state.copyWith(stage: AutofillStage.finished, outcomes: {...outcomes});
