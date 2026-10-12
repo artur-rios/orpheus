@@ -206,12 +206,14 @@ RecordingQuery recordingQueryFor(MusicEntry entry) {
 
 /// Which of [release]'s tracks each of [files] is.
 ///
-/// Four passes, each over what the ones before left unassigned, from the
-/// surest evidence to the weakest: disc and track number (a missing disc
-/// counting as the first, as the library orders it); the title exactly, once
-/// normalised; a similar title and a length within five seconds; and a length
-/// within two seconds where it singles out exactly one track. A track is
-/// given out once. A file left at the end has no match on this release, and
+/// Passes, each over what the ones before left unassigned, from the surest
+/// evidence to the weakest: disc and track number (a missing disc counting as
+/// the first, as the library orders it), where the title is the same once
+/// normalised or the file has none, and then where the title does not plainly
+/// belong to another track; the title exactly, once normalised; a similar
+/// title and a length within five seconds; and, for a file with no title, a
+/// length within two seconds where it singles out exactly one track. A track
+/// is given out once. A file left at the end has no match on this release, and
 /// tracks nobody claimed — bonus tracks the owner does not have — are simply
 /// not used.
 Map<MusicEntry, ReleaseTrack?> assignTracks(
@@ -228,17 +230,32 @@ Map<MusicEntry, ReleaseTrack?> assignTracks(
 
   Iterable<MusicEntry> open() => files.where((file) => assigned[file] == null);
 
-  // 1. Numbers.
-  for (final file in open().toList()) {
+  // The free tracks [file]'s number and disc point at.
+  Iterable<ReleaseTrack> numbered(MusicEntry file) {
     final number = file.metadata.track;
-    if (number == null) continue;
     final disc = file.metadata.disc ?? 1;
-    final track = free
-        .where((t) => t.disc == disc && t.position == number)
+
+    return free.where((t) => number != null && t.disc == disc && t.position == number);
+  }
+
+  // 1. Numbers, where the title is the same track's or the file has none. These
+  // go first, so a looser number match listed earlier cannot take their slot.
+  for (final file in open().toList()) {
+    final title = file.title;
+    final track = numbered(file)
+        .where((t) => title == null || normalised(t.title) == normalised(title))
         .firstOrNull;
-    // A disc-less file numbered like a track on a later disc is left for the
-    // passes below rather than guessed into it.
-    if (track != null && _titlesAgreeOrUnknown(file, track)) claim(file, track);
+    if (track != null) claim(file, track);
+  }
+
+  // 1b. The rest of the numbers, where the title is not plainly another track's.
+  // A disc-less file numbered like a track on a later disc is left for the
+  // passes below rather than guessed into it.
+  for (final file in open().toList()) {
+    final track = numbered(file)
+        .where((t) => _titlesAgreeOrUnknown(file, t))
+        .firstOrNull;
+    if (track != null) claim(file, track);
   }
 
   // 2. Titles, exactly.
@@ -265,8 +282,11 @@ Map<MusicEntry, ReleaseTrack?> assignTracks(
     if (track != null) claim(file, track);
   }
 
-  // 4. Length alone, where it is unambiguous.
+  // 4. Length alone, where it is unambiguous. Only for a file with no title: a
+  // titled file that found no track has been judged on its own name, and a
+  // matching length is not enough to retitle it as an unclaimed bonus track.
   for (final file in open().toList()) {
+    if (file.title != null) continue;
     final near = free
         .where(
           (t) => _lengthsWithin(file.duration, t.length, const Duration(seconds: 2)),
@@ -278,12 +298,13 @@ Map<MusicEntry, ReleaseTrack?> assignTracks(
   return assigned;
 }
 
-/// Whether a number match is trustworthy: either the file has no title, or
-/// its title is not plainly a different track's.
+/// Whether [track] is not plainly the wrong one for [file]: either the file has
+/// no title, or its title shares enough words with the track's to read as the
+/// same song.
 ///
-/// What stops two disc-less "track 1"s from both landing on disc one: the
-/// second one's title names the second disc's first track, so it is left for
-/// the title pass to place.
+/// This is the looser number match, run only after the exact ones, so a title
+/// that merely resembles a track's cannot take a slot an exact title wants. It
+/// is what refuses a number match against a plainly different title.
 bool _titlesAgreeOrUnknown(MusicEntry file, ReleaseTrack track) {
   final title = file.title;
   if (title == null) return true;

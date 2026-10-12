@@ -249,5 +249,55 @@ void main() {
 
       expect(assignTracks(files, release)[files[0]]?.title, 'Paranoid Android');
     });
+
+    test('GivenATitledExtraFileLengthLikeAnUnclaimedBonusTrack_WhenAssigned_ThenItStaysUnmatched', () {
+      // Review focus: a length alone must not retitle a file the owner named.
+      final files = [
+        entry(id: '1', title: 'Airbag', track: 1),
+        entry(id: 'x', title: 'A Hidden Demo', track: 13, duration: const Duration(seconds: 244)),
+      ];
+      final release = releaseOf([
+        track(1, 1, 'Airbag'),
+        track(1, 2, 'Paranoid Android'),
+        track(1, 3, 'Subterranean Homesick Alien', seconds: 245),
+      ]);
+
+      final assigned = assignTracks(files, release);
+
+      expect(assigned[files[0]]?.title, 'Airbag');
+      expect(assigned.containsKey(files[1]), isTrue);
+      expect(assigned[files[1]], isNull);
+    });
+
+    test('GivenTwoDisclessTrackOnesListedWithTheWeakerFirst_WhenAssignedToATwoDiscRelease_ThenTheExactTitleKeepsDiscOne', () {
+      // Review focus: order must not decide who takes disc one's track 1.
+      final files = [
+        entry(id: 'b', title: 'Second Opening', track: 1),
+        entry(id: 'a', title: 'Opening', track: 1),
+      ];
+      final release = releaseOf([track(1, 1, 'Opening'), track(2, 1, 'Second Opening')]);
+
+      final assigned = assignTracks(files, release);
+
+      expect(assigned[files[1]]?.disc, 1);
+      expect(assigned[files[0]]?.disc, 2);
+    });
+
+    test('GivenAFuzzyTitleListedBeforeTheExactOne_WhenAssignedToATwoDiscRelease_ThenTheExactOneKeepsDiscOne', () {
+      // Review focus: a title that only fuzzily agrees must not take the slot.
+      final files = [
+        entry(id: 'b', title: 'Symphony No 5 II Adagio', track: 1),
+        entry(id: 'a', title: 'Symphony No 5 I Allegro', track: 1),
+      ];
+      final release = releaseOf([
+        track(1, 1, 'Symphony No 5 I Allegro'),
+        track(2, 1, 'Symphony No 5 II Adagio'),
+      ]);
+
+      final assigned = assignTracks(files, release);
+
+      expect(assigned[files[1]]?.disc, 1);
+      expect(assigned[files[0]]?.disc, 2);
+    });
   });
 }
