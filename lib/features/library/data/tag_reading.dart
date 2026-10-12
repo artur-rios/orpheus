@@ -47,9 +47,9 @@ ReadTags _fromMp3(Mp3Metadata tags) => ReadTags(
   metadata: TrackMetadata(
     title: tags.songName,
     artist: tags.leadPerformer,
-    // TPE2. The one common format that carries the record's own artist as a
-    // field of its own, which is why an MP3 library groups correctly straight
-    // away and the others lean on `albumArtistsAcross`.
+    // TPE2: the record's own artist, as a field of its own. Where a file
+    // leaves it out, `albumArtistsAcross` works the answer out across the
+    // record.
     albumArtist: tags.bandOrOrchestra,
     album: tags.album,
     genre: tags.genres.firstOrNull,
@@ -65,8 +65,7 @@ ReadTags _fromMp3(Mp3Metadata tags) => ReadTags(
 /// MP4 carries a record's own artist in `aART`, and this reader folds it into
 /// the same `artist` field as `©ART` rather than surfacing it separately —
 /// there is no album-artist field here to read. So an MP4 library leans on
-/// `albumArtistsAcross` to work the record out across its tracks, exactly as a
-/// Vorbis one does.
+/// `albumArtistsAcross` to work the record out across its tracks.
 ReadTags _fromMp4(Mp4Metadata tags) => ReadTags(
   metadata: TrackMetadata(
     title: tags.title,
@@ -85,13 +84,17 @@ ReadTags _fromMp4(Mp4Metadata tags) => ReadTags(
 ReadTags _fromVorbis(VorbisMetadata tags) => ReadTags(
   metadata: TrackMetadata(
     title: tags.title.firstOrNull,
-    // The Vorbis reader folds `ALBUMARTIST` into the same list as `ARTIST`, so
-    // the first entry is taken as the performer and the record's own artist is
-    // left to `albumArtistsAcross` to work out across the record. That is the
-    // same answer for every ordinary album, and for a compilation it is the
-    // documented judgement rather than a tag being ignored — see that
-    // function.
     artist: tags.artist.firstOrNull,
+    // `ALBUMARTIST`, or `ALBUM_ARTIST` as FFmpeg spells it, which the reader
+    // keeps in a list of its own. An earlier version of the reader folded it
+    // into `ARTIST`, and this went on assuming so after it stopped — which
+    // left every FLAC and Ogg compilation to `albumArtistsAcross` to guess at,
+    // and filed it under whichever guest had the most tracks on it, while the
+    // tag that said "Various Artists" sat unread.
+    //
+    // The first value that says anything: a comment can be present and blank,
+    // and a blank album artist is no album artist at all.
+    albumArtist: _firstNonBlank(tags.albumArtist),
     album: tags.album.firstOrNull,
     genre: tags.genres.firstOrNull,
     track: tags.trackNumber.firstOrNull,
@@ -147,6 +150,16 @@ Uint8List? _frontCover(List<Picture> pictures) {
   }
 
   return pictures.first.bytes;
+}
+
+/// The first of [values] that is not blank, or `null` where none says
+/// anything.
+String? _firstNonBlank(List<String> values) {
+  for (final value in values) {
+    if (value.trim().isNotEmpty) return value;
+  }
+
+  return null;
 }
 
 /// The disc number out of an ID3 `TPOS` frame, which is written `1` or `1/2`.

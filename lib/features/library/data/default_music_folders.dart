@@ -12,7 +12,8 @@ import '../../../core/platform/host_platform.dart';
 /// a walk through a folder chooser.
 ///
 /// Only folders that exist are returned, so the offer is never for somewhere
-/// that is not there.
+/// that is not there — and each of them once, by where it leads rather than how
+/// it is spelled.
 List<String> defaultMusicFolders({HostPlatform platform = const HostPlatform()}) {
   final candidates = <String>[];
 
@@ -20,7 +21,9 @@ List<String> defaultMusicFolders({HostPlatform platform = const HostPlatform()})
     // The conventional shared-storage locations. `/sdcard` is the symlink
     // every Android release has kept pointing at the primary volume, and
     // `/storage/emulated/0` is what it points to; both are listed because a
-    // device that has renamed one has usually kept the other.
+    // device that has renamed one has usually kept the other. On a device
+    // that has kept both they are one folder, and only the first is offered
+    // — see below.
     candidates.addAll([
       '/storage/emulated/0/Music',
       '/sdcard/Music',
@@ -37,10 +40,18 @@ List<String> defaultMusicFolders({HostPlatform platform = const HostPlatform()})
   }
 
   final existing = <String>[];
+  // Where each offered folder actually leads. Comparing the paths as written
+  // offered `/sdcard/Music` and `/storage/emulated/0/Music` side by side on
+  // every ordinary phone, and registered the same music twice when both were
+  // accepted.
+  final targets = <String>{};
   for (final candidate in candidates) {
-    if (existing.contains(candidate)) continue;
     try {
-      if (Directory(candidate).existsSync()) existing.add(candidate);
+      final directory = Directory(candidate);
+      if (!directory.existsSync()) continue;
+      if (targets.add(p.normalize(directory.resolveSymbolicLinksSync()))) {
+        existing.add(p.normalize(candidate));
+      }
     } on Object {
       // A path the process may not even stat is a path there is no point
       // offering.
