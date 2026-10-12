@@ -10,7 +10,7 @@
 
 baseURL = 'https://artur-rios.github.io/orpheus/'
 title = 'Orpheus'
-languageCode = 'en-gb'
+locale = 'en-gb'
 contentDir = 'content/en'
 defaultContentLanguage = 'en'
 enableRobotsTXT = true
@@ -124,7 +124,7 @@ enableRobotsTXT = true
 
 [languages]
   [languages.en]
-    languageName = 'English'
+    label = 'English'
     weight = 1
     [languages.en.params]
       title = 'Orpheus'

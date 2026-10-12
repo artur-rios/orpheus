@@ -34,7 +34,10 @@ permissions:
   contents: read
 
 env:
-  HUGO_VERSION: 0.140.2
+  # Pinned so the build that publishes is the build that was checked, and moved
+  # deliberately. Docsy v0.15.0 needs Hugo 0.146 or newer; this version builds
+  # the site with no warnings from the site's own configuration.
+  HUGO_VERSION: 0.165.0
 
 jobs:
   build:
