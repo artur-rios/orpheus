@@ -149,7 +149,9 @@ List<StoryCard> _cardsFor(StoryTopic topic, MusicStats stats) {
       topic: topic,
       name: leader.name,
       plays: leader.plays,
-      share: counted == 0 ? 0 : leader.plays / counted,
+      // The share the ranking worked out over everything it counted, where
+      // it did; the lines on hand are only the top of it.
+      share: leader.share ?? (counted == 0 ? 0 : leader.plays / counted),
     ),
     // A ranking card only where there is a ranking. Two lines is a list; one
     // is the headline again, with a number beside it.
