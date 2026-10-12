@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-12
+
 ### Added
 
 - Autofill tags from MusicBrainz. On a record, or from a track's menu, choose which tags to fill — title, artist, album
@@ -181,7 +183,8 @@ A pre-release built from the `diagnose/android-usb-folder` branch to diagnose fo
 - Release downloads: a Windows installer, a portable Windows archive, a Linux installer and an Android APK, with
   `SHA256SUMS.txt`.
 
-[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/artur-rios/orpheus/compare/v1.2.1...v1.3.0
 [1.2.2-beta.1]: https://github.com/artur-rios/orpheus/compare/v1.2.1...v1.2.2-beta.1
 [1.2.1]: https://github.com/artur-rios/orpheus/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/artur-rios/orpheus/compare/v1.1.0...v1.2.0
