@@ -315,6 +315,29 @@ void main() {
       expect([for (final entity in root.listSync()) p.basename(entity.path)], ['a.flac']);
     });
 
+    test('GivenTwoWritesToOneFileStartedTogether_WhenTheyRun_ThenTheyRunOneAfterTheOtherAndTheSecondIsRefused', () async {
+      // Two review screens confirmed at once: the second was proposed
+      // against the file the first has just changed, and must not overwrite
+      // it — which it can only tell if it reads the file after the first
+      // has written it.
+      final path = flac({'TITLE': 'Airbag', 'COMMENT': 'kept'});
+      // A timestamp a write cannot share, whatever the clock's resolution.
+      File(path).setLastModifiedSync(DateTime(2020));
+      final catalogued = asCatalogued(path);
+
+      final outcomes = await Future.wait([
+        writer.write(path, {AutofillField.title: 'Paranoid Android'}, expected: catalogued),
+        writer.write(path, {AutofillField.title: 'Subterranean Homesick Alien'}, expected: catalogued),
+      ]);
+
+      expect(outcomes, [WriteOutcome.written, WriteOutcome.changedSinceRead]);
+      final after = await writer.inspect(path);
+      expect(after.writable, isNotEmpty);
+      expect(after.values[AutofillField.title], 'Paranoid Android');
+      expect(latin1.decode(File(path).readAsBytesSync()), contains('COMMENT=kept'));
+      expect([for (final entity in root.listSync()) p.basename(entity.path)], ['a.flac']);
+    });
+
     test('GivenAFlacItCannotParse_WhenWritten_ThenItFailsAndIsUntouched', () async {
       final path = p.join(root.path, 'a.flac');
       final whole = taggedFlac(tags: {'TITLE': 'Airbag'});

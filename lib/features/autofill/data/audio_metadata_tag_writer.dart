@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
@@ -28,11 +29,19 @@ import 'id3_tag_editor.dart';
 ///
 /// File work runs on an isolate: a cover is hundreds of kilobytes, and an
 /// album is a dozen of them.
+///
+/// Writes run one at a time across the whole process, whichever writer and
+/// whichever review screen started them: two at once on one file would both
+/// pass the check that it is the file the owner reviewed, and the second
+/// would overwrite the first — or the two would collide mid-rename.
 class AudioMetadataTagWriter implements TagWriter {
   /// Creates the writer.
   const AudioMetadataTagWriter();
 
   static final Logger _log = Logger('autofill');
+
+  /// The last write asked for: each waits for the one before it.
+  static Future<void> _queue = Future<void>.value();
 
   /// The fields the format of [path] can hold — none for a format outside
   /// [writableExtensions], which a write would lose other tags from.
@@ -91,12 +100,19 @@ class AudioMetadataTagWriter implements TagWriter {
       return WriteOutcome.unsupported;
     }
 
+    final previous = _queue;
+    final done = Completer<void>();
+    _queue = done.future;
     try {
+      await previous;
+
       return await Isolate.run(() => _write(path, values, expected));
     } on Object catch (error) {
       _log.warning('the tags of $path could not be written', error);
 
       return WriteOutcome.failed;
+    } finally {
+      done.complete();
     }
   }
 }

@@ -27,6 +27,21 @@ void main() {
     expect(namesIn(root), ['a.flac']);
   });
 
+  test('GivenAnotherWritersTemporaryFileBesideIt_WhenReplacedAtomically_ThenThatFileIsNeitherUsedNorRemoved', () {
+    // The name another session — or another copy of Orpheus — could be
+    // writing at that moment: a temporary name of its own keeps the two
+    // from writing into one file.
+    final path = p.join(root.path, 'a.flac');
+    File(path).writeAsBytesSync([1, 2, 3]);
+    final theirs = File('$path.orpheus-tmp')..writeAsBytesSync([9, 9]);
+
+    replaceFileAtomically(path, Uint8List.fromList([4, 5, 6, 7]));
+
+    expect(File(path).readAsBytesSync(), [4, 5, 6, 7]);
+    expect(theirs.readAsBytesSync(), [9, 9]);
+    expect(namesIn(root), ['a.flac', 'a.flac.orpheus-tmp']);
+  });
+
   test('GivenATargetTheRenameCannotReplace_WhenReplacedAtomically_ThenItThrowsAndLeavesItAndNoTemporaryFile', () {
     // A directory where the file should be: the temporary file is written,
     // and the rename over the target is what fails.

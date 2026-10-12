@@ -3,11 +3,14 @@ import 'dart:typed_data';
 
 /// Replaces the file at [path] with [bytes]: whole, or not at all.
 ///
-/// The bytes are written to `<path>.orpheus-tmp` beside it and flushed to
-/// the disk, and only then renamed over [path] — so a crash, a full disk or
-/// a power cut partway leaves the old file or the new one, and never half a
+/// The bytes are written to a temporary file beside it and flushed to the
+/// disk, and only then renamed over [path] — so a crash, a full disk or a
+/// power cut partway leaves the old file or the new one, and never half a
 /// music file. The temporary file is in the same directory because a rename
-/// is only atomic within one volume.
+/// is only atomic within one volume, and its name is this write's own
+/// (`<path>.orpheus-<pid>-<microseconds>.tmp`): another write of the same
+/// file — another copy of Orpheus, say — never writes into it, nor has its
+/// own replaced or deleted by this one.
 ///
 /// A [path] that is a symbolic link is written through: the file it points
 /// at is the one replaced (see [resolvedTarget]), and the link stays a link.
@@ -33,7 +36,7 @@ void replaceFileAtomically(String path, Uint8List bytes) {
   // there, which opening to append would create.
   if (target.existsSync()) target.openSync(mode: FileMode.append).closeSync();
 
-  final temporary = File('$resolved.orpheus-tmp');
+  final temporary = File('$resolved.orpheus-$pid-${DateTime.now().microsecondsSinceEpoch}.tmp');
   try {
     temporary.writeAsBytesSync(bytes, flush: true);
     temporary.renameSync(resolved);
