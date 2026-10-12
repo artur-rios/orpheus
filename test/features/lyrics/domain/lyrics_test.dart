@@ -65,6 +65,50 @@ void main() {
     },
   );
 
+  // A bilingual LRC: each line, then its translation, under the same time.
+  // Long enough that `List.sort` stops being an insertion sort — which happens
+  // to be stable — and starts being one that is not, which is what used to
+  // swap a line with its translation partway down a long song.
+  final bilingual = [
+    for (var verse = 30; verse > 0; verse--) ...[
+      LyricLine(text: 'Line $verse', at: Duration(seconds: verse * 5)),
+      LyricLine(text: 'Linha $verse', at: Duration(seconds: verse * 5)),
+    ],
+  ];
+
+  test(
+    'GivenLinesThatShareATime_WhenTheyAreOrdered_ThenTheyKeepTheOrderTheFileGaveThem',
+    () {
+      final sheet = Lyrics.synced(bilingual);
+
+      expect(sheet.lines.map((line) => line.text).take(6), [
+        'Line 1',
+        'Linha 1',
+        'Line 2',
+        'Linha 2',
+        'Line 3',
+        'Linha 3',
+      ]);
+      for (var index = 0; index < sheet.lines.length; index += 2) {
+        expect(sheet.lines[index].text, startsWith('Line '));
+        expect(sheet.lines[index + 1].text, startsWith('Linha '));
+      }
+    },
+  );
+
+  test(
+    'GivenLinesThatShareATime_WhenThatTimeIsPlaying_ThenTheFirstOfThemIsTheOneSung',
+    () {
+      // The line rather than its translation: the highlight and the scroll
+      // land on the top of the pair, with the translation following beneath.
+      final sheet = Lyrics.synced(bilingual);
+
+      expect(sheet.lineIndexAt(const Duration(seconds: 12)), 2);
+      expect(sheet.lineIndexAt(const Duration(seconds: 10)), 2);
+      expect(sheet.lineIndexAt(const Duration(minutes: 5)), 58);
+    },
+  );
+
   test('GivenNoLinesAtAll_WhenTheyAreAsked_ThenTheyAreEmpty', () {
     expect(Lyrics.synced(const []).isEmpty, isTrue);
     expect(
