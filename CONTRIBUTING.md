@@ -187,7 +187,7 @@ form, plus `-Installer`.
 `.github/workflows/verify.yml` is what makes the `n/a` rows add up to nothing: it
 runs `verify.sh --strict` on Linux (Linux + Android) and `verify.ps1 -Strict` on
 Windows (Windows + the installer). It also reads the built APK's permissions back
-out and **fails the build if they are not exactly the eight declared in
+out and **fails the build if they are not exactly the nine declared in
 `AndroidManifest.xml`** — which is the promise at the top of the README,
 enforced rather than asserted. A deny list would only catch the permissions
 somebody thought to forbid; pinning the whole set catches the next one
