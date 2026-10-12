@@ -9,9 +9,15 @@ import 'package:path/path.dart' as p;
 import '../../library/domain/audio_file.dart';
 import '../domain/autofill_field.dart';
 import '../domain/tag_writer.dart';
+import 'atomic_write.dart';
+import 'flac_tag_editor.dart';
 
 /// [TagWriter] over `audio_metadata_reader`, which this application already
 /// reads every tag through.
+///
+/// FLAC is written by Orpheus's own editor ([editFlacTags]) instead of the
+/// package, whose writer rebuilds the comments from its model and drops every
+/// one the model does not name.
 ///
 /// Every field is mapped by hand rather than through the package's common
 /// setters: those have no album artist, and quietly do nothing for a field a
@@ -38,12 +44,9 @@ class AudioMetadataTagWriter implements TagWriter {
 
     return switch (p.extension(path).toLowerCase()) {
       '.m4a' || '.mp4' => AutofillField.values.toSet()..remove(AutofillField.albumArtist),
-      // The package's FLAC writer emits no TRACKTOTAL, DISCNUMBER or
-      // DISCTOTAL comment, whatever its model holds: written, they would not
-      // be there to read back.
-      '.flac' =>
-        AutofillField.values.toSet()
-          ..removeAll({AutofillField.trackTotal, AutofillField.discNumber, AutofillField.discTotal}),
+      // Written by Orpheus's own editor rather than the package's: every
+      // field, each as the comment the reader reads it from.
+      '.flac' => AutofillField.values.toSet(),
       // RIFF INFO has no album artist, track total or disc; and the package
       // writes a year as an ICRD it then cannot read back, and writes no
       // picture at all.
@@ -96,6 +99,13 @@ class AudioMetadataTagWriter implements TagWriter {
 
 FileTags _inspect(String path, Set<AutofillField> writable) {
   final tags = readAllMetadata(File(path));
+
+  // A FLAC file with an ID3v2 tag in front of its marker is read as an MP3:
+  // what the owner would review is that tag, and what a write changes is the
+  // Vorbis comments.
+  if (p.extension(path).toLowerCase() == '.flac' && tags is! VorbisMetadata) {
+    return FileTags.unwritable;
+  }
 
   final values = switch (tags) {
     Mp3Metadata() => {
@@ -191,8 +201,36 @@ WriteOutcome _write(
     return WriteOutcome.changedSinceRead;
   }
 
+  if (p.extension(path).toLowerCase() == '.flac') return _writeFlac(path, values, expected);
+
   try {
     updateMetadata(file, (tags) => _apply(tags, values));
+  } on FileSystemException catch (error) {
+    return _outcomeOf(error, path);
+  }
+
+  return WriteOutcome.written;
+}
+
+/// Writes a FLAC file through [editFlacTags], which changes only what it is
+/// asked to, and [replaceFileAtomically], which replaces it whole or not at
+/// all.
+///
+/// A file the editor cannot parse safely throws a [FormatException] before
+/// anything is written; [AudioMetadataTagWriter.write] logs it and answers
+/// [WriteOutcome.failed].
+WriteOutcome _writeFlac(
+  String path,
+  Map<AutofillField, Object?> values,
+  AudioFile expected,
+) {
+  try {
+    final bytes = File(path).readAsBytesSync();
+    // What was read is what is rewritten, so it has to be the file the
+    // check above saw.
+    if (bytes.length != expected.sizeInBytes) return WriteOutcome.changedSinceRead;
+
+    replaceFileAtomically(path, editFlacTags(bytes, values));
   } on FileSystemException catch (error) {
     return _outcomeOf(error, path);
   }

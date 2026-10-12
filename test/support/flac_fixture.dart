@@ -80,17 +80,21 @@ Uint8List _streamInfo(int sampleRate, int durationSeconds) {
 
 /// VORBIS_COMMENT: a vendor string, a count, then `NAME=value` entries — all
 /// lengths little-endian, unlike every other length in the format.
-Uint8List _vorbisComment(Map<String, String> tags) {
-  final vendor = utf8.encode('orpheus-test');
+Uint8List _vorbisComment(Map<String, String> tags) => _comments([
+  for (final tag in tags.entries) '${tag.key}=${tag.value}',
+], 'orpheus-test');
+
+Uint8List _comments(List<String> comments, String vendorString) {
+  final vendor = utf8.encode(vendorString);
   final bytes = BytesBuilder()
     ..add(_uint32le(vendor.length))
     ..add(vendor)
-    ..add(_uint32le(tags.length));
+    ..add(_uint32le(comments.length));
 
-  for (final tag in tags.entries) {
+  for (final comment in comments) {
     // UTF-8, which is what the format specifies — and what makes an accented
     // artist name survive the round trip.
-    final entry = utf8.encode('${tag.key}=${tag.value}');
+    final entry = utf8.encode(comment);
     bytes
       ..add(_uint32le(entry.length))
       ..add(entry);
@@ -101,11 +105,10 @@ Uint8List _vorbisComment(Map<String, String> tags) {
 
 /// PICTURE: the type, the MIME type, a description, four dimensions, and the
 /// bytes. Every length here is big-endian.
-Uint8List _picture(Uint8List image) {
-  const mime = 'image/png';
+Uint8List _picture(Uint8List image, {int pictureType = 3, String mime = 'image/png'}) {
   final bytes = BytesBuilder()
-    // 3 is "front cover", which is the one the reader prefers.
-    ..add(_uint32be(3))
+    // 3, the default, is "front cover": the one the reader prefers.
+    ..add(_uint32be(pictureType))
     ..add(_uint32be(mime.length))
     ..add(mime.codeUnits)
     ..add(_uint32be(0))
@@ -118,6 +121,76 @@ Uint8List _picture(Uint8List image) {
 
   return bytes.toBytes();
 }
+
+/// One metadata block of a [flacOf] file: its type, and its body as the file
+/// holds it.
+typedef FlacBlock = ({int type, Uint8List body});
+
+/// A FLAC file put together block by block, for what [taggedFlac] does not
+/// build: blocks in any order, several pictures, padding, a tag in front of
+/// the marker and audio after the metadata.
+///
+/// The last-block flag goes on the final block of [blocks] and nowhere else.
+/// [id3v2] goes before the `fLaC` marker and [audio] after the last block,
+/// both exactly as given.
+Uint8List flacOf(List<FlacBlock> blocks, {Uint8List? id3v2, List<int>? audio}) {
+  final bytes = BytesBuilder();
+  if (id3v2 != null) bytes.add(id3v2);
+  bytes.add('fLaC'.codeUnits);
+  for (var index = 0; index < blocks.length; index++) {
+    final block = blocks[index];
+    bytes.add(_block(block.type, block.body, last: index == blocks.length - 1));
+  }
+  if (audio != null) bytes.add(audio);
+
+  return bytes.toBytes();
+}
+
+/// A STREAMINFO block, as [taggedFlac] writes it.
+FlacBlock streamInfoBlock({int durationSeconds = 200, int sampleRate = 44100}) =>
+    (type: 0, body: _streamInfo(sampleRate, durationSeconds));
+
+/// A VORBIS_COMMENT block holding [comments] in order, each the whole
+/// `KEY=value` text — so a key can repeat, or be spelled in any case.
+FlacBlock vorbisCommentBlock(List<String> comments, {String vendor = 'orpheus-test'}) =>
+    (type: 4, body: _comments(comments, vendor));
+
+/// A PICTURE block holding [image] as picture [pictureType]: 3 is the front
+/// cover, 4 the back.
+FlacBlock pictureBlock(Uint8List image, {int pictureType = 3, String mime = 'image/png'}) =>
+    (type: 6, body: _picture(image, pictureType: pictureType, mime: mime));
+
+/// A PADDING block of [length] zero bytes.
+FlacBlock paddingBlock(int length) => (type: 1, body: Uint8List(length));
+
+/// An APPLICATION block: a four-letter application id, then its own data.
+FlacBlock applicationBlock(String id, List<int> data) =>
+    (type: 2, body: Uint8List.fromList([...id.codeUnits, ...data]));
+
+/// A SEEKTABLE block with one seek point: sample 0, at offset 0, of 4096
+/// samples.
+FlacBlock seekTableBlock() {
+  final point = ByteData(18)..setUint16(16, 4096);
+
+  return (type: 3, body: point.buffer.asUint8List());
+}
+
+/// An ID3v2.4 tag holding one TIT2 frame with [title] — what some taggers
+/// put in front of a FLAC file's own marker.
+Uint8List id3v2Tag(String title) {
+  final text = [3, ...utf8.encode(title)];
+  final frame = [...'TIT2'.codeUnits, ..._syncSafe(text.length), 0, 0, ...text];
+
+  return Uint8List.fromList([...'ID3'.codeUnits, 4, 0, 0, ..._syncSafe(frame.length), ...frame]);
+}
+
+/// [value] in four bytes of seven bits each, as ID3v2 writes its sizes.
+List<int> _syncSafe(int value) => [
+  (value >> 21) & 0x7F,
+  (value >> 14) & 0x7F,
+  (value >> 7) & 0x7F,
+  value & 0x7F,
+];
 
 Uint8List _uint32le(int value) =>
     (ByteData(4)..setUint32(0, value, Endian.little)).buffer.asUint8List();

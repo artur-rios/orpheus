@@ -7,19 +7,22 @@ import 'autofill_field.dart';
 
 /// The extensions of the formats tags can be written to.
 ///
-/// What `audio_metadata_reader` can write without losing anything, and
-/// nothing it can only read: an Ogg or Opus file is in the library and plays,
-/// and has its tags left alone.
+/// Only a format a write loses nothing else from, and nothing that can only
+/// be read: an Ogg or Opus file is in the library and plays, and has its
+/// tags left alone.
 ///
-/// None, as of `audio_metadata_reader` 1.8.0. Each format it writes rebuilds
-/// the tag from its own model and so drops or rewrites tags it was not asked
-/// to change — MP3 its TXXX frames and TDRC date, M4A its album artist
-/// (`aART`), comment and encoder, FLAC every comment its model does not name,
-/// WAV a year-only ICRD date, APE its `Album Artist` and `Year` items. The
-/// preservation tests in `audio_metadata_tag_writer_test.dart` name each loss
-/// and are skipped, not deleted: a format comes back here once a package
-/// upgrade makes its test pass.
-const Set<String> writableExtensions = {};
+/// FLAC, which Orpheus writes with an editor of its own that changes only the
+/// comments and front covers it is asked to and keeps every other byte.
+///
+/// Nothing `audio_metadata_reader` 1.8.0 writes: each format it writes
+/// rebuilds the tag from its own model and so drops or rewrites tags it was
+/// not asked to change — MP3 its TXXX frames and TDRC date, M4A its album
+/// artist (`aART`), comment and encoder, WAV a year-only ICRD date, APE its
+/// `Album Artist` and `Year` items. The preservation tests in
+/// `audio_metadata_tag_writer_test.dart` name each loss and are skipped, not
+/// deleted: a format comes back here once a write that keeps everything
+/// makes its test pass.
+const Set<String> writableExtensions = {'.flac'};
 
 /// Whether tags can be written to the file at [path] at all.
 bool canWriteTagsTo(String path) =>

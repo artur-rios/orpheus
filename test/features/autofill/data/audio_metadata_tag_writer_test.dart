@@ -62,13 +62,18 @@ void main() {
       expect(tags.values[AutofillField.title], 'Airbag');
       expect(tags.values[AutofillField.albumArtist], 'Radiohead');
       expect(tags.values[AutofillField.discTotal], 2);
-      // Read, but not written: the package's FLAC writer emits no track
-      // total and no disc.
-      expect(
-        tags.writable,
-        AutofillField.values.toSet()
-          ..removeAll({AutofillField.trackTotal, AutofillField.discNumber, AutofillField.discTotal}),
+      expect(tags.writable, AutofillField.values.toSet());
+    });
+
+    test('GivenAFlacWithALeadingId3Tag_WhenInspected_ThenNothingIsWritable', () async {
+      // The reader takes the ID3 tag for the file's tags; what the owner would
+      // review is not what a write changes.
+      final path = p.join(root.path, 'a.flac');
+      File(path).writeAsBytesSync(
+        flacOf([streamInfoBlock(), vorbisCommentBlock(['TITLE=Airbag'])], id3v2: id3v2Tag('Airbag')),
       );
+
+      expect((await writer.inspect(path)).writable, isEmpty);
     });
 
     test('GivenAWav_WhenInspected_ThenOnlyTheFieldsItsFormatHoldsAreWritable', skip: unwritable('.wav'), () async {
@@ -198,6 +203,49 @@ void main() {
       expect((await writer.inspect(path)).values[AutofillField.title], 'Airbag');
     });
 
+    test('GivenAFlacChangedSinceItWasRead_WhenWritten_ThenItIsLeftAlone', () async {
+      final path = flac({'TITLE': 'Airbag'});
+      final catalogued = asCatalogued(path);
+      File(path).writeAsBytesSync([...File(path).readAsBytesSync(), 0]);
+      final bytes = File(path).readAsBytesSync();
+
+      final outcome = await writer.write(path, {AutofillField.title: 'X'}, expected: catalogued);
+
+      expect(outcome, WriteOutcome.changedSinceRead);
+      expect(File(path).readAsBytesSync(), bytes);
+    });
+
+    test('GivenAFlacThatIsGone_WhenWritten_ThenItIsReportedAsChangedAndNotCreated', () async {
+      final path = flac({'TITLE': 'Airbag'});
+      final catalogued = asCatalogued(path);
+      File(path).deleteSync();
+
+      expect(await writer.write(path, {AutofillField.title: 'X'}, expected: catalogued), WriteOutcome.changedSinceRead);
+      expect(root.listSync(), isEmpty);
+    });
+
+    test('GivenAFlac_WhenWritten_ThenNoTemporaryFileIsLeftBehind', () async {
+      final path = flac({'TITLE': 'Airbag', 'COMMENT': 'kept'});
+
+      final outcome = await writer.write(path, {AutofillField.title: 'Paranoid Android'}, expected: asCatalogued(path));
+
+      expect(outcome, WriteOutcome.written);
+      expect([for (final entity in root.listSync()) p.basename(entity.path)], ['a.flac']);
+    });
+
+    test('GivenAFlacItCannotParse_WhenWritten_ThenItFailsAndIsUntouched', () async {
+      final path = p.join(root.path, 'a.flac');
+      final whole = taggedFlac(tags: {'TITLE': 'Airbag'});
+      File(path).writeAsBytesSync(whole.sublist(0, whole.length - 3));
+      final bytes = File(path).readAsBytesSync();
+
+      final outcome = await writer.write(path, {AutofillField.title: 'X'}, expected: asCatalogued(path));
+
+      expect(outcome, WriteOutcome.failed);
+      expect(File(path).readAsBytesSync(), bytes);
+      expect([for (final entity in root.listSync()) p.basename(entity.path)], ['a.flac']);
+    });
+
     test('GivenAnOgg_WhenWritten_ThenItIsUnsupportedAndUntouched', () async {
       final path = copyOf('tagged.ogg');
       final bytes = File(path).readAsBytesSync();
@@ -285,7 +333,8 @@ void main() {
 /// What a write loses from each format `audio_metadata_reader` 1.8.0 writes,
 /// as that format's preservation test found it — which is why none of them
 /// is in `writableExtensions`. A format leaves this map, and its tests run
-/// again, when a package upgrade makes its preservation test pass.
+/// again, when a write that keeps everything replaces the package's: FLAC
+/// left it for Orpheus's own editor (`flac_tag_editor.dart`).
 const lost = <String, String>{
   '.mp3':
       'the ID3v2 tag is rebuilt from the package model: a write drops every TXXX frame '
@@ -295,9 +344,6 @@ const lost = <String, String>{
       '©cmt (the comment) and ©too (the encoder)',
   '.wav':
       'the package cannot read a year-only ICRD date, so a write of any field drops it',
-  '.flac':
-      'the Vorbis comments are rebuilt from the package model: a write drops COMMENT and every '
-      'custom comment',
   '.ape':
       'the APEv2 tag is rebuilt from the package model: a write renames the Album Artist item to '
       'ALBUMARTIST and rewrites Year=1997 as DATE=1997-01-01',
