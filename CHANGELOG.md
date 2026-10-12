@@ -7,16 +7,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-12
+
 ### Added
 
 - Autofill tags from MusicBrainz. On a record, or from a track's menu, choose which tags to fill — title, artist, album
   artist, album, track and disc numbers and totals, year, genre, and optionally the cover — and Orpheus finds the
   release, shows every change file by file as old → new, and writes only the ones you leave ticked, into the files and
   the library. Another release or another search is one tap away. Orpheus now changes audio files for this and nothing
-  else, and the Android app asks for permission to do it the first time you confirm an autofill. MP3 and FLAC files
-  can be written, by Orpheus's own tag editors, which change only the tags asked for and keep every other byte; other
-  formats are read-only. A file another program changed since it was read is not written, and on Windows the track
-  playing may be refused as in use.
+  else; on Android 11 and later the app asks for all-files access the first time you confirm an autofill (on Android
+  7 to 10 write access comes with the read permission). MP3 and FLAC files can be written, by Orpheus's own tag
+  editors, which change only the tags asked for and keep every other byte; other formats are read-only. A file
+  another program changed since it was read is not written, and on Windows the track playing may be refused as in use.
 
 ### Changed
 
@@ -28,7 +30,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   started by hand. The scan report says how many tracks were updated.
 - A folder added or removed while a scan is running is scanned as soon as that scan finishes, instead of waiting for the
   next one.
-
+- Orpheus is now released under the Artur Rios Attribution License instead of the MIT License. It stays free and open
+  source; a copy, fork or product built on it credits the author with a link to artur-rios.tech or
+  github.com/artur-rios. Releases up to 1.2.1 keep the licence they were published under.
 - A beta on Windows or Linux is offered the next beta as well as the release it leads to; a full release is still only
   ever offered full releases. Versions are compared by full SemVer 2.0.0 precedence.
 - Release process: a pre-release's `-beta.<n>` is now part of the `version:` in `pubspec.yaml` (`1.3.0-beta.1+7`), its
@@ -55,12 +59,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A record or artist that is open in the library and gets renamed by a re-scan stays open under its new name.
 - Removing a folder rescans the library again; the folder's tracks used to stay until the next scan.
 - On Android, the back gesture no longer spends a press clearing a one-letter search that was not showing.
-
 - A beta on Windows or Linux reported itself as the release it leads to (`1.3.0` for `v1.3.0-beta.1`), so it was
   never offered that release when it shipped.
-- In Portuguese, a count of zero no longer reads as one: the unreadable-files line, the play counts in the rankings and
-  on the story card, the story card's track count and the untagged-tracks note each say zero.
-
+- The Portuguese wording of counts is now correct when a count is zero: the unreadable-files line, the play counts in
+  the rankings and on the story card, the story card's track count and the untagged-tracks note.
 - A full scan no longer re-reads the tags of every track after a restart and reports the whole library as added.
   Files that have not changed are carried over, as they are within one session.
 - A change made to a folder while a scan was running is picked up by the next startup scan, rather than kept out of
@@ -82,6 +84,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The Windows installer no longer offers to remove "Orpheus" from a folder that only holds some other program's
   uninstaller.
 - The lyrics lookup names the running version of Orpheus to the service, instead of always `1.0.0`.
+- The album artist of a FLAC or Ogg file (`ALBUMARTIST`, or `ALBUM_ARTIST`) is read. A compilation tagged *Various
+  Artists* used to be filed under whichever performer had the most tracks on it.
+- A double record whose tracks are only partly tagged with a disc number no longer has its two discs' tracks
+  interleaved: a track with no disc number is taken as disc 1.
+- Playing an artist queues their records in the order the artist's page lists them.
+- A cover left half-written by a scan that was interrupted is written again by the next scan, instead of staying cut
+  short.
+- A folder already registered is not added a second time under another spelling — another letter case on Windows, or a
+  link to it.
+- In a lyrics sheet that gives two lines the same time, such as an original and its translation, the lines keep the
+  file's order and the first of them is lit.
+- On Android, the notification and the lock screen no longer show the previous record's sleeve with a new track, and a
+  track that stopped while the notification permission was being asked for is no longer posted afterwards as if it
+  were playing.
 
 ### Security
 
@@ -167,7 +183,8 @@ A pre-release built from the `diagnose/android-usb-folder` branch to diagnose fo
 - Release downloads: a Windows installer, a portable Windows archive, a Linux installer and an Android APK, with
   `SHA256SUMS.txt`.
 
-[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/artur-rios/orpheus/compare/v1.2.1...v1.3.0
 [1.2.2-beta.1]: https://github.com/artur-rios/orpheus/compare/v1.2.1...v1.2.2-beta.1
 [1.2.1]: https://github.com/artur-rios/orpheus/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/artur-rios/orpheus/compare/v1.1.0...v1.2.0

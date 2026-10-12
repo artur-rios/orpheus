@@ -12,11 +12,11 @@ It walks the folders it is pointed at, reads the tags itself, and keeps the
 result in a file beside its own settings.
 
 > **Status:** complete and tested — the unit and widget suite green and
-> `flutter analyze` clean. Every use case in the [specifications](#specifications)
-> is implemented — see the [roadmap](#roadmap). All three release builds and the
-> Windows installer are produced and verified by CI on every pull request. It
-> runs on Linux, Windows and Android: the fixes released since 1.0.0 came from
-> running it on a Windows machine and an Android phone.
+> `flutter analyze` clean. Every use case in the [specifications](#specifications),
+> UC-01 to UC-34, is implemented — see the [roadmap](#roadmap). All three
+> release builds and the Windows installer are produced and verified by CI on
+> every pull request. It runs on Linux, Windows and Android: the fixes released
+> since 1.0.0 came from running it on a Windows machine and an Android phone.
 
 ## What it does
 
@@ -233,7 +233,7 @@ With the card or the drive in place, close Orpheus, open it again, and scan.
 The two desktop builds check for a newer release when they start, and offer it.
 A full release is only ever offered full releases; a beta is offered the next
 beta and then the release it leads to. Switched on by default, and switched off in the preferences under *Updates* —
-it is one of the two things in this application that reach a network, and it is
+it is one of the three things in this application that reach a network, and it is
 described where it is turned on rather than in a changelog.
 
 What it does when the owner accepts is fetch the same installer they would have
@@ -258,7 +258,7 @@ the switch is hidden on it.
 
 ## How it works
 
-Eight things happen, and they are worth reading in this order.
+Nine things happen, and they are worth reading in this order.
 
 **A scan walks the folders and reads the tags.** It runs on an isolate of its
 own, because it is the whole of the expensive half of this application: a walk
@@ -489,7 +489,7 @@ not written, and on Windows the track playing may be refused as in use.
 - **A track is identified by its path.** Move a file and it is a different track
   to this application, and its resume point does not follow it. Re-scanning is
   what reconciles that.
-- **Album artist for MP4, Vorbis and RIFF tags is derived rather than read.**
+- **Album artist for MP4 and RIFF tags is derived rather than read.**
   Those formats' readers here do not surface a distinct album-artist field, so
   the across-the-record derivation described above is what answers for them. For
   an ordinary record it gives the same answer; a various-artists compilation with
@@ -504,9 +504,11 @@ not written, and on Windows the track playing may be refused as in use.
 
 ## Roadmap
 
-Nine milestones covering thirty-three issues: one foundation issue plus one
-issue per use case. Milestones are dependency-ordered — no milestone depends on a later
-one, and every milestone after `M-01` depends on it.
+Nine milestones covering thirty-four issues: one foundation issue plus one
+issue per use case from UC-01 to UC-33. UC-34 came after the backlog was filed
+and has no issue or milestone; it is listed after M-09. Milestones are
+dependency-ordered — no milestone depends on a later one, and every milestone
+after `M-01` depends on it.
 
 The live view is the [project board](https://github.com/users/artur-rios/projects/13)
 and GitHub's own milestone pages; the counts here are as of the last update to
@@ -606,6 +608,14 @@ Built, tested and specified, and merged.
 | Issue | Work | Spec |
 | --- | --- | --- |
 | [#33](https://github.com/artur-rios/orpheus/issues/33) | UC-32 — See the music move — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+
+### After the backlog — Autofill
+
+Built, tested and specified, and merged. It has no issue, so the use case itself is linked.
+
+| Issue | Work | Spec |
+| --- | --- | --- |
+| [UC-34](docs/requirements/Use%20Case%20Specification%20Document.md#uc-34-autofill-a-records-tags) | UC-34 — Autofill a record's tags — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
 ## Changelog
 

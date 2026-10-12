@@ -187,7 +187,7 @@ form, plus `-Installer`.
 `.github/workflows/verify.yml` is what makes the `n/a` rows add up to nothing: it
 runs `verify.sh --strict` on Linux (Linux + Android) and `verify.ps1 -Strict` on
 Windows (Windows + the installer). It also reads the built APK's permissions back
-out and **fails the build if they are not exactly the eight declared in
+out and **fails the build if they are not exactly the nine declared in
 `AndroidManifest.xml`** — which is the promise at the top of the README,
 enforced rather than asserted. A deny list would only catch the permissions
 somebody thought to forbid; pinning the whole set catches the next one
@@ -300,9 +300,9 @@ package that is published, pre-releases included, because Android reads it as `v
 `flutter.versionCode` in `android/app/build.gradle.kts` — and an update whose code did not rise is not an update as far
 as the platform is concerned.
 
-**The next release's build number must be 7 or higher.** `pubspec.yaml` on `main` says `1.2.1+5`, but `v1.2.2-beta.1` shipped an APK
-built as `1.2.2+6` from the `diagnose/android-usb-folder` branch, and a phone that installed it holds `versionCode`
-6.
+**The next release's build number must be 8 or higher.** `1.3.0` shipped as build 7, after `v1.2.2-beta.1` had shipped
+an APK built as `1.2.2+6` from the `diagnose/android-usb-folder` branch, and a phone that installed it holds
+`versionCode` 6.
 
 ## Releasing
 
