@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/features/autofill/data/audio_metadata_tag_writer.dart';
@@ -10,6 +11,7 @@ import 'package:path/path.dart' as p;
 
 import '../../../support/ape_fixture.dart';
 import '../../../support/flac_fixture.dart';
+import '../../../support/id3_fixture.dart';
 
 /// Reading and writing a real file's tags, in a temporary directory.
 void main() {
@@ -72,6 +74,17 @@ void main() {
       File(path).writeAsBytesSync(
         flacOf([streamInfoBlock(), vorbisCommentBlock(['TITLE=Airbag'])], id3v2: id3v2Tag('Airbag')),
       );
+
+      expect((await writer.inspect(path)).writable, isEmpty);
+    });
+
+    test('GivenAnMp3WhoseOnlyTagIsApe_WhenInspected_ThenNothingIsWritable', () async {
+      // The reader takes the APE tag for the file's tags; a write would add an
+      // ID3v2 tag in front, which is not what the owner reviewed.
+      final path = p.join(root.path, 'a.mp3');
+      final mpeg = File(p.join('test', 'support', 'tag_fixtures', 'tagged.mp3')).readAsBytesSync().sublist(236);
+      // The APE fixture without its Monkey's Audio marker and stand-in audio.
+      File(path).writeAsBytesSync([...mpeg, ...taggedApe(tags: {'Title': 'Airbag'}).sublist(64)]);
 
       expect((await writer.inspect(path)).writable, isEmpty);
     });
@@ -268,6 +281,64 @@ void main() {
       expect([for (final entity in root.listSync()) p.basename(entity.path)], ['a.flac']);
     });
 
+    test('GivenAnMp3WithAnUnsynchronisedTag_WhenWritten_ThenItIsUnsupportedAndUntouched', () async {
+      final path = p.join(root.path, 'a.mp3');
+      final mpeg = File(p.join('test', 'support', 'tag_fixtures', 'tagged.mp3')).readAsBytesSync().sublist(236);
+      final title = frame('TIT2', Uint8List.fromList([3, ...utf8.encode('Airbag')]));
+      File(path).writeAsBytesSync(id3Tag(frames: [title], unsynchronised: true, trailing: mpeg));
+      final bytes = File(path).readAsBytesSync();
+
+      final outcome = await writer.write(path, {AutofillField.title: 'X'}, expected: asCatalogued(path));
+
+      expect(outcome, WriteOutcome.unsupported);
+      expect(File(path).readAsBytesSync(), bytes);
+      expect([for (final entity in root.listSync()) p.basename(entity.path)], ['a.mp3']);
+    });
+
+    test('GivenAnMp3ItCannotParse_WhenWritten_ThenItFailsAndIsUntouched', () async {
+      final path = p.join(root.path, 'a.mp3');
+      final whole = File(p.join('test', 'support', 'tag_fixtures', 'tagged.mp3')).readAsBytesSync();
+      // Audio inside the tag, where its padding should be: a tag whose size
+      // overstates it, which a rewrite of the padding would cut into.
+      File(path).writeAsBytesSync([...whole.sublist(0, 9), 0x7F, ...whole.sublist(10)]);
+      final bytes = File(path).readAsBytesSync();
+
+      final outcome = await writer.write(path, {AutofillField.title: 'X'}, expected: asCatalogued(path));
+
+      expect(outcome, WriteOutcome.failed);
+      expect(File(path).readAsBytesSync(), bytes);
+      expect([for (final entity in root.listSync()) p.basename(entity.path)], ['a.mp3']);
+    });
+
+    test(
+      'GivenAnMp3ReachedThroughASymbolicLink_WhenWritten_ThenTheFileItPointsAtHasTheTagsAndTheLinkIsKept',
+      skip: Platform.isWindows ? 'creating a symbolic link on Windows may need privileges' : null,
+      () async {
+        final target = copyOf('tagged.mp3');
+        final link = Link(p.join(root.path, 'a.mp3'))..createSync(target);
+
+        final outcome = await writer.write(
+          link.path,
+          {AutofillField.title: 'Paranoid Android'},
+          expected: asCatalogued(link.path),
+        );
+
+        expect(outcome, WriteOutcome.written);
+        expect(FileSystemEntity.isLinkSync(link.path), isTrue);
+        expect((await writer.inspect(target)).values[AutofillField.title], 'Paranoid Android');
+        expect([for (final entity in root.listSync()) p.basename(entity.path)]..sort(), ['a.mp3', 'tagged.mp3']);
+      },
+    );
+
+    test('GivenAnMp3_WhenWritten_ThenNoTemporaryFileIsLeftBehind', () async {
+      final path = copyOf('tagged.mp3');
+
+      final outcome = await writer.write(path, {AutofillField.title: 'Paranoid Android'}, expected: asCatalogued(path));
+
+      expect(outcome, WriteOutcome.written);
+      expect([for (final entity in root.listSync()) p.basename(entity.path)], ['tagged.mp3']);
+    });
+
     test('GivenAnOgg_WhenWritten_ThenItIsUnsupportedAndUntouched', () async {
       final path = copyOf('tagged.ogg');
       final bytes = File(path).readAsBytesSync();
@@ -356,11 +427,10 @@ void main() {
 /// as that format's preservation test found it — which is why none of them
 /// is in `writableExtensions`. A format leaves this map, and its tests run
 /// again, when a write that keeps everything replaces the package's: FLAC
-/// left it for Orpheus's own editor (`flac_tag_editor.dart`).
+/// left it for Orpheus's own editor (`flac_tag_editor.dart`), and MP3 —
+/// whose ID3v2 tag the package rebuilt, dropping every TXXX frame and
+/// rewriting the TDRC date as a TYER — for `id3_tag_editor.dart`.
 const lost = <String, String>{
-  '.mp3':
-      'the ID3v2 tag is rebuilt from the package model: a write drops every TXXX frame '
-      '(the comment and the CUSTOM field), rewrites the TDRC date as a TYER frame and adds a TLEN',
   '.m4a':
       'the ilst atom is rebuilt from the package model: a write drops aART (the album artist), '
       '©cmt (the comment) and ©too (the encoder)',

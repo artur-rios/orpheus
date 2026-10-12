@@ -11,13 +11,14 @@ import '../domain/autofill_field.dart';
 import '../domain/tag_writer.dart';
 import 'atomic_write.dart';
 import 'flac_tag_editor.dart';
+import 'id3_tag_editor.dart';
 
 /// [TagWriter] over `audio_metadata_reader`, which this application already
 /// reads every tag through.
 ///
-/// FLAC is written by Orpheus's own editor ([editFlacTags]) instead of the
-/// package, whose writer rebuilds the comments from its model and drops every
-/// one the model does not name.
+/// MP3 and FLAC are written by Orpheus's own editors ([editId3Tags],
+/// [editFlacTags]) instead of the package, whose writer rebuilds the tag from
+/// its model and drops every frame or comment the model does not name.
 ///
 /// Every field is mapped by hand rather than through the package's common
 /// setters: those have no album artist, and quietly do nothing for a field a
@@ -44,6 +45,9 @@ class AudioMetadataTagWriter implements TagWriter {
 
     return switch (p.extension(path).toLowerCase()) {
       '.m4a' || '.mp4' => AutofillField.values.toSet()..remove(AutofillField.albumArtist),
+      // Written by Orpheus's own editor rather than the package's: every
+      // field, each as the frame the reader reads it from.
+      '.mp3' => AutofillField.values.toSet(),
       // Written by Orpheus's own editor rather than the package's: every
       // field, each as the comment the reader reads it from.
       '.flac' => AutofillField.values.toSet(),
@@ -102,8 +106,10 @@ FileTags _inspect(String path, Set<AutofillField> writable) {
 
   // A FLAC file with an ID3v2 tag in front of its marker is read as an MP3:
   // what the owner would review is that tag, and what a write changes is the
-  // Vorbis comments.
-  if (p.extension(path).toLowerCase() == '.flac' && tags is! VorbisMetadata) {
+  // Vorbis comments. Likewise an MP3 whose only tag is an APE one at its end:
+  // the owner would review that, and a write would add an ID3v2 tag.
+  final extension = p.extension(path).toLowerCase();
+  if ((extension == '.flac' && tags is! VorbisMetadata) || (extension == '.mp3' && tags is! Mp3Metadata)) {
     return FileTags.unwritable;
   }
 
@@ -201,7 +207,12 @@ WriteOutcome _write(
     return WriteOutcome.changedSinceRead;
   }
 
-  if (p.extension(path).toLowerCase() == '.flac') return _writeFlac(path, values, expected);
+  switch (p.extension(path).toLowerCase()) {
+    case '.flac':
+      return _writeEdited(path, expected, (bytes) => editFlacTags(bytes, values));
+    case '.mp3':
+      return _writeEdited(path, expected, (bytes) => editId3Tags(bytes, values));
+  }
 
   try {
     updateMetadata(file, (tags) => _apply(tags, values));
@@ -212,17 +223,19 @@ WriteOutcome _write(
   return WriteOutcome.written;
 }
 
-/// Writes a FLAC file through [editFlacTags], which changes only what it is
-/// asked to, and [replaceFileAtomically], which replaces it whole or not at
-/// all.
+/// Writes a FLAC or MP3 file through [edit] — [editFlacTags] or
+/// [editId3Tags], which change only what they are asked to — and
+/// [replaceFileAtomically], which replaces it whole or not at all.
 ///
-/// A file the editor cannot parse safely throws a [FormatException] before
-/// anything is written; [AudioMetadataTagWriter.write] logs it and answers
+/// A tag the editor will not touch ([UnsupportedTagException]) is
+/// [WriteOutcome.unsupported], and nothing is written. A file the editor
+/// cannot parse safely throws a [FormatException] before anything is
+/// written; [AudioMetadataTagWriter.write] logs it and answers
 /// [WriteOutcome.failed].
-WriteOutcome _writeFlac(
+WriteOutcome _writeEdited(
   String path,
-  Map<AutofillField, Object?> values,
   AudioFile expected,
+  Uint8List Function(Uint8List bytes) edit,
 ) {
   try {
     // The file itself, where the library reaches it through a link: what is
@@ -233,7 +246,9 @@ WriteOutcome _writeFlac(
     // check above saw.
     if (bytes.length != expected.sizeInBytes) return WriteOutcome.changedSinceRead;
 
-    replaceFileAtomically(target, editFlacTags(bytes, values));
+    replaceFileAtomically(target, edit(bytes));
+  } on UnsupportedTagException {
+    return WriteOutcome.unsupported;
   } on FileSystemException catch (error) {
     return _outcomeOf(error, path);
   }
