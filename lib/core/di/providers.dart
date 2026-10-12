@@ -14,6 +14,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/autofill/application/autofill_controller.dart';
 import '../../features/autofill/data/audio_metadata_tag_writer.dart';
 import '../../features/autofill/data/musicbrainz_source.dart';
 import '../../features/autofill/domain/metadata_source.dart';
@@ -169,6 +170,16 @@ final metadataSourceProvider = Provider<MetadataSource>((ref) {
 final tagWriterProvider = Provider<TagWriter>(
   (ref) => const AudioMetadataTagWriter(),
 );
+
+/// One autofill session, from search to written files.
+///
+/// Auto-disposed: it lives as long as the review screen watching it, so a
+/// closed screen is a forgotten session.
+final autofillControllerProvider =
+    NotifierProvider<AutofillController, AutofillState>(
+      AutofillController.new,
+      isAutoDispose: true,
+    );
 
 /// Where a fetched sheet is written, so it is found locally next time.
 final lyricsSidecarProvider = Provider<LyricsSidecar>(
