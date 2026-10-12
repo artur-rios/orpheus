@@ -431,7 +431,7 @@
       }
     }
   },
-  "scanReport": "{tracks} faixas — {added} novas, {removed} removidas.",
+  "scanReport": "{tracks} faixas — {added} novas, {updated} atualizadas, {removed} removidas.",
   "@scanReport": {
     "description": "What the last scan changed.",
     "placeholders": {
@@ -439,6 +439,9 @@
         "type": "int"
       },
       "added": {
+        "type": "int"
+      },
+      "updated": {
         "type": "int"
       },
       "removed": {
@@ -566,7 +569,7 @@
       }
     }
   },
-  "statsUntaggedNote": "{count, plural, =1{1 faixa tocada não tem tag de artista, disco ou gênero, então ela é contada nos totais acima mas não aparece em nenhum ranking abaixo.} other{{count} faixas tocadas não têm tag de artista, disco ou gênero, então elas são contadas nos totais acima mas não aparecem em nenhum ranking abaixo.}}",
+  "statsUntaggedNote": "{count, plural, =1{1 faixa tocada não tem tag de artista, disco ou gênero, então ela é contada nos totais acima mas não aparece em nenhum ranking de artista, disco ou gênero abaixo.} other{{count} faixas tocadas não têm tag de artista, disco ou gênero, então elas são contadas nos totais acima mas não aparecem em nenhum ranking de artista, disco ou gênero abaixo.}}",
   "@statsUntaggedNote": {
     "description": "Explains why the totals can be larger than the rankings.",
     "placeholders": {

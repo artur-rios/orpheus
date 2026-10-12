@@ -6,6 +6,7 @@ import 'core/di/providers.dart';
 import 'core/l10n/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'features/playback/presentation/media_session_names_scope.dart';
+import 'features/shell/application/shell_controller.dart';
 import 'features/shell/domain/shell_destination.dart';
 import 'features/shell/presentation/shell_screen.dart';
 import 'features/updates/presentation/update_prompt.dart';
@@ -67,7 +68,10 @@ class _ShellWithBack extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final destination = ref.watch(shellControllerProvider);
     final browse = ref.watch(musicBrowseControllerProvider);
-    final searching = ref.watch(searchTermProvider).isNotEmpty;
+    // The same test the shell uses to decide results are showing: a single
+    // character left in the field shows the listing, and a back press that
+    // spent itself clearing an invisible term would look like it did nothing.
+    final searching = isSearchable(ref.watch(searchTermProvider));
 
     final canGoUp =
         searching ||

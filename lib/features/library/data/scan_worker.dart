@@ -31,12 +31,9 @@ class ScanOutcome {
 
   /// When the walk began, which is the moment the catalog describes.
   ///
-  /// The start rather than the end, because it is what the next cheap walk
-  /// measures folders against: a folder changed while this scan was running —
-  /// after the walk had passed it, before the scan finished — is newer than
-  /// the start and older than the end, and measuring against the end would
-  /// let the next launch take it on trust and keep the tags this scan read
-  /// before the change.
+  /// The start rather than the end: a file changed while this scan was
+  /// running may already have been read in its old state, and the catalog
+  /// makes no claim about anything after the walk set out.
   final DateTime startedAt;
 }
 
@@ -57,27 +54,17 @@ class ScanOutcome {
 /// [onProgress] is called as the walk and the read advance; it is called often
 /// but not per file — see [progressInterval].
 ///
-/// [unchangedSince] turns on the cheap walk, and is the moment the last scan
-/// began. A directory whose own timestamp is older than that — by more than
-/// [timestampSlack], for the file systems that round it — has had nothing
-/// added to it, removed from it or renamed inside it since, so the files in it
-/// are the files the last scan recorded, and their sizes and timestamps are
-/// taken from [previous] instead of from the disk. What that saves is one
-/// `stat` per file — on a library of eleven thousand tracks, eleven thousand
-/// system calls, which on a phone's storage is most of what a re-scan costs.
-///
-/// What it gives up is a file rewritten *in place*: that changes the file's
-/// own timestamp and not its folder's, so the cheap walk carries the old tags
-/// over. Anything that adds, deletes or renames is still seen, and so is a
-/// tagger that writes to a temporary file and renames over the original, which
-/// is what most of them do. Pass `null` — as the scan the owner asks for by
-/// hand does — and every file is stat'ed as before.
+/// Every file is stat'ed, every time. An earlier version took a folder whose
+/// own timestamp predated the last scan on trust and skipped the files in it,
+/// which saved a `stat` per file and missed exactly the change an owner makes
+/// most: a tagger rewriting a file in place moves the file's timestamp and not
+/// its folder's, so a corrected artist name never reached the library until a
+/// scan was asked for by hand.
 ScanOutcome scanFolders({
   required List<String> folders,
   required List<MusicEntry> previous,
   required String coverDirectory,
   void Function(ScanProgress progress)? onProgress,
-  DateTime? unchangedSince,
 }) {
   final startedAt = DateTime.now();
   final covers = FileCoverStore(coverDirectory);
@@ -113,8 +100,6 @@ ScanOutcome scanFolders({
       directory,
       found: found,
       visited: visited,
-      known: known,
-      unchangedSince: unchangedSince,
       onProgress: onProgress == null
           ? null
           : () => onProgress(
@@ -140,6 +125,7 @@ ScanOutcome scanFolders({
   final sidecars = <String, String?>{};
   var reused = 0;
   var added = 0;
+  var updated = 0;
 
   for (final file in found) {
     if (onProgress != null && entries.length % progressInterval == 0) {
@@ -162,7 +148,13 @@ ScanOutcome scanFolders({
       continue;
     }
 
-    added++;
+    // A path the catalog already held is a file that changed — re-tagged,
+    // most likely — rather than one the library gained.
+    if (carried == null) {
+      added++;
+    } else {
+      updated++;
+    }
     entries.add(
       _read(
         file,
@@ -187,6 +179,7 @@ ScanOutcome scanFolders({
     report: ScanReport(
       tracks: entries.length,
       added: added,
+      updated: updated,
       reused: reused,
       removed: known.keys.where((path) => !present.contains(path)).length,
       unreadable: unreadable,
@@ -204,15 +197,6 @@ ScanOutcome scanFolders({
 /// reported every track in it as added.
 bool _sameMillisecond(DateTime a, DateTime b) =>
     a.millisecondsSinceEpoch == b.millisecondsSinceEpoch;
-
-/// How far a folder's timestamp may lag a change made inside it.
-///
-/// FAT, which is what most memory cards and pen drives are formatted with,
-/// keeps a timestamp to the nearest two seconds, rounded down. A folder changed
-/// a second after a scan began can therefore read as older than the scan, and
-/// the cheap walk would take it on trust; only a folder older than this margin
-/// as well is treated as settled.
-const Duration timestampSlack = Duration(seconds: 2);
 
 /// How many files pass between progress reports.
 ///
@@ -319,8 +303,6 @@ bool _walk(
   Directory directory, {
   required List<AudioFile> found,
   required Set<String> visited,
-  required Map<String, MusicEntry> known,
-  DateTime? unchangedSince,
   void Function()? onProgress,
 }) {
   // Symbolic links are not followed, but a library folder can still be reached
@@ -346,20 +328,6 @@ bool _walk(
     return false;
   }
 
-  // Whether the files here can be taken from the last catalog rather than
-  // stat'ed one by one — see [scanFolders]. The folder's own timestamp is one
-  // system call; the files in it are one each.
-  var settled = false;
-  if (unchangedSince != null) {
-    try {
-      settled = directory.statSync().modified.isBefore(
-        unchangedSince.subtract(timestampSlack),
-      );
-    } on Object {
-      settled = false;
-    }
-  }
-
   for (final child in children) {
     if (child is Directory) {
       // Hidden directories are skipped whole: `.git`, `.Trash-1000` and
@@ -371,25 +339,12 @@ bool _walk(
         child,
         found: found,
         visited: seen,
-        known: known,
-        unchangedSince: unchangedSince,
         onProgress: onProgress,
       );
       continue;
     }
 
     if (child is! File || !isAudioPath(child.path)) continue;
-
-    // A settled folder answers from the last catalog. A file in one that the
-    // catalog does not know is still stat'ed: it is a file the last scan did
-    // not see, whatever the folder's timestamp says.
-    if (settled) {
-      if (known[child.path] case final carried?) {
-        found.add(carried.file);
-        if (found.length % progressInterval == 0) onProgress?.call();
-        continue;
-      }
-    }
 
     try {
       final stat = child.statSync();

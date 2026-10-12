@@ -79,7 +79,12 @@ class LibraryFoldersView extends ConsumerWidget {
         if (scan.report case final report?) ...[
           const SizedBox(height: AppSpacing.sm),
           Text(
-            l10n.scanReport(report.tracks, report.added, report.removed),
+            l10n.scanReport(
+              report.tracks,
+              report.added,
+              report.updated,
+              report.removed,
+            ),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -139,10 +144,14 @@ class _FolderRow extends ConsumerWidget {
           );
           if (!confirmed) return;
 
-          await ref
-              .read(libraryFoldersControllerProvider.notifier)
-              .remove(folder);
-          await ref.read(scanControllerProvider.notifier).scan();
+          // Both read before the removal: the removal takes this row off the
+          // screen, and a `ref` whose widget has gone throws rather than
+          // answering — which left the scan that empties the folder's tracks
+          // out of the library never started.
+          final folders = ref.read(libraryFoldersControllerProvider.notifier);
+          final scanner = ref.read(scanControllerProvider.notifier);
+          await folders.remove(folder);
+          await scanner.scan();
         },
       ),
     );

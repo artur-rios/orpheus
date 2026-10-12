@@ -330,8 +330,8 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String scanReport(int tracks, int added, int removed) {
-    return '$tracks faixas — $added novas, $removed removidas.';
+  String scanReport(int tracks, int added, int updated, int removed) {
+    return '$tracks faixas — $added novas, $updated atualizadas, $removed removidas.';
   }
 
   @override
@@ -449,8 +449,8 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count faixas tocadas não têm tag de artista, disco ou gênero, então elas são contadas nos totais acima mas não aparecem em nenhum ranking abaixo.',
-      one: '1 faixa tocada não tem tag de artista, disco ou gênero, então ela é contada nos totais acima mas não aparece em nenhum ranking abaixo.',
+          '$count faixas tocadas não têm tag de artista, disco ou gênero, então elas são contadas nos totais acima mas não aparecem em nenhum ranking de artista, disco ou gênero abaixo.',
+      one: '1 faixa tocada não tem tag de artista, disco ou gênero, então ela é contada nos totais acima mas não aparece em nenhum ranking de artista, disco ou gênero abaixo.',
     );
     return '$_temp0';
   }

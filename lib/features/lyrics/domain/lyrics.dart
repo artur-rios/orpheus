@@ -43,12 +43,26 @@ class Lyrics {
   /// line was given two times so that a refrain repeats, arrives in whatever
   /// order it was typed in, and everything downstream — the lookup, the
   /// scrolling, the highlight — depends on the order being right.
+  ///
+  /// Lines that share a time keep the order the file gave them, which is what
+  /// a bilingual LRC means by writing a line and then its translation under
+  /// the same stamp. `List.sort` promises no such thing — past a few dozen
+  /// lines it is a quicksort, and it swapped pairs partway down a long song —
+  /// so each line's position in the file is the tiebreak, said outright.
   factory Lyrics.synced(List<LyricLine> lines) {
-    final ordered = [...lines]..sort(
-      (a, b) => (a.at ?? Duration.zero).compareTo(b.at ?? Duration.zero),
-    );
+    final positions = [for (var index = 0; index < lines.length; index++) index]
+      ..sort((a, b) {
+        final byTime = (lines[a].at ?? Duration.zero).compareTo(
+          lines[b].at ?? Duration.zero,
+        );
 
-    return Lyrics(lines: List.unmodifiable(ordered), isSynced: true);
+        return byTime != 0 ? byTime : a.compareTo(b);
+      });
+
+    return Lyrics(
+      lines: List.unmodifiable([for (final index in positions) lines[index]]),
+      isSynced: true,
+    );
   }
 
   /// Untimed lyrics, from [lines] of text.
@@ -73,6 +87,12 @@ class Lyrics {
   /// `null` before the first line's time — the count-in, the intro — and for
   /// lyrics that carry no times, which have no line that belongs to a moment.
   ///
+  /// Where several lines share the time being sung — a line and its
+  /// translation — the first of them: the highlight and the scroll land on the
+  /// top of the group, and the rest of it follows beneath. Answering the last,
+  /// which is where the search below stops, lit the translation and never the
+  /// line it translates.
+  ///
   /// A binary search rather than a walk: this is asked on every position
   /// report the engine sends, which is several times a second for as long as
   /// a track plays.
@@ -91,6 +111,14 @@ class Lyrics {
       } else {
         high = middle - 1;
       }
+    }
+
+    // Back to the first line stamped with the same time. A walk rather than a
+    // second search, because such a group is two or three lines long.
+    while (found != null &&
+        found > 0 &&
+        lines[found - 1].at == lines[found].at) {
+      found--;
     }
 
     return found;

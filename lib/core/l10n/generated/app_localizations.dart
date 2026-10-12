@@ -671,8 +671,8 @@ abstract class AppLocalizations {
   /// What the last scan changed.
   ///
   /// In en, this message translates to:
-  /// **'{tracks} tracks — {added} new, {removed} gone.'**
-  String scanReport(int tracks, int added, int removed);
+  /// **'{tracks} tracks — {added} new, {updated} updated, {removed} gone.'**
+  String scanReport(int tracks, int added, int updated, int removed);
 
   /// How many files were listed but not understood.
   ///
@@ -827,7 +827,7 @@ abstract class AppLocalizations {
   /// Explains why the totals can be larger than the rankings.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no ranking below.} other{{count} played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no ranking below.}}'**
+  /// **'{count, plural, =1{1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no artist, record or genre ranking below.} other{{count} played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no artist, record or genre ranking below.}}'**
   String statsUntaggedNote(int count);
 
   /// The updates section of the preferences.
