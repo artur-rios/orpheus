@@ -1,10 +1,14 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/features/autofill/data/audio_metadata_tag_writer.dart';
 import 'package:orpheus/features/autofill/domain/autofill_field.dart';
+import 'package:orpheus/features/autofill/domain/tag_writer.dart';
+import 'package:orpheus/features/library/domain/audio_file.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../support/ape_fixture.dart';
 import '../../../support/flac_fixture.dart';
 
 /// Reading and writing a real file's tags, in a temporary directory.
@@ -32,8 +36,15 @@ void main() {
     return target;
   }
 
+  String ape(Map<String, String> tags) {
+    final target = p.join(root.path, 'a.ape');
+    File(target).writeAsBytesSync(taggedApe(tags: tags));
+
+    return target;
+  }
+
   group('inspect', () {
-    test('GivenAnMp3_WhenInspected_ThenItsTagsAndEveryFieldAreAvailable', () async {
+    test('GivenAnMp3_WhenInspected_ThenItsTagsAndEveryFieldAreAvailable', skip: unwritable('.mp3'), () async {
       final tags = await writer.inspect(copyOf('tagged.mp3'));
 
       expect(tags.values[AutofillField.title], 'Airbag');
@@ -45,16 +56,22 @@ void main() {
       expect(tags.writable, AutofillField.values.toSet());
     });
 
-    test('GivenAFlac_WhenInspected_ThenItsTagsAreReadIncludingTheAlbumArtist', () async {
+    test('GivenAFlac_WhenInspected_ThenItsTagsAreReadIncludingTheAlbumArtist', skip: unwritable('.flac'), () async {
       final tags = await writer.inspect(flac({'TITLE': 'Airbag', 'ALBUMARTIST': 'Radiohead', 'DISCTOTAL': '2'}));
 
       expect(tags.values[AutofillField.title], 'Airbag');
       expect(tags.values[AutofillField.albumArtist], 'Radiohead');
       expect(tags.values[AutofillField.discTotal], 2);
-      expect(tags.writable, AutofillField.values.toSet());
+      // Read, but not written: the package's FLAC writer emits no track
+      // total and no disc.
+      expect(
+        tags.writable,
+        AutofillField.values.toSet()
+          ..removeAll({AutofillField.trackTotal, AutofillField.discNumber, AutofillField.discTotal}),
+      );
     });
 
-    test('GivenAWav_WhenInspected_ThenOnlyTheFieldsItsFormatHoldsAreWritable', () async {
+    test('GivenAWav_WhenInspected_ThenOnlyTheFieldsItsFormatHoldsAreWritable', skip: unwritable('.wav'), () async {
       final tags = await writer.inspect(copyOf('tagged.wav'));
 
       expect(tags.writable, isNot(contains(AutofillField.albumArtist)));
@@ -70,4 +87,214 @@ void main() {
       expect((await writer.inspect(p.join(root.path, 'gone.mp3'))).writable, isEmpty);
     });
   });
+
+  AudioFile asCatalogued(String path) {
+    final stat = File(path).statSync();
+
+    return AudioFile(path: path, sizeInBytes: stat.size, modifiedAt: stat.modified);
+  }
+
+  final everything = <AutofillField, Object?>{
+    AutofillField.title: 'Paranoid Android',
+    AutofillField.artist: 'Radiohead',
+    AutofillField.albumArtist: 'Radiohead',
+    AutofillField.album: 'OK Computer (Remastered)',
+    AutofillField.trackNumber: 2,
+    AutofillField.trackTotal: 12,
+    AutofillField.discNumber: 1,
+    AutofillField.discTotal: 1,
+    AutofillField.year: 1997,
+    AutofillField.genre: 'Alternative Rock',
+    AutofillField.cover: onePixelPng(),
+  };
+
+  group('write', () {
+    for (final name in ['tagged.mp3', 'tagged.m4a', 'tagged.wav', 'a.flac', 'a.ape']) {
+      test('GivenA${p.extension(name)}File_WhenEveryFieldItHoldsIsWritten_ThenEachReadsBack', skip: unwritable(p.extension(name)), () async {
+        final path = switch (name) {
+          'a.flac' => flac({'TITLE': 'Airbag', 'ARTIST': 'Radiohed', 'COMMENT': 'kept'}),
+          'a.ape' => ape({'Title': 'Airbag', 'Artist': 'Radiohed', 'Comment': 'kept'}),
+          _ => copyOf(name),
+        };
+        final writable = AudioMetadataTagWriter.fieldsFor(path);
+        final values = {for (final field in writable) field: everything[field]};
+
+        final outcome = await writer.write(path, values, expected: asCatalogued(path));
+        final after = await writer.inspect(path);
+
+        expect(outcome, WriteOutcome.written);
+        for (final field in writable) {
+          if (field == AutofillField.cover) {
+            expect(after.cover, everything[AutofillField.cover], reason: '$name cover');
+          } else {
+            expect(after.values[field], everything[field], reason: '$name ${field.name}');
+          }
+        }
+      });
+    }
+  });
+
+  group('the preservation gate', () {
+    // A format is only writable if a write leaves every tag it was not asked
+    // to change exactly as it was — including the ones the package's model
+    // does not hold. These read the file back with ffprobe-independent means:
+    // the raw bytes must still carry the kept values.
+    for (final name in ['tagged.mp3', 'tagged.m4a', 'tagged.wav', 'a.flac', 'a.ape']) {
+      test('GivenA${p.extension(name)}FileWithTagsTheAutofillDoesNotTouch_WhenOneFieldIsWritten_ThenTheyAreAllStillThere', skip: lost[p.extension(name)], () async {
+        final path = switch (name) {
+          'a.flac' => flac({'TITLE': 'Airbag', 'COMMENT': 'kept', 'CUSTOM': 'kept'}),
+          'a.ape' => ape({
+            'Title': 'Airbag',
+            'Artist': 'Radiohed',
+            'Album Artist': 'Radiohead',
+            'Album': 'OK Computer',
+            'Year': '1997',
+            'Track': '1/12',
+            'Disc': '1/1',
+            'Genre': 'Rock',
+            'Comment': 'kept',
+            'CUSTOM': 'kept',
+          }),
+          _ => copyOf(name),
+        };
+        final before = await writer.inspect(path);
+        final rawBefore = latin1.decode(File(path).readAsBytesSync(), allowInvalid: true);
+
+        await writer.write(path, {AutofillField.title: 'Paranoid Android'}, expected: asCatalogued(path));
+
+        final after = await writer.inspect(path);
+        for (final field in AutofillField.values.where((f) => f != AutofillField.title)) {
+          expect(after.values[field], before.values[field], reason: '$name ${field.name}');
+        }
+        expect(after.cover, before.cover, reason: '$name cover');
+        // The tags no field covers: a comment on every format, and on the M4A
+        // the album artist (aART) the writer's model cannot hold.
+        final raw = latin1.decode(File(path).readAsBytesSync(), allowInvalid: true);
+        expect(raw, contains('kept'), reason: '$name comment');
+        if (name == 'tagged.m4a') expect(raw, contains('aART'), reason: 'm4a album artist');
+        // And every other tag, by its name and its value as the file holds
+        // them — which also catches what the reader cannot parse (and so
+        // compares equal above) but a rewrite drops, renames or reformats.
+        for (final marker in untouched[name]!) {
+          expect(occurrences(raw, marker), occurrences(rawBefore, marker), reason: '$name $marker');
+        }
+      });
+    }
+  });
+
+  group('refusals', () {
+    test('GivenAFileChangedSinceItWasRead_WhenWritten_ThenItIsLeftAlone', skip: unwritable('.mp3'), () async {
+      final path = copyOf('tagged.mp3');
+      final catalogued = asCatalogued(path);
+      // Another tag editor gets there first.
+      File(path).writeAsBytesSync([...File(path).readAsBytesSync(), 0]);
+
+      final outcome = await writer.write(path, {AutofillField.title: 'X'}, expected: catalogued);
+
+      expect(outcome, WriteOutcome.changedSinceRead);
+      expect((await writer.inspect(path)).values[AutofillField.title], 'Airbag');
+    });
+
+    test('GivenAnOgg_WhenWritten_ThenItIsUnsupportedAndUntouched', () async {
+      final path = copyOf('tagged.ogg');
+      final bytes = File(path).readAsBytesSync();
+
+      final outcome = await writer.write(path, {AutofillField.title: 'X'}, expected: asCatalogued(path));
+
+      expect(outcome, WriteOutcome.unsupported);
+      expect(File(path).readAsBytesSync(), bytes);
+    });
+
+    test('GivenAFileThatIsGone_WhenWritten_ThenItIsReportedAsChanged', skip: unwritable('.mp3'), () async {
+      final path = copyOf('tagged.mp3');
+      final catalogued = asCatalogued(path);
+      File(path).deleteSync();
+
+      expect(
+        await writer.write(path, {AutofillField.title: 'X'}, expected: catalogued),
+        WriteOutcome.changedSinceRead,
+      );
+    });
+
+    // What the gate leaves of every format the package writes: nothing to
+    // write, and a write asked for anyway refused without touching the file.
+    for (final name in ['tagged.mp3', 'tagged.m4a', 'tagged.wav', 'a.flac', 'a.ape']) {
+      test('GivenA${p.extension(name)}File_WhenWritten_ThenThePreservationGateRefusesItAndLeavesItUntouched', () async {
+        final path = switch (name) {
+          'a.flac' => flac({'TITLE': 'Airbag', 'COMMENT': 'kept'}),
+          'a.ape' => ape({'Title': 'Airbag', 'Comment': 'kept'}),
+          _ => copyOf(name),
+        };
+        final bytes = File(path).readAsBytesSync();
+
+        final tags = await writer.inspect(path);
+        final outcome = await writer.write(path, {AutofillField.title: 'X'}, expected: asCatalogued(path));
+
+        expect(tags.writable, isEmpty, reason: name);
+        expect(outcome, WriteOutcome.unsupported, reason: name);
+        expect(File(path).readAsBytesSync(), bytes, reason: name);
+      });
+    }
+  });
 }
+
+/// What a write loses from each format `audio_metadata_reader` 1.8.0 writes,
+/// as that format's preservation test found it — which is why none of them
+/// is in `writableExtensions`. A format leaves this map, and its tests run
+/// again, when a package upgrade makes its preservation test pass.
+const lost = <String, String>{
+  '.mp3':
+      'the ID3v2 tag is rebuilt from the package model: a write drops every TXXX frame '
+      '(the comment and the CUSTOM field), rewrites the TDRC date as a TYER frame and adds a TLEN',
+  '.m4a':
+      'the ilst atom is rebuilt from the package model: a write drops aART (the album artist), '
+      '©cmt (the comment) and ©too (the encoder)',
+  '.wav':
+      'the package cannot read a year-only ICRD date, so a write of any field drops it',
+  '.flac':
+      'the Vorbis comments are rebuilt from the package model: a write drops COMMENT and every '
+      'custom comment',
+  '.ape':
+      'the APEv2 tag is rebuilt from the package model: a write renames the Album Artist item to '
+      'ALBUMARTIST and rewrites Year=1997 as DATE=1997-01-01',
+};
+
+/// Why the tests that write to a format are skipped, where they are.
+String? unwritable(String extension) => lost.containsKey(extension)
+    ? 'the $extension format is unwritable after the preservation gate: ${lost[extension]}'
+    : null;
+
+/// Every tag each preservation fixture carries besides its title, as the
+/// file spells it: the frame, atom, chunk or item name, and the value.
+///
+/// A write of the title alone must leave each exactly as often as it was —
+/// a comment and a custom field both reading `kept`, losing one is still a
+/// loss.
+const untouched = <String, List<String>>{
+  'tagged.mp3': [
+    'TPE1', 'Radiohed', 'TALB', 'OK Computer', 'TRCK', '1/12', 'TDRC', '1997', //
+    'TCON', 'Rock', 'TPE2', 'Radiohead', 'TPOS', '1/1', 'TSSE', 'Lavf61.7.103',
+    'TXXX', 'comment', 'CUSTOM', 'kept',
+  ],
+  'tagged.m4a': [
+    '©ART', 'Radiohed', 'aART', 'Radiohead', '©alb', 'OK Computer', //
+    '©day', '1997', '©too', 'Lavf61.7.103', '©cmt', 'kept',
+    '©gen', 'Rock', 'trkn', 'disk',
+  ],
+  'tagged.wav': [
+    'IART', 'Radiohed', 'ICMT', 'kept', 'ICRD', '1997', 'IGNR', 'Rock', //
+    'IPRD', 'OK Computer', 'IPRT', '1/12', 'ISFT', 'Lavf61.7.103',
+  ],
+  'a.flac': ['COMMENT=kept', 'CUSTOM=kept'],
+  'a.ape': [
+    'Artist', 'Radiohed', 'Album Artist', 'Radiohead', 'Album', 'OK Computer', //
+    'Year', '1997', 'Track', '1/12', 'Disc', '1/1', 'Genre', 'Rock',
+    'Comment', 'CUSTOM', 'kept',
+  ],
+};
+
+/// How often [marker] appears in [raw], ignoring case: an APE item's key is
+/// not case-sensitive, and a rewrite that only changes its case has not
+/// changed the tag.
+int occurrences(String raw, String marker) =>
+    marker.toLowerCase().allMatches(raw.toLowerCase()).length;

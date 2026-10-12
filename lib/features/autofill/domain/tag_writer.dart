@@ -7,16 +7,19 @@ import 'autofill_field.dart';
 
 /// The extensions of the formats tags can be written to.
 ///
-/// What `audio_metadata_reader` can write, and nothing it can only read: an
-/// Ogg or Opus file is in the library and plays, and has its tags left alone.
-const Set<String> writableExtensions = {
-  '.mp3',
-  '.flac',
-  '.m4a',
-  '.mp4',
-  '.wav',
-  '.ape',
-};
+/// What `audio_metadata_reader` can write without losing anything, and
+/// nothing it can only read: an Ogg or Opus file is in the library and plays,
+/// and has its tags left alone.
+///
+/// None, as of `audio_metadata_reader` 1.8.0. Each format it writes rebuilds
+/// the tag from its own model and so drops or rewrites tags it was not asked
+/// to change — MP3 its TXXX frames and TDRC date, M4A its album artist
+/// (`aART`), comment and encoder, FLAC every comment its model does not name,
+/// WAV a year-only ICRD date, APE its `Album Artist` and `Year` items. The
+/// preservation tests in `audio_metadata_tag_writer_test.dart` name each loss
+/// and are skipped, not deleted: a format comes back here once a package
+/// upgrade makes its test pass.
+const Set<String> writableExtensions = {};
 
 /// Whether tags can be written to the file at [path] at all.
 bool canWriteTagsTo(String path) =>

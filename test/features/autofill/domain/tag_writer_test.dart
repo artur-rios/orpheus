@@ -3,16 +3,21 @@ import 'package:orpheus/features/autofill/domain/tag_writer.dart';
 
 /// Which files an autofill may write to at all.
 void main() {
-  test('GivenAFormatTheWriterHandles_WhenItIsAsked_ThenItMayBeWritten', () {
+  // Every format the package writes loses tags it was not asked to change,
+  // so none may be written: see the preservation gate in
+  // audio_metadata_tag_writer_test.dart.
+  test('GivenAFormatAWriteWouldLoseTagsFrom_WhenItIsAsked_ThenItMayNotBeWritten', () {
     for (final path in [
       '/m/a.mp3',
       '/m/b.FLAC',
       '/m/c.m4a',
-      '/m/d.wav',
-      '/m/e.ape',
+      '/m/d.mp4',
+      '/m/e.wav',
+      '/m/f.ape',
     ]) {
-      expect(canWriteTagsTo(path), isTrue, reason: path);
+      expect(canWriteTagsTo(path), isFalse, reason: path);
     }
+    expect(writableExtensions, isEmpty);
   });
 
   test(
