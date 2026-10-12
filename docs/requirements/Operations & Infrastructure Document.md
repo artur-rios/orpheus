@@ -35,7 +35,7 @@ patching a global, and it is the mechanism behind `NFR-07` and `NFR-08`.
 
 **IR-05** — Everything this application persists lives inside the platform's
 application-support directory for it. Nothing is written anywhere else, and
-nothing at all is written into the owner's music folders (`BR-02`).
+the only things written into the owner's music folders are a `.lrc` beside a track whose words were looked up (`BR-29a`), and the tags of files whose autofill the owner confirmed (`FR-AF-05`).
 
 | What | Where |
 | --- | --- |
@@ -91,17 +91,26 @@ developer happens to have.
 | `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | Playback that continues off screen. |
 | `POST_NOTIFICATIONS` | The playback notification. |
 | `WAKE_LOCK` | Keeping the processor running through a track with the screen off. |
-| `MANAGE_EXTERNAL_STORAGE` | A registered folder on a memory card or a drive plugged into the phone. |
+| `MANAGE_EXTERNAL_STORAGE` | A registered folder on a memory card or a drive plugged into the phone; and, on Android 11 and later, changing the tags of files whose autofill the owner confirmed. |
+| `WRITE_EXTERNAL_STORAGE`, capped at API 29 | Changing the tags of files whose autofill the owner confirmed, on Android 10 and earlier. On Android 7 to 10 it is granted together with read access, in the same system dialog, and is only ever used for an autofill the owner confirmed (`FR-AF-08`). |
 
-The last of those is the broad one, and it is bounded by when it is asked for
+`MANAGE_EXTERNAL_STORAGE` is the broad one, and it is bounded by when it is asked for
 rather than by its own scope: Android mounts removable volumes outside the
 storage `READ_MEDIA_AUDIO` covers and offers no narrower permission for them,
 so a folder on one is unreadable until this is granted. It is never requested
 on a launch, never on a scan, and never on the way into a folder picker — only
 once a folder the owner registered has been walked and reported unreachable,
-and then from a card on the folders screen that says what it allows. Granting
-it widens nothing about what the application does: the folders walked are the
-folders registered, and `BR-03` is unchanged.
+and then from a card on the folders screen that says what it allows. The one
+other moment is on Android 11 and later, at the first autofill the owner
+confirms, when the application is about to change the tags of files it did not
+make (`FR-AF-08`); it is not asked for before that confirmation. On Android 7
+to 10 there is no such moment of its own: Android grants
+`WRITE_EXTERNAL_STORAGE` together with read access, in the same system dialog
+the library's first scan raises, and the application uses it only for an
+autofill the owner confirmed. Granting it widens
+nothing about what the application does: the folders walked are the folders
+registered, the only thing written is the tags the owner confirmed (`BR-02`),
+and `BR-03` is unchanged.
 
 Granting it is also not always enough within the run that asked. Android fixes
 a process's view of the mounted volumes when the process starts, so a volume
@@ -112,8 +121,8 @@ folders screen therefore has a second card, shown where the permission is
 already granted and a folder is still unreachable, and what it asks for is the
 next launch rather than a permission there is nothing left to grant.
 
-**IR-13** — The package declares **`INTERNET`, and only for the lyrics lookup**
-(`BR-29a`, `FR-LY-13`). The manifest says so at the declaration, in terms of
+**IR-13** — The package declares **`INTERNET`, and only for the lyrics lookup and the
+autofill lookup** (`BR-29a`, `FR-LY-13`, `FR-AF-02`). The manifest says so at the declaration, in terms of
 what is sent and what is not. The enforceable form of `BR-03` and `NFR-02` is
 no longer the absence of that permission but the exactness of the whole set:
 the built package must declare the permissions the manifest lists and no
@@ -128,7 +137,7 @@ on screen and the queue in the notification would be two different players.
 ## 6. Logging
 
 **IR-15** — One logger per feature area — `library`, `playback`, `lyrics`,
-`stats`, `shell`, `startup` — initialized at startup. Logging is local and structured. No
+`autofill`, `stats`, `shell`, `startup` — initialized at startup. Logging is local and structured. No
 log leaves the machine (`BR-03`).
 
 **IR-16** — A failure that the owner can do something about is surfaced in the

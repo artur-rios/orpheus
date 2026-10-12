@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
+import 'package:orpheus/features/library/domain/library_access.dart';
 
 import '../../../support/fakes.dart';
 import '../../../support/test_container.dart';
@@ -175,6 +176,37 @@ void main() {
         '/music',
         '/downloads',
       ]);
+    },
+  );
+
+  test(
+    'GivenTheOwnerAllowsWriting_WhenWriteAccessIsEnsured_ThenItIsGranted',
+    () async {
+      final access = FakeLibraryAccess();
+      final harness = Harness(access: access);
+
+      final decision = await harness
+          .read(libraryAccessControllerProvider.notifier)
+          .ensureWritable();
+
+      expect(decision, LibraryAccessDecision.granted);
+      expect(access.writeRequests, 1);
+    },
+  );
+
+  test(
+    'GivenTheOwnerRefusesWriting_WhenWriteAccessIsEnsured_ThenTheRefusalIsAnswered',
+    () async {
+      final access = FakeLibraryAccess()
+        ..writeDecision = LibraryAccessDecision.deniedPermanently;
+      final harness = Harness(access: access);
+
+      expect(
+        await harness
+            .read(libraryAccessControllerProvider.notifier)
+            .ensureWritable(),
+        LibraryAccessDecision.deniedPermanently,
+      );
     },
   );
 }

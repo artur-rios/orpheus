@@ -23,7 +23,7 @@ void main() {
 
   const report = ScanReport(tracks: 1, added: 1, removed: 0, reused: 0);
 
-  Harness harnessWith(ScriptedScanner scanner, {FakeLibraryAccess? access}) =>
+  Harness harnessWith(LibraryScanner scanner, {FakeLibraryAccess? access}) =>
       Harness(
         scanner: scanner,
         access: access,
@@ -431,4 +431,70 @@ void main() {
       },
     );
   });
+
+  test(
+    'GivenAScanIsMidWalk_WhenARescanIsAskedForSoon_ThenAnotherRunsWhenItEnds',
+    () async {
+      // Tags were written while a scan was walking: it may already have passed
+      // the files, and the library must not keep their old tags.
+      final scanner = HeldScanner();
+      final harness = harnessWith(scanner);
+      final controller = harness.read(scanControllerProvider.notifier);
+
+      Future<void> until(bool Function() reached) async {
+        for (var turns = 0; !reached() && turns < 100; turns++) {
+          await Future<void>.delayed(Duration.zero);
+        }
+        expect(reached(), isTrue);
+      }
+
+      final first = controller.scan();
+      await until(() => scanner.requests.length == 1);
+      expect(harness.read(scanControllerProvider).isRunning, isTrue);
+      await controller.rescanSoon();
+      expect(scanner.requests, hasLength(1));
+
+      await scanner.complete(scanned, report);
+      await until(() => scanner.requests.length == 2);
+      await scanner.complete(scanned, report);
+      await first.timeout(const Duration(seconds: 5));
+
+      expect(scanner.requests, hasLength(2));
+    },
+  );
+
+  test(
+    'GivenAScanIsWaitingOnTheAccessQuestion_WhenARescanIsAskedForSoon_ThenAnotherRunsWhenItEnds',
+    () async {
+      final scanner = ScriptedScanner([
+        ScanCompleted(catalog: scanned, report: report),
+      ]);
+      final harness = harnessWith(scanner);
+      final controller = harness.read(scanControllerProvider.notifier);
+
+      // Not yet walking — the scripted scan is over within a turn of the event
+      // loop — but already spoken for, waiting on the access question.
+      final first = controller.scan();
+      await controller.rescanSoon();
+      await first.timeout(const Duration(seconds: 5));
+
+      expect(scanner.requests, hasLength(2));
+    },
+  );
+
+  test(
+    'GivenNoScanIsRunning_WhenARescanIsAskedForSoon_ThenOneRunsWithoutAskingForAccess',
+    () async {
+      final access = FakeLibraryAccess();
+      final scanner = ScriptedScanner([
+        ScanCompleted(catalog: scanned, report: report),
+      ]);
+      final harness = harnessWith(scanner, access: access);
+
+      await harness.read(scanControllerProvider.notifier).rescanSoon();
+
+      expect(scanner.requests, hasLength(1));
+      expect(access.requests, 0);
+    },
+  );
 }

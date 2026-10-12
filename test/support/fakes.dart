@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -105,6 +106,38 @@ class InMemoryCoverStore implements CoverStore {
   Future<void> clear() async => _pictures.clear();
 }
 
+/// A [LibraryScanner] whose scans stay open until the test ends them.
+///
+/// For the tests about what happens while a scan is mid-walk, which a scripted
+/// scan — over within a turn of the event loop — cannot be.
+class HeldScanner implements LibraryScanner {
+  final List<StreamController<ScanEvent>> _scans = [];
+
+  /// The folder lists each scan was asked for.
+  final List<List<String>> requests = [];
+
+  @override
+  Stream<ScanEvent> scan({
+    required List<String> folders,
+    required MusicCatalog previous,
+    required String coverDirectory,
+  }) {
+    requests.add(folders);
+    final scan = StreamController<ScanEvent>();
+    _scans.add(scan);
+
+    return scan.stream;
+  }
+
+  /// Ends the latest scan the way a finished one does: with [catalog] and
+  /// [report], then the stream closing.
+  Future<void> complete(MusicCatalog catalog, ScanReport report) async {
+    final scan = _scans.last;
+    scan.add(ScanCompleted(catalog: catalog, report: report));
+    await scan.close();
+  }
+}
+
 /// A [LibraryScanner] that reports whatever the test scripted.
 class ScriptedScanner implements LibraryScanner {
   /// Creates a scanner that emits [events] for every scan.
@@ -192,6 +225,19 @@ class FakeLibraryAccess implements LibraryAccess {
     requests++;
 
     return decision;
+  }
+
+  /// What a request to write answers.
+  LibraryAccessDecision writeDecision = LibraryAccessDecision.granted;
+
+  /// How many times writing was asked for.
+  int writeRequests = 0;
+
+  @override
+  Future<LibraryAccessDecision> requestWrite() async {
+    writeRequests++;
+
+    return writeDecision;
   }
 
   @override

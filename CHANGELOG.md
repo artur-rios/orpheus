@@ -7,6 +7,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Autofill tags from MusicBrainz. On a record, or from a track's menu, choose which tags to fill — title, artist, album
+  artist, album, track and disc numbers and totals, year, genre, and optionally the cover — and Orpheus finds the
+  release, shows every change file by file as old → new, and writes only the ones you leave ticked, into the files and
+  the library. Another release or another search is one tap away. Orpheus now changes audio files for this and nothing
+  else, and the Android app asks for permission to do it the first time you confirm an autofill. MP3 and FLAC files
+  can be written, by Orpheus's own tag editors, which change only the tags asked for and keep every other byte; other
+  formats are read-only. A file another program changed since it was read is not written, and on Windows the track
+  playing may be refused as in use.
+
 ### Changed
 
 - On Windows and Linux the window opens maximized. Un-maximize it and close it, and the next launch opens it where you

@@ -42,6 +42,15 @@ result in a file beside its own settings.
   it sends the track's artist and title — with its record and length where the
   tags give them — and nothing else. The line being sung
   is lit, the sheet scrolls itself, and tapping a line plays from there.
+- **Fills in tags from MusicBrainz, when you ask.** From a record's actions, or
+  a track's menu, choose *Autofill tags…* and tick which tags it may fill —
+  title, artist, album artist, album, track and disc numbers and totals, year,
+  genre, and the cover, which stays unticked until you choose it. Orpheus finds
+  the release, preselects the best match, and shows every change file by file
+  as old → new, each with its own tick. Another release, or another search, is
+  one tap away. Only what you leave ticked is written, into the files and into
+  the library, which updates without you starting a scan. MP3 and FLAC can be written; the
+  other formats are read-only, and say so.
 - **Searches** across titles, artists and albums, ranked so a match at the start
   of a title comes above one buried in the middle of something else.
 - **Says what you actually listen to** — total plays, and the most played
@@ -53,24 +62,29 @@ result in a file beside its own settings.
 
 ## What it doesn't do
 
-- **It never touches your audio files.** No tag editing, no renaming, no
-  moving, no deleting, no transcoding. It opens them for reading and that is
-  all. The one thing it ever writes into a music folder is a `.lrc` next to a
-  track whose words it looked up — a new file, never a replacement for one you
-  wrote, and never the track itself.
+- **It changes your files only when you ask.** No renaming, no moving, no
+  deleting, no transcoding. The one change it ever makes to an audio file is to
+  its tags, from an autofill whose every change you saw and confirmed — and it
+  refuses a file another program changed since it was read. Besides that, it
+  writes a `.lrc` next to a track whose words it looked up, a new file and
+  never a replacement for one you wrote.
 - **Almost no network.** No streaming, no scrobbling, no telemetry, no
-  analytics, no crash reporting, no cover art fetched from anywhere. There are
-  two exceptions, and both can be turned off: the lyrics lookup described
-  above, and on Windows and Linux the check for a newer release
-  ([below](#updating-from-inside-the-application)). The
-  Android package declares exactly eight permissions and CI fails the build on
-  a ninth, which is the version of this promise a machine can check. The
-  broadest of the eight is all-files access, and it is asked for at one moment
+  analytics, no crash reporting, no cover art fetched unless you ask. There are
+  three exceptions: the lyrics lookup described above, which can be turned off;
+  on Windows and Linux the check for a newer release
+  ([below](#updating-from-inside-the-application)), which can be turned off;
+  and the MusicBrainz and Cover Art Archive lookups an autofill makes when you
+  start one, which happen at no other time. The
+  Android package declares exactly nine permissions and CI fails the build on
+  a tenth, which is the version of this promise a machine can check. The
+  broadest of the nine is all-files access, and it is asked for at two moments
   only: a folder you registered has turned out to be on a memory card or a
   drive plugged into the phone, which Android mounts where no narrower
-  permission reaches. A library that lives where Android expects it never meets
-  it, and granting it changes nothing about the promise above — the folders
-  read are still the folders you registered.
+  permission reaches; and, on Android 11 and later, when you confirm an
+  autofill, which has to change the files. A library that lives where Android
+  expects it, and that you never autofill, never meets it, and granting it
+  changes nothing about the promise above — the folders read are still the
+  folders you registered, and the only thing written is the tags you confirmed.
 - **No accounts, no sync, no cloud.** One person, one machine, one library.
   Nothing Orpheus sends identifies you, or persists between requests: there is
   no account, no key, and no identifier of any kind.
@@ -191,7 +205,11 @@ The library starts empty and stays empty until you point it somewhere. Open
 **Folders**, add the folder your music is in — or press **Add my music folder**,
 which offers the platform's conventional one — and the scan starts. On Android
 the system asks for permission to read audio files at that point; it is asked
-for once you have registered a folder, never before. Android also asks to be
+for once you have registered a folder, never before. On Android 7 to 10 that
+same dialog also grants write access — Android asks for the two together — and
+Orpheus only ever uses it for an autofill whose changes you confirmed. On
+Android 11 and later, changing tags takes all-files access, asked for at the
+first autofill you confirm. Android also asks to be
 allowed to post the playback notification, and that one is asked for the first
 time you press play. Refusing it costs the notification and nothing else —
 playback still runs, and still runs in the background.
@@ -411,12 +429,44 @@ scrolled to for a few seconds so that reading ahead is possible.
 `features/lyrics/data/file_lyrics_source.dart`,
 `features/lyrics/domain/lyrics.dart`)
 
+### Autofill
+
+An autofill is a pure matching problem wrapped in two careful edges. A release
+is chosen from MusicBrainz's search by comparing what the search already says —
+track count, status, title, artist — and the files are assigned to its tracks by
+disc and number, then by title, then by length, each step only over what is left;
+the review screen is built from that assignment and from nothing the owner did
+not tick. (`features/autofill/domain/matching.dart`,
+`features/autofill/domain/proposals.dart`)
+
+The first edge is the lookup: every request, to MusicBrainz and to the Cover Art
+Archive, passes through one throttle held by the one source the application
+binds, so two autofills back to back cannot exceed one request a second, and a
+busy answer is retried once before it is reported. The second is the write, and
+it is guarded by a **preservation gate**: the tag package this application reads
+with lost tags it did not model on every format it wrote, so MP3 is written with
+Orpheus's own ID3v2 frame editor and FLAC with its own Vorbis-comment and
+picture-block editor, each changing only the frames or comments asked for and
+keeping every other byte, and a format is writable only once tests prove a write
+loses nothing else. M4A, WAV, APE, OGG and Opus are read-only for that reason.
+A write goes to a temporary file beside the track and is renamed into place,
+through a symbolic link to the real file; a file changed since it was read is
+not written, and on Windows the track playing may be refused as in use.
+(`features/autofill/data/musicbrainz_source.dart`,
+`features/autofill/data/id3_tag_editor.dart`,
+`features/autofill/data/flac_tag_editor.dart`,
+`features/autofill/data/atomic_write.dart`,
+`features/autofill/application/autofill_controller.dart`)
+
 ## Known limits
 
 - **No media session on Windows or Linux.** Neither desktop gets transport keys
   or a system now-playing panel. The seam that would carry them exists and is
   bound to a session that shows nothing, so this is an implementation to write
   rather than a design to change.
+- **Only MP3 and FLAC can be autofilled.** Every other format is read-only: a
+  write that would lose anything else in the file is not offered. A file another
+  program changed since Orpheus read it is refused rather than overwritten.
 - **Lyrics are found, never edited.** A track whose words are on neither side
   of it — no `.lrc`, no `SYLT`, no lyrics text tag — and that the lookup finds
   nothing for, or that is not looked up because the lookup is off or the tags

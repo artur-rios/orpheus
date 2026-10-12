@@ -199,6 +199,25 @@ class ScanController extends Notifier<ScanState> {
     }
   }
 
+  /// Scans again because files under the library were just changed by this
+  /// application — an autofill writing tags.
+  ///
+  /// A scan already running may have passed those files, so it is owed another
+  /// one whatever the folders say; otherwise one starts now. Access is not
+  /// asked for: a library whose files were just written is one this process
+  /// can read.
+  ///
+  /// Joining a running scan answers at once, before the extra scan has run;
+  /// it is the running [scan]'s caller who waits for that.
+  Future<void> rescanSoon() async {
+    if (state.isRunning || _asking) {
+      _again = true;
+      return;
+    }
+
+    await scan(askForAccess: false);
+  }
+
   static bool _sameFolders(List<String> left, List<String> right) =>
       left.length == right.length &&
       Iterable<int>.generate(left.length).every((i) => left[i] == right[i]);

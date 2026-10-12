@@ -18,7 +18,8 @@ done.
 | Actor | Description |
 | --- | --- |
 | **Owner** | The single human user, and the only actor with intent. Interacts with every use case below. |
-| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written only within this application's own directory. |
+| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill the owner confirmed (UC-34). |
+| **Metadata service** | MusicBrainz, and the Cover Art Archive for covers. Asked only when the owner starts an autofill (UC-34), at most once a second, and sent nothing that identifies the owner. |
 | **Playback engine** | The libmpv-backed engine linked in process. Opens files, reports position and duration, and reports what it cannot decode. Never modifies a file. |
 | **Host platform** | Windows, Linux or Android. Grants or refuses read access, provides the folder picker, and — on Android alone — provides the media session and the foreground service. |
 
@@ -87,6 +88,10 @@ graph LR
         UC32[UC-32: See the music move]
     end
 
+    subgraph "Autofill (AF)"
+        UC34[UC-34: Autofill a record's tags]
+    end
+
     OWNER --> UC01
     OWNER --> UC07
     OWNER --> UC13
@@ -95,6 +100,7 @@ graph LR
     OWNER --> UC28
     OWNER --> UC30
     OWNER --> UC32
+    OWNER --> UC34
 ```
 
 ---
@@ -1202,6 +1208,58 @@ graph LR
 
 ---
 
+### UC-34: Autofill a record's tags
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-34 |
+| **Name** | Autofill a record's tags |
+| **Actors** | Owner, Metadata service, Local filesystem, Host platform |
+| **Description** | The owner chooses which tags to fill on a record, the application finds the release on MusicBrainz and shows every change file by file, and only the changes the owner confirms are written — into the files and into the library. |
+| **Preconditions** | The library holds the record (or the track) the owner starts from. |
+| **Postconditions** | Exactly the confirmed changes are in the tags of the files they were confirmed for, and the library and every screen show them. No audio, file name or place has changed, no tag that was not chosen has changed, and every file the owner did not confirm a change for has not been opened for writing. Where the owner cancelled, or nothing was confirmed, nothing has been written. |
+| **Requirements** | FR-AF-01, FR-AF-02, FR-AF-03, FR-AF-04, FR-AF-05, FR-AF-06, FR-AF-07, FR-AF-08 |
+
+**Main Flow**
+
+1. The owner picks *Autofill tags…* on a record.
+2. The application asks which tags it may fill — title, artist, album artist,
+   album, track number and total, disc number and total, year, genre and cover
+   — showing the choice made last time, with cover unticked until chosen
+   (`FR-AF-01`). The owner chooses and presses *Find*.
+3. The application looks the record up on MusicBrainz from its album and album
+   artist, identifying itself and sending at most one request a second
+   (`FR-AF-02`). The best-matching release is fetched in full and preselected
+   (`FR-AF-03`).
+4. Each file is matched to a track of that release, and the review screen shows
+   every file with each proposed change as the current value and the new one,
+   each with its own tick. A value that would not change is not shown
+   (`FR-AF-04`).
+5. The owner reviews, and unticks whatever they reject.
+6. The owner confirms with *Write N changes to M files*.
+7. The application writes the confirmed changes one file at a time, each to a
+   temporary file beside the track renamed into place, changing only the tags
+   chosen and keeping every other byte of the file (`FR-AF-05`).
+8. The library updates without the owner starting a scan — the application
+   starts one itself for what was written — and the screen says how many files
+   were updated (`FR-AF-06`).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | The owner starts from a single track rather than a record | The lookup is for that recording, from its title, artist and length, and the releases it appears on are offered like any other candidates. The rest of the flow is the same, with one file. |
+| AF-02 | The matched release is not the right one | *Different release* lists the other candidates. Choosing one fetches it in full and rebuilds every proposal, and the owner's ticks start again from the defaults. |
+| AF-03 | The search finds the wrong thing | The search text is editable, and *Search again* looks up what it now says. Where the first search failed, the same search is retried by *Try again*. |
+| AF-04 | MusicBrainz knows nothing about the record | The screen says nothing was found and offers the search to be changed. Nothing has been written. |
+| AF-05 | MusicBrainz cannot be reached, or turns the request away as too frequent | The screen says which of the two it was, and offers to try again. It is not drawn as a failure of the library, and nothing has been written. |
+| AF-06 | No file in the selection can be written | Only MP3 and FLAC can be written. The first dialog says so and offers nothing to find. Where only some files can be written, the others are shown greyed with the reason and nothing is written to them. A field a format cannot hold is shown as not writable for that file, never written partially (`FR-AF-05`). |
+| AF-07 | A file cannot be written | The file is named with the reason (`FR-AF-07`) and the others are written regardless. A file changed since it was read — by another program — is refused rather than overwritten; a file in use, which on Windows can be the track playing, is refused as in use and can be tried again; a file the system refuses to let the application write is named as denied. Nothing is left behind beside it, and the file is as it was. |
+| AF-08 | On Android, permission to change audio files is refused | Nothing is written. On Android 11 and later all-files access is asked for only once the owner confirms; on Android 7 to 10 write access came with read access, in the same system dialog, and is used for nothing but a confirmed autofill (`FR-AF-08`). Where the refusal is permanent the settings page is offered. |
+| AF-09 | The owner cancels while the files are being written | The file being written is finished — a write leaves a file whole or as it was — and no further file is opened. The files already written stay written and are reported as such, and the library is brought up to date with them. |
+
+---
+
 ## 3. Use case — requirements traceability
 
 | Use case | Requirements |
@@ -1238,6 +1296,7 @@ graph LR
 | UC-30 Read the words | FR-LY-01, FR-LY-02, FR-LY-03, FR-LY-07 … FR-LY-10, FR-LY-12 |
 | UC-31 Follow and jump | FR-LY-04, FR-LY-05, FR-LY-06, FR-LY-11 |
 | UC-32 See the music move | FR-VZ-01 … FR-VZ-11 |
+| UC-34 Autofill a record's tags | FR-AF-01 … FR-AF-08 |
 
 ## 4. State diagrams
 

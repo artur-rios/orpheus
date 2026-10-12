@@ -26,3 +26,7 @@
 # The ones that are not text, marked rather than left to be sniffed.
 *.png binary
 *.ico binary
+*.mp3 binary
+*.m4a binary
+*.wav binary
+*.ogg binary

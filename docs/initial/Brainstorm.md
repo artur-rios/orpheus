@@ -25,6 +25,10 @@ their tags rather than by their file names, and plays them.
 - It never writes to my music. No tag editing, no renaming, no moving, no
   deleting. Read the files, play the files, that is all.
 
+  > *2026-10-12 — later narrowed:* Orpheus may write an audio file's tags, and
+  > only for changes the owner confirmed in an autofill (MP3 and FLAC). See the
+  > Vision Document, constraint C-03. The rest of this stays as it was written.
+
 ## What I want from it
 
 - Point it at a folder and have it work out what is in there.
