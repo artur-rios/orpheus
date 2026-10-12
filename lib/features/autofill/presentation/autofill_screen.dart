@@ -282,6 +282,7 @@ class _ProposalCard extends ConsumerWidget {
     final controller = ref.read(autofillControllerProvider.notifier);
     final path = proposal.entry.file.path;
     final muted = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final allTicked = proposal.acceptedCount == proposal.changes.length;
 
     final note = switch (proposal.blockedBecause) {
       ProposalBlock.unwritableFormat => l10n.autofillUnwritable,
@@ -296,7 +297,22 @@ class _ProposalCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(proposal.entry.file.name, style: theme.textTheme.titleSmall),
+            Row(
+              children: [
+                Expanded(child: Text(proposal.entry.file.name, style: theme.textTheme.titleSmall)),
+                // This file's changes, all at once: ticked where every one is,
+                // dashed where some are, and a tap ticks them all unless all
+                // already are.
+                if (proposal.changes.isNotEmpty)
+                  Checkbox(
+                    key: ValueKey('autofill-file-toggle-$path'),
+                    tristate: true,
+                    value: allTicked ? true : (proposal.acceptedCount == 0 ? false : null),
+                    onChanged: (_) => controller.toggleFile(path, !allTicked),
+                    semanticLabel: allTicked ? l10n.autofillUntickAll : l10n.autofillTickAll,
+                  ),
+              ],
+            ),
             if (note != null) Text(note, style: muted),
             if (proposal.notWritable.isNotEmpty)
               Text(

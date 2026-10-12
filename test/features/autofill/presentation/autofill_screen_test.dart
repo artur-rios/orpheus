@@ -108,10 +108,49 @@ void main() {
     final harness = harnessFor();
     await openScreen(tester, harness, {AutofillField.artist});
 
-    await tester.tap(find.byType(Checkbox).first);
+    await tester.tap(find.byType(CheckboxListTile).first);
     await tester.pump();
 
     expect(find.text('Write 1 change to 1 file'), findsOneWidget);
+  });
+
+  testWidgets('GivenTwoFiles_WhenOneCardsTickAllIsToggled_ThenOnlyThatCardsChangesFollowAndTheButtonCounts', (tester) async {
+    final harness = harnessFor();
+    // Two changes a file: the artist, and an album artist the files lack.
+    await openScreen(tester, harness, {AutofillField.artist, AutofillField.albumArtist});
+    expect(find.text('Write 4 changes to 2 files'), findsOneWidget);
+    final first = find.byKey(ValueKey('autofill-file-toggle-${record.first.file.path}'));
+    final second = find.byKey(ValueKey('autofill-file-toggle-${record[1].file.path}'));
+    bool? ticked(Finder toggle) => tester.widget<Checkbox>(toggle).value;
+    List<bool?> changesOf(int card) => [
+      for (final tile in tester.widgetList<CheckboxListTile>(
+        find.descendant(of: find.byType(Card).at(card + 1), matching: find.byType(CheckboxListTile)),
+      ))
+        tile.value,
+    ];
+
+    await tester.tap(first);
+    await tester.pump();
+
+    expect(find.text('Write 2 changes to 1 file'), findsOneWidget);
+    expect(ticked(first), isFalse);
+    expect(changesOf(0), [false, false]);
+    expect(ticked(second), isTrue);
+    expect(changesOf(1), [true, true]);
+
+    // One change ticked again: the card is partly ticked, and its toggle
+    // ticks the rest.
+    await tester.tap(find.descendant(of: find.byType(Card).at(1), matching: find.byType(CheckboxListTile)).first);
+    await tester.pump();
+    expect(ticked(first), isNull);
+    expect(find.text('Write 3 changes to 2 files'), findsOneWidget);
+
+    await tester.tap(first);
+    await tester.pump();
+
+    expect(ticked(first), isTrue);
+    expect(changesOf(0), [true, true]);
+    expect(find.text('Write 4 changes to 2 files'), findsOneWidget);
   });
 
   testWidgets('GivenEveryChangeUnticked_WhenTheScreenShows_ThenWritingIsDisabled', (tester) async {
@@ -132,7 +171,8 @@ void main() {
     await openScreen(tester, harness, {AutofillField.artist});
 
     expect(find.text("Orpheus can't change this kind of file"), findsOneWidget);
-    expect(find.byType(Checkbox), findsNWidgets(1));
+    expect(find.byType(CheckboxListTile), findsNWidgets(1));
+    expect(find.byKey(ValueKey('autofill-file-toggle-${record.first.file.path}')), findsNothing);
   });
 
   testWidgets('GivenTheCoverDownloadFails_WhenTheScreenShows_ThenItSaysItCouldNotBeDownloadedNotThatThereIsNone', (tester) async {
