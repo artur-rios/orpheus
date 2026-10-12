@@ -23,12 +23,67 @@ void main() {
 
   const report = ScanReport(tracks: 1, added: 1, removed: 0, reused: 0);
 
-  Harness harnessWith(ScriptedScanner scanner, {FakeLibraryAccess? access}) =>
+  Harness harnessWith(LibraryScanner scanner, {FakeLibraryAccess? access}) =>
       Harness(
         scanner: scanner,
         access: access,
         settings: InMemorySettingsStore(libraryFolders: const ['/music']),
       );
+
+  test(
+    'GivenTwoScansAskedForAtOnce_WhenBothRun_ThenOnlyOneWalksAndBothCallersAreAnswered',
+    () async {
+      // The startup scan and the one a newly added folder asks for can arrive
+      // together, and the first is still waiting on the access question when
+      // the second checks whether a scan is running. Both used to walk, and the
+      // second cancelled the first's subscription on its way in — so the
+      // first caller's await never came back.
+      final scanner = ScriptedScanner([
+        ScanCompleted(catalog: scanned, report: report),
+      ]);
+      final harness = harnessWith(scanner);
+      final controller = harness.read(scanControllerProvider.notifier);
+
+      await expectLater(
+        Future.wait([controller.scan(), controller.scan()])
+            .timeout(const Duration(seconds: 5)),
+        completes,
+      );
+      expect(scanner.requests, hasLength(1));
+    },
+  );
+
+  test(
+    'GivenAFolderIsRemovedWhileAScanRuns_WhenThatScanFinishes_ThenAnotherRunsWithoutIt',
+    () async {
+      // Dropped, the second request left the running scan to write a catalog
+      // that still held the removed folder's tracks, until the next launch.
+      final scanner = ScriptedScanner([
+        ScanCompleted(catalog: scanned, report: report),
+      ]);
+      final harness = Harness(
+        scanner: scanner,
+        settings: InMemorySettingsStore(
+          libraryFolders: const ['/music', '/more'],
+        ),
+      );
+      final controller = harness.read(scanControllerProvider.notifier);
+
+      final first = controller.scan();
+      await harness
+          .read(libraryFoldersControllerProvider.notifier)
+          .remove('/more');
+      // Still running: this is the request that used to be dropped.
+      expect(harness.read(scanControllerProvider).isRunning, isTrue);
+      await controller.scan();
+      await first.timeout(const Duration(seconds: 5));
+
+      expect(scanner.requests, [
+        ['/music', '/more'],
+        ['/music'],
+      ]);
+    },
+  );
 
   test(
     'GivenAScanChangedNothing_WhenTheDocumentIsNotRewritten_ThenTheTimeOfTheScanIsStillRecorded',
@@ -37,8 +92,7 @@ void main() {
       // changed; the moment of the scan is one short string and is not. Left
       // only in the document, it never advanced for an unchanged library —
       // so the folders screen kept showing the date of the last scan that
-      // happened to change something, and the cheap walk's cutoff stayed
-      // pinned there for good.
+      // happened to change something.
       final harness = harnessWith(
         ScriptedScanner([
           ScanCompleted(
@@ -328,6 +382,33 @@ void main() {
     );
 
     test(
+      'GivenAScanThatReadARetaggedTrackAgain_WhenItFinishes_ThenTheCatalogIsWritten',
+      () async {
+        // Nothing added and nothing removed, and still a document that is out
+        // of date: the next launch would start from the old tags and show
+        // them until its own scan finished.
+        final harness = harnessWith(
+          ScriptedScanner([
+            ScanCompleted(
+              catalog: scanned,
+              report: const ScanReport(
+                tracks: 1,
+                added: 0,
+                updated: 1,
+                removed: 0,
+                reused: 0,
+              ),
+            ),
+          ]),
+        );
+
+        await harness.read(scanControllerProvider.notifier).scan();
+
+        expect(harness.catalogs.written, hasLength(1));
+      },
+    );
+
+    test(
       'GivenAScanThatRemovedATrack_WhenItFinishes_ThenTheCatalogIsWritten',
       () async {
         final harness = harnessWith(
@@ -351,45 +432,69 @@ void main() {
     );
   });
 
-  group('which walk a scan asks for', () {
-    Harness seeded(ScriptedScanner scanner) => Harness(
-      library: [entry(id: '1', title: 'Airbag', artist: 'Radiohead')],
-      scanner: scanner,
-      settings: InMemorySettingsStore(libraryFolders: const ['/music']),
-    );
+  test(
+    'GivenAScanIsMidWalk_WhenARescanIsAskedForSoon_ThenAnotherRunsWhenItEnds',
+    () async {
+      // Tags were written while a scan was walking: it may already have passed
+      // the files, and the library must not keep their old tags.
+      final scanner = HeldScanner();
+      final harness = harnessWith(scanner);
+      final controller = harness.read(scanControllerProvider.notifier);
 
-    test(
-      'GivenTheScanThatRunsAtStartup_WhenItIsAskedFor_ThenItAsksForTheCheapWalk',
-      () async {
-        final scanner = ScriptedScanner([
-          ScanCompleted(catalog: scanned, report: report),
-        ]);
-        final harness = seeded(scanner);
+      Future<void> until(bool Function() reached) async {
+        for (var turns = 0; !reached() && turns < 100; turns++) {
+          await Future<void>.delayed(Duration.zero);
+        }
+        expect(reached(), isTrue);
+      }
 
-        await harness
-            .read(scanControllerProvider.notifier)
-            .scan(quick: true);
+      final first = controller.scan();
+      await until(() => scanner.requests.length == 1);
+      expect(harness.read(scanControllerProvider).isRunning, isTrue);
+      await controller.rescanSoon();
+      expect(scanner.requests, hasLength(1));
 
-        // The moment the stored catalog was written, which is what a folder's
-        // timestamp is measured against.
-        expect(scanner.unchangedSinces.single, DateTime.utc(2026));
-      },
-    );
+      await scanner.complete(scanned, report);
+      await until(() => scanner.requests.length == 2);
+      await scanner.complete(scanned, report);
+      await first.timeout(const Duration(seconds: 5));
 
-    test(
-      'GivenTheScanTheOwnerAsksForByHand_WhenItRuns_ThenEveryFileIsStated',
-      () async {
-        // The button they press when they have just re-tagged something, which
-        // is the case the cheap walk cannot see.
-        final scanner = ScriptedScanner([
-          ScanCompleted(catalog: scanned, report: report),
-        ]);
-        final harness = seeded(scanner);
+      expect(scanner.requests, hasLength(2));
+    },
+  );
 
-        await harness.read(scanControllerProvider.notifier).scan();
+  test(
+    'GivenAScanIsWaitingOnTheAccessQuestion_WhenARescanIsAskedForSoon_ThenAnotherRunsWhenItEnds',
+    () async {
+      final scanner = ScriptedScanner([
+        ScanCompleted(catalog: scanned, report: report),
+      ]);
+      final harness = harnessWith(scanner);
+      final controller = harness.read(scanControllerProvider.notifier);
 
-        expect(scanner.unchangedSinces.single, isNull);
-      },
-    );
-  });
+      // Not yet walking — the scripted scan is over within a turn of the event
+      // loop — but already spoken for, waiting on the access question.
+      final first = controller.scan();
+      await controller.rescanSoon();
+      await first.timeout(const Duration(seconds: 5));
+
+      expect(scanner.requests, hasLength(2));
+    },
+  );
+
+  test(
+    'GivenNoScanIsRunning_WhenARescanIsAskedForSoon_ThenOneRunsWithoutAskingForAccess',
+    () async {
+      final access = FakeLibraryAccess();
+      final scanner = ScriptedScanner([
+        ScanCompleted(catalog: scanned, report: report),
+      ]);
+      final harness = harnessWith(scanner, access: access);
+
+      await harness.read(scanControllerProvider.notifier).rescanSoon();
+
+      expect(scanner.requests, hasLength(1));
+      expect(access.requests, 0);
+    },
+  );
 }

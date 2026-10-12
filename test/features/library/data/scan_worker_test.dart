@@ -1,9 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:orpheus/features/library/data/json_catalog_store.dart';
 import 'package:orpheus/features/library/data/scan_worker.dart';
 import 'package:orpheus/features/library/domain/audio_file.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
+import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/library/domain/track_metadata.dart';
 import 'package:path/path.dart' as p;
@@ -52,14 +54,10 @@ void main() {
         ),
       );
 
-  ScanOutcome scan({
-    List<MusicEntry> previous = const [],
-    DateTime? unchangedSince,
-  }) => scanFolders(
+  ScanOutcome scan({List<MusicEntry> previous = const []}) => scanFolders(
     folders: [root.path],
     previous: previous,
     coverDirectory: covers.path,
-    unchangedSince: unchangedSince,
   );
 
   test(
@@ -259,14 +257,15 @@ void main() {
       );
 
       expect(outcome.entries.single.title, 'On disk');
-      expect(outcome.report.added, 1);
+      expect(outcome.report.updated, 1);
+      expect(outcome.report.added, 0);
     },
   );
 
   test(
     'GivenAFileThatChangedSinceTheLastScan_WhenItIsScannedAgain_ThenNothingIsReportedAsRemoved',
     () {
-      // Re-tagging a track is one file added and none removed. Counting
+      // Re-tagging a track is one file updated and none removed. Counting
       // removals as "what the catalog held minus what was carried over" made
       // every changed file count as a removal too, so the folders screen told
       // an owner who had corrected one tag that a track had left their
@@ -286,7 +285,7 @@ void main() {
         ],
       );
 
-      expect(outcome.report.added, 1);
+      expect(outcome.report.updated, 1);
       expect(outcome.report.removed, 0);
     },
   );
@@ -370,110 +369,181 @@ void main() {
     },
   );
 
-  group('the cheap walk', () {
-    /// A moment after everything written so far, which is what a folder's
-    /// timestamp is compared against.
-    DateTime settledNow() => DateTime.now().add(const Duration(minutes: 1));
+  test(
+    'GivenARegisteredFolderThatCannotBeListed_WhenTheLibraryIsScanned_ThenItIsNamedAsUnreachable',
+    () {
+      // Through IOOverrides rather than a permission bit, because the suite
+      // may run as a user every permission bit gives way to.
+      writeTrack('locked/a.flac', {'TITLE': 'Behind a door'});
+      final locked = p.join(root.path, 'locked');
 
+      final outcome = IOOverrides.runZoned(
+        () => scanFolders(
+          folders: [locked],
+          previous: const [],
+          coverDirectory: covers.path,
+        ),
+        createDirectory: (path) => path == locked
+            ? _Unlistable(path)
+            : _RealDirectory.of(path),
+      );
+
+      expect(outcome.report.unreachableFolders, [locked]);
+      expect(outcome.report.tracks, 0);
+    },
+  );
+
+  test(
+    'GivenACatalogReadBackFromDisk_WhenTheLibraryIsScannedInFull_ThenUnchangedFilesAreCarriedOver',
+    () async {
+      final file = writeFile(
+        'a.flac',
+        taggedFlac(tags: {'TITLE': 'Airbag'}),
+      );
+      // The file system keeps a timestamp to the microsecond and the catalog
+      // document keeps it to the millisecond. A file whose timestamp happens to
+      // fall on a whole millisecond would hide the difference, so make sure
+      // this one does not.
+      for (var attempt = 0;
+          attempt < 20 && file.statSync().modified.microsecond == 0;
+          attempt++) {
+        file.writeAsBytesSync(file.readAsBytesSync());
+      }
+
+      final first = scan();
+      final store = JsonCatalogStore(p.join(root.path, '.state'));
+      await store.write(
+        MusicCatalog(entries: first.entries, scannedAt: first.startedAt),
+      );
+      final readBack = await store.read();
+
+      final outcome = scan(previous: readBack.entries);
+
+      expect(outcome.report.reused, 1);
+      expect(outcome.report.added, 0);
+    },
+  );
+
+  test(
+    'GivenAFileChangedWhileTheScanWasRunning_WhenTheNextScanRuns_ThenTheChangeIsRead',
+    () {
+      writeTrack('a.flac', {'TITLE': 'Airbag'});
+
+      // The change lands after every tag has been read and before the scan
+      // hands its outcome back: a tagger writing a new copy and renaming it
+      // over the original.
+      var changed = false;
+      final first = scanFolders(
+        folders: [root.path],
+        previous: const [],
+        coverDirectory: covers.path,
+        onProgress: (progress) {
+          if (changed || progress.walking) return;
+          if (progress.filesRead < progress.filesFound) return;
+          changed = true;
+          writeFile('a.flac.part', taggedFlac(tags: {'TITLE': 'Retagged'}))
+              .renameSync(p.join(root.path, 'a.flac'));
+        },
+      );
+      expect(changed, isTrue);
+      expect(first.entries.single.title, 'Airbag');
+
+      final outcome = scan(previous: first.entries);
+
+      expect(outcome.entries.single.title, 'Retagged');
+    },
+  );
+
+  group('a track re-tagged between two scans', () {
     test(
-      'GivenAFolderUntouchedSinceTheLastScan_WhenItIsWalkedCheaply_ThenItsTracksAreCarriedOver',
+      'GivenATrackRewrittenInPlace_WhenTheLibraryIsScannedAgain_ThenItsNewTagsAreRead',
       () {
-        writeTrack('a.flac', {'TITLE': 'Airbag'});
+        // What a tagger like Mp3tag does: the file is rewritten where it
+        // stands, which moves the file's own timestamp and leaves its
+        // folder's alone. The scan at startup used to take an untouched folder
+        // on trust and keep the old tags; it no longer does.
+        writeTrack('a.flac', {'TITLE': 'Airbag', 'ARTIST': 'Radiohed'});
         final first = scan();
 
-        final outcome = scan(
-          previous: first.entries,
-          unchangedSince: settledNow(),
+        writeTrack('a.flac', {'TITLE': 'Airbag', 'ARTIST': 'Radiohead'});
+        final file = File(p.join(root.path, 'a.flac'));
+        // The fixture is the same length either side of the edit, so make
+        // certain the timestamp is what tells the two apart.
+        file.setLastModifiedSync(
+          first.entries.single.file.modifiedAt.add(const Duration(seconds: 5)),
         );
-
-        expect(outcome.report.tracks, 1);
-        expect(outcome.report.reused, 1);
-        expect(outcome.report.added, 0);
-        expect(outcome.entries.single.title, 'Airbag');
-      },
-    );
-
-    test(
-      'GivenATrackRewrittenInPlace_WhenTheFolderIsWalkedCheaply_ThenTheOldTagsAreKept',
-      () {
-        // The cost of not stat-ing: the file changed, its folder did not, and
-        // the cheap walk answers from the catalog. The scan the owner asks for
-        // by hand is what picks this up, which is the test below.
-        writeTrack('a.flac', {'TITLE': 'Airbag'});
-        final first = scan();
-
-        writeTrack('a.flac', {'TITLE': 'Retagged'});
-
-        // Rewriting a file that already exists leaves its folder's own
-        // timestamp alone, which is precisely the case the cheap walk cannot
-        // see.
-        final outcome = scan(
-          previous: first.entries,
-          unchangedSince: settledNow(),
-        );
-
-        expect(outcome.entries.single.title, 'Airbag');
-        expect(outcome.report.reused, 1);
-      },
-    );
-
-    test(
-      'GivenATrackRewrittenInPlace_WhenTheFullWalkRuns_ThenItIsReadAgain',
-      () {
-        writeTrack('a.flac', {'TITLE': 'Airbag'});
-        final first = scan();
-
-        writeTrack('a.flac', {'TITLE': 'Retagged'});
 
         final outcome = scan(previous: first.entries);
 
-        expect(outcome.entries.single.title, 'Retagged');
-        expect(outcome.report.added, 1);
+        expect(outcome.entries.single.artist, 'Radiohead');
+        expect(outcome.report.updated, 1);
+        expect(outcome.report.added, 0);
+        expect(outcome.report.reused, 0);
       },
     );
 
     test(
-      'GivenATrackTheCatalogDoesNotKnow_WhenItsFolderIsWalkedCheaply_ThenItIsStillRead',
+      'GivenAnUntouchedTrackBesideARetaggedOne_WhenTheLibraryIsScannedAgain_ThenOnlyTheRetaggedOneIsRead',
       () {
-        // A folder can be settled and still hold a file the last scan never
-        // recorded — a scan that was interrupted, or a catalog written before
-        // the file arrived. The timestamp is not taken as proof the catalog is
-        // complete.
         writeTrack('a.flac', {'TITLE': 'Airbag'});
+        writeTrack('b.flac', {'TITLE': 'Karma'});
         final first = scan();
 
-        writeTrack('b.flac', {'TITLE': 'Karma'});
-
-        final outcome = scan(
-          previous: first.entries,
-          unchangedSince: settledNow(),
+        writeTrack('b.flac', {'TITLE': 'Karma Police'});
+        File(p.join(root.path, 'b.flac')).setLastModifiedSync(
+          first.entries.last.file.modifiedAt.add(const Duration(seconds: 5)),
         );
 
-        expect(outcome.report.tracks, 2);
+        final outcome = scan(previous: first.entries);
+
         expect(
           [for (final entry in outcome.entries) entry.title],
-          ['Airbag', 'Karma'],
+          ['Airbag', 'Karma Police'],
         );
-      },
-    );
-
-    test(
-      'GivenAFolderChangedSinceTheLastScan_WhenItIsWalkedCheaply_ThenItIsReadFromDisk',
-      () {
-        writeTrack('a.flac', {'TITLE': 'Airbag'});
-        final first = scan();
-
-        writeTrack('a.flac', {'TITLE': 'Retagged'});
-
-        // The folder itself is newer than the last scan, so nothing about it
-        // is taken on trust.
-        final outcome = scan(
-          previous: first.entries,
-          unchangedSince: DateTime.now().subtract(const Duration(days: 1)),
-        );
-
-        expect(outcome.entries.single.title, 'Retagged');
+        expect(outcome.report.reused, 1);
+        expect(outcome.report.updated, 1);
       },
     );
   });
+}
+
+/// The real directory at a path, built outside any [IOOverrides] in force.
+abstract final class _RealDirectory {
+  static Directory of(String path) =>
+      IOOverrides.runWithIOOverrides(() => Directory(path), _NoOverrides());
+}
+
+final class _NoOverrides extends IOOverrides {}
+
+/// A directory that is there and refuses to be listed — what a folder this
+/// process may not read looks like to the walk.
+class _Unlistable implements Directory {
+  _Unlistable(this.path) : _real = _RealDirectory.of(path);
+
+  final Directory _real;
+
+  @override
+  final String path;
+
+  @override
+  bool existsSync() => _real.existsSync();
+
+  @override
+  String resolveSymbolicLinksSync() => _real.resolveSymbolicLinksSync();
+
+  @override
+  FileStat statSync() => _real.statSync();
+
+  @override
+  List<FileSystemEntity> listSync({
+    bool recursive = false,
+    bool followLinks = true,
+  }) => throw FileSystemException(
+    'Directory listing failed',
+    path,
+    const OSError('Permission denied', 13),
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

@@ -49,6 +49,7 @@ class ScanReport {
     required this.added,
     required this.removed,
     required this.reused,
+    this.updated = 0,
     this.unreadable = const [],
     this.unreachableFolders = const [],
   });
@@ -56,8 +57,13 @@ class ScanReport {
   /// How many tracks the library holds now.
   final int tracks;
 
-  /// How many of them this scan read for the first time.
+  /// How many of them are new to the library — paths the previous catalog did
+  /// not hold.
   final int added;
+
+  /// How many the previous catalog held whose file had changed since, and
+  /// were read again: a track re-tagged outside the application, in practice.
+  final int updated;
 
   /// How many the previous catalog held that are no longer on disk.
   final int removed;
@@ -132,19 +138,13 @@ abstract interface class LibraryScanner {
   /// [previous] is what the last scan found. Anything in it whose file is
   /// still on disk at the same size and timestamp is carried over rather than
   /// re-read, which is what makes a re-scan of an unchanged library fast
-  /// enough to run at every startup.
+  /// enough to run at every startup — and anything whose file was rewritten
+  /// is read again, which is what brings a re-tagged track's new name in.
   ///
   /// [coverDirectory] is where extracted pictures are written.
-  ///
-  /// [unchangedSince] is when the last scan ran, and asks for the cheap walk:
-  /// a folder untouched since then is taken from [previous] rather than
-  /// stat'ed file by file. `null` stat's everything, which is what the scan an
-  /// owner asks for by hand does. See the implementation for what the cheap
-  /// walk gives up.
   Stream<ScanEvent> scan({
     required List<String> folders,
     required MusicCatalog previous,
     required String coverDirectory,
-    DateTime? unchangedSince,
   });
 }

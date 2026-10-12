@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
@@ -67,7 +68,7 @@ class FileLyricsSource implements LyricsSource {
       if (!file.existsSync()) continue;
 
       try {
-        return await file.readAsString();
+        return _decoded(await file.readAsBytes());
       } on Object catch (error) {
         // A sidecar that is there but unreadable — a permission, a bad
         // encoding — is not a failure the owner needs a dialog about. It is a
@@ -78,6 +79,22 @@ class FileLyricsSource implements LyricsSource {
     }
 
     return null;
+  }
+
+  /// [bytes] as text: UTF-8 where they are UTF-8, and Latin-1 where they are
+  /// not.
+  ///
+  /// Read as UTF-8 alone, a sheet saved by an older editor in a Western
+  /// single-byte encoding — the commonest kind there is, for anything with an
+  /// accent in it — refused to decode, and the owner's own file was passed
+  /// over as though it were not there. Latin-1 cannot refuse, and is right
+  /// for every letter those encodings share with it.
+  static String _decoded(List<int> bytes) {
+    try {
+      return utf8.decode(bytes);
+    } on FormatException {
+      return latin1.decode(bytes);
+    }
   }
 
   /// What the track at [path] carries in its `SYLT` frame, or `null` for a

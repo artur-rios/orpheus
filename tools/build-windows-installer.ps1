@@ -39,13 +39,14 @@ function Fail($message) { Write-Host "error: $message" -ForegroundColor Red; exi
 
 # Read from pubspec.yaml rather than written here, so that the installer's file
 # name, the version the wizard shows, and the version the application reports
-# cannot drift apart. The build metadata after `+` is dropped: Inno's AppVersion
-# is shown to a person, and `1.0.0+1` reads as a typo.
+# cannot drift apart. A pre-release suffix is kept — `1.3.0-beta.1` is a
+# different package from `1.3.0` — and the build metadata after `+` is dropped:
+# Inno's AppVersion is shown to a person, and `1.0.0+1` reads as a typo.
 Step 'Reading the version'
 
 $pubspec = Get-Content (Join-Path $RepoRoot 'pubspec.yaml') -Raw
-if ($pubspec -notmatch '(?m)^version:\s*([0-9]+\.[0-9]+\.[0-9]+)') {
-    Fail 'pubspec.yaml does not declare a version of the form x.y.z'
+if ($pubspec -notmatch '(?m)^version:\s*([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)') {
+    Fail 'pubspec.yaml does not declare a version of the form x.y.z[-pre-release]'
 }
 $Version = $Matches[1]
 Note "version $Version"

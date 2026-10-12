@@ -1,3 +1,4 @@
+import 'package:orpheus/features/playback/domain/playback_position_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/features/playback/application/audio_playback_controller.dart';
@@ -207,6 +208,67 @@ void main() {
 
       expect(playsOf(harness, okComputer.first.file.path), 1);
       expect(playsOf(harness, okComputer.last.file.path), 1);
+    },
+  );
+
+  test(
+    'GivenATrackCountedLastSession_WhenItIsResumedPastTheThreshold_ThenItIsNotCountedAgain',
+    () async {
+      // Counted at half way, left at 2:30, resumed at the next launch: the
+      // first status reports 2:30, which is past half way, and used to count
+      // the same listen a second time.
+      final harness = Harness(library: okComputer);
+      final player = await playerOf(harness);
+      await harness.read(playbackPositionsProvider).record(
+        PlaybackPosition(
+          path: okComputer.first.file.path,
+          position: const Duration(minutes: 2, seconds: 30),
+          updatedAt: DateTime.utc(2026),
+        ),
+      );
+      await player.playTrack(okComputer.first.file);
+      await player.resume();
+
+      await report(
+        harness,
+        const PlaybackStatus(
+          isPlaying: true,
+          position: Duration(minutes: 2, seconds: 31),
+          duration: Duration(minutes: 4),
+        ),
+      );
+
+      expect(playsOf(harness, okComputer.first.file.path), 0);
+    },
+  );
+
+  test(
+    'GivenATrackAlreadyCounted_WhenTheOwnerStartsItAgainWithPrevious_ThenTheReplayIsCounted',
+    () async {
+      // The back button past the first few seconds starts the track again —
+      // a second playthrough, worth a second play the way repeat-one is.
+      final harness = Harness(library: okComputer);
+      final player = await playerOf(harness);
+      await player.playTrack(okComputer.first.file);
+      await report(harness, halfWay);
+
+      await player.previous();
+      await report(harness, halfWay);
+
+      expect(playsOf(harness, okComputer.first.file.path), 2);
+    },
+  );
+
+  test(
+    'GivenATrackSoShortNoStatusLandedBeforeItsEnd_WhenItEnds_ThenItIsCounted',
+    () async {
+      final harness = Harness(library: okComputer);
+      final player = await playerOf(harness);
+      await player.playTrack(okComputer.first.file);
+
+      await report(harness, const PlaybackStatus(hasEnded: true));
+
+      expect(playsOf(harness, okComputer.first.file.path), 1);
     },
   );
 }

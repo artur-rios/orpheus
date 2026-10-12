@@ -32,7 +32,6 @@ class IsolateLibraryScanner implements LibraryScanner {
     required List<String> folders,
     required MusicCatalog previous,
     required String coverDirectory,
-    DateTime? unchangedSince,
   }) {
     final events = StreamController<ScanEvent>();
     final messages = ReceivePort();
@@ -79,7 +78,9 @@ class IsolateLibraryScanner implements LibraryScanner {
                 // the same derivation — one place decides whose record a track
                 // is on, and it is not duplicated across the boundary.
                 entries: albumArtistsAcross(message.entries),
-                scannedAt: DateTime.now(),
+                // When the walk began, not when it ended: see
+                // [ScanOutcome.startedAt].
+                scannedAt: message.startedAt,
               ),
               report: message.report,
             ),
@@ -106,7 +107,6 @@ class IsolateLibraryScanner implements LibraryScanner {
               folders: folders,
               previous: previous.entries,
               coverDirectory: coverDirectory,
-              unchangedSince: unchangedSince,
               reply: messages.sendPort,
             ),
             onError: errors.sendPort,
@@ -137,13 +137,11 @@ class _ScanRequest {
     required this.previous,
     required this.coverDirectory,
     required this.reply,
-    this.unchangedSince,
   });
 
   final List<String> folders;
   final List<MusicEntry> previous;
   final String coverDirectory;
-  final DateTime? unchangedSince;
   final SendPort reply;
 }
 
@@ -153,7 +151,6 @@ void _run(_ScanRequest request) {
     folders: request.folders,
     previous: request.previous,
     coverDirectory: request.coverDirectory,
-    unchangedSince: request.unchangedSince,
     onProgress: request.reply.send,
   );
 

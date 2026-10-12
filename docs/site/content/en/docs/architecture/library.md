@@ -31,18 +31,14 @@ sequenceDiagram
     App->>Iso: scan(folders, previous catalog)
 
     loop each registered folder
-        Iso->>FS: stat the folder
-        alt folder untouched since the last scan
-            Note over Iso: its tracks carry over<br/>— no stat per file
-        else something changed inside
-            Iso->>FS: walk it
-            loop each file
-                alt same size and timestamp as last scan
-                    Note over Iso: tags carried over
-                else new, or rewritten
-                    Iso->>Tags: read tags and cover
-                    Tags-->>Iso: TrackMetadata
-                end
+        Iso->>FS: walk it
+        loop each file
+            Iso->>FS: stat the file
+            alt same size and timestamp as last scan
+                Note over Iso: tags carried over
+            else new, or rewritten
+                Iso->>Tags: read tags and cover
+                Tags-->>Iso: TrackMetadata
             end
         end
     end
@@ -56,31 +52,27 @@ sequenceDiagram
     end
 ```
 
-## The three savings
+## The two savings
 
-**The catalog is not rewritten when nothing changed.** A scan that added and
-removed nothing carries every entry over from the stored document, so writing it
-back encodes several megabytes to produce a file identical to the one on disk.
+**An unchanged file is carried over, not read.** Every scan stats every file —
+the one at startup included — and a file with the same size and the same
+timestamp as last time keeps the tags the catalog already holds, so only the
+files that are new or were rewritten go to the tag reader. The stat is the cheap
+part, and it is what makes a file a tagger rewrote *in place* show up: that
+changes the file's own timestamp and not its folder's, and it is the change an
+owner makes most.
+
+**The catalog is not rewritten when nothing changed.** A scan that added,
+updated and removed nothing carries every entry over from the stored document,
+so writing it back encodes several megabytes to produce a file identical to the
+one on disk.
+
+## Off the interface's isolate
 
 **Encoding and decoding happen on an isolate.** This costs more work in total —
 spawning is not free, and the entries are copied back — and the point is where
 the work lands. The interface's isolate pays for the message rather than for the
 parse, and goes on drawing through it.
-
-**The startup scan trusts folder timestamps.** A folder whose own timestamp
-predates the last scan has had nothing added, removed or renamed inside it, so
-its tracks come from the catalog rather than from a `stat` each. On eleven
-thousand tracks that is eleven thousand system calls not made, which on a
-phone's storage is most of what the walk costs.
-
-{{% alert title="What the cheap walk gives up" color="warning" %}}
-A file rewritten *in place* changes its own timestamp and not its folder's, and
-the cheap walk keeps the old tags for it. Adds, deletes and renames are still
-seen, and so is a tagger that writes a temporary file and renames over the
-original — which is what most of them do. The scan the owner asks for by hand
-stats everything, and it is the button they press having just re-tagged
-something.
-{{% /alert %}}
 
 ## Startup is never gated on a scan
 

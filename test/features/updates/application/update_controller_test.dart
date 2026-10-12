@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 import 'package:orpheus/features/updates/application/update_controller.dart';
+import 'package:orpheus/features/updates/domain/app_version.dart';
 import 'package:orpheus/features/updates/domain/update_installer.dart';
 
 import '../../../support/fake_updates.dart';
@@ -36,6 +37,81 @@ void main() {
       // dialog but still asks GitHub every launch is not the preference it
       // says it is.
       expect(harness.releases.checks, 0);
+      expect(harness.read(updateControllerProvider).stage, UpdateStage.idle);
+    },
+  );
+
+  test(
+    'GivenAStableBuild_WhenTheCheckRuns_ThenOnlyFullReleasesAreAskedFor',
+    () async {
+      final harness = Harness(releases: ScriptedReleaseSource(release()));
+
+      await harness.read(updateControllerProvider.notifier).checkAtStartup();
+
+      expect(harness.releases.askedForPreReleases, [false]);
+    },
+  );
+
+  test(
+    'GivenAStableBuild_WhenTheSourceAnswersAPreRelease_ThenItIsNotOffered',
+    () async {
+      // A pre-release is for somebody who chose to test one. A source that
+      // answers one anyway is not a reason to move a stable owner onto it.
+      final harness = Harness(
+        releases: ScriptedReleaseSource(release(version: '9.9.9-beta.1')),
+      );
+
+      await harness.read(updateControllerProvider.notifier).checkAtStartup();
+
+      expect(harness.read(updateControllerProvider).stage, UpdateStage.idle);
+    },
+  );
+
+  test(
+    'GivenABetaBuild_WhenTheCheckRuns_ThenPreReleasesAreAskedForToo',
+    () async {
+      final harness = Harness(
+        runningVersion: AppVersion.tryParse('1.3.0-beta.1'),
+        releases: ScriptedReleaseSource(release(version: '1.3.0-beta.2')),
+      );
+
+      await harness.read(updateControllerProvider.notifier).checkAtStartup();
+
+      expect(harness.releases.askedForPreReleases, [true]);
+      final state = harness.read(updateControllerProvider);
+      expect(state.stage, UpdateStage.available);
+      expect(state.release!.version.toString(), '1.3.0-beta.2');
+    },
+  );
+
+  test(
+    'GivenABetaBuild_WhenTheReleaseItLeadsToIsOut_ThenTheOwnerIsOfferedIt',
+    () async {
+      // The case D1 was about: a beta reporting itself as `1.3.0` was never
+      // offered `1.3.0`. Reporting `1.3.0-beta.1`, it is.
+      final harness = Harness(
+        runningVersion: AppVersion.tryParse('1.3.0-beta.1'),
+        releases: ScriptedReleaseSource(release(version: '1.3.0')),
+      );
+
+      await harness.read(updateControllerProvider.notifier).checkAtStartup();
+
+      final state = harness.read(updateControllerProvider);
+      expect(state.stage, UpdateStage.available);
+      expect(state.release!.version.toString(), '1.3.0');
+    },
+  );
+
+  test(
+    'GivenABetaBuild_WhenOnlyAnEarlierBetaIsPublished_ThenNothingIsOffered',
+    () async {
+      final harness = Harness(
+        runningVersion: AppVersion.tryParse('1.3.0-beta.2'),
+        releases: ScriptedReleaseSource(release(version: '1.3.0-beta.1')),
+      );
+
+      await harness.read(updateControllerProvider.notifier).checkAtStartup();
+
       expect(harness.read(updateControllerProvider).stage, UpdateStage.idle);
     },
   );

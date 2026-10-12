@@ -184,10 +184,14 @@ class MediaSessionController extends Notifier<NowPlaying?> {
 
     if (coverId == _artCoverId) return _artPath;
 
+    // Recorded once the lookup has answered, not before it: a status that
+    // arrived in between would otherwise find the new id beside the old
+    // record's path, and publish the previous sleeve with the new track.
+    final path = await ref.read(coverStoreProvider).locationOf(coverId);
     _artCoverId = coverId;
-    _artPath = await ref.read(coverStoreProvider).locationOf(coverId);
+    _artPath = path;
 
-    return _artPath;
+    return path;
   }
 
   /// Does what was pressed.

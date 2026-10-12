@@ -58,7 +58,7 @@ machine — and the owner can turn that off.
 | **Orpheus is** | a local music player |
 | **That** | reads registered folders, derives a library from their tags, and plays it with the same interface on Windows, Linux and Android |
 | **Unlike** | a streaming client, which plays somebody else's catalog, or a desktop player, which stops at the edge of the desk |
-| **Our product** | reads only what it was pointed at, never writes to an audio file, and reaches a network for one optional convenience and nothing else |
+| **Our product** | reads only what it was pointed at, writes to an audio file only to change its tags when the owner confirms each change, and reaches a network only for conveniences the owner starts or can turn off |
 
 ### 2.3 Relationship to Alexandria
 
@@ -102,14 +102,15 @@ Requirements Document and demonstrated by use cases.
 | **F-14** | Localization | English and Brazilian Portuguese, both catalogs complete. |
 | **F-15** | Lyrics | Where the machine holds a track's words — a `.lrc` beside it, or the track's own tags — they are shown; where they carry times, the line being sung is lit, the sheet follows the music, and a line can be tapped to play from there. Nothing is fetched, guessed or written. |
 | **F-16** | Sound bars | The player draws the spectrum of the recording being played, measured from its own samples with the engine that plays it, analysed once per track and kept. Until an analysis lands, and for a file that cannot be decoded, a deterministic stand-in is drawn in its place and named as one. |
+| **F-17** | Autofill tags | On a record, or on a single track, the owner chooses which tags to fill; Orpheus finds the release on MusicBrainz, shows every change file by file as the current value and the new one, and writes only the changes the owner leaves ticked — into the files and into the library. Only MP3 and FLAC can be written; every other format is read-only. The cover comes from the Cover Art Archive and is unticked until chosen. |
 
 ## 5. Constraints
 
 | ID | Constraint |
 | --- | --- |
 | **C-01** | Three targets — Windows, Linux, Android — from one source. No per-platform implementation of any feature above the platform edges. |
-| **C-02** | No network access beyond the lyrics lookup (`FR-LY-13`), which the owner can turn off and which no playback depends on. Enforced by the shipped Android package declaring exactly the permissions its manifest lists and no others. |
-| **C-03** | The owner's audio files are opened for reading only. |
+| **C-02** | No network access beyond the lyrics lookup (`FR-LY-13`) and the update check, which the owner can turn off, and the MusicBrainz and Cover Art Archive lookups an autofill makes only when the owner starts one (`FR-AF-02`). No playback depends on any of them. Enforced by the shipped Android package declaring exactly the permissions its manifest lists and no others. |
+| **C-03** | The owner's audio files are opened for reading, and written only to change their metadata — never renamed, moved, deleted or re-encoded — and only for changes the owner has confirmed (`FR-AF-05`). Only MP3 and FLAC are written, each by an editor that changes only what was asked for and keeps every other byte. |
 | **C-04** | No server, no database, no account, no synchronisation. |
 | **C-05** | Every flow above the platform edges must be testable without a real audio engine, a real device, or the developer's own filesystem. |
 | **C-06** | Android 7 (API 24) is the minimum supported release. The engine would run on 23; three of the plugins will not, and the highest floor is the floor. |
@@ -117,7 +118,8 @@ Requirements Document and demonstrated by use cases.
 ## 6. Out of scope
 
 Stated so that their absence is a decision rather than an omission: tag
-editing, file renaming, moving or deletion, transcoding, streaming, scrobbling,
-online metadata, cover-art or lyrics lookup, writing or re-timing lyrics back
-into the owner's files, accounts, synchronisation, playlists that can be saved
+editing beyond an autofill the owner confirms (`FR-AF`), file renaming, moving
+or deletion, transcoding, streaming, scrobbling, any lookup beyond the lyrics
+lookup, the update check and an autofill's MusicBrainz and Cover Art Archive
+lookups, writing or re-timing lyrics back into the owner's files, accounts, synchronisation, playlists that can be saved
 and named, a media session on Windows or Linux, and time-windowed statistics.

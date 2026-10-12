@@ -6,8 +6,8 @@ weight: 20
 ---
 
 {{% pageinfo %}}
-Orpheus is complete and tested: 422 unit and widget tests, a clean analyzer, and
-every release build produced and verified by CI on every push.
+Orpheus is complete and tested: a green unit and widget suite, a clean analyzer,
+and every release build produced and verified by CI on every pull request.
 {{% /pageinfo %}}
 
 ## Where to start
@@ -25,3 +25,9 @@ built to.
 
 **[Downloads]({{< relref "/downloads" >}})** — the current release, for each
 platform.
+
+**[Changelog]({{< relref "/docs/changelog" >}})** — what changed in each
+release.
+
+**[Contributing]({{< relref "/docs/contributing" >}})** — building it from
+source, running the tests, and how a release is made.

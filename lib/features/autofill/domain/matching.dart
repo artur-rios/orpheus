@@ -1,0 +1,375 @@
+import 'package:path/path.dart' as p;
+
+import '../../library/domain/music_entry.dart';
+import 'metadata_source.dart';
+import 'release.dart';
+
+/// [value] reduced to what two spellings of one name have in common.
+///
+/// Lower case, accents folded to their letters, typographic quotes and every
+/// other piece of punctuation dropped, and runs of space collapsed: `Sigur
+/// Rós` and `sigur ros` are one band, and `Don’t` and `Don't` one song.
+String normalised(String value) {
+  final folded = StringBuffer();
+  for (final rune in value.toLowerCase().runes) {
+    final char = String.fromCharCode(rune);
+    folded.write(_folds[char] ?? char);
+  }
+
+  return folded
+      .toString()
+      .replaceAll(RegExp(r'[^\p{L}\p{N}\s]', unicode: true), '')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+}
+
+const Map<String, String> _folds = {
+  'à': 'a',
+  'á': 'a',
+  'â': 'a',
+  'ã': 'a',
+  'ä': 'a',
+  'å': 'a',
+  'ç': 'c',
+  'è': 'e',
+  'é': 'e',
+  'ê': 'e',
+  'ë': 'e',
+  'ì': 'i',
+  'í': 'i',
+  'î': 'i',
+  'ï': 'i',
+  'ñ': 'n',
+  'ò': 'o',
+  'ó': 'o',
+  'ô': 'o',
+  'õ': 'o',
+  'ö': 'o',
+  'ø': 'o',
+  'ù': 'u',
+  'ú': 'u',
+  'û': 'u',
+  'ü': 'u',
+  'ý': 'y',
+  'ÿ': 'y',
+};
+
+/// How closely [candidate] matches [wanted]: 2 equal, 1 one contains the
+/// other, 0 neither — and 0 where nothing was wanted.
+int _closeness(String? wanted, String candidate) {
+  if (wanted == null || wanted.trim().isEmpty) return 0;
+
+  final a = normalised(wanted);
+  final b = normalised(candidate);
+  if (a == b) return 2;
+  if (a.isNotEmpty && b.isNotEmpty && (a.contains(b) || b.contains(a))) {
+    return 1;
+  }
+
+  return 0;
+}
+
+int _statusRank(String? status) => switch (status?.toLowerCase()) {
+  'official' => 0,
+  'promotion' => 1,
+  null => 2,
+  _ => 3,
+};
+
+/// [candidates] best first, by what the search already said about them.
+///
+/// The order the spec gives, each key breaking the previous one's ties:
+/// as many tracks as the owner has files, then an official release, then the
+/// title, then the artist, then the service's own score, then the earliest
+/// date, then the id — so the same answer always ranks the same way.
+List<ReleaseCandidate> rankCandidates(
+  List<ReleaseCandidate> candidates, {
+  required int fileCount,
+  String? album,
+  String? artist,
+}) {
+  int compare(ReleaseCandidate a, ReleaseCandidate b) {
+    final byCount = (b.trackCount == fileCount ? 1 : 0).compareTo(
+      a.trackCount == fileCount ? 1 : 0,
+    );
+    if (byCount != 0) return byCount;
+
+    final byStatus = _statusRank(a.status).compareTo(_statusRank(b.status));
+    if (byStatus != 0) return byStatus;
+
+    final byTitle = _closeness(
+      album,
+      b.title,
+    ).compareTo(_closeness(album, a.title));
+    if (byTitle != 0) return byTitle;
+
+    final byArtist = _closeness(
+      artist,
+      b.artist,
+    ).compareTo(_closeness(artist, a.artist));
+    if (byArtist != 0) return byArtist;
+
+    final byScore = b.score.compareTo(a.score);
+    if (byScore != 0) return byScore;
+
+    final byDate = (a.date ?? '9999').compareTo(b.date ?? '9999');
+    if (byDate != 0) return byDate;
+
+    return a.id.compareTo(b.id);
+  }
+
+  return [...candidates]..sort(compare);
+}
+
+int _typeRank(ReleaseCandidate release) {
+  if (release.secondaryTypes.any(
+    (type) => type.toLowerCase() == 'compilation',
+  )) {
+    return 3;
+  }
+
+  return switch (release.primaryType?.toLowerCase()) {
+    'album' => 0,
+    'ep' => 1,
+    'single' => 2,
+    _ => 2,
+  };
+}
+
+/// Every place the recordings in [matches] appear, best first.
+///
+/// For a lone track the question is which record to file it under, and the
+/// answer an owner expects is the album it was released on: an official
+/// album before an EP or a single, a compilation last, and the earliest of
+/// equals.
+List<RecordingAppearance> rankAppearances(
+  List<RecordingMatch> matches, {
+  String? title,
+  String? artist,
+}) {
+  final scored = [
+    for (final match in matches)
+      for (final appearance in match.appearances)
+        (match: match, appearance: appearance),
+  ];
+
+  scored.sort((a, b) {
+    final byTitle = _closeness(
+      title,
+      b.match.title,
+    ).compareTo(_closeness(title, a.match.title));
+    if (byTitle != 0) return byTitle;
+
+    final byArtist = _closeness(
+      artist,
+      creditedName(b.match.artistCredit),
+    ).compareTo(_closeness(artist, creditedName(a.match.artistCredit)));
+    if (byArtist != 0) return byArtist;
+
+    final byStatus = _statusRank(a.appearance.release.status)
+        .compareTo(_statusRank(b.appearance.release.status));
+    if (byStatus != 0) return byStatus;
+
+    final byType = _typeRank(a.appearance.release)
+        .compareTo(_typeRank(b.appearance.release));
+    if (byType != 0) return byType;
+
+    final byDate = (a.appearance.release.date ?? '9999').compareTo(
+      b.appearance.release.date ?? '9999',
+    );
+    if (byDate != 0) return byDate;
+
+    return a.appearance.release.id.compareTo(b.appearance.release.id);
+  });
+
+  return [for (final item in scored) item.appearance];
+}
+
+/// The commonest non-blank value among [values], or `null` for none.
+String? _commonest(Iterable<String?> values) {
+  final counts = <String, int>{};
+  for (final value in values) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) continue;
+    counts.update(trimmed, (count) => count + 1, ifAbsent: () => 1);
+  }
+  if (counts.isEmpty) return null;
+
+  final ranked = counts.entries.toList()
+    ..sort((a, b) {
+      final byCount = b.value.compareTo(a.value);
+      return byCount != 0 ? byCount : a.key.compareTo(b.key);
+    });
+
+  return ranked.first.key;
+}
+
+/// What to search for a record made of [entries] by.
+///
+/// The commonest album and album artist across them, so one mis-tagged track
+/// does not steer the search; the folder's name where nothing is tagged.
+ReleaseQuery releaseQueryFor(List<MusicEntry> entries) => ReleaseQuery(
+  album:
+      _commonest(entries.map((entry) => entry.album)) ??
+      _commonest(entries.map((entry) => p.basename(entry.file.directory))),
+  artist: _commonest(entries.map((entry) => entry.albumArtist)),
+);
+
+/// A track number at the front of a file name: digits followed by a separator
+/// (`03 - `, `03. `, `03_`, `03) `), or a leading zero followed by a space
+/// (`03 `). Digits with neither are part of a title (`21 Guns`, `1984`).
+final RegExp _trackNumber = RegExp(r'^\s*(?:\d+\s*[-._)\]]\s*|0\d*\s+)');
+
+/// What to search for the lone track [entry] by.
+///
+/// Its title, or its file name without the extension and any leading track
+/// number where it has none: `03 - Lucky.flac` and `03 Lucky.flac` are
+/// `Lucky`, but `21 Guns.mp3` stays `21 Guns`. A name that is nothing but a
+/// number (`1984.flac`) is kept whole, since stripping it would leave nothing
+/// to search for.
+RecordingQuery recordingQueryFor(MusicEntry entry) {
+  final name = p.basenameWithoutExtension(entry.file.path).trim();
+  final stripped = name.replaceFirst(_trackNumber, '').trim();
+
+  return RecordingQuery(
+    title: entry.title ?? (stripped.isEmpty ? name : stripped),
+    artist: entry.artist,
+    duration: entry.duration,
+  );
+}
+
+/// Which of [release]'s tracks each of [files] is.
+///
+/// Passes, each over what the ones before left unassigned, from the surest
+/// evidence to the weakest: disc and track number (a missing disc counting as
+/// the first, as the library orders it), where the title is the same once
+/// normalised or the file has none, and then where the title does not plainly
+/// belong to another track; the title exactly, once normalised; a similar
+/// title and a length within five seconds; and, for a file with no title, a
+/// length within two seconds where it singles out exactly one track. A track
+/// is given out once. A file left at the end has no match on this release, and
+/// tracks nobody claimed — bonus tracks the owner does not have — are simply
+/// not used.
+Map<MusicEntry, ReleaseTrack?> assignTracks(
+  List<MusicEntry> files,
+  ReleaseDetail release,
+) {
+  final assigned = <MusicEntry, ReleaseTrack?>{
+    for (final file in files) file: null,
+  };
+  final free = [...release.tracks];
+
+  void claim(MusicEntry file, ReleaseTrack track) {
+    assigned[file] = track;
+    free.remove(track);
+  }
+
+  Iterable<MusicEntry> open() => files.where((file) => assigned[file] == null);
+
+  // The free tracks [file]'s number and disc point at.
+  Iterable<ReleaseTrack> numbered(MusicEntry file) {
+    final number = file.metadata.track;
+    final disc = file.metadata.disc ?? 1;
+
+    return free.where(
+      (t) => number != null && t.disc == disc && t.position == number,
+    );
+  }
+
+  // 1. Numbers, where the title is the same track's or the file has none. These
+  // go first, so a looser number match listed earlier cannot take their slot.
+  for (final file in open().toList()) {
+    final title = file.title;
+    final track = numbered(file)
+        .where((t) => title == null || normalised(t.title) == normalised(title))
+        .firstOrNull;
+    if (track != null) claim(file, track);
+  }
+
+  // 1b. The rest of the numbers, where the title is not plainly another track's.
+  // A disc-less file numbered like a track on a later disc is left for the
+  // passes below rather than guessed into it.
+  for (final file in open().toList()) {
+    final track = numbered(file)
+        .where((t) => _titlesAgreeOrUnknown(file, t))
+        .firstOrNull;
+    if (track != null) claim(file, track);
+  }
+
+  // 2. Titles, exactly.
+  for (final file in open().toList()) {
+    final title = file.title;
+    if (title == null) continue;
+    final track = free
+        .where((t) => normalised(t.title) == normalised(title))
+        .firstOrNull;
+    if (track != null) claim(file, track);
+  }
+
+  // 3. Similar titles of about the same length.
+  for (final file in open().toList()) {
+    final title = file.title;
+    if (title == null) continue;
+    final track = free
+        .where(
+          (t) =>
+              _overlap(title, t.title) >= 0.6 &&
+              _lengthsWithin(
+                file.duration,
+                t.length,
+                const Duration(seconds: 5),
+              ),
+        )
+        .firstOrNull;
+    if (track != null) claim(file, track);
+  }
+
+  // 4. Length alone, where it is unambiguous. Only for a file with no title: a
+  // titled file that found no track has been judged on its own name, and a
+  // matching length is not enough to retitle it as an unclaimed bonus track.
+  for (final file in open().toList()) {
+    if (file.title != null) continue;
+    final near = free
+        .where(
+          (t) => _lengthsWithin(
+            file.duration,
+            t.length,
+            const Duration(seconds: 2),
+          ),
+        )
+        .toList();
+    if (near.length == 1) claim(file, near.single);
+  }
+
+  return assigned;
+}
+
+/// Whether [track] is not plainly the wrong one for [file]: either the file has
+/// no title, or its title shares enough words with the track's to read as the
+/// same song.
+///
+/// This is the looser number match, run only after the exact ones, so a title
+/// that merely resembles a track's cannot take a slot an exact title wants. It
+/// is what refuses a number match against a plainly different title.
+bool _titlesAgreeOrUnknown(MusicEntry file, ReleaseTrack track) {
+  final title = file.title;
+  if (title == null) return true;
+
+  return _overlap(title, track.title) >= 0.6 ||
+      normalised(title) == normalised(track.title);
+}
+
+/// The share of words two titles have in common, 0 to 1.
+double _overlap(String a, String b) {
+  final left = normalised(a).split(' ').where((w) => w.isNotEmpty).toSet();
+  final right = normalised(b).split(' ').where((w) => w.isNotEmpty).toSet();
+  if (left.isEmpty || right.isEmpty) return 0;
+
+  final shared = left.intersection(right).length;
+  final larger = left.length > right.length ? left.length : right.length;
+
+  return shared / larger;
+}
+
+bool _lengthsWithin(Duration? a, Duration? b, Duration tolerance) =>
+    a != null && b != null && (a - b).abs() <= tolerance;

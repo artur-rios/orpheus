@@ -8,20 +8,35 @@
          request on releases that predate the split, and is capped at API 32 so
          it is never asked for on a device that has the narrower permission.
 
-         Nothing is uploaded, and no artwork is fetched. -->
+         Nothing is uploaded, and no artwork is fetched unless the owner asks for
+         the cover in an autofill. -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"/>
 
+    <!-- Changing a track's tags, on Android 10 and earlier, and nothing else.
+         On Android 7 to 10 it is granted together with the read access above,
+         in the same system dialog: Android groups the two storage permissions,
+         and the request for reading the library obtains this one as well. It
+         is only ever used for an autofill the owner reviewed and confirmed,
+         and a refusal writes nothing. On Android 11 and later the same write
+         goes through all-files access below, asked for at the first confirmed
+         autofill, and this is never asked for — which is why it is capped at
+         API 29. What is written is the file's tags and nothing else: never
+         its audio, its name or its place. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29"/>
+
     <!-- The memory card, and the drive plugged into the phone.
 
-         Declared, and asked for at one moment only: a folder the owner
-         registered has been walked, has turned out to be unreadable, and the
-         folders screen has said why and offered this as the way through. An
-         owner whose music sits where Android expects it is never asked, and
-         never has to be — READ_MEDIA_AUDIO above covers that storage on its
-         own.
+         Declared, and asked for at two moments only. The first: a folder the
+         owner registered has been walked, has turned out to be unreadable, and
+         the folders screen has said why and offered this as the way through.
+         An owner whose music sits where Android expects it is never asked
+         for that, and never has to be — READ_MEDIA_AUDIO above covers that
+         storage on its own.
 
          What it exists for is the one thing that permission cannot reach.
          Android mounts a memory card and a USB drive on volumes outside the
@@ -29,34 +44,47 @@
          permission for them: a folder on one either reads as a folder that is
          not there, or it reads with this.
 
+         The second, on Android 11 and later: the owner has reviewed an
+         autofill's changes and confirmed them, and the application is about
+         to change the tags of files it did not make. There is no narrower
+         permission that lets an application do that there, and nothing is
+         asked for before that confirmation.
+
          It changes nothing about what this application does with what it
          reads. Orpheus walks the folders the owner registered and no others,
-         it opens audio files to read their tags and play them, and the one
-         thing it ever writes into a music folder is a .lrc beside a track
-         whose words were looked up. That is true with this permission exactly
-         as it was without it. It can be taken back in the system settings at
-         any time. -->
+         it opens audio files to read their tags and play them, and the only
+         things it ever writes into a music folder are a .lrc beside a track
+         whose words were looked up, and the tags of files whose autofill the
+         owner confirmed. That is true with this permission exactly as it was
+         without it. It can be taken back in the system settings at any
+         time. -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
 
-    <!-- The lyrics lookup, and nothing else.
+    <!-- The lyrics lookup, and the autofill lookup, and nothing else.
 
          This is the one permission here that reaches off the device, and it
          is worth being exact about what it is for. When a track has no words
          on this device — no .lrc beside it, no SYLT frame, no lyrics tag —
          and the owner has left the lookup on in the preferences, Orpheus asks
-         a lyrics service for them using that track's artist and title.
+         a lyrics service for them using that track's artist and title. And
+         when the owner starts an autofill, Orpheus asks MusicBrainz for the
+         release, and the Cover Art Archive for its cover if the owner chose
+         one.
 
-         What that sends is the artist and the title. Not the file's name, not
-         its path, not the library, not what else is on the device, not who is
-         holding it, and nothing that persists between requests: no account,
-         no key, no identifier of any kind. There is no telemetry, no
+         What the lyrics lookup sends is the artist and the title. What an
+         autofill sends is the record's title and artist, or a lone track's
+         title, artist and length. Not the file's name, not its path, not the
+         library, not what else is on the device, not who is holding it, and
+         nothing that persists between requests: no account, no key, no
+         identifier of any kind. There is no telemetry, no
          analytics and no crash reporting in this package, and the absence of
          any other network call is checked in the same place this permission
          is: the workflow reads the shipped package's permissions back out of
          it and fails on anything not listed in this file.
 
-         The owner can turn the lookup off, and then this permission is
-         declared and never exercised. -->
+         The owner can turn the lyrics lookup off, and an autofill is only
+         ever made when the owner starts one; with both left alone this
+         permission is declared and never exercised. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <!-- Playing on after the owner switches away.
@@ -79,8 +107,13 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
+    <!-- requestLegacyExternalStorage: on Android 10 it is what lets the
+         legacy write permission above reach a file by its path, since that
+         release scopes storage unless it is asked to behave as the earlier
+         ones did. It changes nothing on any other release. -->
     <application
         android:label="Orpheus"
+        android:requestLegacyExternalStorage="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

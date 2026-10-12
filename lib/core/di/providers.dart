@@ -14,6 +14,11 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/autofill/application/autofill_controller.dart';
+import '../../features/autofill/data/audio_metadata_tag_writer.dart';
+import '../../features/autofill/data/musicbrainz_source.dart';
+import '../../features/autofill/domain/metadata_source.dart';
+import '../../features/autofill/domain/tag_writer.dart';
 import '../../features/library/application/library_folders_controller.dart';
 import '../../features/library/application/music_library_controller.dart';
 import '../../features/library/application/scan_controller.dart';
@@ -136,11 +141,45 @@ final lyricsSourceProvider = Provider<LyricsSource>(
 /// Every test overrides it, as every test overrides the engine and the media
 /// session: no test in this suite opens a socket.
 final remoteLyricsSourceProvider = Provider<RemoteLyricsSource>((ref) {
-  final source = LrclibLyricsSource();
+  final source = LrclibLyricsSource(
+    version: ref.watch(runningVersionProvider)?.toString(),
+  );
   ref.onDispose(source.close);
 
   return source;
 });
+
+/// Where autofilled tags come from.
+///
+/// One instance for the run, because it holds the throttle MusicBrainz asks
+/// for: two of them would each keep to one request a second, and together
+/// make two. Every test overrides it.
+final metadataSourceProvider = Provider<MetadataSource>((ref) {
+  final source = MusicBrainzSource(
+    version: ref.watch(runningVersionProvider)?.toString(),
+  );
+  ref.onDispose(source.close);
+
+  return source;
+});
+
+/// What reads and writes a file's tags for an autofill.
+///
+/// The one binding in this graph that writes into an audio file. Every test
+/// overrides it.
+final tagWriterProvider = Provider<TagWriter>(
+  (ref) => const AudioMetadataTagWriter(),
+);
+
+/// One autofill session, from search to written files.
+///
+/// Auto-disposed: it lives as long as the review screen watching it, so a
+/// closed screen is a forgotten session.
+final autofillControllerProvider =
+    NotifierProvider<AutofillController, AutofillState>(
+      AutofillController.new,
+      isAutoDispose: true,
+    );
 
 /// Where a fetched sheet is written, so it is found locally next time.
 final lyricsSidecarProvider = Provider<LyricsSidecar>(

@@ -190,6 +190,26 @@ void main() {
         expect([for (final e in group.entries) e.title], ['D1T9', 'D2T1']);
       },
     );
+
+    test(
+      'GivenADoubleRecordWithSomeDiscTagsMissing_WhenItIsListed_ThenTheUntaggedTracksSortAsDiscOne',
+      () {
+        // The comparator used to weigh discs only when both sides named one,
+        // so `T2` compared equal to both discs and landed between them by
+        // track number — after disc 2's first track, before its second.
+        final group = albumsIn([
+          entry(id: 'a', title: 'D2T1', artist: 'A', album: 'LP', disc: 2, track: 1),
+          entry(id: 'b', title: 'T2', artist: 'A', album: 'LP', track: 2),
+          entry(id: 'c', title: 'D2T2', artist: 'A', album: 'LP', disc: 2, track: 2),
+          entry(id: 'd', title: 'D1T1', artist: 'A', album: 'LP', disc: 1, track: 1),
+        ]).single;
+
+        expect(
+          [for (final e in group.entries) e.title],
+          ['D1T1', 'T2', 'D2T1', 'D2T2'],
+        );
+      },
+    );
   });
 
   group('tracksOfAlbum', () {
@@ -270,6 +290,35 @@ void main() {
           [for (final file in queue) file.path],
           [library[2].file.path, library[1].file.path, library[0].file.path],
         );
+      },
+    );
+
+    test(
+      'GivenAlbumsTitledInMixedCaseAndAnUntitledGroup_WhenTheArtistIsQueued_ThenTheQueueFollowsTheScreensOrder',
+      () {
+        // The queue used to sort case-sensitively with the untitled group
+        // first — `beta` after `Gamma`, loose tracks ahead of everything —
+        // while the artist's screen lists them as `albumsOfArtist` does.
+        final library = [
+          entry(id: '1', title: 'G1', albumArtist: 'A', album: 'Gamma', track: 1),
+          entry(id: '2', title: 'Loose', albumArtist: 'A'),
+          entry(id: '3', title: 'B1', albumArtist: 'A', album: 'beta', track: 1),
+          entry(id: '4', title: 'A1', albumArtist: 'A', album: 'Alpha', track: 1),
+        ];
+
+        final queue = artistOf(library.first, library);
+        final screen = [
+          for (final group in albumsOfArtist('A', library))
+            for (final e in group.entries) e.file.path,
+        ];
+
+        expect([for (final file in queue) file.path], screen);
+        expect(screen, [
+          library[3].file.path,
+          library[2].file.path,
+          library[0].file.path,
+          library[1].file.path,
+        ]);
       },
     );
   });

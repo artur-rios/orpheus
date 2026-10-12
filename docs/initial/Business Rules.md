@@ -39,16 +39,25 @@ part of the application must have anyway.
 > track to this application. Its resume point and its play count do not follow
 > it. Re-scanning is what reconciles that.
 
-**BR-02 — The owner's audio files are read and never written.** No tag is
-edited, no file is renamed, moved, deleted or transcoded. Everything this
-application produces lives in its own directory, with exactly one exception:
-the `.lrc` a lyrics lookup writes beside a track (`BR-29a`). That is a new file
-next to the audio, never a change to the audio, and never a replacement for a
-sidecar the owner wrote.
+**BR-02 — The owner's audio files are read, and written only to change their
+tags, for changes the owner confirmed.** No file is renamed, moved, deleted or
+transcoded. Everything this application produces lives in its own directory,
+with two exceptions. The first is the `.lrc` a lyrics lookup writes beside a
+track (`BR-29a`): a new file next to the audio, never a change to the audio, and
+never a replacement for a sidecar the owner wrote. The second is the tags of an
+MP3 or FLAC file, changed by an autofill (`FR-AF-05`) — and only for the
+changes the owner saw, as the current value and the new one, and confirmed. A
+file changed since it was read is not written, and no other format is written
+at all.
 
-**BR-03 — One thing leaves the machine, and it is named.** The lyrics lookup
-(`BR-29a`) and nothing else. No upload, no telemetry, no analytics, no crash
-reporting, no scrobbling, no cover art, no metadata lookup of any other kind,
+**BR-03 — Three things leave the machine, and they are named.** The lyrics lookup
+(`BR-29a`); — on Windows and Linux only, switchable off in the preferences —
+the check for a newer release of this application: one unauthenticated request
+to GitHub's releases API at startup, and the download of the installer and its
+checksums when the owner accepts the offer; and the MusicBrainz and Cover Art
+Archive lookups an autofill makes, only when the owner starts one (`FR-AF-02`).
+Nothing else. No upload, no telemetry, no analytics, no crash
+reporting, no scrobbling, no cover art or metadata lookup of any other kind,
 and nothing that identifies the owner or persists between requests — no
 account, no key, no identifier. The enforceable form of this rule is that the
 Android package declares exactly the permissions listed in its manifest and CI

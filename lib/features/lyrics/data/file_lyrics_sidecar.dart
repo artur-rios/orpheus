@@ -42,12 +42,12 @@ class FileLyricsSidecar implements LyricsSidecar {
     // beside an existing `.LRC` on a case-sensitive file system would leave
     // two sheets for one track, and the reader would go on preferring the
     // other one.
-    for (final extension in const [
+    bool alreadyThere() => [
       FileLyricsSource.sidecarExtension,
       '.LRC',
-    ]) {
-      if (File('$base$extension').existsSync()) return false;
-    }
+    ].any((extension) => File('$base$extension').existsSync());
+
+    if (alreadyThere()) return false;
 
     // The temporary file carries the process id so that two Orpheus windows
     // over the same library — the same folder on a share, opened twice — do
@@ -59,6 +59,18 @@ class FileLyricsSidecar implements LyricsSidecar {
       // is what the reader assumes, and it is the only encoding that can hold
       // the whole of what a lyrics service returns.
       await scratch.writeAsString(text, encoding: utf8, flush: true);
+
+      // Asked again at the last moment. The write above is flushed to the
+      // disk, which on a memory card or a network share takes long enough for
+      // the owner — or another program — to have saved a sheet of their own
+      // in the meantime, and a rename does not ask: it replaces whatever is
+      // at the name.
+      if (alreadyThere()) {
+        await scratch.delete();
+
+        return false;
+      }
+
       await scratch.rename(target.path);
 
       return true;

@@ -105,8 +105,9 @@ away. Upgrades from 1.0.1 onward install in place and keep everything.
 ## Keeping it up to date
 
 On Windows and Linux, Orpheus asks once at startup whether a newer release
-exists, and offers it. You can turn that off in the preferences, under
-*Updates*.
+exists, and offers it. A full release is only ever offered full releases; if
+you installed a beta, you are offered the next beta and then the release it
+leads to. You can turn that off in the preferences, under *Updates*.
 
 Accepting downloads the same installer listed above and checks it against the
 release's own `SHA256SUMS.txt` before running it — nothing is started that does
@@ -130,5 +131,5 @@ to forget what you listened to, and reinstalling should find it all again.
 ## Building it yourself
 
 Everything above is produced by [`.github/workflows/release.yml`](https://github.com/artur-rios/orpheus/blob/main/.github/workflows/release.yml)
-from a pushed tag. To build the same artifacts locally, see the
-[repository README](https://github.com/artur-rios/orpheus#building).
+from a pushed tag. To build the same artifacts locally, see
+[Contributing]({{< relref "/docs/contributing" >}}).

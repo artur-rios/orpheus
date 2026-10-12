@@ -8,12 +8,14 @@ import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 import 'package:orpheus/core/platform/host_platform.dart';
 import 'package:orpheus/core/settings/settings_store.dart';
+import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/library/domain/music_grouping.dart';
 import 'package:orpheus/features/updates/application/update_controller.dart';
 import 'package:orpheus/features/updates/domain/app_version.dart';
 
+import 'fake_autofill.dart';
 import 'fake_media_player.dart';
 import 'fake_media_session.dart';
 import 'fake_story_share.dart';
@@ -35,7 +37,7 @@ class Harness {
     List<MusicEntry> library = const [],
     Set<String> missingTracks = const {},
     SettingsStore? settings,
-    ScriptedScanner? scanner,
+    LibraryScanner? scanner,
     ScriptedTrackAnalysis? analysis,
     ScriptedLyricsSource? lyrics,
     ScriptedRemoteLyricsSource? remoteLyrics,
@@ -48,10 +50,14 @@ class Harness {
     RecordingStoryShare? storyShare,
     AppVersion? runningVersion,
     HostPlatform? platform,
+    ScriptedMetadataSource? metadata,
+    FakeTagWriter? tagWriter,
   }) : player = FakeMediaPlayer(),
        storyShare = storyShare ?? RecordingStoryShare(),
        releases = releases ?? ScriptedReleaseSource(),
        updates = updates ?? ScriptedUpdateInstaller(),
+       metadata = metadata ?? ScriptedMetadataSource(),
+       tagWriter = tagWriter ?? FakeTagWriter(),
        shutdown = RecordingAppShutdown(),
        _runningVersion = runningVersion ?? AppVersion.tryParse('1.0.0'),
        session = FakeMediaSession(),
@@ -107,6 +113,10 @@ class Harness {
         // is: no test asks GitHub anything, and no test runs an installer.
         releaseSourceProvider.overrideWithValue(this.releases),
         updateInstallerProvider.overrideWithValue(this.updates),
+        // The third thing that reaches a network, and the one thing in this
+        // application that writes into an audio file. No test does either.
+        metadataSourceProvider.overrideWithValue(this.metadata),
+        tagWriterProvider.overrideWithValue(this.tagWriter),
         appShutdownProvider.overrideWithValue(shutdown),
         storyShareProvider.overrideWithValue(this.storyShare),
         runningVersionProvider.overrideWithValue(_runningVersion),
@@ -135,6 +145,13 @@ class Harness {
 
   /// What applying an update does.
   final ScriptedUpdateInstaller updates;
+
+  /// What a search of MusicBrainz answers, in place of a network.
+  final ScriptedMetadataSource metadata;
+
+  /// The files autofill reads and writes, in place of the owner's music
+  /// folder.
+  final FakeTagWriter tagWriter;
 
   /// Whether the application was asked to quit so an installer could run.
   final RecordingAppShutdown shutdown;

@@ -1,3 +1,6 @@
+import 'package:orpheus/features/library/domain/music_grouping.dart';
+import 'package:orpheus/features/library/domain/music_entry.dart';
+import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/features/playback/application/audio_playback_controller.dart';
@@ -119,6 +122,69 @@ void main() {
 
         expect(harness.player.startedAt.single, Duration.zero);
         expect(positions.positionFor(okComputer.first.file.path), isNull);
+      },
+    );
+    test(
+      'GivenAnotherTrackIsPlaying_WhenTheOwnerIsOfferedAResumeAndTheEngineReports_ThenTheOfferStillResumesWhereItStopped',
+      () async {
+        // The engine goes on reporting on the track that was already playing
+        // while the owner is being asked. Each of those reports used to clear
+        // the position on offer, so the prompt read "resume from 0:00" a tick
+        // later and pressing it did nothing at all.
+        final harness = Harness(library: library);
+        final player = await playerOf(harness);
+        await player.playTrack(other.first.file);
+        await harness.read(playbackPositionsProvider).record(
+          PlaybackPosition(
+            path: okComputer.first.file.path,
+            position: const Duration(minutes: 2),
+            updatedAt: DateTime.utc(2026),
+          ),
+        );
+        await player.playTrack(okComputer.first.file);
+
+        await report(
+          harness,
+          const PlaybackStatus(
+            isPlaying: true,
+            position: Duration(seconds: 30),
+            duration: Duration(minutes: 9),
+          ),
+        );
+
+        expect(stateOf(harness).stage, AudioStage.offeringResume);
+        expect(stateOf(harness).resumeFrom, const Duration(minutes: 2));
+
+        await player.resume();
+
+        expect(harness.player.opened.last, okComputer.first.file.path);
+        expect(harness.player.startedAt.last, const Duration(minutes: 2));
+      },
+    );
+
+    test(
+      'GivenTheOwnerIsOfferedAResume_WhenTheTrackBeforeItEnds_ThenNothingOpensUntilTheyAnswer',
+      () async {
+        final harness = Harness(library: library);
+        final player = await playerOf(harness);
+        await player.cycleRepeat();
+        await player.cycleRepeat(); // QueueRepeat.one
+        await player.playTrack(other.first.file);
+        await harness.read(playbackPositionsProvider).record(
+          PlaybackPosition(
+            path: okComputer.first.file.path,
+            position: const Duration(minutes: 2),
+            updatedAt: DateTime.utc(2026),
+          ),
+        );
+        await player.playTrack(okComputer.first.file);
+
+        await report(harness, const PlaybackStatus(hasEnded: true));
+
+        // The offer is still what is on screen, and the track on offer was not
+        // opened from the top behind the owner's back.
+        expect(stateOf(harness).stage, AudioStage.offeringResume);
+        expect(harness.player.opened, [other.first.file.path]);
       },
     );
   });
@@ -611,6 +677,125 @@ void main() {
         await player.setVolume(4);
 
         expect(harness.player.volumes.last, 1.0);
+      },
+    );
+  });
+
+  group('what stops when a selection does not start', () {
+    test(
+      'GivenATrackIsPlaying_WhenAnotherWithAStoredPositionIsChosen_ThenTheFirstStopsWhileTheOwnerIsAsked',
+      () async {
+        // The offer has no transport controls, and a record left running under
+        // it was one the owner could hear and had no button to stop.
+        final harness = Harness(library: library);
+        final player = await playerOf(harness);
+        await player.playTrack(other.first.file);
+        await harness.read(playbackPositionsProvider).record(
+          PlaybackPosition(
+            path: okComputer.first.file.path,
+            position: const Duration(minutes: 2),
+            updatedAt: DateTime.utc(2026),
+          ),
+        );
+
+        await player.playTrack(okComputer.first.file);
+
+        expect(stateOf(harness).stage, AudioStage.offeringResume);
+        expect(harness.player.stops, 1);
+      },
+    );
+
+    test(
+      'GivenATrackIsPlaying_WhenARecordWhoseFilesAreAllGoneIsChosen_ThenTheFirstStops',
+      () async {
+        final harness = Harness(
+          library: library,
+          missingTracks: {for (final e in okComputer) e.file.path},
+        );
+        final player = await playerOf(harness);
+        await player.playTrack(other.first.file);
+
+        await player.playAlbum(okComputer.first.file);
+
+        expect(stateOf(harness).stage, AudioStage.allFailed);
+        expect(harness.player.stops, 1);
+      },
+    );
+  });
+
+  group('a missing track at the end of a record', () {
+    PlaybackStatus ended() => const PlaybackStatus(
+      position: Duration(minutes: 4),
+      duration: Duration(minutes: 4),
+      hasEnded: true,
+    );
+
+    test(
+      'GivenTheLastTrackIsGone_WhenTheOneBeforeItEnds_ThenTheRecordSimplyEnds',
+      () async {
+        // Two tracks played; the third is missing. That is a record that ran
+        // out, not a selection nothing in which could be played.
+        final harness = Harness(
+          library: library,
+          missingTracks: {okComputer.last.file.path},
+        );
+        final player = await playerOf(harness);
+        await player.playAlbum(okComputer.first.file);
+        await report(harness, ended());
+        await report(harness, ended());
+
+        expect(stateOf(harness).stage, AudioStage.idle);
+        expect(stateOf(harness).lastSkipped?.path, okComputer.last.file.path);
+      },
+    );
+
+    test(
+      'GivenTheLastTrackIsGoneAndTheRecordRepeats_WhenTheOneBeforeItEnds_ThenItGoesRoundAgain',
+      () async {
+        final harness = Harness(
+          library: library,
+          missingTracks: {okComputer.last.file.path},
+        );
+        final player = await playerOf(harness);
+        await player.cycleRepeat(); // all
+        await player.playAlbum(okComputer.first.file);
+        await report(harness, ended());
+        await report(harness, ended());
+
+        expect(stateOf(harness).stage, AudioStage.playing);
+        expect(stateOf(harness).current?.path, okComputer.first.file.path);
+      },
+    );
+  });
+
+  group('a library re-tagged under the player', () {
+    test(
+      'GivenARecordIsPlaying_WhenARescanFindsItRenamed_ThenTheQueueIsRenamed',
+      () async {
+        final harness = Harness(library: library);
+        final player = await playerOf(harness);
+        await player.playAlbum(okComputer.first.file);
+        expect(stateOf(harness).queue.label, 'OK');
+
+        harness
+            .read(musicLibraryControllerProvider.notifier)
+            .replaceWith(
+              MusicCatalog(
+                entries: albumArtistsAcross([
+                  for (final e in okComputer)
+                    MusicEntry(
+                      file: e.file,
+                      metadata: e.metadata.copyWith(album: 'OK Computer'),
+                    ),
+                  ...kidA,
+                  ...other,
+                ]),
+              ),
+            );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(stateOf(harness).queue.label, 'OK Computer');
+        expect(stateOf(harness).stage, AudioStage.playing);
       },
     );
   });

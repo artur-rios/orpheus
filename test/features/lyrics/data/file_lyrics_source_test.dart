@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -41,6 +42,20 @@ void main() {
       expect(lyrics!.isSynced, isTrue);
       expect(lyrics.lines.single.text, 'A line from beside the track');
       expect(lyrics.lines.single.at, const Duration(seconds: 10));
+    },
+  );
+
+  test(
+    'GivenASidecarSavedInLatin1_WhenTheWordsAreAskedFor_ThenTheyAreReadFromIt',
+    () async {
+      // An older editor's idea of a text file. Read as UTF-8 alone it refused
+      // to decode, and the owner's own sheet was passed over for the tags.
+      File(p.join(music.path, 'the-track.lrc'))
+          .writeAsBytesSync(latin1.encode('[00:01.00]Coração de estudante\n'));
+
+      final lyrics = await source.of(track);
+
+      expect(lyrics!.lines.single.text, 'Coração de estudante');
     },
   );
 

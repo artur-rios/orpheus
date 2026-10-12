@@ -69,6 +69,36 @@ void main() {
   );
 
   test(
+    'GivenAPictureAKilledScanLeftHalfWritten_WhenItIsStoredAgain_ThenTheWholePictureReplacesIt',
+    () async {
+      // What a scan killed mid-write used to leave at the final path — and,
+      // with existence the only test, keep there for good.
+      final id = coverIdOf(picture(1));
+      Directory(store.directory).createSync(recursive: true);
+      File(store.pathFor(id)).writeAsBytesSync(picture(1).sublist(0, 10));
+
+      expect(await store.contains(id), isFalse);
+      expect(await store.put(picture(1)), id);
+      expect(await store.read(id), picture(1));
+    },
+  );
+
+  test(
+    'GivenAPictureAKilledScanLeftHalfWritten_WhenTheScanStoresItAgain_ThenTheWholePictureReplacesIt',
+    () {
+      // The same repair on the synchronous path, which is the one the scan's
+      // isolate actually writes through.
+      final id = coverIdOf(picture(1));
+      Directory(store.directory).createSync(recursive: true);
+      File(store.pathFor(id)).writeAsBytesSync(picture(1).sublist(0, 10));
+
+      expect(store.putSync(picture(1)), id);
+      expect(File(store.pathFor(id)).readAsBytesSync(), picture(1));
+      expect(Directory(store.directory).listSync().length, 1);
+    },
+  );
+
+  test(
     'GivenTwoDifferentPictures_WhenBothAreStored_ThenTheyGetDifferentIds',
     () async {
       expect(await store.put(picture(1)), isNot(await store.put(picture(9))));

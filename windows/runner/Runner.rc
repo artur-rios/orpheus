@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "io.github.artur_rios" "\0"
-            VALUE "FileDescription", "orpheus" "\0"
+            VALUE "CompanyName", "Artur Rios" "\0"
+            VALUE "FileDescription", "Orpheus" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "orpheus" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 io.github.artur_rios. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Artur Rios" "\0"
             VALUE "OriginalFilename", "orpheus.exe" "\0"
-            VALUE "ProductName", "orpheus" "\0"
+            VALUE "ProductName", "Orpheus" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

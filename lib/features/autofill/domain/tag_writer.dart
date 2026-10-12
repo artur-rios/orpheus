@@ -1,0 +1,115 @@
+import 'dart:typed_data';
+
+import 'package:path/path.dart' as p;
+
+import '../../library/domain/audio_file.dart';
+import 'autofill_field.dart';
+
+/// The extensions of the formats tags can be written to.
+///
+/// Only a format a write loses nothing else from, and nothing that can only
+/// be read: an Ogg or Opus file is in the library and plays, and has its
+/// tags left alone.
+///
+/// MP3 and FLAC, which Orpheus writes with editors of its own that change
+/// only the ID3v2 frames, or the comments and front covers, they are asked to
+/// and keep every other byte.
+///
+/// Nothing `audio_metadata_reader` 1.8.0 writes: each format it writes
+/// rebuilds the tag from its own model and so drops or rewrites tags it was
+/// not asked to change — M4A its album artist (`aART`), comment and encoder,
+/// WAV a year-only ICRD date, APE its `Album Artist` and `Year` items (and
+/// MP3, before its own editor, its TXXX frames and TDRC date). The
+/// preservation tests in `audio_metadata_tag_writer_test.dart` name each loss
+/// and are skipped, not deleted: a format comes back here once a write that
+/// keeps everything makes its test pass.
+const Set<String> writableExtensions = {'.mp3', '.flac'};
+
+/// Whether tags can be written to the file at [path] at all.
+bool canWriteTagsTo(String path) =>
+    writableExtensions.contains(p.extension(path).toLowerCase());
+
+/// What a file's own tags say, and which of them can be written.
+///
+/// Read from the file rather than from the catalog: the catalog's album artist
+/// is partly worked out across the record, and what a change is measured
+/// against has to be what the file actually holds.
+class FileTags {
+  /// Creates the tags.
+  const FileTags({required this.writable, this.values = const {}, this.cover});
+
+  /// A file nothing can be written to.
+  static const FileTags unwritable = FileTags(writable: {});
+
+  /// The fields this file's format can hold and the writer can write.
+  final Set<AutofillField> writable;
+
+  /// The current value of each field the file has, as a write of it would
+  /// replace it: a `String` for the text fields, an `int` for the numbers and
+  /// the year — and, where the file holds a field more than once, every
+  /// value it holds, as [shownAsOne] puts them.
+  final Map<AutofillField, Object?> values;
+
+  /// The embedded front cover, where there is one.
+  final Uint8List? cover;
+}
+
+/// Every value a file holds for one field, as one: `null` for none, the value
+/// itself for one, and for several, each once in the order the file holds
+/// them, joined as text — `Rock; Pop`, or `3; 4` for two track numbers.
+///
+/// A number the file holds more than once is text, which no number equals:
+/// writing one of them is a change, since it drops the others.
+Object? shownAsOne(Iterable<Object?> values) {
+  final distinct = <Object>{
+    for (final value in values)
+      if (value != null && value != '') value,
+  };
+
+  return switch (distinct.length) {
+    0 => null,
+    1 => distinct.single,
+    _ => distinct.join('; '),
+  };
+}
+
+/// What became of one file's write.
+enum WriteOutcome {
+  /// Written.
+  written,
+
+  /// Its format cannot be written.
+  unsupported,
+
+  /// It is not the file it was when it was read — another program wrote to
+  /// it since — so it was left alone rather than overwritten.
+  changedSinceRead,
+
+  /// Another program holds it open and the system would not let it be
+  /// replaced. On Windows, the track playing.
+  inUse,
+
+  /// This process may not write it.
+  denied,
+
+  /// Anything else.
+  failed,
+}
+
+/// Reads and writes a file's tags.
+abstract interface class TagWriter {
+  /// The tags of the file at [path], and which can be written.
+  Future<FileTags> inspect(String path);
+
+  /// Writes [values] into the file at [path], leaving every other tag in it as
+  /// it was.
+  ///
+  /// [expected] is the file as the catalog knows it. A file whose size or
+  /// timestamp differs is answered [WriteOutcome.changedSinceRead] and not
+  /// touched. A `null` value removes the tag.
+  Future<WriteOutcome> write(
+    String path,
+    Map<AutofillField, Object?> values, {
+    required AudioFile expected,
+  });
+}

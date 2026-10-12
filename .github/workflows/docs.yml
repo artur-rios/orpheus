@@ -4,12 +4,15 @@ name: Docs
 #
 # The site lives in docs/site/ and is a Hugo project using the Docsy theme,
 # which is pulled in as a Hugo module rather than a git submodule — so this
-# needs Go as well as Hugo, and Hugo has to be the extended build because Docsy
-# is written in SCSS.
+# needs Go as well as Hugo. Docsy is written in SCSS, which Hugo hands to Dart
+# Sass, and the theme's Bootstrap and Font Awesome come from npm, so it needs
+# both of those as well.
 #
-# It runs on a push that touches the site, and can be run by hand. It does not
-# run on every push: nothing else in this repository changes what the site
-# renders, and a docs deploy on a commit that only moved Dart around is noise.
+# It runs on a push that touches the site — or CHANGELOG.md or CONTRIBUTING.md,
+# which the site renders from the repository root rather than keeping copies of
+# — and can be run by hand. It does not run on every push: nothing else in this
+# repository changes what the site renders, and a docs deploy on a commit that
+# only moved Dart around is noise.
 
 on:
   push:
@@ -17,6 +20,9 @@ on:
     paths:
       - 'docs/site/**'
       - '.github/workflows/docs.yml'
+      # Rendered by the site's Changelog and Contributing pages.
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
   workflow_dispatch:
 
 # One deployment at a time, and never cancel one half-done: a cancelled deploy
@@ -29,7 +35,13 @@ permissions:
   contents: read
 
 env:
-  HUGO_VERSION: 0.140.2
+  # Pinned so the build that publishes is the build that was checked, and moved
+  # deliberately. Docsy v0.18.0 needs Hugo 0.160.1 or newer; this version builds
+  # the site with no deprecation warnings.
+  HUGO_VERSION: 0.165.0
+  # The version Docsy v0.18.0 is tested with (its `sass-embedded` pin). Docsy's
+  # stylesheets use Sass syntax that older releases cannot parse.
+  DART_SASS_VERSION: 1.105.0
 
 jobs:
   build:
@@ -45,15 +57,28 @@ jobs:
           # clone gives every page the same date.
           fetch-depth: 0
 
-      # The extended build, because Docsy is SCSS and the standard build cannot
-      # compile it. Installed from the .deb rather than through a marketplace
-      # action, so the version above is the version that runs.
+      # The extended build, which is what Docsy declares it needs. Installed from
+      # the .deb rather than through a marketplace action, so the version above
+      # is the version that runs.
       - name: Install Hugo (extended)
         run: |
           set -eu
           curl -sSLo hugo.deb "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.deb"
           sudo dpkg -i hugo.deb
           hugo version
+
+      # Docsy has Hugo compile its SCSS with Dart Sass, which Hugo runs as the
+      # `sass` it finds on the PATH and does not bundle. The LibSass it does
+      # bundle cannot parse the theme's stylesheets, so without this the build
+      # fails on the first one. The standalone release, for the same reason
+      # Hugo is installed from its own: the pinned version is the one that runs.
+      - name: Install Dart Sass
+        run: |
+          set -eu
+          curl -sSL "https://github.com/sass/dart-sass/releases/download/${DART_SASS_VERSION}/dart-sass-${DART_SASS_VERSION}-linux-x64.tar.gz" |
+            tar -xz -C "${RUNNER_TEMP}"
+          echo "${RUNNER_TEMP}/dart-sass" >> "${GITHUB_PATH}"
+          "${RUNNER_TEMP}/dart-sass/sass" --version
 
       # Hugo modules are Go modules, so fetching the theme needs a Go toolchain
       # even though nothing here is written in Go.
@@ -65,11 +90,13 @@ jobs:
         with:
           node-version: '22'
 
-      # PostCSS, which Docsy's stylesheet pipeline shells out to. Without it the
-      # build fails on the first uncached stylesheet — and only on the first,
-      # which is what makes it easy to miss locally.
-      - name: Install the stylesheet toolchain
-        run: npm install --no-audit --no-fund
+      # Bootstrap and Font Awesome, which the theme declares as npm packages and
+      # mounts from node_modules/. Without them the stylesheet cannot import
+      # Bootstrap and the icons have no fonts. `hugo mod npm pack` wrote them
+      # into package.json and the lockfile pins them, so this installs exactly
+      # the versions the theme was released with.
+      - name: Install the theme's packages
+        run: npm ci --no-audit --no-fund
 
       - uses: actions/configure-pages@v6
         id: pages
@@ -90,6 +117,12 @@ jobs:
           test -f public/index.html            || { echo "::error::no home page"; exit 1; }
           test -f public/downloads/index.html  || { echo "::error::no downloads page"; exit 1; }
 
+          # Rendered from the repository root's own files, not from copies.
+          grep -q 'Keep a Changelog' public/docs/changelog/index.html ||
+            { echo "::error::the changelog page does not carry CHANGELOG.md"; exit 1; }
+          grep -q 'The Android signing key' public/docs/contributing/index.html ||
+            { echo "::error::the contributing page does not carry CONTRIBUTING.md"; exit 1; }
+
           # Quote-agnostic, and only the rendered pages. --minify strips the
           # quotes from attribute values, so a pattern written as class="mermaid
           # matches when built locally and misses everything in CI — which is
@@ -106,7 +139,7 @@ jobs:
           grep -q 'mermaid@11' public/docs/architecture/index.html ||
             { echo "::error::mermaid is not pinned to the expected major version"; exit 1; }
 
-          echo "Home, downloads, $diagrams diagram pages, the theme control, and a pinned mermaid."
+          echo "Home, downloads, changelog, contributing, $diagrams diagram pages, the theme control, and a pinned mermaid."
 
       - uses: actions/upload-pages-artifact@v5
         with:

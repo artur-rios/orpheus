@@ -164,12 +164,20 @@ end;
 
 { An installation is "there" if what matters is there: the executable, or the
   uninstaller a previous Inno-built setup left beside it. A directory holding
-  only leftovers still counts — clearing it is the point. }
+  only leftovers still counts — clearing it is the point.
+
+  The uninstaller on its own is taken as this application's only where this
+  application's own registration says it was installed there. Every program
+  built with Inno Setup leaves an unins000.exe beside itself, and a directory
+  holding some other program's would otherwise be offered as an Orpheus to
+  remove: confirming that ran the other program's uninstaller, silently, and
+  then swept its libraries and its data directory. }
 function DirectoryHoldsInstall(const Directory: String): Boolean;
 begin
   Result := (Directory <> '') and
             (FileExists(Directory + '\{#AppExeName}') or
-             FileExists(Directory + '\unins000.exe'));
+             (FileExists(Directory + '\unins000.exe') and
+              (CompareText(Directory, RecordedLocation) = 0)));
 end;
 
 { Inno's uninstaller relaunches itself from a temporary copy and the first

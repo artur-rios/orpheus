@@ -30,7 +30,12 @@ BINARY="orpheus"
 # Where the two kinds of installation go. The per-user one needs no root and is
 # the default for exactly that reason: an application that reads one person's
 # music has no business asking for the whole machine.
-USER_PREFIX="${XDG_DATA_HOME:-$HOME/.local}"
+#
+# $HOME/.local, and not $XDG_DATA_HOME: that names the data directory, which is
+# $HOME/.local/share, not a prefix. Taken as one, it put the launcher on
+# $HOME/.local/share/bin, off every PATH, and the menu entry in
+# $HOME/.local/share/share/applications, where no desktop looks.
+USER_PREFIX="$HOME/.local"
 SYSTEM_PREFIX="/usr/local"
 
 MODE=""

@@ -27,7 +27,8 @@ class UpdatePromptScope extends ConsumerStatefulWidget {
 }
 
 class _UpdatePromptScopeState extends ConsumerState<UpdatePromptScope> {
-  bool _showing = false;
+  /// The dialog on screen, or `null` when there is none.
+  Route<void>? _dialog;
 
   @override
   Widget build(BuildContext context) {
@@ -35,19 +36,51 @@ class _UpdatePromptScopeState extends ConsumerState<UpdatePromptScope> {
     // dialog reads the same provider it was opened from, so every later stage
     // — downloading, failed, handed off — is a rebuild of the dialog already
     // on screen rather than a second one over it.
+    //
+    // And closed when the state goes back to idle — "Not now", "Skip",
+    // "Close". The buttons only answer the controller; without this the
+    // dialog emptied itself and left its barrier up, dimming the application
+    // and swallowing the next click.
     ref.listen(updateControllerProvider, (previous, next) {
-      if (next.stage == UpdateStage.idle || _showing) return;
+      if (next.stage == UpdateStage.idle) {
+        _close();
+        return;
+      }
+      if (_dialog != null) return;
 
-      _showing = true;
+      final navigator = Navigator.of(context);
+      final dialog = DialogRoute<void>(
+        context: context,
+        themes: InheritedTheme.capture(from: context, to: navigator.context),
+        builder: (context) => const _UpdateDialog(),
+      );
+      _dialog = dialog;
+
       unawaited(
-        showDialog<void>(
-          context: context,
-          builder: (context) => const _UpdateDialog(),
-        ).whenComplete(() => _showing = false),
+        navigator.push(dialog).whenComplete(() {
+          if (_dialog == dialog) _dialog = null;
+          // Dismissed from outside — the barrier, the escape key — while the
+          // offer was still standing. The same answer as "Not now", so the
+          // controller is not left offering a release nobody can see.
+          final stage = ref.read(updateControllerProvider).stage;
+          if (stage != UpdateStage.idle &&
+              stage != UpdateStage.downloading &&
+              stage != UpdateStage.handedOff) {
+            ref.read(updateControllerProvider.notifier).dismiss();
+          }
+        }),
       );
     });
 
     return widget.child;
+  }
+
+  void _close() {
+    final dialog = _dialog;
+    _dialog = null;
+    if (dialog == null || !dialog.isActive) return;
+
+    dialog.navigator?.removeRoute(dialog);
   }
 }
 
@@ -84,14 +117,19 @@ class _UpdateDialog extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.md),
                 _Command(command: state.command ?? ''),
               ],
+              // Every byte in is what the installer reports as 1, and what
+              // follows is the checksum. A size the server did not give is
+              // `null` throughout the download, and still a download.
               UpdateStage.downloading => [
                 Text(
-                  state.progress == null
+                  (state.progress ?? 0) >= 1
                       ? l10n.updateVerifying
                       : l10n.updateDownloading,
                 ),
                 const SizedBox(height: AppSpacing.md),
-                LinearProgressIndicator(value: state.progress),
+                LinearProgressIndicator(
+                  value: (state.progress ?? 0) >= 1 ? null : state.progress,
+                ),
               ],
               UpdateStage.handedOff => [Text(l10n.updateHandedOff)],
               UpdateStage.failed => [

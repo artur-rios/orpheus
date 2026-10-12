@@ -48,11 +48,33 @@ class ScanState {
 /// One at a time: a second scan started while the first is running would have
 /// two isolates walking the same folders and two catalogs racing to be written.
 /// A request made while one is running is dropped, and the running scan is what
-/// the owner sees.
+/// the owner sees — unless the folders changed since that scan read them, in
+/// which case one more scan runs when it finishes.
 class ScanController extends Notifier<ScanState> {
   static final Logger _log = Logger('library');
 
   StreamSubscription<ScanEvent>? _events;
+
+  /// Whether a scan has been asked for and is still waiting on the access
+  /// question, before it is [ScanState.isRunning].
+  ///
+  /// The question is asynchronous — on Android it is a dialog — and a second
+  /// request arriving while it is open would otherwise find nothing running
+  /// and start a walk of its own, cancelling the first one's subscription on
+  /// its way in and leaving whoever awaited the first waiting for good.
+  bool _asking = false;
+
+  /// The folders the running scan is walking.
+  List<String> _walking = const [];
+
+  /// Whether the folders changed under a running scan, which is owed another
+  /// one once it finishes.
+  ///
+  /// Without it, removing a folder while the startup scan ran left that scan
+  /// to write a catalog still holding the folder's tracks — and removing the
+  /// last one never emptied the library — while a folder added mid-scan was
+  /// simply never read.
+  bool _again = false;
 
   @override
   ScanState build() {
@@ -74,20 +96,26 @@ class ScanController extends Notifier<ScanState> {
   /// available to be turned off wherever a scan must not put a dialog in front
   /// of anyone.
   ///
-  /// [quick] asks for the cheap walk, where a folder untouched since the last
-  /// scan is taken from the catalog rather than stat'ed file by file. It is on
-  /// for the scan at startup, which runs whether or not anything has changed
-  /// and is the one an owner waits through every launch; it is off for the
-  /// scan they ask for by hand, which is exactly what they press when a file
-  /// has been re-tagged underneath the application.
+  /// Every file is compared with what the catalog recorded for it, the scan at
+  /// startup included: a track re-tagged while the application was closed is
+  /// read again, and its new title, artist or album replace the old ones on
+  /// every screen — the one playing included.
   ///
   /// The order matters and is deliberate: a library with no folders registered
   /// returns before the question is asked, so a fresh install does not open on
   /// a permission dialog for files it has not been pointed at.
-  Future<void> scan({bool askForAccess = true, bool quick = false}) async {
-    if (state.isRunning) return;
+  Future<void> scan({bool askForAccess = true}) async {
+    if (state.isRunning || _asking) {
+      if (!_sameFolders(ref.read(libraryFoldersControllerProvider), _walking)) {
+        _again = true;
+      }
+
+      return;
+    }
 
     final folders = ref.read(libraryFoldersControllerProvider);
+    _walking = folders;
+    _again = false;
     if (folders.isEmpty) {
       // Nothing registered is not a failure and not a scan. The library screen
       // already says what to do about it, and clearing any previous report
@@ -99,10 +127,17 @@ class ScanController extends Notifier<ScanState> {
     }
 
     if (askForAccess) {
-      final decision = await ref
-          .read(libraryAccessControllerProvider.notifier)
-          .ensure();
+      final LibraryAccessDecision decision;
+      _asking = true;
+      try {
+        decision = await ref
+            .read(libraryAccessControllerProvider.notifier)
+            .ensure();
+      } finally {
+        _asking = false;
+      }
       if (!decision.isGranted) {
+        _again = false;
         state = ScanState(
           failure: StoragePermissionDenied(
             permanently: decision == LibraryAccessDecision.deniedPermanently,
@@ -124,7 +159,6 @@ class ScanController extends Notifier<ScanState> {
           folders: folders,
           previous: previous,
           coverDirectory: ref.read(appDirectoriesProvider).covers,
-          unchangedSince: quick ? previous.scannedAt : null,
         )
         .listen(
           (event) async {
@@ -156,8 +190,37 @@ class ScanController extends Notifier<ScanState> {
           },
         );
 
-    return finished.future;
+    await finished.future;
+
+    if (_again) {
+      _again = false;
+      // Access was settled by the scan that just ran.
+      await scan(askForAccess: false);
+    }
   }
+
+  /// Scans again because files under the library were just changed by this
+  /// application — an autofill writing tags.
+  ///
+  /// A scan already running may have passed those files, so it is owed another
+  /// one whatever the folders say; otherwise one starts now. Access is not
+  /// asked for: a library whose files were just written is one this process
+  /// can read.
+  ///
+  /// Joining a running scan answers at once, before the extra scan has run;
+  /// it is the running [scan]'s caller who waits for that.
+  Future<void> rescanSoon() async {
+    if (state.isRunning || _asking) {
+      _again = true;
+      return;
+    }
+
+    await scan(askForAccess: false);
+  }
+
+  static bool _sameFolders(List<String> left, List<String> right) =>
+      left.length == right.length &&
+      Iterable<int>.generate(left.length).every((i) => left[i] == right[i]);
 
   /// Clears the report of the last scan, once the owner has read it.
   void acknowledge() => state = ScanState.idle;
@@ -167,7 +230,7 @@ class ScanController extends Notifier<ScanState> {
   /// `null` empties the library, which is what removing the last folder means.
   ///
   /// [report] is what the scan found, and what decides whether the document is
-  /// rewritten at all. A scan that added nothing and removed nothing produced
+  /// rewritten at all. A scan that added, updated and removed nothing produced
   /// a catalog holding exactly the entries the stored one already holds — the
   /// carried-over metadata came from that document in the first place — so
   /// writing it back would encode several megabytes of JSON and push it at the
@@ -176,10 +239,9 @@ class ScanController extends Notifier<ScanState> {
   /// and for an unchanged library it buys nothing.
   ///
   /// The library is still replaced on screen, and the *time* of the scan is
-  /// recorded whether or not the document was: it is one short string, the
-  /// folders screen shows it, and the cheap walk measures against it — see
-  /// [MusicLibraryController.lastScanSettingsKey], which is where skipping the
-  /// document stops costing anything.
+  /// recorded whether or not the document was: it is one short string and the
+  /// folders screen shows it — see [MusicLibraryController.lastScanSettingsKey],
+  /// which is where skipping the document stops costing anything.
   ///
   /// Answers the failure to report, or `null` where there is none.
   Future<Failure?> _apply(MusicCatalog? catalog, {ScanReport? report}) async {
@@ -195,7 +257,12 @@ class ScanController extends Notifier<ScanState> {
     library.replaceWith(catalog);
     await _rememberScanTime(catalog.scannedAt);
 
-    if (report != null && report.added == 0 && report.removed == 0) return null;
+    if (report != null &&
+        report.added == 0 &&
+        report.updated == 0 &&
+        report.removed == 0) {
+      return null;
+    }
 
     try {
       await ref.read(catalogStoreProvider).write(catalog);

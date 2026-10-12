@@ -11,7 +11,8 @@ is regenerated from the same source by running this file.
 
     python3 packaging/icon/make_icon.py
 
-Needs Pillow, and nothing else. Writes into android/, windows/ and linux/.
+Needs Pillow, and nothing else. Writes into android/, windows/, linux/ and the
+documentation site's docs/site/static/.
 """
 
 from __future__ import annotations
@@ -283,6 +284,24 @@ def main() -> None:
 
     print("linux")
     write(os.path.join(root, "linux/runner/resources/app_icon.png"), render(256))
+
+    print("docs site")
+    # The documentation site's favicons, which the theme links by name from
+    # docs/site/static/ and no longer supplies itself. The tab icon takes the
+    # small drawing at the sizes a browser tab shows; the touch icon is square,
+    # because iOS cuts its own corners and would cut into ours.
+    static = os.path.join(root, "docs/site/static")
+    tabs = [render(48), render(32, detail="small"), render(16, detail="small")]
+    favicon = os.path.join(static, "favicon.ico")
+    os.makedirs(static, exist_ok=True)
+    tabs[0].save(
+        favicon,
+        format="ICO",
+        sizes=[frame.size for frame in tabs],
+        append_images=tabs[1:],
+    )
+    print(f"  {favicon}  {', '.join(str(f.size[0]) for f in tabs)}")
+    write(os.path.join(static, "apple-touch-icon.png"), render(180, square=True))
 
 
 if __name__ == "__main__":

@@ -150,6 +150,14 @@ bool Win32Window::Create(const std::wstring& title,
 }
 
 bool Win32Window::Show() {
+  // The application places and shows its own window before the first frame
+  // (see desktop_window.dart), maximized unless the owner left it otherwise.
+  // SW_SHOWNORMAL on a window that is already up restores it from maximized,
+  // so this only shows a window nothing else has — the fallback for a start
+  // where the Dart side could not.
+  if (IsWindowVisible(window_handle_)) {
+    return true;
+  }
   return ShowWindow(window_handle_, SW_SHOWNORMAL);
 }
 

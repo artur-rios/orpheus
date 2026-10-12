@@ -38,9 +38,9 @@ migrate_working_dir/
 /dist/
 
 # The Android release signing key, and anything it was encoded into. Neither is
-# ever committed — see the Releases section of README.md, which tells you to
-# make both of them right here. `android/.gitignore` covers that directory; this
-# covers the one the instructions actually put them in.
+# ever committed — see the Android signing key section of CONTRIBUTING.md,
+# which tells you to make both of them right here. `android/.gitignore` covers
+# that directory; this covers the one the instructions actually put them in.
 *.jks
 *.keystore
 key.properties

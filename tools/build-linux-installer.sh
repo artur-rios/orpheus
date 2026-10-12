@@ -42,11 +42,12 @@ done
 
 # From pubspec.yaml rather than written here, so the installer's file name, the
 # version it announces and the version the application reports cannot drift
-# apart. The build metadata after `+` is dropped: it is shown to a person, and
-# `1.0.0+1` reads as a typo.
+# apart. A pre-release suffix is kept — `1.3.0-beta.1` is a different package
+# from `1.3.0` — and the build metadata after `+` is dropped: it is shown to a
+# person, and `1.0.0+1` reads as a typo.
 step 'Reading the version'
-VERSION=$(sed -n 's/^version:[[:space:]]*\([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p' pubspec.yaml | head -1)
-[ -n "$VERSION" ] || fail 'pubspec.yaml does not declare a version of the form x.y.z'
+VERSION=$(sed -n 's/^version:[[:space:]]*\([0-9]\+\.[0-9]\+\.[0-9]\+\(-[0-9A-Za-z.-]\+\)\?\).*/\1/p' pubspec.yaml | head -1)
+[ -n "$VERSION" ] || fail 'pubspec.yaml does not declare a version of the form x.y.z[-pre-release]'
 note "version $VERSION"
 
 # ----------------------------------------------------------------- the build

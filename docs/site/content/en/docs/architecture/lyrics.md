@@ -2,7 +2,7 @@
 title: Finding a track's words
 linkTitle: Lyrics
 weight: 10
-description: The only flow that reaches a network, and the order that governs it.
+description: The flow that reaches a lyrics service, and the order that governs it.
 ---
 
 ## The order is the feature

@@ -13,7 +13,11 @@ import 'tag_reading.dart';
 /// What one run of [scanFolders] produced.
 class ScanOutcome {
   /// Creates an outcome.
-  const ScanOutcome({required this.entries, required this.report});
+  const ScanOutcome({
+    required this.entries,
+    required this.report,
+    required this.startedAt,
+  });
 
   /// The library, one entry per file found.
   ///
@@ -24,6 +28,13 @@ class ScanOutcome {
 
   /// What changed, and what could not be read.
   final ScanReport report;
+
+  /// When the walk began, which is the moment the catalog describes.
+  ///
+  /// The start rather than the end: a file changed while this scan was
+  /// running may already have been read in its old state, and the catalog
+  /// makes no claim about anything after the walk set out.
+  final DateTime startedAt;
 }
 
 /// Walks [folders] and reads the tags of every audio file under them.
@@ -43,28 +54,19 @@ class ScanOutcome {
 /// [onProgress] is called as the walk and the read advance; it is called often
 /// but not per file — see [progressInterval].
 ///
-/// [unchangedSince] turns on the cheap walk, and is the moment the last scan
-/// ran. A directory whose own timestamp is older than that has had nothing
-/// added to it, removed from it or renamed inside it since, so the files in it
-/// are the files the last scan recorded, and their sizes and timestamps are
-/// taken from [previous] instead of from the disk. What that saves is one
-/// `stat` per file — on a library of eleven thousand tracks, eleven thousand
-/// system calls, which on a phone's storage is most of what a re-scan costs.
-///
-/// What it gives up is a file rewritten *in place*: that changes the file's
-/// own timestamp and not its folder's, so the cheap walk carries the old tags
-/// over. Anything that adds, deletes or renames is still seen, and so is a
-/// tagger that writes to a temporary file and renames over the original, which
-/// is what most of them do. Pass `null` — as the scan the owner asks for by
-/// hand does — and every file is stat'ed as before.
+/// Every file is stat'ed, every time. An earlier version took a folder whose
+/// own timestamp predated the last scan on trust and skipped the files in it,
+/// which saved a `stat` per file and missed exactly the change an owner makes
+/// most: a tagger rewriting a file in place moves the file's timestamp and not
+/// its folder's, so a corrected artist name never reached the library until a
+/// scan was asked for by hand.
 ScanOutcome scanFolders({
   required List<String> folders,
   required List<MusicEntry> previous,
   required String coverDirectory,
   void Function(ScanProgress progress)? onProgress,
-  DateTime? unchangedSince,
 }) {
-  /// How many files pass between progress reports.
+  final startedAt = DateTime.now();
   final covers = FileCoverStore(coverDirectory);
   final known = {for (final entry in previous) entry.file.path: entry};
 
@@ -89,18 +91,22 @@ ScanOutcome scanFolders({
       continue;
     }
 
-    _walk(
+    // A registered folder that is there and cannot be listed is as unreachable
+    // as one that is not there at all, and is reported the same way. Stepped
+    // over silently, it read as a folder with nothing in it: every track the
+    // catalog held from it was counted as removed, and the folders screen never
+    // offered the access that would have let it be read.
+    final listed = _walk(
       directory,
       found: found,
       visited: visited,
-      known: known,
-      unchangedSince: unchangedSince,
       onProgress: onProgress == null
           ? null
           : () => onProgress(
               ScanProgress(filesFound: found.length, folder: folder),
             ),
     );
+    if (!listed) unreachable.add(folder);
   }
 
   // Deterministic order, so two scans of the same library produce the same
@@ -119,6 +125,7 @@ ScanOutcome scanFolders({
   final sidecars = <String, String?>{};
   var reused = 0;
   var added = 0;
+  var updated = 0;
 
   for (final file in found) {
     if (onProgress != null && entries.length % progressInterval == 0) {
@@ -135,13 +142,19 @@ ScanOutcome scanFolders({
     final carried = known[file.path];
     if (carried != null &&
         carried.file.sizeInBytes == file.sizeInBytes &&
-        carried.file.modifiedAt == file.modifiedAt) {
+        _sameMillisecond(carried.file.modifiedAt, file.modifiedAt)) {
       entries.add(MusicEntry(file: file, metadata: carried.metadata));
       reused++;
       continue;
     }
 
-    added++;
+    // A path the catalog already held is a file that changed — re-tagged,
+    // most likely — rather than one the library gained.
+    if (carried == null) {
+      added++;
+    } else {
+      updated++;
+    }
     entries.add(
       _read(
         file,
@@ -161,10 +174,12 @@ ScanOutcome scanFolders({
   );
 
   return ScanOutcome(
+    startedAt: startedAt,
     entries: entries,
     report: ScanReport(
       tracks: entries.length,
       added: added,
+      updated: updated,
       reused: reused,
       removed: known.keys.where((path) => !present.contains(path)).length,
       unreadable: unreadable,
@@ -172,6 +187,16 @@ ScanOutcome scanFolders({
     ),
   );
 }
+
+/// Whether [a] and [b] are the same moment to the millisecond.
+///
+/// The catalog document stores a file's timestamp in milliseconds, and the
+/// file system reports it in microseconds. Compared exactly, a catalog read
+/// back from disk matched almost none of the files it described, so the first
+/// full scan of every launch re-read the tags of the whole library and
+/// reported every track in it as added.
+bool _sameMillisecond(DateTime a, DateTime b) =>
+    a.millisecondsSinceEpoch == b.millisecondsSinceEpoch;
 
 /// How many files pass between progress reports.
 ///
@@ -263,18 +288,21 @@ String? _sidecarCover(
 
 /// Adds every audio file under [directory] to [found], depth first.
 ///
+/// Answers whether [directory] itself could be listed — or had already been,
+/// through another registered folder. A folder below it that cannot be listed
+/// is stepped over; only the caller knows whether the top one not opening is
+/// worth reporting.
+///
 /// Written out rather than `listSync(recursive: true)` for two reasons. One
 /// unreadable folder inside a library makes the recursive call throw and
 /// abandon the rest of the walk, where this steps over it and carries on. And
 /// progress can be reported while the walk runs, which on a library of tens of
 /// thousands of files is the difference between a strip that moves and one
 /// that sits still for a minute.
-void _walk(
+bool _walk(
   Directory directory, {
   required List<AudioFile> found,
   required Set<String> visited,
-  required Map<String, MusicEntry> known,
-  DateTime? unchangedSince,
   void Function()? onProgress,
 }) {
   // Symbolic links are not followed, but a library folder can still be reached
@@ -287,9 +315,9 @@ void _walk(
   try {
     resolved = directory.resolveSymbolicLinksSync();
   } on Object {
-    return;
+    return false;
   }
-  if (!seen.add(resolved)) return;
+  if (!seen.add(resolved)) return true;
 
   final List<FileSystemEntity> children;
   try {
@@ -297,19 +325,7 @@ void _walk(
   } on Object {
     // A folder the process may not read is a folder with nothing in it, as far
     // as the rest of the walk is concerned.
-    return;
-  }
-
-  // Whether the files here can be taken from the last catalog rather than
-  // stat'ed one by one — see [scanFolders]. The folder's own timestamp is one
-  // system call; the files in it are one each.
-  var settled = false;
-  if (unchangedSince != null) {
-    try {
-      settled = directory.statSync().modified.isBefore(unchangedSince);
-    } on Object {
-      settled = false;
-    }
+    return false;
   }
 
   for (final child in children) {
@@ -323,25 +339,12 @@ void _walk(
         child,
         found: found,
         visited: seen,
-        known: known,
-        unchangedSince: unchangedSince,
         onProgress: onProgress,
       );
       continue;
     }
 
     if (child is! File || !isAudioPath(child.path)) continue;
-
-    // A settled folder answers from the last catalog. A file in one that the
-    // catalog does not know is still stat'ed: it is a file the last scan did
-    // not see, whatever the folder's timestamp says.
-    if (settled) {
-      if (known[child.path] case final carried?) {
-        found.add(carried.file);
-        if (found.length % progressInterval == 0) onProgress?.call();
-        continue;
-      }
-    }
 
     try {
       final stat = child.statSync();
@@ -358,4 +361,6 @@ void _walk(
 
     if (found.length % progressInterval == 0) onProgress?.call();
   }
+
+  return true;
 }

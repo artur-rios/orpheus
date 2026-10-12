@@ -6,13 +6,17 @@ import 'play_history.dart';
 /// One line of a ranking: something with a name, and how often it was played.
 class RankedPlays {
   /// Creates a line.
-  const RankedPlays({required this.name, required this.plays});
+  const RankedPlays({required this.name, required this.plays, this.share});
 
   /// What it is called.
   final String name;
 
   /// How many plays it accounts for.
   final int plays;
+
+  /// The fraction of every play its ranking counted — the whole ranking, not
+  /// the lines kept for display — or `null` where nobody worked it out.
+  final double? share;
 }
 
 /// What the owner listens to.
@@ -95,6 +99,9 @@ const int rankingLength = 10;
 ///    application that names a file on disk rather than by its tags, and for
 ///    the same reason the folders screen does it: the alternative is ten rows
 ///    all called "Untitled", which is a ranking nobody can read.
+/// 4. **A track is a file.** Counted by its path and only *labelled* by its
+///    title: five records that each open with an "Intro" are five tracks, not
+///    one that was played five times as often as anything else.
 MusicStats musicStatsFrom({
   required PlayHistory history,
   required MusicCatalog catalog,
@@ -103,6 +110,7 @@ MusicStats musicStatsFrom({
   if (history.isEmpty) return MusicStats.empty;
 
   final tracks = <String, int>{};
+  final trackNames = <String, String>{};
   final artists = <String, int>{};
   // Keyed by the record rather than by its title, for the reason `albumsIn`
   // groups by the pair: two artists can name a record the same thing, and one
@@ -116,12 +124,10 @@ MusicStats musicStatsFrom({
     final entry = catalog.entryAt(played.path);
     final plays = played.plays;
 
-    // Named by its title, or by the file when the tags carry none — see rule 3.
-    tracks.update(
-      entry?.title ?? _fileNameOf(played.path),
-      (existing) => existing + plays,
-      ifAbsent: () => plays,
-    );
+    // Counted by its path, and named by its title or by the file when the
+    // tags carry none — see rules 3 and 4.
+    tracks.update(played.path, (e) => e + plays, ifAbsent: () => plays);
+    trackNames[played.path] = entry?.title ?? _fileNameOf(played.path);
 
     final artist = entry?.albumArtist;
     final album = entry?.album;
@@ -129,7 +135,13 @@ MusicStats musicStatsFrom({
     // reads by, so a genre of three spaces is absent here too.
     final genre = trimmedOrNull(entry?.metadata.genre);
 
-    if (artist == null && album == null && genre == null) untagged++;
+    // Only a file the catalog holds can be said to lack tags. One it no
+    // longer holds — moved, deleted, or a library that would not load — has
+    // nothing to correct, and counting it would send an owner looking for
+    // tags on files that are not there.
+    if (entry != null && artist == null && album == null && genre == null) {
+      untagged++;
+    }
 
     if (artist != null) {
       artists.update(artist, (e) => e + plays, ifAbsent: () => plays);
@@ -145,7 +157,7 @@ MusicStats musicStatsFrom({
   return MusicStats(
     totalPlays: history.totalPlays,
     distinctTracks: history.distinctTracks,
-    tracks: _ranked(tracks, limit),
+    tracks: _rankedBy(tracks, limit, (path) => trackNames[path]!),
     artists: _ranked(artists, limit),
     albums: _rankedBy(albums, limit, (record) => record.$1),
     genres: _ranked(genres, limit),
@@ -174,9 +186,18 @@ List<RankedPlays> _rankedBy<K>(
   int limit,
   String Function(K key) nameOf,
 ) {
+  // The whole ranking's plays, before it is cut to [limit]: a share of the
+  // top ten alone is a share of the ten, and overstates the leader by however
+  // much the rest of the library was played.
+  final total = counts.values.fold<int>(0, (sum, plays) => sum + plays);
+
   final lines = [
     for (final entry in counts.entries)
-      RankedPlays(name: nameOf(entry.key), plays: entry.value),
+      RankedPlays(
+        name: nameOf(entry.key),
+        plays: entry.value,
+        share: total == 0 ? 0 : entry.value / total,
+      ),
   ]..sort((a, b) {
     final byPlays = b.plays.compareTo(a.plays);
 

@@ -68,7 +68,9 @@ abstract interface class UpdateInstaller {
   /// Downloads [release]'s package, checks it, and starts it.
   ///
   /// [onProgress] is called with a fraction from 0 to 1 where the size is
-  /// known, and with `null` where the server did not say how big the file is.
+  /// known, and with `null` where the server did not say how big the file is
+  /// — and with 1 once every byte has arrived, either way, before the package
+  /// is checked.
   ///
   /// Throws [UpdateException]. Nothing is started that has not been checked
   /// against the release's own `SHA256SUMS.txt`.

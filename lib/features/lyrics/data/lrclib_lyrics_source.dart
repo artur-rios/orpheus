@@ -37,12 +37,16 @@ class LrclibLyricsSource implements RemoteLyricsSource {
   /// Both are injectable for the tests, which is the whole reason this holds a
   /// `Client` rather than calling the top-level `http.get`: the suite stands a
   /// scripted client in front of this and no test opens a socket.
+  ///
+  /// [version] is the running build's, for the [userAgent].
   LrclibLyricsSource({
     http.Client? client,
     Uri? base,
+    String? version,
     this.timeout = const Duration(seconds: 10),
   }) : _client = client ?? http.Client(),
-       _base = base ?? Uri.https('lrclib.net');
+       _base = base ?? Uri.https('lrclib.net'),
+       userAgent = userAgentFor(version);
 
   final http.Client _client;
   final Uri _base;
@@ -60,8 +64,15 @@ class LrclibLyricsSource implements RemoteLyricsSource {
   /// that is a reasonable thing to ask of something making requests of a free
   /// service. It names the application and its repository and nothing about
   /// the machine or the owner.
-  static const String userAgent =
-      'Orpheus/1.0.0 (https://github.com/artur-rios/orpheus)';
+  ///
+  /// The version is the build's own rather than one written here: a constant
+  /// went on calling every release `1.0.0`, which told the service nothing it
+  /// could act on about which release was misbehaving.
+  final String userAgent;
+
+  /// The [userAgent] a build calling itself [version] sends.
+  static String userAgentFor(String? version) =>
+      'Orpheus/${version ?? 'unknown'} (https://github.com/artur-rios/orpheus)';
 
   static final Logger _log = Logger('lyrics');
 
@@ -191,7 +202,7 @@ class LrclibLyricsSource implements RemoteLyricsSource {
   Future<Object?> _json(Uri url) async {
     try {
       final response = await _client
-          .get(url, headers: const {'User-Agent': userAgent})
+          .get(url, headers: {'User-Agent': userAgent})
           .timeout(timeout);
 
       // 404 is the service's ordinary "not in the database", which is most

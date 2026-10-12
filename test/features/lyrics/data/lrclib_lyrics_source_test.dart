@@ -233,6 +233,29 @@ void main() {
   );
 
   test(
+    'GivenABuildThatKnowsItsVersion_WhenTheWordsAreLookedUp_ThenItNamesThatVersionAndNothingElse',
+    () async {
+      final agents = <String?>[];
+      final source = LrclibLyricsSource(
+        version: '1.2.1',
+        client: MockClient((request) async {
+          agents.add(request.headers['User-Agent']);
+
+          return http.Response('', 404);
+        }),
+      );
+
+      await source.find(query);
+
+      expect(agents, isNotEmpty);
+      expect(
+        agents.toSet().single,
+        'Orpheus/1.2.1 (https://github.com/artur-rios/orpheus)',
+      );
+    },
+  );
+
+  test(
     'GivenTheServiceKnowsNothing_WhenTheWordsAreLookedUp_ThenNothingComesBack',
     () async {
       final scripted = clientThat(

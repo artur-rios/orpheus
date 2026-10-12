@@ -34,7 +34,7 @@ flowchart TD
 
 The rule that matters: **`domain` has no Flutter and no IO.** It is models and
 interfaces. `data` implements those interfaces at the outward edges — the
-filesystem, the tag reader, the playback engine, the one network call. Nothing
+filesystem, the tag reader, the playback engine, the network. Nothing
 in `domain` knows any of them exist.
 
 That is what makes the whole test suite run without a real audio engine, a real
@@ -162,7 +162,7 @@ session sits behind the same interface and is bound only there.
 ## The flows
 
 - **[Finding a track's words]({{< relref "/docs/architecture/lyrics" >}})** —
-  the only flow that reaches a network, and the order that governs it.
+  the flow that reaches a lyrics service, and the order that governs it.
 - **[Scanning a library]({{< relref "/docs/architecture/library" >}})** — why a
   re-scan of an unchanged library is nearly free.
 - **[Playing something]({{< relref "/docs/architecture/playback" >}})** — the

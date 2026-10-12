@@ -1,5 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/di/providers.dart';
+import '../../library/domain/music_catalog.dart';
+import '../../library/domain/music_entry.dart';
+import '../../library/domain/music_grouping.dart';
+
 /// Which of the music area's three views is shown.
 enum MusicView {
   /// Every artist, drilled into for their albums.
@@ -52,7 +57,19 @@ class MusicBrowseState {
 /// The music area's navigation.
 class MusicBrowseController extends Notifier<MusicBrowseState> {
   @override
-  MusicBrowseState build() => const MusicBrowseState();
+  MusicBrowseState build() {
+    // Where the owner has drilled to is named by tags, and a re-scan that
+    // finds those tags changed would otherwise leave them inside a record
+    // that no longer exists under that name: an empty list beneath a
+    // breadcrumb naming what used to be there.
+    ref.listen(musicLibraryControllerProvider, (previous, next) {
+      final before = previous?.value;
+      final after = next.value;
+      if (before != null && after != null) _follow(before, after);
+    });
+
+    return const MusicBrowseState();
+  }
 
   /// Shows [view], from the top.
   ///
@@ -117,5 +134,63 @@ class MusicBrowseController extends Notifier<MusicBrowseState> {
     }
 
     return false;
+  }
+
+  /// Keeps the owner where they were across a library that changed under
+  /// them.
+  ///
+  /// A record or artist renamed by a re-tag is followed to its new name —
+  /// found through a file it held, which keeps its path whatever its tags now
+  /// say. One whose files are all gone is left, a level at a time, for the
+  /// nearest level that still has something in it.
+  void _follow(MusicCatalog before, MusicCatalog after) {
+    if (state.inAlbum) {
+      if (tracksOfAlbum(state.album, state.artist, after.entries).isNotEmpty) {
+        return;
+      }
+
+      final moved = _survivor(
+        tracksOfAlbum(state.album, state.artist, before.entries),
+        after,
+      );
+      if (moved != null) {
+        state = MusicBrowseState(
+          view: state.view,
+          artist: moved.albumArtist,
+          album: moved.album,
+          inArtist: state.inArtist,
+          inAlbum: true,
+        );
+
+        return;
+      }
+
+      upToArtist();
+    }
+
+    if (state.inArtist) {
+      if (albumsOfArtist(state.artist, after.entries).isNotEmpty) return;
+
+      final moved = _survivor([
+        for (final entry in before.entries)
+          if (entry.albumArtist == state.artist) entry,
+      ], after);
+      if (moved != null) {
+        openArtist(moved.albumArtist);
+
+        return;
+      }
+
+      upToArtists();
+    }
+  }
+
+  /// The first of [entries] [after] still holds, as [after] now has it.
+  static MusicEntry? _survivor(List<MusicEntry> entries, MusicCatalog after) {
+    for (final entry in entries) {
+      if (after.entryAt(entry.file.path) case final found?) return found;
+    }
+
+    return null;
   }
 }

@@ -77,11 +77,11 @@ gets broken by the next change.
 ## Step 3 — Branch and move the issue to In Progress
 
 ```
-feat/uc-14-resume-a-track
+feature/uc-14-resume-a-track
 ```
 
-`<type>/uc-<number>-<short-name>`. Move the issue to **In Progress** on the
-project board.
+`feature/uc-<number>-<short-name>`, cut from `develop`. Move the issue to
+**In Progress** on the project board.
 
 ## Step 4 — Implement
 
@@ -110,8 +110,9 @@ is overridden by the harness.
 
 ## Step 6 — Open the pull request
 
-Title it after the use case. The body says what was built, which flows are
-covered, and what was deliberately left out. Link the issue.
+Open it against `develop`. Title it after the use case. The body says what was
+built, which flows are covered, and what was deliberately left out. Link the
+issue.
 
 ## Step 7 — Close out
 

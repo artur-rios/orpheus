@@ -138,6 +138,21 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
   /// song left on repeat worth one play a session.
   bool _countedThisPlaythrough = false;
 
+  /// Where the track playing was opened from — zero, or a resumed position.
+  ///
+  /// A track resumed past the play threshold was counted in the session that
+  /// got it there, and counting it again the moment the first status arrives
+  /// would make every resume a second play.
+  Duration _openedFrom = Duration.zero;
+
+  /// Whether any track in the current queue has opened.
+  ///
+  /// What tells "nothing in the selection could be played" apart from a queue
+  /// that played and then met a missing track at its end: the second is a
+  /// queue running out, and reporting it as the first would be a notice
+  /// claiming an album the owner just listened to would not play.
+  bool _queuePlayed = false;
+
   /// Which run of [_openAt] is the current one.
   ///
   /// Every call takes the next number and abandons itself the moment a later
@@ -156,6 +171,14 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
   AudioPlaybackState build() {
     ref.onDispose(() => unawaited(_statuses?.cancel()));
 
+    // The queue's name is a tag — the record's title, the artist's name — and
+    // a re-scan that finds the record re-tagged should rename the queue on
+    // screen as it renames everything else. Every other name the player shows
+    // is looked up by path on the way to the screen; this one is held.
+    ref.listen(musicLibraryControllerProvider, (_, next) {
+      if (next case AsyncData(:final value)) _relabel(value);
+    });
+
     return AudioPlaybackState(repeat: _storedRepeat());
   }
 
@@ -166,6 +189,11 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
   Future<void> playTrack(AudioFile file) async {
     final resume = _positions.positionFor(file.path);
     if (resume != null && resume.position > Duration.zero) {
+      // Whatever was playing stops while the owner is asked: the offer has no
+      // controls for it, and an open still in flight must not land on top of
+      // the question and answer it.
+      await _halt();
+
       state = AudioPlaybackState(
         queue: PlaybackQueue(tracks: [file], kind: QueueKind.track),
         stage: AudioStage.offeringResume,
@@ -233,6 +261,7 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
 
     final library = await _library();
     if (library == null) {
+      await _halt();
       state = AudioPlaybackState(
         stage: AudioStage.allFailed,
         repeat: state.repeat,
@@ -241,6 +270,7 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
       return;
     }
     if (library.isEmpty) {
+      await _halt();
       state = AudioPlaybackState(repeat: state.repeat);
 
       return;
@@ -348,6 +378,10 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
     if (state.stage != AudioStage.playing) return;
 
     if (state.status.position > restartThreshold || !state.queue.hasPrevious) {
+      // Starting the track again is a new playthrough, and earns its own play
+      // the way the same track re-opened by repeat does.
+      _countedThisPlaythrough = false;
+      _openedFrom = Duration.zero;
       await seekTo(Duration.zero);
 
       return;
@@ -456,6 +490,7 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
       // `lastSkipped` stays null on purpose: nothing was attempted, so naming
       // [file] as skipped would claim a specific track failed to play, which
       // did not happen.
+      await _halt();
       state = AudioPlaybackState(
         stage: AudioStage.allFailed,
         repeat: state.repeat,
@@ -533,6 +568,7 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
 
   /// Opens [queue] at its current index, [at] into the track.
   Future<void> _playQueue(PlaybackQueue queue, {required Duration at}) async {
+    _queuePlayed = false;
     state = state.copyWith(queue: queue, stage: AudioStage.starting);
     _listenToEngine();
     await _player.setVolume(ref.read(settingsStoreProvider).volume);
@@ -580,6 +616,8 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
 
         // A new playthrough begins here, whether or not it is a new track.
         _countedThisPlaythrough = false;
+        _openedFrom = queue.index == index ? at : Duration.zero;
+        _queuePlayed = true;
 
         state = state.copyWith(
           queue: queue,
@@ -600,13 +638,7 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
       state = state.copyWith(queue: queue, lastSkipped: skipped);
 
       if (!queue.hasNext) {
-        // Nothing in the selection could be played. The queue is cleared,
-        // because there is nothing left in it to come back to.
-        state = AudioPlaybackState(
-          stage: AudioStage.allFailed,
-          repeat: state.repeat,
-          lastSkipped: skipped,
-        );
+        await _ranOut(queue, skipped: skipped);
 
         return;
       }
@@ -621,6 +653,25 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
     unawaited(_statuses?.cancel());
 
     _statuses = _player.status.listen((status) async {
+      // While the owner is being asked whether to resume, the engine is still
+      // reporting on whatever was playing before they chose — and the queue in
+      // the state is already the one on offer. Nothing the engine says now is
+      // about that queue: advancing it at the old track's end would open the
+      // offered track from the top without an answer, a play would be counted
+      // against it, and a status written through `copyWith` without carrying
+      // [AudioPlaybackState.resumeFrom] would clear the very position being
+      // offered — leaving a prompt that read 0:00 and a resume that did
+      // nothing.
+      if (state.stage == AudioStage.offeringResume) {
+        state = state.copyWith(
+          status: status,
+          resumeFrom: state.resumeFrom,
+          lastSkipped: state.lastSkipped,
+        );
+
+        return;
+      }
+
       if (status.failedToDecode) {
         final file = state.queue.current;
         if (file == null) return;
@@ -631,11 +682,7 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
         if (queue.hasNext) {
           await _openAt(queue.index + 1);
         } else {
-          state = AudioPlaybackState(
-            stage: AudioStage.allFailed,
-            repeat: state.repeat,
-            lastSkipped: file,
-          );
+          await _ranOut(queue, skipped: file);
         }
 
         return;
@@ -649,7 +696,7 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
         // way long before the end — but a track short enough that no status
         // landed in between would otherwise be the one kind of track that
         // never counted however often it was played.
-        _countPlay();
+        _countPlay(heardToTheEnd: true);
 
         // A track played through leaves no position, and the queue moves on —
         // or repeats, or ends.
@@ -680,20 +727,118 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
   /// not awaited: the status stream reports several times a second, and every
   /// report after the first is also past the threshold — so a flag set on the
   /// far side of an await would let each of them start a record of its own.
-  void _countPlay() {
+  void _countPlay({bool heardToTheEnd = false}) {
     if (_countedThisPlaythrough) return;
 
     final file = state.queue.current;
     if (file == null) return;
-    if (!countsAsPlayed(
-      position: state.status.position,
-      duration: state.status.duration,
-    )) {
+
+    // Resumed from past the threshold: the session that got it there already
+    // counted it.
+    if (_openedFrom > Duration.zero &&
+        countsAsPlayed(
+          position: _openedFrom,
+          duration: state.status.duration,
+        )) {
+      _countedThisPlaythrough = true;
+
+      return;
+    }
+
+    if (!heardToTheEnd &&
+        !countsAsPlayed(
+          position: state.status.position,
+          duration: state.status.duration,
+        )) {
       return;
     }
 
     _countedThisPlaythrough = true;
     unawaited(ref.read(playRecorderProvider).record(file.path));
+  }
+
+  /// Ends a queue that reached its last track by stepping over one that would
+  /// not play.
+  ///
+  /// Under [QueueRepeat.all] it goes round again, as the end of a track that
+  /// played does, for as long as anything in it is still worth trying. A queue
+  /// that already played something simply ends, naming what it stepped over.
+  /// Only a queue nothing in which ever opened is the selection that could
+  /// not be played.
+  Future<void> _ranOut(PlaybackQueue queue, {AudioFile? skipped}) async {
+    final stepped = {for (final file in queue.skipped) file.path};
+    final untried = queue.tracks.any((file) => !stepped.contains(file.path));
+
+    if (state.repeat == QueueRepeat.all && untried && _queuePlayed) {
+      state = state.copyWith(queue: queue, lastSkipped: skipped);
+      await _openAt(0);
+
+      return;
+    }
+
+    await _stopEngine();
+    state = AudioPlaybackState(
+      stage: _queuePlayed ? AudioStage.idle : AudioStage.allFailed,
+      repeat: state.repeat,
+      lastSkipped: skipped,
+    );
+  }
+
+  /// Silences whatever is playing, for a state with no controls for it.
+  ///
+  /// The resume offer and the reports that nothing could be played replace
+  /// the queue the bar was showing, and an engine left running under them is a
+  /// record the owner can hear and has no button to stop.
+  Future<void> _halt() async {
+    _openGeneration++;
+    await _recordPosition(force: true);
+    await _stopEngine();
+  }
+
+  /// Stops the engine, where there is one to stop.
+  ///
+  /// The engine is built on first use, and building one — loading libmpv,
+  /// opening an output device — in order to stop it is work for nothing.
+  Future<void> _stopEngine() async {
+    if (ref.exists(audioPlayerProvider)) await _player.stop();
+  }
+
+  /// Renames an album or artist queue after the record or artist as [library]
+  /// now has them.
+  ///
+  /// Read off the track playing, which is a member of the group the queue was
+  /// gathered from. A track the library no longer holds leaves the name as it
+  /// was: there is nothing truer to replace it with.
+  void _relabel(MusicCatalog library) {
+    final queue = state.queue;
+    if (queue.kind != QueueKind.album && queue.kind != QueueKind.artist) {
+      return;
+    }
+
+    final current = queue.current;
+    if (current == null) return;
+
+    final entry = library.entryAt(current.path);
+    if (entry == null) return;
+
+    final label = queue.kind == QueueKind.album
+        ? entry.album
+        : entry.albumArtist;
+    final year = entry.metadata.year;
+    if (label == queue.label && year == queue.year) return;
+
+    state = state.copyWith(
+      queue: PlaybackQueue(
+        tracks: queue.tracks,
+        kind: queue.kind,
+        label: label,
+        year: year,
+        index: queue.index,
+        skipped: queue.skipped,
+      ),
+      resumeFrom: state.resumeFrom,
+      lastSkipped: state.lastSkipped,
+    );
   }
 
   Future<void> _forgetPosition() async {

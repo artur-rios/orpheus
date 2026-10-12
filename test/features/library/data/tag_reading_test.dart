@@ -47,6 +47,43 @@ void main() {
   );
 
   test(
+    'GivenAFlacFileWithAnAlbumArtistTag_WhenItsTagsAreRead_ThenTheAlbumArtistComesBackApartFromTheArtist',
+    () {
+      // The reader keeps `ALBUMARTIST` in a list of its own, and this used to
+      // leave it unread — so a compilation's "Various Artists" never reached
+      // the library, and the record was filed under its busiest guest.
+      final file = write(
+        'track.flac',
+        taggedFlac(
+          tags: {
+            'TITLE': 'Hey Ya!',
+            'ARTIST': 'OutKast',
+            'ALBUMARTIST': 'Various Artists',
+            'ALBUM': 'Now 16',
+          },
+        ),
+      );
+
+      final read = readTags(file);
+
+      expect(read.metadata.artist, 'OutKast');
+      expect(read.metadata.albumArtist, 'Various Artists');
+    },
+  );
+
+  test(
+    'GivenAFlacFileWhoseAlbumArtistIsSpelledTheFfmpegWay_WhenItsTagsAreRead_ThenTheAlbumArtistComesBack',
+    () {
+      final file = write(
+        'track.flac',
+        taggedFlac(tags: {'ARTIST': 'OutKast', 'ALBUM_ARTIST': 'Various'}),
+      );
+
+      expect(readTags(file).metadata.albumArtist, 'Various');
+    },
+  );
+
+  test(
     'GivenAFileWhoseTagsAreNotAscii_WhenItsTagsAreRead_ThenTheAccentsSurvive',
     () {
       final file = write(

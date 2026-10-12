@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -37,6 +38,30 @@ void main() {
       expect(await sidecar.write(track, sheet), isTrue);
 
       expect(beside('.lrc').readAsStringSync(), sheet);
+    },
+  );
+
+  test(
+    'GivenTheOwnerSavesASheetWhileOneIsBeingWritten_WhenTheWriteFinishes_ThenTheirsIsKept',
+    () async {
+      // The scratch copy is flushed to the disk before it is renamed into
+      // place, and a rename replaces whatever is at the name. A sheet the
+      // owner saved in between used to be overwritten by the fetched one.
+      final theirs = beside('.lrc');
+
+      final written = await IOOverrides.runZoned(
+        () => sidecar.write(track, sheet),
+        createFile: (path) => path.endsWith('.part')
+            ? _SavedMeanwhile(_realFile(path), theirs)
+            : _realFile(path),
+      );
+
+      expect(written, isFalse);
+      expect(theirs.readAsStringSync(), 'their own words');
+      expect(
+        music.listSync().where((entity) => entity.path.endsWith('.part')),
+        isEmpty,
+      );
     },
   );
 
@@ -150,4 +175,46 @@ void main() {
       expect((await source.of(track))!.lines.first.text, 'Uma canção');
     },
   );
+}
+
+/// The real file at [path], built outside any [IOOverrides] in force.
+File _realFile(String path) =>
+    IOOverrides.runWithIOOverrides(() => File(path), _NoOverrides());
+
+final class _NoOverrides extends IOOverrides {}
+
+/// A scratch file whose write is overtaken by the owner saving [theirs].
+class _SavedMeanwhile implements File {
+  _SavedMeanwhile(this._real, this._theirs);
+
+  final File _real;
+  final File _theirs;
+
+  @override
+  String get path => _real.path;
+
+  @override
+  Future<File> writeAsString(
+    String contents, {
+    FileMode mode = FileMode.write,
+    Encoding encoding = utf8,
+    bool flush = false,
+  }) async {
+    await _real.writeAsString(contents, encoding: encoding, flush: flush);
+    _theirs.writeAsStringSync('their own words');
+
+    return this;
+  }
+
+  @override
+  Future<File> rename(String newPath) => _real.rename(newPath);
+
+  @override
+  bool existsSync() => _real.existsSync();
+
+  @override
+  Future<FileSystemEntity> delete({bool recursive = false}) => _real.delete();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

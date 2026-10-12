@@ -42,9 +42,9 @@ Orpheus looks the words up and saves them beside it.
 {{< /blocks/section >}}
 
 {{< blocks/section color="white" type="row" >}}
-{{% blocks/feature icon="fa-solid fa-lock" title="It never touches your audio files" %}}
-No tag editing, no renaming, no moving, no deleting, no transcoding. They are
-opened for reading and that is all.
+{{% blocks/feature icon="fa-solid fa-lock" title="It changes your files only when you ask" %}}
+No renaming, no moving, no deleting, no transcoding. The one change it makes is
+to a file's tags, from an autofill whose every change you confirmed.
 {{% /blocks/feature %}}
 
 {{% blocks/feature icon="fa-solid fa-mobile-screen" title="It keeps playing on Android" %}}
