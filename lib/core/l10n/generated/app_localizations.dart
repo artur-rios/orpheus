@@ -1247,7 +1247,7 @@ abstract class AppLocalizations {
   /// The button on the autofill screen that writes the ticked changes into the files.
   ///
   /// In en, this message translates to:
-  /// **'Write {changes, plural, =1{1 change} other{{changes} changes}} to {files, plural, =1{1 file} other{{files} files}}'**
+  /// **'Write {changes, plural, =0{0 changes} =1{1 change} other{{changes} changes}} to {files, plural, =0{0 files} =1{1 file} other{{files} files}}'**
   String autofillWrite(int changes, int files);
 
   /// The control on the autofill screen that ticks every change.

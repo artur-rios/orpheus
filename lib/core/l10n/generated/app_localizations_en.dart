@@ -701,12 +701,14 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$changes changes',
       one: '1 change',
+      zero: '0 changes',
     );
     String _temp1 = intl.Intl.pluralLogic(
       files,
       locale: localeName,
       other: '$files files',
       one: '1 file',
+      zero: '0 files',
     );
     return 'Write $_temp0 to $_temp1';
   }

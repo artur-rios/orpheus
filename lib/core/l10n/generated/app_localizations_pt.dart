@@ -701,12 +701,14 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$changes alterações',
       one: '1 alteração',
+      zero: '0 alterações',
     );
     String _temp1 = intl.Intl.pluralLogic(
       files,
       locale: localeName,
       other: '$files arquivos',
       one: '1 arquivo',
+      zero: '0 arquivos',
     );
     return 'Gravar $_temp0 em $_temp1';
   }

@@ -879,7 +879,7 @@
   "@autofillDifferentRelease": {
     "description": "The control on the autofill screen that picks another release than the one proposed."
   },
-  "autofillWrite": "Gravar {changes, plural, =1{1 alteração} other{{changes} alterações}} em {files, plural, =1{1 arquivo} other{{files} arquivos}}",
+  "autofillWrite": "Gravar {changes, plural, =0{0 alterações} =1{1 alteração} other{{changes} alterações}} em {files, plural, =0{0 arquivos} =1{1 arquivo} other{{files} arquivos}}",
   "@autofillWrite": {
     "description": "The button on the autofill screen that writes the ticked changes into the files.",
     "placeholders": {
