@@ -168,4 +168,86 @@ void main() {
       expect(recordingQueryFor(untitledAt('/music/03.flac')).title, '03');
     });
   });
+
+  group('assignTracks', () {
+    ReleaseTrack track(int disc, int position, String title, {int seconds = 200}) =>
+        ReleaseTrack(
+          disc: disc,
+          position: position,
+          title: title,
+          artistCredit: const [ArtistCredit(name: 'Radiohead')],
+          length: Duration(seconds: seconds),
+        );
+
+    ReleaseDetail releaseOf(List<ReleaseTrack> tracks) => ReleaseDetail(
+      release: const ReleaseCandidate(
+        id: 'r',
+        title: 'OK Computer',
+        artistCredit: [ArtistCredit(name: 'Radiohead')],
+        trackCount: 3,
+      ),
+      tracks: tracks,
+    );
+
+    test('GivenFilesNumberedLikeTheRelease_WhenAssigned_ThenEachGetsItsNumbersTrack', () {
+      // No titles: the numbers are the only evidence, and they are enough.
+      final files = [entry(id: '1', track: 1), entry(id: '2', track: 2)];
+      final release = releaseOf([track(1, 1, 'Airbag'), track(1, 2, 'Paranoid Android')]);
+
+      final assigned = assignTracks(files, release);
+
+      expect(assigned[files[0]]?.title, 'Airbag');
+      expect(assigned[files[1]]?.title, 'Paranoid Android');
+    });
+
+    test('GivenUnnumberedFiles_WhenAssigned_ThenTheyAreMatchedByTitle', () {
+      final files = [entry(id: '1', title: 'paranoid android'), entry(id: '2', title: 'AIRBAG')];
+      final release = releaseOf([track(1, 1, 'Airbag'), track(1, 2, 'Paranoid Android')]);
+
+      final assigned = assignTracks(files, release);
+
+      expect(assigned[files[0]]?.position, 2);
+      expect(assigned[files[1]]?.position, 1);
+    });
+
+    test('GivenTwoFilesTaggedTrackOneWithNoDisc_WhenAssignedToATwoDiscRelease_ThenTheSecondFallsThroughToItsTitle', () {
+      // Review focus: the second "track 1" must not take the first's track.
+      final files = [
+        entry(id: 'a', title: 'Opening', track: 1),
+        entry(id: 'b', title: 'Second Opening', track: 1),
+      ];
+      final release = releaseOf([track(1, 1, 'Opening'), track(2, 1, 'Second Opening')]);
+
+      final assigned = assignTracks(files, release);
+
+      expect(assigned[files[0]]?.disc, 1);
+      expect(assigned[files[1]]?.disc, 2);
+    });
+
+    test('GivenAFileTheReleaseDoesNotHave_WhenAssigned_ThenItHasNoMatchAndTheOthersAreUnaffected', () {
+      // Review focus: extra files are no match; extra release tracks ignored.
+      final files = [
+        entry(id: '1', title: 'Airbag', track: 1),
+        entry(id: 'x', title: 'A Hidden Demo', track: 13),
+      ];
+      final release = releaseOf([
+        track(1, 1, 'Airbag'),
+        track(1, 2, 'Paranoid Android'),
+        track(1, 3, 'Subterranean Homesick Alien'),
+      ]);
+
+      final assigned = assignTracks(files, release);
+
+      expect(assigned[files[0]]?.title, 'Airbag');
+      expect(assigned.containsKey(files[1]), isTrue);
+      expect(assigned[files[1]], isNull);
+    });
+
+    test('GivenAnUntitledUnnumberedFile_WhenItsLengthSinglesOutATrack_ThenItIsAssignedThatTrack', () {
+      final files = [entry(id: 'u', duration: const Duration(seconds: 387))];
+      final release = releaseOf([track(1, 1, 'Airbag', seconds: 284), track(1, 2, 'Paranoid Android', seconds: 386)]);
+
+      expect(assignTracks(files, release)[files[0]]?.title, 'Paranoid Android');
+    });
+  });
 }

@@ -203,3 +203,106 @@ RecordingQuery recordingQueryFor(MusicEntry entry) {
     duration: entry.duration,
   );
 }
+
+/// Which of [release]'s tracks each of [files] is.
+///
+/// Four passes, each over what the ones before left unassigned, from the
+/// surest evidence to the weakest: disc and track number (a missing disc
+/// counting as the first, as the library orders it); the title exactly, once
+/// normalised; a similar title and a length within five seconds; and a length
+/// within two seconds where it singles out exactly one track. A track is
+/// given out once. A file left at the end has no match on this release, and
+/// tracks nobody claimed — bonus tracks the owner does not have — are simply
+/// not used.
+Map<MusicEntry, ReleaseTrack?> assignTracks(
+  List<MusicEntry> files,
+  ReleaseDetail release,
+) {
+  final assigned = <MusicEntry, ReleaseTrack?>{for (final file in files) file: null};
+  final free = [...release.tracks];
+
+  void claim(MusicEntry file, ReleaseTrack track) {
+    assigned[file] = track;
+    free.remove(track);
+  }
+
+  Iterable<MusicEntry> open() => files.where((file) => assigned[file] == null);
+
+  // 1. Numbers.
+  for (final file in open().toList()) {
+    final number = file.metadata.track;
+    if (number == null) continue;
+    final disc = file.metadata.disc ?? 1;
+    final track = free
+        .where((t) => t.disc == disc && t.position == number)
+        .firstOrNull;
+    // A disc-less file numbered like a track on a later disc is left for the
+    // passes below rather than guessed into it.
+    if (track != null && _titlesAgreeOrUnknown(file, track)) claim(file, track);
+  }
+
+  // 2. Titles, exactly.
+  for (final file in open().toList()) {
+    final title = file.title;
+    if (title == null) continue;
+    final track = free
+        .where((t) => normalised(t.title) == normalised(title))
+        .firstOrNull;
+    if (track != null) claim(file, track);
+  }
+
+  // 3. Similar titles of about the same length.
+  for (final file in open().toList()) {
+    final title = file.title;
+    if (title == null) continue;
+    final track = free
+        .where(
+          (t) =>
+              _overlap(title, t.title) >= 0.6 &&
+              _lengthsWithin(file.duration, t.length, const Duration(seconds: 5)),
+        )
+        .firstOrNull;
+    if (track != null) claim(file, track);
+  }
+
+  // 4. Length alone, where it is unambiguous.
+  for (final file in open().toList()) {
+    final near = free
+        .where(
+          (t) => _lengthsWithin(file.duration, t.length, const Duration(seconds: 2)),
+        )
+        .toList();
+    if (near.length == 1) claim(file, near.single);
+  }
+
+  return assigned;
+}
+
+/// Whether a number match is trustworthy: either the file has no title, or
+/// its title is not plainly a different track's.
+///
+/// What stops two disc-less "track 1"s from both landing on disc one: the
+/// second one's title names the second disc's first track, so it is left for
+/// the title pass to place.
+bool _titlesAgreeOrUnknown(MusicEntry file, ReleaseTrack track) {
+  final title = file.title;
+  if (title == null) return true;
+
+  return _overlap(title, track.title) >= 0.6 ||
+      normalised(title) == normalised(track.title);
+}
+
+/// The share of words two titles have in common, 0 to 1.
+double _overlap(String a, String b) {
+  final left = normalised(a).split(' ').where((w) => w.isNotEmpty).toSet();
+  final right = normalised(b).split(' ').where((w) => w.isNotEmpty).toSet();
+  if (left.isEmpty || right.isEmpty) return 0;
+
+  final shared = left.intersection(right).length;
+  final larger = left.length > right.length ? left.length : right.length;
+
+  return shared / larger;
+}
+
+bool _lengthsWithin(Duration? a, Duration? b, Duration tolerance) =>
+    a != null && b != null && (a - b).abs() <= tolerance;
