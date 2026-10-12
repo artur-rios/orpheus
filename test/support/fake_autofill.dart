@@ -31,6 +31,10 @@ class ScriptedMetadataSource implements MetadataSource {
   /// download to fail.
   MetadataSourceFailure? coverFailure;
 
+  /// What looking up a release group's genres throws instead, where a test
+  /// wants only that lookup to fail.
+  MetadataSourceFailure? groupGenresFailure;
+
   /// Held until completed, where a test wants a lookup in flight.
   Future<void>? hold;
 
@@ -66,6 +70,8 @@ class ScriptedMetadataSource implements MetadataSource {
   @override
   Future<List<Genre>> releaseGroupGenres(String id) async {
     await _gate();
+    final thrown = groupGenresFailure;
+    if (thrown != null) throw MetadataSourceException(thrown);
     return groupGenres[id] ?? const [];
   }
 

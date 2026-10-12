@@ -320,7 +320,13 @@ class AutofillController extends Notifier<AutofillState> {
       var fallback = const <Genre>[];
       final groupId = detail.releaseGroupId;
       if (state.fields.contains(AutofillField.genre) && detail.genres.isEmpty && groupId != null) {
-        fallback = await source.releaseGroupGenres(groupId);
+        try {
+          fallback = await source.releaseGroupGenres(groupId);
+        } on MetadataSourceException catch (error) {
+          // A stand-in that could not be fetched is no genre to propose,
+          // not a release that cannot be: the other changes stand.
+          _log.info('the release group genres could not be fetched', error);
+        }
         if (!ref.mounted) return;
       }
 

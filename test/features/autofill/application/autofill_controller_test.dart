@@ -268,6 +268,29 @@ void main() {
     expect(stateOf(harness).acceptedCount, 2);
   });
 
+  test('GivenTheReleaseGroupGenresCannotBeFetched_WhenProposed_ThenTheGenreIsLeftAndTheOtherChangesStand', () async {
+    final harness = harnessFor();
+    final controller = controllerOf(harness);
+    harness.metadata
+      ..releases = {
+        'rel-1': ReleaseDetail(release: candidate, tracks: detailOf(candidate).tracks, releaseGroupId: 'group-1'),
+      }
+      ..groupGenres = const {
+        'group-1': [Genre(name: 'rock', votes: 1)],
+      }
+      ..groupGenresFailure = MetadataSourceFailure.unreachable;
+
+    await controller.start(record, {AutofillField.genre, AutofillField.artist}, kind: AutofillKind.record);
+
+    final state = stateOf(harness);
+    expect(state.stage, AutofillStage.reviewing);
+    expect(state.acceptedCount, 2);
+    expect([
+      for (final proposal in state.proposals)
+        for (final change in proposal.changes) change.field,
+    ], everyElement(AutofillField.artist));
+  });
+
   test('GivenTheOwnerClosesTheScreenMidLookup_WhenTheAnswerArrives_ThenNothingThrows', () async {
     // Review focus: an auto-disposed controller must not write state after
     // it is gone.
