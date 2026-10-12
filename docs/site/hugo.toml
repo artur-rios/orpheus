@@ -67,7 +67,7 @@ enableRobotsTXT = true
     endLevel = 4
 
 [params]
-  copyright = 'Artur Rios'
+  copyright.authors = 'Artur Rios | [Artur Rios Attribution License](https://github.com/artur-rios/orpheus/blob/main/LICENSE)'
   github_repo = 'https://github.com/artur-rios/orpheus'
   github_branch = 'main'
   # The site source sits below the repository root, so "edit this page" has to
