@@ -253,6 +253,25 @@ void main() {
 
     expect(harness.metadata.releaseQueries.last.text, isNull);
     expect(find.text('Write 2 changes to 2 files'), findsOneWidget);
+    expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, 'OK Computer Radiohed');
+  });
+
+  testWidgets('GivenATypedSearchThatFailed_WhenTryAgainIsTapped_ThenTheTypedWordsAreSearchedAgainAndStay', (tester) async {
+    final harness = harnessFor();
+    await openScreen(tester, harness, {AutofillField.artist});
+
+    harness.metadata.failure = MetadataSourceFailure.unreachable;
+    await tester.enterText(find.byType(TextField), 'kid a radiohead');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(find.text('MusicBrainz could not be reached.'), findsOneWidget);
+
+    harness.metadata.failure = null;
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(harness.metadata.releaseQueries.last.text, 'kid a radiohead');
+    expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, 'kid a radiohead');
   });
 
   testWidgets('GivenALongReleaseAndTrackOnAPhone_WhenReviewedAndWritten_ThenNothingOverflows', (tester) async {

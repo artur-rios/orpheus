@@ -162,6 +162,37 @@ void main() {
     expect(stateOf(harness).candidates, isEmpty);
   });
 
+  test('GivenATypedSearchThatFailed_WhenTheLookupIsRetried_ThenTheTypedWordsAreSentAgainAndTheQueryStays', () async {
+    final harness = harnessFor();
+    final controller = controllerOf(harness);
+    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    harness.metadata.failure = MetadataSourceFailure.unreachable;
+    await controller.search('  kid a  ');
+    expect(stateOf(harness).stage, AutofillStage.failed);
+
+    harness.metadata.failure = null;
+    await controller.retryLookup();
+
+    expect(harness.metadata.releaseQueries.last.text, 'kid a');
+    expect(stateOf(harness).stage, AutofillStage.reviewing);
+    expect(stateOf(harness).query, '  kid a  ');
+  });
+
+  test('GivenTheStructuredLookupFailed_WhenTheLookupIsRetried_ThenTheStructuredQueryIsSentAgain', () async {
+    final harness = harnessFor();
+    harness.metadata.failure = MetadataSourceFailure.unreachable;
+    final controller = controllerOf(harness);
+    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    expect(stateOf(harness).stage, AutofillStage.failed);
+
+    harness.metadata.failure = null;
+    await controller.retryLookup();
+
+    expect(harness.metadata.releaseQueries.last.text, isNull);
+    expect(stateOf(harness).stage, AutofillStage.reviewing);
+    expect(stateOf(harness).query, 'OK Computer Radiohed');
+  });
+
   test('GivenTheOwnersOwnWords_WhenTheySearchAgain_ThenTheirWordsAreSent', () async {
     final harness = harnessFor();
     final controller = controllerOf(harness);

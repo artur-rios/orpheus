@@ -73,9 +73,7 @@ class _AutofillScreenState extends ConsumerState<AutofillScreen> {
         AutofillStage.idle || AutofillStage.searching => _Waiting(text: l10n.autofillSearching),
         AutofillStage.failed => _Failed(
           failure: state.failure,
-          // The original structured lookup again, unless the owner has
-          // edited the words: an empty text takes the structured path.
-          onRetry: () => unawaited(controller.search(_query.text == state.query ? '' : _query.text)),
+          onRetry: () => unawaited(controller.retryLookup()),
         ),
         AutofillStage.writing => _Waiting(text: l10n.autofillWriting(state.written, state.total)),
         AutofillStage.finished => _Summary(state: state, onRetry: () => unawaited(controller.retry())),

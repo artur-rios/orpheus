@@ -164,6 +164,7 @@ class AutofillController extends Notifier<AutofillState> {
   String? _recordingId;
   bool _cancelled = false;
   bool _writing = false;
+  String? _lastText;
 
   @override
   AutofillState build() => const AutofillState();
@@ -196,13 +197,22 @@ class AutofillController extends Notifier<AutofillState> {
     }
     _tags = tags;
 
+    _lastText = null;
     await _lookUp(null);
   }
 
   /// Searches again with the owner's own [text].
   Future<void> search(String text) async {
     state = state.copyWith(stage: AutofillStage.searching, query: text);
-    await _lookUp(text.trim().isEmpty ? null : text.trim());
+    _lastText = text.trim().isEmpty ? null : text.trim();
+    await _lookUp(_lastText);
+  }
+
+  /// Runs the lookup that failed again, with the words it had, and leaves the
+  /// owner's search text as it is.
+  Future<void> retryLookup() async {
+    state = state.copyWith(stage: AutofillStage.searching);
+    await _lookUp(_lastText);
   }
 
   /// Proposes from the candidate [id] instead.
