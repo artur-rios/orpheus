@@ -8,6 +8,7 @@ import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 import 'package:orpheus/core/platform/host_platform.dart';
 import 'package:orpheus/core/settings/settings_store.dart';
+import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/library/domain/music_grouping.dart';
@@ -36,7 +37,7 @@ class Harness {
     List<MusicEntry> library = const [],
     Set<String> missingTracks = const {},
     SettingsStore? settings,
-    ScriptedScanner? scanner,
+    LibraryScanner? scanner,
     ScriptedTrackAnalysis? analysis,
     ScriptedLyricsSource? lyrics,
     ScriptedRemoteLyricsSource? remoteLyrics,

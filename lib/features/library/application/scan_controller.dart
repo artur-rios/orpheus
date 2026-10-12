@@ -206,6 +206,9 @@ class ScanController extends Notifier<ScanState> {
   /// one whatever the folders say; otherwise one starts now. Access is not
   /// asked for: a library whose files were just written is one this process
   /// can read.
+  ///
+  /// Joining a running scan answers at once, before the extra scan has run;
+  /// it is the running [scan]'s caller who waits for that.
   Future<void> rescanSoon() async {
     if (state.isRunning || _asking) {
       _again = true;
