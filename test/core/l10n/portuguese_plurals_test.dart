@@ -7,14 +7,58 @@ import 'package:orpheus/core/l10n/generated/app_localizations.dart';
 /// Portuguese files zero under "one", so a plural that names only `=1` and
 /// `other` renders a count of nothing as "1".
 void main() {
-  test(
-    'GivenNothingToWrite_WhenTheButtonIsRead_ThenPortugueseSaysZero',
-    () async {
-      final l10n = await AppLocalizations.delegate.load(const Locale('pt'));
+  late AppLocalizations l10n;
 
-      expect(l10n.autofillWrite(0, 0), 'Gravar 0 alterações em 0 arquivos');
-      expect(l10n.autofillWrite(1, 1), 'Gravar 1 alteração em 1 arquivo');
-      expect(l10n.autofillWrite(3, 2), 'Gravar 3 alterações em 2 arquivos');
+  setUpAll(() async {
+    l10n = await AppLocalizations.delegate.load(const Locale('pt'));
+  });
+
+  test('GivenNothingToWrite_WhenTheButtonIsRead_ThenPortugueseSaysZero', () {
+    expect(l10n.autofillWrite(0, 0), 'Gravar 0 alterações em 0 arquivos');
+    expect(l10n.autofillWrite(1, 1), 'Gravar 1 alteração em 1 arquivo');
+    expect(l10n.autofillWrite(3, 2), 'Gravar 3 alterações em 2 arquivos');
+  });
+
+  test(
+    'GivenNoUnreadableFile_WhenTheScanIsReported_ThenPortugueseSaysNone',
+    () {
+      expect(l10n.scanUnreadable(0), 'Nenhum arquivo tinha tags ilegíveis.');
+      expect(l10n.scanUnreadable(1), '1 arquivo tinha tags ilegíveis.');
     },
   );
+
+  test(
+    'GivenARowWithNoPlays_WhenItsPlaysAreCounted_ThenPortugueseSaysZero',
+    () {
+      expect(l10n.statsPlaysCount(0), '0 reproduções');
+      expect(l10n.statsPlaysCount(1), '1 reprodução');
+    },
+  );
+
+  test(
+    'GivenNoUntaggedTrack_WhenTheNoteIsRead_ThenPortugueseSaysEveryOneIsRanked',
+    () {
+      expect(
+        l10n.statsUntaggedNote(0),
+        'Toda faixa tocada tem tag de artista, disco ou gênero, então todas '
+        'aparecem em algum ranking de artista, disco ou gênero abaixo.',
+      );
+      expect(
+        l10n.statsUntaggedNote(1),
+        '1 faixa tocada não tem tag de artista, disco ou gênero, então ela é '
+        'contada nos totais acima mas não aparece em nenhum ranking de '
+        'artista, disco ou gênero abaixo.',
+      );
+    },
+  );
+
+  test('GivenNoPlays_WhenTheStoryOpens_ThenPortugueseSaysZero', () {
+    expect(l10n.storyOpeningPlays(0), '0 reproduções');
+    expect(l10n.storyOpeningPlays(1), '1 reprodução');
+  });
+
+  test('GivenNoTracks_WhenTheStoryOpens_ThenPortugueseSaysZero', () {
+    expect(l10n.storyOpeningTracks(0), 'em 0 faixas');
+    expect(l10n.storyOpeningTracks(1), 'em 1 faixa');
+  });
 }
