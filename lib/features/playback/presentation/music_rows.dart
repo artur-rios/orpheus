@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../autofill/application/autofill_controller.dart';
+import '../../autofill/presentation/autofill_launcher.dart';
 import '../../library/domain/music_entry.dart';
 import '../../library/domain/music_grouping.dart';
 import '../application/audio_playback_controller.dart';
@@ -272,6 +274,14 @@ class _GroupActions extends ConsumerWidget {
           // one track this button happens to have in hand.
           onPressed: () => _play(ref, shuffled: true),
         ),
+        if (kind == MusicGroupKind.album)
+          IconButton(
+            tooltip: l10n.autofillAction,
+            icon: const Icon(Icons.auto_fix_high_outlined),
+            onPressed: () => unawaited(
+              startAutofill(context, ref, group.entries, kind: AutofillKind.record),
+            ),
+          ),
       ],
     );
   }
@@ -465,6 +475,13 @@ class MusicRowMenu extends ConsumerWidget {
             (player) => player.playArtist(entry.file, shuffled: true),
           ),
           child: Text(l10n.audioShuffleArtist),
+        ),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.auto_fix_high_outlined),
+          onPressed: () => unawaited(
+            startAutofill(context, ref, [entry], kind: AutofillKind.track),
+          ),
+          child: Text(l10n.autofillAction),
         ),
       ],
       builder: (context, controller, _) => GestureDetector(
