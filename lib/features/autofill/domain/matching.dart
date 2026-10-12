@@ -181,17 +181,25 @@ ReleaseQuery releaseQueryFor(List<MusicEntry> entries) => ReleaseQuery(
   artist: _commonest(entries.map((entry) => entry.albumArtist)),
 );
 
+/// A track number at the front of a file name: digits followed by a separator
+/// (`03 - `, `03. `, `03_`, `03) `), or a leading zero followed by a space
+/// (`03 `). Digits with neither are part of a title (`21 Guns`, `1984`).
+final RegExp _trackNumber = RegExp(r'^\s*(?:\d+\s*[-._)\]]\s*|0\d*\s+)');
+
 /// What to search for the lone track [entry] by.
 ///
 /// Its title, or its file name without the extension and any leading track
-/// number (`03 - Lucky.flac` → `Lucky`) where it has none.
-RecordingQuery recordingQueryFor(MusicEntry entry) => RecordingQuery(
-  title:
-      entry.title ??
-      p
-          .basenameWithoutExtension(entry.file.path)
-          .replaceFirst(RegExp(r'^\s*\d+\s*[-._)\]]*\s*'), '')
-          .trim(),
-  artist: entry.artist,
-  duration: entry.duration,
-);
+/// number where it has none: `03 - Lucky.flac` and `03 Lucky.flac` are
+/// `Lucky`, but `21 Guns.mp3` stays `21 Guns`. A name that is nothing but a
+/// number (`1984.flac`) is kept whole, since stripping it would leave nothing
+/// to search for.
+RecordingQuery recordingQueryFor(MusicEntry entry) {
+  final name = p.basenameWithoutExtension(entry.file.path).trim();
+  final stripped = name.replaceFirst(_trackNumber, '').trim();
+
+  return RecordingQuery(
+    title: entry.title ?? (stripped.isEmpty ? name : stripped),
+    artist: entry.artist,
+    duration: entry.duration,
+  );
+}

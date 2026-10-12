@@ -142,5 +142,30 @@ void main() {
 
       expect(recordingQueryFor(untitled).title, 'Lucky');
     });
+
+    MusicEntry untitledAt(String path) => MusicEntry(
+      file: AudioFile(path: path, sizeInBytes: 1, modifiedAt: DateTime.utc(2026)),
+      metadata: TrackMetadata.empty,
+    );
+
+    test('GivenANumberThenASpacedDashThenTheTitle_WhenItsQueryIsBuilt_ThenTheNumberIsStripped', () {
+      expect(recordingQueryFor(untitledAt('/music/03 - Lucky.flac')).title, 'Lucky');
+    });
+
+    test('GivenALeadingZeroNumberThenSpaceThenTheTitle_WhenItsQueryIsBuilt_ThenTheNumberIsStripped', () {
+      expect(recordingQueryFor(untitledAt('/music/03 Lucky.flac')).title, 'Lucky');
+    });
+
+    test('GivenATitleThatStartsWithANumberWithoutASeparator_WhenItsQueryIsBuilt_ThenTheNumberIsKept', () {
+      expect(recordingQueryFor(untitledAt('/music/21 Guns.mp3')).title, '21 Guns');
+    });
+
+    test('GivenATitleThatIsOnlyANumber_WhenItsQueryIsBuilt_ThenTheNumberIsKept', () {
+      expect(recordingQueryFor(untitledAt('/music/1984.flac')).title, '1984');
+    });
+
+    test('GivenAFileNameThatIsOnlyANumberWithALeadingZero_WhenItsQueryIsBuilt_ThenTheNumberIsKept', () {
+      expect(recordingQueryFor(untitledAt('/music/03.flac')).title, '03');
+    });
   });
 }
