@@ -194,6 +194,19 @@ class FakeLibraryAccess implements LibraryAccess {
     return decision;
   }
 
+  /// What a request to write answers.
+  LibraryAccessDecision writeDecision = LibraryAccessDecision.granted;
+
+  /// How many times writing was asked for.
+  int writeRequests = 0;
+
+  @override
+  Future<LibraryAccessDecision> requestWrite() async {
+    writeRequests++;
+
+    return writeDecision;
+  }
+
   @override
   Future<bool> readsEveryFolder() async => readsEverything;
 

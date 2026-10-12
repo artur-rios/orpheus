@@ -431,4 +431,41 @@ void main() {
       },
     );
   });
+
+  test(
+    'GivenAScanIsRunning_WhenARescanIsAskedForSoon_ThenAnotherRunsWhenItEnds',
+    () async {
+      // Tags were written while a scan was walking: it may already have passed
+      // the files, and the library must not keep their old tags.
+      final scanner = ScriptedScanner([
+        ScanCompleted(catalog: scanned, report: report),
+      ]);
+      final harness = harnessWith(scanner);
+      final controller = harness.read(scanControllerProvider.notifier);
+
+      // Not yet walking — the scripted scan is over within a turn of the event
+      // loop — but already spoken for, waiting on the access question.
+      final first = controller.scan();
+      await controller.rescanSoon();
+      await first.timeout(const Duration(seconds: 5));
+
+      expect(scanner.requests, hasLength(2));
+    },
+  );
+
+  test(
+    'GivenNoScanIsRunning_WhenARescanIsAskedForSoon_ThenOneRunsWithoutAskingForAccess',
+    () async {
+      final access = FakeLibraryAccess();
+      final scanner = ScriptedScanner([
+        ScanCompleted(catalog: scanned, report: report),
+      ]);
+      final harness = harnessWith(scanner, access: access);
+
+      await harness.read(scanControllerProvider.notifier).rescanSoon();
+
+      expect(scanner.requests, hasLength(1));
+      expect(access.requests, 0);
+    },
+  );
 }

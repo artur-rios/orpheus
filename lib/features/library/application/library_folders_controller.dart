@@ -152,6 +152,13 @@ class LibraryAccessController extends Notifier<LibraryAccessDecision?> {
     return decision;
   }
 
+  /// Asks to be allowed to change the owner's audio files.
+  ///
+  /// Not recorded in [state], which is about reading: a refusal to let tags be
+  /// written says nothing about whether the library can be scanned.
+  Future<LibraryAccessDecision> ensureWritable() =>
+      ref.read(libraryAccessProvider).requestWrite();
+
   /// Opens the system settings, where a permanent refusal can be undone.
   Future<void> openSettings() => ref.read(libraryAccessProvider).openSettings();
 }
