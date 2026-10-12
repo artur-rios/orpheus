@@ -769,6 +769,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'In use by playback — try again once it has moved on';
 
   @override
+  String get autofillOutcomeNotWritten => 'Not written — cancelled first';
+
+  @override
   String get autofillOutcomeDenied => 'Orpheus isn\'t allowed to change it';
 
   @override

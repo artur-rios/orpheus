@@ -961,6 +961,10 @@
   "@autofillOutcomeInUse": {
     "description": "The result shown beside a file that playback was holding open."
   },
+  "autofillOutcomeNotWritten": "Not written — cancelled first",
+  "@autofillOutcomeNotWritten": {
+    "description": "The result shown beside a file that had ticked changes but was never reached, because the owner cancelled the write first."
+  },
   "autofillOutcomeDenied": "Orpheus isn't allowed to change it",
   "@autofillOutcomeDenied": {
     "description": "The result shown beside a file the system would not let Orpheus change."

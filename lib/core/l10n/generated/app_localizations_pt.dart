@@ -768,6 +768,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Em uso pela reprodução — tente de novo depois';
 
   @override
+  String get autofillOutcomeNotWritten => 'Não gravado — cancelado antes';
+
+  @override
   String get autofillOutcomeDenied =>
       'O Orpheus não tem permissão para alterá-lo';
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
@@ -7,6 +9,7 @@ import 'package:orpheus/features/autofill/domain/metadata_source.dart';
 import 'package:orpheus/features/autofill/domain/release.dart';
 import 'package:orpheus/features/autofill/domain/tag_writer.dart';
 import 'package:orpheus/features/autofill/presentation/autofill_screen.dart';
+import 'package:orpheus/features/library/domain/library_access.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_grouping.dart';
@@ -166,5 +169,153 @@ void main() {
 
     expect(harness.metadata.lookedUp.last, 'rel-2');
     expect(find.text('Write 2 changes to 2 files'), findsOneWidget);
+  });
+
+  testWidgets('GivenTheOwnerRefusesWriteAccess_WhenTheyWrite_ThenTheRefusalIsShownWithoutASettingsButton', (tester) async {
+    final access = FakeLibraryAccess()..writeDecision = LibraryAccessDecision.denied;
+    final harness = harnessFor(access: access);
+    await openScreen(tester, harness, {AutofillField.artist});
+
+    await tester.tap(find.text('Write 2 changes to 2 files'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('needs permission to change your music files'), findsOneWidget);
+    expect(find.text('Open settings'), findsNothing);
+    expect(harness.tagWriter.writes, isEmpty);
+  });
+
+  testWidgets('GivenAPermanentRefusal_WhenTheOwnerTapsOpenSettings_ThenTheSystemSettingsOpen', (tester) async {
+    final access = FakeLibraryAccess()..writeDecision = LibraryAccessDecision.deniedPermanently;
+    final harness = harnessFor(access: access);
+    await openScreen(tester, harness, {AutofillField.artist});
+
+    await tester.tap(find.text('Write 2 changes to 2 files'));
+    await tester.pumpAndSettle();
+    expect(find.text('Open settings'), findsOneWidget);
+    await tester.tap(find.text('Open settings'));
+    await tester.pumpAndSettle();
+
+    expect(access.openedSettings, isTrue);
+  });
+
+  testWidgets('GivenAnAutoBuiltQuery_WhenTheScreenShows_ThenTheFieldHoldsIt', (tester) async {
+    final harness = harnessFor();
+
+    await openScreen(tester, harness, {AutofillField.artist});
+
+    expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, 'OK Computer Radiohed');
+  });
+
+  testWidgets('GivenTypedWords_WhenAnotherReleaseIsChosen_ThenTheTypedTextStays', (tester) async {
+    final harness = harnessFor();
+    await openScreen(tester, harness, {AutofillField.album});
+
+    await tester.enterText(find.byType(TextField), 'my own words');
+    await tester.tap(find.text('Different release'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('OK Computer (Remastered)').last);
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, 'my own words');
+  });
+
+  testWidgets('GivenTypedWords_WhenTheFieldIsSubmitted_ThenTheTypedWordsAreSearched', (tester) async {
+    final harness = harnessFor();
+    await openScreen(tester, harness, {AutofillField.artist});
+
+    await tester.enterText(find.byType(TextField), 'kid a radiohead');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(harness.metadata.releaseQueries.last.text, 'kid a radiohead');
+  });
+
+  testWidgets('GivenTypedWords_WhenSearchAgainIsTapped_ThenTheTypedWordsAreSearched', (tester) async {
+    final harness = harnessFor();
+    await openScreen(tester, harness, {AutofillField.artist});
+
+    await tester.enterText(find.byType(TextField), 'amnesiac');
+    await tester.tap(find.text('Search again'));
+    await tester.pumpAndSettle();
+
+    expect(harness.metadata.releaseQueries.last.text, 'amnesiac');
+  });
+
+  testWidgets('GivenALookupThatFailed_WhenTryAgainIsTappedAndItWorks_ThenTheReviewAppearsFromTheOriginalLookup', (tester) async {
+    final harness = harnessFor();
+    harness.metadata.failure = MetadataSourceFailure.unreachable;
+    await openScreen(tester, harness, {AutofillField.artist});
+    expect(find.text('MusicBrainz could not be reached.'), findsOneWidget);
+
+    harness.metadata.failure = null;
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(harness.metadata.releaseQueries.last.text, isNull);
+    expect(find.text('Write 2 changes to 2 files'), findsOneWidget);
+  });
+
+  testWidgets('GivenALongReleaseAndTrackOnAPhone_WhenReviewedAndWritten_ThenNothingOverflows', (tester) async {
+    final harness = harnessFor();
+    const long = ReleaseCandidate(
+      id: 'rel-1',
+      title: 'OK Computer: the deluxe collectors anniversary edition with every bonus disc',
+      artistCredit: [ArtistCredit(name: 'Radiohead')],
+      trackCount: 2,
+      date: '1997',
+      country: 'XW',
+      format: 'Digital Media',
+      disambiguation: 'a very long note about a remaster that goes on and on and on',
+    );
+    harness.metadata
+      ..candidates = const [long, other]
+      ..releases = {
+        'rel-1': const ReleaseDetail(
+          release: long,
+          tracks: [
+            ReleaseTrack(
+              disc: 1,
+              position: 1,
+              title: 'Airbag (a track title long enough to wrap onto several lines of a phone)',
+              artistCredit: [ArtistCredit(name: 'Radiohead')],
+            ),
+            ReleaseTrack(disc: 1, position: 2, title: 'Paranoid Android', artistCredit: [ArtistCredit(name: 'Radiohead')]),
+          ],
+        ),
+        'rel-2': detailOf(other),
+      };
+
+    await tester.pumpHarness(
+      harness,
+      AutofillScreen(entries: record, fields: const {AutofillField.title, AutofillField.album}, kind: AutofillKind.record),
+      window: const Size(360, 740),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Write '), findsWidgets);
+    expect(tester.takeException(), isNull);
+
+    harness.tagWriter.refusals[record.first.file.path] = WriteOutcome.inUse;
+    await tester.tap(find.textContaining('Write ').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Close'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('GivenTheOwnerCancelsMidWrite_WhenItFinishes_ThenTheFileNeverReachedIsNamedAsNotWritten', (tester) async {
+    final harness = harnessFor();
+    await openScreen(tester, harness, {AutofillField.artist});
+    final held = Completer<void>();
+    harness.tagWriter.hold = held.future;
+
+    await tester.tap(find.text('Write 2 changes to 2 files'));
+    await tester.pump();
+    await tester.pump();
+    await tester.tap(find.text('Cancel'));
+    held.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.text('1 file updated.'), findsOneWidget);
+    expect(find.text('Not written — cancelled first'), findsOneWidget);
+    expect(find.text(record[1].file.name), findsOneWidget);
   });
 }

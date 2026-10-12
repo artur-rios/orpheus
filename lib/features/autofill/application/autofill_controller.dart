@@ -163,6 +163,7 @@ class AutofillController extends Notifier<AutofillState> {
   Map<String, FileTags> _tags = const {};
   String? _recordingId;
   bool _cancelled = false;
+  bool _writing = false;
 
   @override
   AutofillState build() => const AutofillState();
@@ -349,8 +350,19 @@ class AutofillController extends Notifier<AutofillState> {
   }
 
   Future<void> _writeFiles(List<FileProposal> chosen, {Map<String, WriteOutcome> keep = const {}}) async {
-    if (chosen.isEmpty) return;
+    // One write at a time: a second tap while the access prompt is up, or
+    // while files are going out, would write every file twice.
+    if (chosen.isEmpty || _writing) return;
 
+    _writing = true;
+    try {
+      await _writeChosen(chosen, keep);
+    } finally {
+      _writing = false;
+    }
+  }
+
+  Future<void> _writeChosen(List<FileProposal> chosen, Map<String, WriteOutcome> keep) async {
     final access = await ref.read(libraryAccessControllerProvider.notifier).ensureWritable();
     if (!ref.mounted) return;
     if (!access.isGranted) {

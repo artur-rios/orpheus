@@ -329,6 +329,23 @@ void main() {
     expect(scanner.requests, hasLength(1));
   });
 
+  test('GivenAWriteIsRunning_WhenWriteIsCalledAgain_ThenEachFileIsStillWrittenOnce', () async {
+    final harness = harnessFor();
+    final controller = controllerOf(harness);
+    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    final held = Completer<void>();
+    harness.tagWriter.hold = held.future;
+
+    final first = controller.write();
+    final second = controller.write();
+    await pumpEventQueue();
+    held.complete();
+    await Future.wait([first, second]);
+    await pumpEventQueue();
+
+    expect(harness.tagWriter.writes.map((w) => w.$1), [record[0].file.path, record[1].file.path]);
+  });
+
   test('GivenAChoiceOfFields_WhenAnAutofillStarts_ThenItIsRememberedForTheNextOne', () async {
     final harness = harnessFor();
 

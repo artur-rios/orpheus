@@ -1328,6 +1328,12 @@ abstract class AppLocalizations {
   /// **'In use by playback — try again once it has moved on'**
   String get autofillOutcomeInUse;
 
+  /// The result shown beside a file that had ticked changes but was never reached, because the owner cancelled the write first.
+  ///
+  /// In en, this message translates to:
+  /// **'Not written — cancelled first'**
+  String get autofillOutcomeNotWritten;
+
   /// The result shown beside a file the system would not let Orpheus change.
   ///
   /// In en, this message translates to:

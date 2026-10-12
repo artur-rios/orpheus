@@ -73,7 +73,9 @@ class _AutofillScreenState extends ConsumerState<AutofillScreen> {
         AutofillStage.idle || AutofillStage.searching => _Waiting(text: l10n.autofillSearching),
         AutofillStage.failed => _Failed(
           failure: state.failure,
-          onRetry: () => unawaited(controller.search(_query.text)),
+          // The original structured lookup again, unless the owner has
+          // edited the words: an empty text takes the structured path.
+          onRetry: () => unawaited(controller.search(_query.text == state.query ? '' : _query.text)),
         ),
         AutofillStage.writing => _Waiting(text: l10n.autofillWriting(state.written, state.total)),
         AutofillStage.finished => _Summary(state: state, onRetry: () => unawaited(controller.retry())),
@@ -393,6 +395,11 @@ class _Summary extends StatelessWidget {
       for (final MapEntry(:key, :value) in state.outcomes.entries)
         if (value != WriteOutcome.written) key: value,
     };
+    // Files that had ticked changes but were never reached: cancelled first.
+    final unreached = [
+      for (final p in state.proposals)
+        if (p.acceptedCount > 0 && !state.outcomes.containsKey(p.entry.file.path)) p.entry.file.path,
+    ];
     final retryable = refused.values.any((o) => o == WriteOutcome.inUse || o == WriteOutcome.failed);
 
     return ListView(
@@ -410,6 +417,12 @@ class _Summary extends StatelessWidget {
               WriteOutcome.unsupported => l10n.autofillOutcomeUnsupported,
               _ => l10n.autofillOutcomeFailed,
             }),
+          ),
+        for (final path in unreached)
+          ListTile(
+            dense: true,
+            title: Text(path.split(RegExp(r'[/\\]')).last),
+            subtitle: Text(l10n.autofillOutcomeNotWritten),
           ),
         if (retryable)
           Align(
