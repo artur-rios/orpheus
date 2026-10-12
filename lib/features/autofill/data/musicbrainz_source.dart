@@ -69,8 +69,10 @@ class MusicBrainzSource implements MetadataSource {
       'Orpheus/${version ?? 'unknown'} ( https://github.com/artur-rios/orpheus )';
 
   /// [term] with every character Lucene would read as syntax escaped.
-  static String escape(String term) =>
-      term.replaceAllMapped(RegExp(r'[+\-&|!(){}\[\]^"~*?:\\/]'), (m) => '\\${m[0]}');
+  static String escape(String term) => term.replaceAllMapped(
+    RegExp(r'[+\-&|!(){}\[\]^"~*?:\\/]'),
+    (m) => '\\${m[0]}',
+  );
 
   /// Lets go of the connections.
   void close() => _client.close();
@@ -107,14 +109,18 @@ class MusicBrainzSource implements MetadataSource {
       for (final track in _list(medium['tracks'])) {
         if (track is! Map<String, dynamic>) continue;
         final recording = track['recording'];
-        final recordingMap = recording is Map<String, dynamic> ? recording : const <String, dynamic>{};
+        final recordingMap = recording is Map<String, dynamic>
+            ? recording
+            : const <String, dynamic>{};
         final credit = _credits(track['artist-credit']);
         tracks.add(
           ReleaseTrack(
             disc: disc,
             position: (track['position'] as num?)?.toInt() ?? tracks.length + 1,
             title: track['title'] as String? ?? '',
-            artistCredit: credit.isNotEmpty ? credit : _credits(recordingMap['artist-credit']),
+            artistCredit: credit.isNotEmpty
+                ? credit
+                : _credits(recordingMap['artist-credit']),
             length: _length(track['length']),
             recordingId: recordingMap['id'] as String?,
           ),
@@ -128,7 +134,9 @@ class MusicBrainzSource implements MetadataSource {
       release: _candidateFrom(body, trackCount: tracks.length),
       tracks: tracks,
       genres: _genres(body['genres']),
-      releaseGroupId: group is Map<String, dynamic> ? group['id'] as String? : null,
+      releaseGroupId: group is Map<String, dynamic>
+          ? group['id'] as String?
+          : null,
     );
   }
 
@@ -156,13 +164,18 @@ class MusicBrainzSource implements MetadataSource {
 
   @override
   Future<Uint8List?> frontCover(String releaseId) async {
-    final uri = Uri.https('coverartarchive.org', '/release/$releaseId/front-500');
+    final uri = Uri.https(
+      'coverartarchive.org',
+      '/release/$releaseId/front-500',
+    );
     var response = await _send(uri);
     // The archive serves its images through a redirect to another host, and
     // an error on the way is usually gone a moment later: asked once more
     // before the owner is told the cover could not be downloaded.
     if (response.statusCode >= 500) {
-      _log.info('the cover archive answered ${response.statusCode}; asking again');
+      _log.info(
+        'the cover archive answered ${response.statusCode}; asking again',
+      );
       await _wait(retryAfter);
       response = await _send(uri);
     }
@@ -175,23 +188,32 @@ class MusicBrainzSource implements MetadataSource {
   }
 
   String _releaseLucene(ReleaseQuery query) => [
-    if (query.album case final album? when album.trim().isNotEmpty) 'release:"${escape(album.trim())}"',
-    if (query.artist case final artist? when artist.trim().isNotEmpty) 'artist:"${escape(artist.trim())}"',
+    if (query.album case final album? when album.trim().isNotEmpty)
+      'release:"${escape(album.trim())}"',
+    if (query.artist case final artist? when artist.trim().isNotEmpty)
+      'artist:"${escape(artist.trim())}"',
   ].join(' AND ');
 
   String _recordingLucene(RecordingQuery query) {
     final duration = query.duration;
 
     return [
-      if (query.title case final title? when title.trim().isNotEmpty) 'recording:"${escape(title.trim())}"',
-      if (query.artist case final artist? when artist.trim().isNotEmpty) 'artist:"${escape(artist.trim())}"',
+      if (query.title case final title? when title.trim().isNotEmpty)
+        'recording:"${escape(title.trim())}"',
+      if (query.artist case final artist? when artist.trim().isNotEmpty)
+        'artist:"${escape(artist.trim())}"',
       if (duration != null)
         'dur:[${max(0, duration.inMilliseconds - 3000)} TO ${duration.inMilliseconds + 3000}]',
     ].join(' AND ');
   }
 
-  Future<Map<String, dynamic>> _json(String path, Map<String, String> parameters) async {
-    final uri = _base.resolve(path).replace(queryParameters: {...parameters, 'fmt': 'json'});
+  Future<Map<String, dynamic>> _json(
+    String path,
+    Map<String, String> parameters,
+  ) async {
+    final uri = _base
+        .resolve(path)
+        .replace(queryParameters: {...parameters, 'fmt': 'json'});
     final response = await _send(uri);
     if (response.statusCode != 200) {
       _log.info('musicbrainz answered ${response.statusCode} for $path');
@@ -248,11 +270,21 @@ class MusicBrainzSource implements MetadataSource {
         _last = _clock();
 
         done.complete(
-          await _client.get(uri, headers: {'User-Agent': userAgent, 'Accept': 'application/json'}).timeout(timeout),
+          await _client
+              .get(
+                uri,
+                headers: {
+                  'User-Agent': userAgent,
+                  'Accept': 'application/json',
+                },
+              )
+              .timeout(timeout),
         );
       } on Object catch (error) {
         _log.info('musicbrainz could not be reached', error);
-        done.completeError(const MetadataSourceException(MetadataSourceFailure.unreachable));
+        done.completeError(
+          const MetadataSourceException(MetadataSourceFailure.unreachable),
+        );
       }
     });
 
@@ -276,12 +308,20 @@ class MusicBrainzSource implements MetadataSource {
   static List<Genre> _genres(Object? value) => [
     for (final genre in _list(value))
       if (genre is Map<String, dynamic>)
-        Genre(name: genre['name'] as String? ?? '', votes: (genre['count'] as num?)?.toInt() ?? 0),
+        Genre(
+          name: genre['name'] as String? ?? '',
+          votes: (genre['count'] as num?)?.toInt() ?? 0,
+        ),
   ]..sort((a, b) => b.votes.compareTo(a.votes));
 
-  static ReleaseCandidate _candidateFrom(Map<String, dynamic> release, {int? trackCount}) {
+  static ReleaseCandidate _candidateFrom(
+    Map<String, dynamic> release, {
+    int? trackCount,
+  }) {
     final group = release['release-group'];
-    final groupMap = group is Map<String, dynamic> ? group : const <String, dynamic>{};
+    final groupMap = group is Map<String, dynamic>
+        ? group
+        : const <String, dynamic>{};
     final media = _list(release['media']);
     final firstMedium = media.firstOrNull;
     final disambiguation = release['disambiguation'] as String?;
@@ -295,9 +335,16 @@ class MusicBrainzSource implements MetadataSource {
       country: release['country'] as String?,
       status: release['status'] as String?,
       primaryType: groupMap['primary-type'] as String?,
-      secondaryTypes: [for (final t in _list(groupMap['secondary-types'])) if (t is String) t],
-      format: firstMedium is Map<String, dynamic> ? firstMedium['format'] as String? : null,
-      disambiguation: disambiguation == null || disambiguation.isEmpty ? null : disambiguation,
+      secondaryTypes: [
+        for (final t in _list(groupMap['secondary-types']))
+          if (t is String) t,
+      ],
+      format: firstMedium is Map<String, dynamic>
+          ? firstMedium['format'] as String?
+          : null,
+      disambiguation: disambiguation == null || disambiguation.isEmpty
+          ? null
+          : disambiguation,
       score: (release['score'] as num?)?.toInt() ?? 0,
     );
   }

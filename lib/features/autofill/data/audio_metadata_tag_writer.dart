@@ -53,7 +53,8 @@ class AudioMetadataTagWriter implements TagWriter {
     if (!canWriteTagsTo(path)) return const {};
 
     return switch (p.extension(path).toLowerCase()) {
-      '.m4a' || '.mp4' => AutofillField.values.toSet()..remove(AutofillField.albumArtist),
+      '.m4a' ||
+      '.mp4' => AutofillField.values.toSet()..remove(AutofillField.albumArtist),
       // Written by Orpheus's own editor rather than the package's: every
       // field, each as the frame the reader reads it from.
       '.mp3' => AutofillField.values.toSet(),
@@ -121,7 +122,8 @@ FileTags _inspect(String path, Set<AutofillField> writable) {
   // An ID3v2 tag the editor will not touch — v2.2, unsynchronised, with an
   // extended header — is found from its header now, so the owner is told
   // before reviewing changes a write would then refuse.
-  if (p.extension(path).toLowerCase() == '.mp3' && unsupportedId3Header(_head(path)) != null) {
+  if (p.extension(path).toLowerCase() == '.mp3' &&
+      unsupportedId3Header(_head(path)) != null) {
     return FileTags.unwritable;
   }
 
@@ -132,7 +134,8 @@ FileTags _inspect(String path, Set<AutofillField> writable) {
   // Vorbis comments. Likewise an MP3 whose only tag is an APE one at its end:
   // the owner would review that, and a write would add an ID3v2 tag.
   final extension = p.extension(path).toLowerCase();
-  if ((extension == '.flac' && tags is! VorbisMetadata) || (extension == '.mp3' && tags is! Mp3Metadata)) {
+  if ((extension == '.flac' && tags is! VorbisMetadata) ||
+      (extension == '.mp3' && tags is! Mp3Metadata)) {
     return FileTags.unwritable;
   }
 
@@ -152,7 +155,8 @@ FileTags _inspect(String path, Set<AutofillField> writable) {
       // is two — and look anything with a digit up in the ID3v1 table, where
       // "80s Pop" is nothing. Only an ID3v1 tag, which has no TCON, has its
       // genre as the reader names it.
-      AutofillField.genre: _nonEmpty(tags.contentType) ?? tags.genres.firstOrNull,
+      AutofillField.genre:
+          _nonEmpty(tags.contentType) ?? tags.genres.firstOrNull,
     },
     Mp4Metadata() => {
       AutofillField.title: tags.title,
@@ -210,11 +214,7 @@ FileTags _inspect(String path, Set<AutofillField> writable) {
     ApeMetadata() => tags.pictures,
   };
 
-  return FileTags(
-    writable: writable,
-    values: values,
-    cover: _front(pictures),
-  );
+  return FileTags(writable: writable, values: values, cover: _front(pictures));
 }
 
 WriteOutcome _write(
@@ -234,15 +234,24 @@ WriteOutcome _write(
     return WriteOutcome.denied;
   }
   if (stat.size != expected.sizeInBytes ||
-      stat.modified.millisecondsSinceEpoch != expected.modifiedAt.millisecondsSinceEpoch) {
+      stat.modified.millisecondsSinceEpoch !=
+          expected.modifiedAt.millisecondsSinceEpoch) {
     return WriteOutcome.changedSinceRead;
   }
 
   switch (p.extension(path).toLowerCase()) {
     case '.flac':
-      return _writeEdited(path, expected, (bytes) => editFlacTags(bytes, values));
+      return _writeEdited(
+        path,
+        expected,
+        (bytes) => editFlacTags(bytes, values),
+      );
     case '.mp3':
-      return _writeEdited(path, expected, (bytes) => editId3Tags(bytes, _keepingId3v1(path, bytes, values)));
+      return _writeEdited(
+        path,
+        expected,
+        (bytes) => editId3Tags(bytes, _keepingId3v1(path, bytes, values)),
+      );
   }
 
   try {
@@ -275,7 +284,9 @@ WriteOutcome _writeEdited(
     final bytes = File(target).readAsBytesSync();
     // What was read is what is rewritten, so it has to be the file the
     // check above saw.
-    if (bytes.length != expected.sizeInBytes) return WriteOutcome.changedSinceRead;
+    if (bytes.length != expected.sizeInBytes) {
+      return WriteOutcome.changedSinceRead;
+    }
 
     replaceFileAtomically(target, edit(bytes));
   } on UnsupportedTagException {
@@ -300,8 +311,13 @@ Map<AutofillField, Object?> _keepingId3v1(
   Map<AutofillField, Object?> values,
 ) {
   bool marker(int offset, String text) =>
-      bytes.length >= offset + 3 && String.fromCharCodes(bytes, offset, offset + 3) == text;
-  if (marker(0, 'ID3') || bytes.length < 128 || !marker(bytes.length - 128, 'TAG')) return values;
+      bytes.length >= offset + 3 &&
+      String.fromCharCodes(bytes, offset, offset + 3) == text;
+  if (marker(0, 'ID3') ||
+      bytes.length < 128 ||
+      !marker(bytes.length - 128, 'TAG')) {
+    return values;
+  }
 
   final current = _inspect(path, AutofillField.values.toSet()).values;
 
@@ -329,7 +345,11 @@ WriteOutcome _outcomeOf(FileSystemException error, String path) {
   try {
     File(path).openSync(mode: FileMode.append).closeSync();
   } on FileSystemException catch (probe) {
-    return outcomeFor(windows: windows, code: code, probeCode: probe.osError?.errorCode);
+    return outcomeFor(
+      windows: windows,
+      code: code,
+      probeCode: probe.osError?.errorCode,
+    );
   }
 
   return outcomeFor(windows: windows, code: code, probeOpened: true);
@@ -354,13 +374,16 @@ WriteOutcome outcomeFor({
   bool probeOpened = false,
 }) {
   if (!windows) {
-    return code == 13 || code == 1 || code == 30 ? WriteOutcome.denied : WriteOutcome.failed;
+    return code == 13 || code == 1 || code == 30
+        ? WriteOutcome.denied
+        : WriteOutcome.failed;
   }
 
   return switch (code) {
     32 || 33 => WriteOutcome.inUse,
     19 => WriteOutcome.denied,
-    5 when probeOpened || probeCode == 32 || probeCode == 33 => WriteOutcome.inUse,
+    5 when probeOpened || probeCode == 32 || probeCode == 33 =>
+      WriteOutcome.inUse,
     5 when probeCode == 5 => WriteOutcome.denied,
     _ => WriteOutcome.failed,
   };
@@ -373,36 +396,63 @@ void _apply(Object tags, Map<AutofillField, Object?> values) {
   int? number(AutofillField field) => values[field] as int?;
   bool has(AutofillField field) => values.containsKey(field);
   final cover = values[AutofillField.cover] as Uint8List?;
-  final picture = cover == null ? null : Picture(cover, _mimeOf(cover), PictureType.coverFront);
+  final picture = cover == null
+      ? null
+      : Picture(cover, _mimeOf(cover), PictureType.coverFront);
 
   switch (tags) {
     case final Mp3Metadata m:
       if (has(AutofillField.title)) m.songName = text(AutofillField.title);
-      if (has(AutofillField.artist)) m.leadPerformer = text(AutofillField.artist);
-      if (has(AutofillField.albumArtist)) m.bandOrOrchestra = text(AutofillField.albumArtist);
+      if (has(AutofillField.artist)) {
+        m.leadPerformer = text(AutofillField.artist);
+      }
+      if (has(AutofillField.albumArtist)) {
+        m.bandOrOrchestra = text(AutofillField.albumArtist);
+      }
       if (has(AutofillField.album)) m.album = text(AutofillField.album);
-      if (has(AutofillField.trackNumber)) m.trackNumber = number(AutofillField.trackNumber);
-      if (has(AutofillField.trackTotal)) m.trackTotal = number(AutofillField.trackTotal);
+      if (has(AutofillField.trackNumber)) {
+        m.trackNumber = number(AutofillField.trackNumber);
+      }
+      if (has(AutofillField.trackTotal)) {
+        m.trackTotal = number(AutofillField.trackTotal);
+      }
       if (has(AutofillField.discNumber) || has(AutofillField.discTotal)) {
-        final disc = has(AutofillField.discNumber) ? number(AutofillField.discNumber) : (m.discNumber ?? _first(m.partOfSet));
-        final total = has(AutofillField.discTotal) ? number(AutofillField.discTotal) : (m.totalDics ?? _second(m.partOfSet));
+        final disc = has(AutofillField.discNumber)
+            ? number(AutofillField.discNumber)
+            : (m.discNumber ?? _first(m.partOfSet));
+        final total = has(AutofillField.discTotal)
+            ? number(AutofillField.discTotal)
+            : (m.totalDics ?? _second(m.partOfSet));
         m.discNumber = disc;
         m.totalDics = total;
-        m.partOfSet = disc == null ? null : (total == null ? '$disc' : '$disc/$total');
+        m.partOfSet = disc == null
+            ? null
+            : (total == null ? '$disc' : '$disc/$total');
       }
       if (has(AutofillField.year)) m.year = number(AutofillField.year);
       if (has(AutofillField.genre)) m.genres = [?text(AutofillField.genre)];
       if (picture != null) {
-        m.pictures = [picture, ...m.pictures.where((p) => p.pictureType != PictureType.coverFront)];
+        m.pictures = [
+          picture,
+          ...m.pictures.where((p) => p.pictureType != PictureType.coverFront),
+        ];
       }
     case final Mp4Metadata m:
       if (has(AutofillField.title)) m.title = text(AutofillField.title);
       if (has(AutofillField.artist)) m.artist = text(AutofillField.artist);
       if (has(AutofillField.album)) m.album = text(AutofillField.album);
-      if (has(AutofillField.trackNumber)) m.trackNumber = number(AutofillField.trackNumber);
-      if (has(AutofillField.trackTotal)) m.totalTracks = number(AutofillField.trackTotal);
-      if (has(AutofillField.discNumber)) m.discNumber = number(AutofillField.discNumber);
-      if (has(AutofillField.discTotal)) m.totalDiscs = number(AutofillField.discTotal);
+      if (has(AutofillField.trackNumber)) {
+        m.trackNumber = number(AutofillField.trackNumber);
+      }
+      if (has(AutofillField.trackTotal)) {
+        m.totalTracks = number(AutofillField.trackTotal);
+      }
+      if (has(AutofillField.discNumber)) {
+        m.discNumber = number(AutofillField.discNumber);
+      }
+      if (has(AutofillField.discTotal)) {
+        m.totalDiscs = number(AutofillField.discTotal);
+      }
       if (has(AutofillField.year)) {
         final year = number(AutofillField.year);
         m.year = year == null ? null : DateTime(year);
@@ -412,55 +462,88 @@ void _apply(Object tags, Map<AutofillField, Object?> values) {
     case final VorbisMetadata m:
       if (has(AutofillField.title)) m.title = [?text(AutofillField.title)];
       if (has(AutofillField.artist)) m.artist = [?text(AutofillField.artist)];
-      if (has(AutofillField.albumArtist)) m.albumArtist = [?text(AutofillField.albumArtist)];
+      if (has(AutofillField.albumArtist)) {
+        m.albumArtist = [?text(AutofillField.albumArtist)];
+      }
       if (has(AutofillField.album)) m.album = [?text(AutofillField.album)];
-      if (has(AutofillField.trackNumber)) m.trackNumber = [?number(AutofillField.trackNumber)];
-      if (has(AutofillField.trackTotal)) m.trackTotal = number(AutofillField.trackTotal);
-      if (has(AutofillField.discNumber)) m.discNumber = number(AutofillField.discNumber);
-      if (has(AutofillField.discTotal)) m.discTotal = number(AutofillField.discTotal);
+      if (has(AutofillField.trackNumber)) {
+        m.trackNumber = [?number(AutofillField.trackNumber)];
+      }
+      if (has(AutofillField.trackTotal)) {
+        m.trackTotal = number(AutofillField.trackTotal);
+      }
+      if (has(AutofillField.discNumber)) {
+        m.discNumber = number(AutofillField.discNumber);
+      }
+      if (has(AutofillField.discTotal)) {
+        m.discTotal = number(AutofillField.discTotal);
+      }
       if (has(AutofillField.year)) {
         final year = number(AutofillField.year);
         m.date = year == null ? [] : [DateTime(year)];
       }
       if (has(AutofillField.genre)) m.genres = [?text(AutofillField.genre)];
       if (picture != null) {
-        m.pictures = [picture, ...m.pictures.where((p) => p.pictureType != PictureType.coverFront)];
+        m.pictures = [
+          picture,
+          ...m.pictures.where((p) => p.pictureType != PictureType.coverFront),
+        ];
       }
     case final RiffMetadata m:
       if (has(AutofillField.title)) m.title = text(AutofillField.title);
       if (has(AutofillField.artist)) m.artist = text(AutofillField.artist);
       if (has(AutofillField.album)) m.album = text(AutofillField.album);
-      if (has(AutofillField.trackNumber)) m.trackNumber = number(AutofillField.trackNumber);
+      if (has(AutofillField.trackNumber)) {
+        m.trackNumber = number(AutofillField.trackNumber);
+      }
       if (has(AutofillField.year)) {
         final year = number(AutofillField.year);
         m.year = year == null ? null : DateTime(year);
       }
       if (has(AutofillField.genre)) m.genre = text(AutofillField.genre);
       if (picture != null) {
-        m.pictures = [picture, ...m.pictures.where((p) => p.pictureType != PictureType.coverFront)];
+        m.pictures = [
+          picture,
+          ...m.pictures.where((p) => p.pictureType != PictureType.coverFront),
+        ];
       }
     case final ApeMetadata m:
       if (has(AutofillField.title)) m.title = text(AutofillField.title);
       if (has(AutofillField.artist)) m.artist = text(AutofillField.artist);
-      if (has(AutofillField.albumArtist)) m.albumArtist = text(AutofillField.albumArtist);
+      if (has(AutofillField.albumArtist)) {
+        m.albumArtist = text(AutofillField.albumArtist);
+      }
       if (has(AutofillField.album)) m.album = text(AutofillField.album);
-      if (has(AutofillField.trackNumber)) m.trackNumber = number(AutofillField.trackNumber);
-      if (has(AutofillField.trackTotal)) m.trackTotal = number(AutofillField.trackTotal);
-      if (has(AutofillField.discNumber)) m.discNumber = number(AutofillField.discNumber);
-      if (has(AutofillField.discTotal)) m.discTotal = number(AutofillField.discTotal);
+      if (has(AutofillField.trackNumber)) {
+        m.trackNumber = number(AutofillField.trackNumber);
+      }
+      if (has(AutofillField.trackTotal)) {
+        m.trackTotal = number(AutofillField.trackTotal);
+      }
+      if (has(AutofillField.discNumber)) {
+        m.discNumber = number(AutofillField.discNumber);
+      }
+      if (has(AutofillField.discTotal)) {
+        m.discTotal = number(AutofillField.discTotal);
+      }
       if (has(AutofillField.year)) {
         final year = number(AutofillField.year);
         m.date = year == null ? null : DateTime(year);
       }
       if (has(AutofillField.genre)) m.genres = [?text(AutofillField.genre)];
       if (picture != null) {
-        m.pictures = [picture, ...m.pictures.where((p) => p.pictureType != PictureType.coverFront)];
+        m.pictures = [
+          picture,
+          ...m.pictures.where((p) => p.pictureType != PictureType.coverFront),
+        ];
       }
   }
 }
 
 String _mimeOf(Uint8List bytes) =>
-    bytes.length > 3 && bytes[0] == 0x89 && bytes[1] == 0x50 ? 'image/png' : 'image/jpeg';
+    bytes.length > 3 && bytes[0] == 0x89 && bytes[1] == 0x50
+    ? 'image/png'
+    : 'image/jpeg';
 
 Uint8List? _front(List<Picture> pictures) {
   for (final picture in pictures) {
@@ -481,11 +564,13 @@ Uint8List _head(String path) {
 }
 
 /// Every value of a field that can repeat, as one: `Rock; Pop`.
-String? _joined(List<String> values) => values.isEmpty ? null : values.join('; ');
+String? _joined(List<String> values) =>
+    values.isEmpty ? null : values.join('; ');
 
 String? _nonEmpty(String? text) => text == null || text.isEmpty ? null : text;
 
-int? _first(String? partOfSet) => int.tryParse((partOfSet ?? '').split('/').first.trim());
+int? _first(String? partOfSet) =>
+    int.tryParse((partOfSet ?? '').split('/').first.trim());
 
 int? _second(String? partOfSet) {
   final parts = (partOfSet ?? '').split('/');

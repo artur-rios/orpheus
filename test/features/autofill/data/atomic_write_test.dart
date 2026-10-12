@@ -9,13 +9,16 @@ import 'package:path/path.dart' as p;
 void main() {
   late Directory root;
 
-  setUp(() async => root = await Directory.systemTemp.createTemp('orpheus-atomic'));
+  setUp(
+    () async => root = await Directory.systemTemp.createTemp('orpheus-atomic'),
+  );
   tearDown(() async {
     if (root.existsSync()) await root.delete(recursive: true);
   });
 
   List<String> namesIn(Directory directory) =>
-      [for (final entity in directory.listSync()) p.basename(entity.path)]..sort();
+      [for (final entity in directory.listSync()) p.basename(entity.path)]
+        ..sort();
 
   test('GivenAFile_WhenReplacedAtomically_ThenItHoldsTheNewBytesAndNoTemporaryFileRemains', () {
     final path = p.join(root.path, 'a.flac');
@@ -66,20 +69,30 @@ void main() {
     expect(resolvedTarget(path), path);
   });
 
-  test('GivenNothingAtThePath_WhenItsTargetIsResolved_ThenItIsThatPathUnchanged', () {
-    final path = p.join(root.path, 'gone.flac');
+  test(
+    'GivenNothingAtThePath_WhenItsTargetIsResolved_ThenItIsThatPathUnchanged',
+    () {
+      final path = p.join(root.path, 'gone.flac');
 
-    expect(resolvedTarget(path), path);
-  });
+      expect(resolvedTarget(path), path);
+    },
+  );
 
-  test('GivenASymbolicLink_WhenItsTargetIsResolved_ThenItIsTheFileItPointsAt', () {
-    final target = p.join(root.path, 'real.flac');
-    File(target).writeAsBytesSync([1]);
-    final link = Link(p.join(root.path, 'a.flac'))..createSync(target);
+  test(
+    'GivenASymbolicLink_WhenItsTargetIsResolved_ThenItIsTheFileItPointsAt',
+    () {
+      final target = p.join(root.path, 'real.flac');
+      File(target).writeAsBytesSync([1]);
+      final link = Link(p.join(root.path, 'a.flac'))..createSync(target);
 
-    expect(FileSystemEntity.identicalSync(resolvedTarget(link.path), target), isTrue);
-    expect(FileSystemEntity.isLinkSync(resolvedTarget(link.path)), isFalse);
-  }, skip: _noLinks);
+      expect(
+        FileSystemEntity.identicalSync(resolvedTarget(link.path), target),
+        isTrue,
+      );
+      expect(FileSystemEntity.isLinkSync(resolvedTarget(link.path)), isFalse);
+    },
+    skip: _noLinks,
+  );
 
   test('GivenASymbolicLink_WhenReplacedAtomically_ThenTheFileItPointsAtIsReplacedAndTheLinkKept', () {
     final target = p.join(root.path, 'real.flac');
@@ -94,42 +107,56 @@ void main() {
     expect(namesIn(root), ['a.flac', 'real.flac']);
   }, skip: _noLinks);
 
-  test('GivenALinkToNothing_WhenReplacedAtomically_ThenItThrowsAndCreatesNothing', () {
-    final link = Link(p.join(root.path, 'a.flac'))..createSync(p.join(root.path, 'gone.flac'));
+  test(
+    'GivenALinkToNothing_WhenReplacedAtomically_ThenItThrowsAndCreatesNothing',
+    () {
+      final link = Link(p.join(root.path, 'a.flac'))
+        ..createSync(p.join(root.path, 'gone.flac'));
 
-    expect(
-      () => replaceFileAtomically(link.path, Uint8List.fromList([4, 5, 6])),
-      throwsA(isA<FileSystemException>()),
-    );
+      expect(
+        () => replaceFileAtomically(link.path, Uint8List.fromList([4, 5, 6])),
+        throwsA(isA<FileSystemException>()),
+      );
 
-    expect(namesIn(root), ['a.flac']);
-    expect(FileSystemEntity.isLinkSync(link.path), isTrue);
-  }, skip: _noLinks);
+      expect(namesIn(root), ['a.flac']);
+      expect(FileSystemEntity.isLinkSync(link.path), isTrue);
+    },
+    skip: _noLinks,
+  );
 
-  test('GivenAReadOnlyFile_WhenReplacedAtomically_ThenItIsRefusedAndLeftAsItWas', () {
-    final path = p.join(root.path, 'a.flac');
-    File(path).writeAsBytesSync([1, 2, 3]);
-    final marked = Platform.isWindows
-        ? Process.runSync('attrib', ['+R', path])
-        : Process.runSync('chmod', ['444', path]);
-    expect(marked.exitCode, 0);
-    addTearDown(
-      () => Platform.isWindows ? Process.runSync('attrib', ['-R', path]) : Process.runSync('chmod', ['644', path]),
-    );
+  test(
+    'GivenAReadOnlyFile_WhenReplacedAtomically_ThenItIsRefusedAndLeftAsItWas',
+    () {
+      final path = p.join(root.path, 'a.flac');
+      File(path).writeAsBytesSync([1, 2, 3]);
+      final marked = Platform.isWindows
+          ? Process.runSync('attrib', ['+R', path])
+          : Process.runSync('chmod', ['444', path]);
+      expect(marked.exitCode, 0);
+      addTearDown(
+        () => Platform.isWindows
+            ? Process.runSync('attrib', ['-R', path])
+            : Process.runSync('chmod', ['644', path]),
+      );
 
-    expect(
-      () => replaceFileAtomically(path, Uint8List.fromList([4, 5, 6])),
-      throwsA(isA<FileSystemException>()),
-    );
+      expect(
+        () => replaceFileAtomically(path, Uint8List.fromList([4, 5, 6])),
+        throwsA(isA<FileSystemException>()),
+      );
 
-    expect(File(path).readAsBytesSync(), [1, 2, 3]);
-    expect(namesIn(root), ['a.flac']);
-  }, skip: _isRoot ? 'a superuser writes to read-only files' : null);
+      expect(File(path).readAsBytesSync(), [1, 2, 3]);
+      expect(namesIn(root), ['a.flac']);
+    },
+    skip: _isRoot ? 'a superuser writes to read-only files' : null,
+  );
 }
 
 /// Why the symbolic-link tests are skipped, where they are: on Windows,
 /// creating a link may need a privilege the test runner does not have.
-final String? _noLinks = Platform.isWindows ? 'creating a symbolic link on Windows may need privileges' : null;
+final String? _noLinks = Platform.isWindows
+    ? 'creating a symbolic link on Windows may need privileges'
+    : null;
 
 /// Whether this runs as root, which no file mode refuses.
-final bool _isRoot = !Platform.isWindows && Platform.environment['USER'] == 'root';
+final bool _isRoot =
+    !Platform.isWindows && Platform.environment['USER'] == 'root';

@@ -21,8 +21,20 @@ import '../../../support/test_container.dart';
 /// Search, review, write, rescan — with every edge doubled.
 void main() {
   final record = [
-    entry(id: 'ok1', title: 'Airbag', artist: 'Radiohed', album: 'OK Computer', track: 1),
-    entry(id: 'ok2', title: 'Paranoid Android', artist: 'Radiohed', album: 'OK Computer', track: 2),
+    entry(
+      id: 'ok1',
+      title: 'Airbag',
+      artist: 'Radiohed',
+      album: 'OK Computer',
+      track: 1,
+    ),
+    entry(
+      id: 'ok2',
+      title: 'Paranoid Android',
+      artist: 'Radiohed',
+      album: 'OK Computer',
+      track: 2,
+    ),
   ];
 
   const candidate = ReleaseCandidate(
@@ -45,8 +57,18 @@ void main() {
   ReleaseDetail detailOf(ReleaseCandidate release) => ReleaseDetail(
     release: release,
     tracks: const [
-      ReleaseTrack(disc: 1, position: 1, title: 'Airbag', artistCredit: [ArtistCredit(name: 'Radiohead')]),
-      ReleaseTrack(disc: 1, position: 2, title: 'Paranoid Android', artistCredit: [ArtistCredit(name: 'Radiohead')]),
+      ReleaseTrack(
+        disc: 1,
+        position: 1,
+        title: 'Airbag',
+        artistCredit: [ArtistCredit(name: 'Radiohead')],
+      ),
+      ReleaseTrack(
+        disc: 1,
+        position: 2,
+        title: 'Paranoid Android',
+        artistCredit: [ArtistCredit(name: 'Radiohead')],
+      ),
     ],
   );
 
@@ -61,7 +83,13 @@ void main() {
           ScriptedScanner([
             ScanCompleted(
               catalog: MusicCatalog(entries: albumArtistsAcross(record)),
-              report: const ScanReport(tracks: 2, added: 0, updated: 0, removed: 0, reused: 2),
+              report: const ScanReport(
+                tracks: 2,
+                added: 0,
+                updated: 0,
+                removed: 0,
+                reused: 2,
+              ),
             ),
           ]),
       settings: InMemorySettingsStore(libraryFolders: const ['/music']),
@@ -72,7 +100,11 @@ void main() {
     for (final e in record) {
       harness.tagWriter.files[e.file.path] = FileTags(
         writable: AutofillField.values.toSet(),
-        values: {AutofillField.title: e.title, AutofillField.artist: 'Radiohed', AutofillField.album: 'OK Computer'},
+        values: {
+          AutofillField.title: e.title,
+          AutofillField.artist: 'Radiohed',
+          AutofillField.album: 'OK Computer',
+        },
       );
     }
 
@@ -87,7 +119,13 @@ void main() {
   ScriptedScanner completingScanner() => ScriptedScanner([
     ScanCompleted(
       catalog: MusicCatalog(entries: albumArtistsAcross(record)),
-      report: const ScanReport(tracks: 2, added: 0, updated: 2, removed: 0, reused: 0),
+      report: const ScanReport(
+        tracks: 2,
+        added: 0,
+        updated: 2,
+        removed: 0,
+        reused: 0,
+      ),
     ),
   ]);
 
@@ -98,12 +136,14 @@ void main() {
     return harness.read(autofillControllerProvider.notifier);
   }
 
-  AutofillState stateOf(Harness harness) => harness.read(autofillControllerProvider);
+  AutofillState stateOf(Harness harness) =>
+      harness.read(autofillControllerProvider);
 
   test('GivenARecord_WhenAnAutofillStarts_ThenTheBestReleaseIsChosenAndOnlyRealChangesAreProposed', () async {
     final harness = harnessFor();
 
-    await controllerOf(harness).start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    await controllerOf(harness)
+        .start(record, {AutofillField.artist}, kind: AutofillKind.record);
 
     final state = stateOf(harness);
     expect(state.stage, AutofillStage.reviewing);
@@ -117,7 +157,9 @@ void main() {
   test('GivenTheOwnerPicksAnotherRelease_WhenItIsChosen_ThenItIsFetchedAndTheProposalsRebuilt', () async {
     final harness = harnessFor();
     final controller = controllerOf(harness);
-    await controller.start(record, {AutofillField.album}, kind: AutofillKind.record);
+    await controller.start(record, {
+      AutofillField.album,
+    }, kind: AutofillKind.record);
     expect(stateOf(harness).acceptedCount, 0);
 
     await controller.chooseRelease('rel-2');
@@ -129,33 +171,45 @@ void main() {
   test('GivenTheOwnerUnticksAChange_WhenTheyWrite_ThenOnlyTheTickedOnesAreWrittenAndTheLibraryRescanned', () async {
     final harness = harnessFor();
     final controller = controllerOf(harness);
-    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    await controller.start(record, {
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
     controller.toggle(record.first.file.path, AutofillField.artist);
 
     await controller.write();
 
     expect(harness.tagWriter.writes, hasLength(1));
     expect(harness.tagWriter.writes.single.$1, record[1].file.path);
-    expect(harness.tagWriter.writes.single.$2, {AutofillField.artist: 'Radiohead'});
+    expect(harness.tagWriter.writes.single.$2, {
+      AutofillField.artist: 'Radiohead',
+    });
     expect(stateOf(harness).stage, AutofillStage.finished);
-    expect(stateOf(harness).outcomes[record[1].file.path], WriteOutcome.written);
+    expect(
+      stateOf(harness).outcomes[record[1].file.path],
+      WriteOutcome.written,
+    );
   });
 
-  test('GivenNoNetwork_WhenAnAutofillStarts_ThenItFailsAsUnreachable', () async {
-    final harness = harnessFor();
-    harness.metadata.failure = MetadataSourceFailure.unreachable;
+  test(
+    'GivenNoNetwork_WhenAnAutofillStarts_ThenItFailsAsUnreachable',
+    () async {
+      final harness = harnessFor();
+      harness.metadata.failure = MetadataSourceFailure.unreachable;
 
-    await controllerOf(harness).start(record, {AutofillField.artist}, kind: AutofillKind.record);
+      await controllerOf(harness)
+          .start(record, {AutofillField.artist}, kind: AutofillKind.record);
 
-    expect(stateOf(harness).stage, AutofillStage.failed);
-    expect(stateOf(harness).failure, MetadataSourceFailure.unreachable);
-  });
+      expect(stateOf(harness).stage, AutofillStage.failed);
+      expect(stateOf(harness).failure, MetadataSourceFailure.unreachable);
+    },
+  );
 
   test('GivenNothingIsFound_WhenAnAutofillStarts_ThenItReviewsNothingWithTheQueryEditable', () async {
     final harness = harnessFor();
     harness.metadata.candidates = const [];
 
-    await controllerOf(harness).start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    await controllerOf(harness)
+        .start(record, {AutofillField.artist}, kind: AutofillKind.record);
 
     expect(stateOf(harness).stage, AutofillStage.reviewing);
     expect(stateOf(harness).release, isNull);
@@ -165,7 +219,9 @@ void main() {
   test('GivenATypedSearchThatFailed_WhenTheLookupIsRetried_ThenTheTypedWordsAreSentAgainAndTheQueryStays', () async {
     final harness = harnessFor();
     final controller = controllerOf(harness);
-    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    await controller.start(record, {
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
     harness.metadata.failure = MetadataSourceFailure.unreachable;
     await controller.search('  kid a  ');
     expect(stateOf(harness).stage, AutofillStage.failed);
@@ -182,7 +238,9 @@ void main() {
     final harness = harnessFor();
     harness.metadata.failure = MetadataSourceFailure.unreachable;
     final controller = controllerOf(harness);
-    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    await controller.start(record, {
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
     expect(stateOf(harness).stage, AutofillStage.failed);
 
     harness.metadata.failure = null;
@@ -193,21 +251,32 @@ void main() {
     expect(stateOf(harness).query, 'OK Computer Radiohed');
   });
 
-  test('GivenTheOwnersOwnWords_WhenTheySearchAgain_ThenTheirWordsAreSent', () async {
-    final harness = harnessFor();
-    final controller = controllerOf(harness);
-    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+  test(
+    'GivenTheOwnersOwnWords_WhenTheySearchAgain_ThenTheirWordsAreSent',
+    () async {
+      final harness = harnessFor();
+      final controller = controllerOf(harness);
+      await controller.start(record, {
+        AutofillField.artist,
+      }, kind: AutofillKind.record);
 
-    await controller.search('radiohead ok computer');
+      await controller.search('radiohead ok computer');
 
-    expect(harness.metadata.releaseQueries.last.text, 'radiohead ok computer');
-  });
+      expect(
+        harness.metadata.releaseQueries.last.text,
+        'radiohead ok computer',
+      );
+    },
+  );
 
   test('GivenTheOwnerRefusesWriteAccess_WhenTheyWrite_ThenNothingIsWrittenAndTheRefusalIsShown', () async {
-    final access = FakeLibraryAccess()..writeDecision = LibraryAccessDecision.denied;
+    final access = FakeLibraryAccess()
+      ..writeDecision = LibraryAccessDecision.denied;
     final harness = harnessFor(access: access);
     final controller = controllerOf(harness);
-    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    await controller.start(record, {
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
 
     await controller.write();
 
@@ -220,24 +289,38 @@ void main() {
     final harness = harnessFor();
     harness.tagWriter.refusals[record.first.file.path] = WriteOutcome.inUse;
     final controller = controllerOf(harness);
-    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    await controller.start(record, {
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
 
     await controller.write();
-    expect(stateOf(harness).outcomes[record.first.file.path], WriteOutcome.inUse);
-    expect(stateOf(harness).outcomes[record[1].file.path], WriteOutcome.written);
+    expect(
+      stateOf(harness).outcomes[record.first.file.path],
+      WriteOutcome.inUse,
+    );
+    expect(
+      stateOf(harness).outcomes[record[1].file.path],
+      WriteOutcome.written,
+    );
 
     harness.tagWriter.refusals.clear();
     await controller.retry();
 
-    expect(stateOf(harness).outcomes[record.first.file.path], WriteOutcome.written);
+    expect(
+      stateOf(harness).outcomes[record.first.file.path],
+      WriteOutcome.written,
+    );
     expect(harness.tagWriter.writes, hasLength(2));
   });
 
   test('GivenTheCoverIsChosen_WhenTheReleaseHasOne_ThenItIsFetchedOnceAndProposedForEveryFile', () async {
     final harness = harnessFor();
-    harness.metadata.covers = {'rel-1': Uint8List.fromList([9, 9])};
+    harness.metadata.covers = {
+      'rel-1': Uint8List.fromList([9, 9]),
+    };
 
-    await controllerOf(harness).start(record, {AutofillField.cover}, kind: AutofillKind.record);
+    await controllerOf(harness)
+        .start(record, {AutofillField.cover}, kind: AutofillKind.record);
 
     expect(harness.metadata.coversFetched, ['rel-1']);
     expect(stateOf(harness).acceptedCount, 2);
@@ -248,7 +331,10 @@ void main() {
     final controller = controllerOf(harness);
     harness.metadata.covers = const {};
 
-    await controller.start(record, {AutofillField.cover, AutofillField.artist}, kind: AutofillKind.record);
+    await controller.start(record, {
+      AutofillField.cover,
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
 
     expect(stateOf(harness).coverMissing, isTrue);
     expect(stateOf(harness).coverUnavailable, isFalse);
@@ -260,7 +346,10 @@ void main() {
     final controller = controllerOf(harness);
     harness.metadata.coverFailure = MetadataSourceFailure.unreachable;
 
-    await controller.start(record, {AutofillField.cover, AutofillField.artist}, kind: AutofillKind.record);
+    await controller.start(record, {
+      AutofillField.cover,
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
 
     expect(stateOf(harness).stage, AutofillStage.reviewing);
     expect(stateOf(harness).coverUnavailable, isTrue);
@@ -273,14 +362,21 @@ void main() {
     final controller = controllerOf(harness);
     harness.metadata
       ..releases = {
-        'rel-1': ReleaseDetail(release: candidate, tracks: detailOf(candidate).tracks, releaseGroupId: 'group-1'),
+        'rel-1': ReleaseDetail(
+          release: candidate,
+          tracks: detailOf(candidate).tracks,
+          releaseGroupId: 'group-1',
+        ),
       }
       ..groupGenres = const {
         'group-1': [Genre(name: 'rock', votes: 1)],
       }
       ..groupGenresFailure = MetadataSourceFailure.unreachable;
 
-    await controller.start(record, {AutofillField.genre, AutofillField.artist}, kind: AutofillKind.record);
+    await controller.start(record, {
+      AutofillField.genre,
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
 
     final state = stateOf(harness);
     expect(state.stage, AutofillStage.reviewing);
@@ -297,10 +393,15 @@ void main() {
     final harness = harnessFor();
     final held = Completer<void>();
     harness.metadata.hold = held.future;
-    final subscription = harness.container.listen(autofillControllerProvider, (_, _) {});
+    final subscription = harness.container.listen(
+      autofillControllerProvider,
+      (_, _) {},
+    );
     final controller = harness.read(autofillControllerProvider.notifier);
 
-    final started = controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    final started = controller.start(record, {
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
     subscription.close();
     await pumpEventQueue();
     expect(harness.container.exists(autofillControllerProvider), isFalse);
@@ -311,9 +412,14 @@ void main() {
 
   test('GivenTheOwnerClosesTheScreenMidRelease_WhenTheAnswerArrives_ThenNothingThrows', () async {
     final harness = harnessFor();
-    final subscription = harness.container.listen(autofillControllerProvider, (_, _) {});
+    final subscription = harness.container.listen(
+      autofillControllerProvider,
+      (_, _) {},
+    );
     final controller = harness.read(autofillControllerProvider.notifier);
-    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    await controller.start(record, {
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
     final held = Completer<void>();
     harness.metadata.hold = held.future;
 
@@ -330,9 +436,14 @@ void main() {
   test('GivenTheOwnerClosesTheScreenMidWrite_WhenTheWriteArrives_ThenEveryConfirmedFileIsWrittenAndTheLibraryRescanned', () async {
     final scanner = completingScanner();
     final harness = harnessFor(scanner: scanner);
-    final subscription = harness.container.listen(autofillControllerProvider, (_, _) {});
+    final subscription = harness.container.listen(
+      autofillControllerProvider,
+      (_, _) {},
+    );
     final controller = harness.read(autofillControllerProvider.notifier);
-    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    await controller.start(record, {
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
     final held = Completer<void>();
     harness.tagWriter.hold = held.future;
 
@@ -345,43 +456,60 @@ void main() {
 
     await expectLater(writing, completes);
     await pumpEventQueue();
-    expect(harness.tagWriter.writes.map((w) => w.$1), [record[0].file.path, record[1].file.path]);
+    expect(harness.tagWriter.writes.map((w) => w.$1), [
+      record[0].file.path,
+      record[1].file.path,
+    ]);
     expect(scanner.requests, hasLength(1));
   });
 
   test('GivenATrackIsPlaying_WhenTheOwnerWrites_ThenItIsWrittenLast', () async {
     final harness = harnessFor();
     final controller = controllerOf(harness);
-    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
-    await harness.read(audioPlaybackControllerProvider.notifier).playTrack(record.first.file);
+    await controller.start(record, {
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
+    await harness
+        .read(audioPlaybackControllerProvider.notifier)
+        .playTrack(record.first.file);
 
     await controller.write();
 
-    expect(harness.tagWriter.writes.map((w) => w.$1), [record[1].file.path, record[0].file.path]);
+    expect(harness.tagWriter.writes.map((w) => w.$1), [
+      record[1].file.path,
+      record[0].file.path,
+    ]);
   });
 
-  test('GivenEveryWriteIsRefused_WhenTheyFinish_ThenNoRescanIsRequested', () async {
-    final scanner = completingScanner();
-    final harness = harnessFor(scanner: scanner);
-    for (final e in record) {
-      harness.tagWriter.refusals[e.file.path] = WriteOutcome.inUse;
-    }
-    final controller = controllerOf(harness);
-    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+  test(
+    'GivenEveryWriteIsRefused_WhenTheyFinish_ThenNoRescanIsRequested',
+    () async {
+      final scanner = completingScanner();
+      final harness = harnessFor(scanner: scanner);
+      for (final e in record) {
+        harness.tagWriter.refusals[e.file.path] = WriteOutcome.inUse;
+      }
+      final controller = controllerOf(harness);
+      await controller.start(record, {
+        AutofillField.artist,
+      }, kind: AutofillKind.record);
 
-    await controller.write();
-    await pumpEventQueue();
+      await controller.write();
+      await pumpEventQueue();
 
-    expect(stateOf(harness).stage, AutofillStage.finished);
-    expect(harness.tagWriter.writes, isEmpty);
-    expect(scanner.requests, isEmpty);
-  });
+      expect(stateOf(harness).stage, AutofillStage.finished);
+      expect(harness.tagWriter.writes, isEmpty);
+      expect(scanner.requests, isEmpty);
+    },
+  );
 
   test('GivenTheOwnerCancels_WhenTheFileBeingWrittenFinishes_ThenTheRestAreLeftAndTheLibraryIsRescanned', () async {
     final scanner = completingScanner();
     final harness = harnessFor(scanner: scanner);
     final controller = controllerOf(harness);
-    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    await controller.start(record, {
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
     final held = Completer<void>();
     harness.tagWriter.hold = held.future;
 
@@ -400,7 +528,9 @@ void main() {
   test('GivenAWriteIsRunning_WhenWriteIsCalledAgain_ThenEachFileIsStillWrittenOnce', () async {
     final harness = harnessFor();
     final controller = controllerOf(harness);
-    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    await controller.start(record, {
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
     final held = Completer<void>();
     harness.tagWriter.hold = held.future;
 
@@ -411,30 +541,49 @@ void main() {
     await Future.wait([first, second]);
     await pumpEventQueue();
 
-    expect(harness.tagWriter.writes.map((w) => w.$1), [record[0].file.path, record[1].file.path]);
+    expect(harness.tagWriter.writes.map((w) => w.$1), [
+      record[0].file.path,
+      record[1].file.path,
+    ]);
   });
 
-  test('GivenAChoiceOfFields_WhenAnAutofillStarts_ThenItIsRememberedForTheNextOne', () async {
-    final harness = harnessFor();
+  test(
+    'GivenAChoiceOfFields_WhenAnAutofillStarts_ThenItIsRememberedForTheNextOne',
+    () async {
+      final harness = harnessFor();
 
-    await controllerOf(harness).start(record, {AutofillField.genre, AutofillField.cover}, kind: AutofillKind.record);
+      await controllerOf(harness).start(record, {
+        AutofillField.genre,
+        AutofillField.cover,
+      }, kind: AutofillKind.record);
 
-    expect(
-      AutofillField.decode(harness.settings.getString(AutofillController.fieldsSettingsKey)),
-      {AutofillField.genre, AutofillField.cover},
-    );
-  });
+      expect(
+        AutofillField.decode(
+          harness.settings.getString(AutofillController.fieldsSettingsKey),
+        ),
+        {AutofillField.genre, AutofillField.cover},
+      );
+    },
+  );
 
   test('GivenWritesFinish_WhenTheyDo_ThenTheLibraryIsRescanned', () async {
     final scanner = ScriptedScanner([
       ScanCompleted(
         catalog: MusicCatalog(entries: albumArtistsAcross(record)),
-        report: const ScanReport(tracks: 2, added: 0, updated: 2, removed: 0, reused: 0),
+        report: const ScanReport(
+          tracks: 2,
+          added: 0,
+          updated: 2,
+          removed: 0,
+          reused: 0,
+        ),
       ),
     ]);
     final harness = harnessFor(scanner: scanner);
     final controller = controllerOf(harness);
-    await controller.start(record, {AutofillField.artist}, kind: AutofillKind.record);
+    await controller.start(record, {
+      AutofillField.artist,
+    }, kind: AutofillKind.record);
 
     await controller.write();
     await Future<void>.delayed(Duration.zero);

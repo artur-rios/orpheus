@@ -36,7 +36,9 @@ void replaceFileAtomically(String path, Uint8List bytes) {
   // there, which opening to append would create.
   if (target.existsSync()) target.openSync(mode: FileMode.append).closeSync();
 
-  final temporary = File('$resolved.orpheus-$pid-${DateTime.now().microsecondsSinceEpoch}.tmp');
+  final temporary = File(
+    '$resolved.orpheus-$pid-${DateTime.now().microsecondsSinceEpoch}.tmp',
+  );
   try {
     temporary.writeAsBytesSync(bytes, flush: true);
     temporary.renameSync(resolved);
@@ -58,5 +60,6 @@ void replaceFileAtomically(String path, Uint8List bytes) {
 /// detached copy with the new tags, and the real file without them.
 ///
 /// Throws a [FileSystemException] for a link that points at nothing.
-String resolvedTarget(String path) =>
-    FileSystemEntity.isLinkSync(path) ? File(path).resolveSymbolicLinksSync() : path;
+String resolvedTarget(String path) => FileSystemEntity.isLinkSync(path)
+    ? File(path).resolveSymbolicLinksSync()
+    : path;

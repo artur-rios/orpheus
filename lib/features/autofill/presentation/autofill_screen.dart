@@ -20,7 +20,12 @@ import 'autofill_field_names.dart';
 /// Where the owner sees every change an autofill would make, and confirms it.
 class AutofillScreen extends ConsumerStatefulWidget {
   /// Creates the screen for [entries].
-  const AutofillScreen({required this.entries, required this.fields, required this.kind, super.key});
+  const AutofillScreen({
+    required this.entries,
+    required this.fields,
+    required this.kind,
+    super.key,
+  });
 
   /// The files to fill.
   final List<MusicEntry> entries;
@@ -46,7 +51,9 @@ class _AutofillScreenState extends ConsumerState<AutofillScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       unawaited(
-        ref.read(autofillControllerProvider.notifier).start(widget.entries, widget.fields, kind: widget.kind),
+        ref
+            .read(autofillControllerProvider.notifier)
+            .start(widget.entries, widget.fields, kind: widget.kind),
       );
     });
   }
@@ -70,24 +77,36 @@ class _AutofillScreenState extends ConsumerState<AutofillScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.autofillAction)),
       body: switch (state.stage) {
-        AutofillStage.idle || AutofillStage.searching => _Waiting(text: l10n.autofillSearching),
+        AutofillStage.idle ||
+        AutofillStage.searching => _Waiting(text: l10n.autofillSearching),
         AutofillStage.failed => _Failed(
           failure: state.failure,
           onRetry: () => unawaited(controller.retryLookup()),
         ),
-        AutofillStage.writing => _Waiting(text: l10n.autofillWriting(state.written, state.total)),
-        AutofillStage.finished => _Summary(state: state, onRetry: () => unawaited(controller.retry())),
+        AutofillStage.writing => _Waiting(
+          text: l10n.autofillWriting(state.written, state.total),
+        ),
+        AutofillStage.finished => _Summary(
+          state: state,
+          onRetry: () => unawaited(controller.retry()),
+        ),
         AutofillStage.reviewing => _Review(state: state, query: _query),
       },
       bottomNavigationBar: switch (state.stage) {
         AutofillStage.reviewing => _WriteBar(state: state),
         AutofillStage.writing => Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
-          child: OutlinedButton(onPressed: controller.cancel, child: Text(l10n.autofillCancel)),
+          child: OutlinedButton(
+            onPressed: controller.cancel,
+            child: Text(l10n.autofillCancel),
+          ),
         ),
         AutofillStage.finished => Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
-          child: FilledButton(onPressed: () => Navigator.pop(context), child: Text(l10n.autofillClose)),
+          child: FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.autofillClose),
+          ),
         ),
         _ => null,
       },
@@ -127,7 +146,11 @@ class _Failed extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(failure == MetadataSourceFailure.rateLimited ? l10n.autofillRateLimited : l10n.autofillUnreachable),
+          Text(
+            failure == MetadataSourceFailure.rateLimited
+                ? l10n.autofillRateLimited
+                : l10n.autofillUnreachable,
+          ),
           const SizedBox(height: AppSpacing.md),
           FilledButton(onPressed: onRetry, child: Text(l10n.autofillTryAgain)),
         ],
@@ -157,7 +180,9 @@ class _Review extends ConsumerWidget {
             Expanded(
               child: TextField(
                 controller: query,
-                decoration: InputDecoration(labelText: l10n.autofillSearchLabel),
+                decoration: InputDecoration(
+                  labelText: l10n.autofillSearchLabel,
+                ),
                 onSubmitted: (text) => unawaited(controller.search(text)),
               ),
             ),
@@ -172,26 +197,40 @@ class _Review extends ConsumerWidget {
         if (release == null)
           Text(l10n.autofillNothingFound, style: theme.textTheme.titleMedium)
         else ...[
-          _ReleaseHeader(release: release.release, candidates: state.candidates),
+          _ReleaseHeader(
+            release: release.release,
+            candidates: state.candidates,
+          ),
           if (state.refusal != null) _Refusal(decision: state.refusal!),
           if (state.coverMissing)
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.sm),
-              child: Text(l10n.autofillCoverMissing, style: theme.textTheme.bodySmall),
+              child: Text(
+                l10n.autofillCoverMissing,
+                style: theme.textTheme.bodySmall,
+              ),
             ),
           if (state.coverUnavailable)
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.sm),
-              child: Text(l10n.autofillCoverUnavailable, style: theme.textTheme.bodySmall),
+              child: Text(
+                l10n.autofillCoverUnavailable,
+                style: theme.textTheme.bodySmall,
+              ),
             ),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: () => controller.toggleAll(state.acceptedCount == 0),
-              child: Text(state.acceptedCount == 0 ? l10n.autofillTickAll : l10n.autofillUntickAll),
+              child: Text(
+                state.acceptedCount == 0
+                    ? l10n.autofillTickAll
+                    : l10n.autofillUntickAll,
+              ),
             ),
           ),
-          for (final proposal in state.proposals) _ProposalCard(proposal: proposal),
+          for (final proposal in state.proposals)
+            _ProposalCard(proposal: proposal),
         ],
       ],
     );
@@ -220,9 +259,13 @@ class _ReleaseHeader extends ConsumerWidget {
                   for (final candidate in candidates)
                     MenuItemButton(
                       onPressed: () => unawaited(
-                        ref.read(autofillControllerProvider.notifier).chooseRelease(candidate.id),
+                        ref
+                            .read(autofillControllerProvider.notifier)
+                            .chooseRelease(candidate.id),
                       ),
-                      child: Text('${candidate.title} — ${_describe(candidate)}'),
+                      child: Text(
+                        '${candidate.title} — ${_describe(candidate)}',
+                      ),
                     ),
                 ],
                 builder: (context, menu, _) => TextButton(
@@ -258,10 +301,19 @@ class _Refusal extends ConsumerWidget {
       padding: const EdgeInsets.only(top: AppSpacing.sm),
       child: Row(
         children: [
-          Expanded(child: Text(l10n.autofillAccessRefused, style: TextStyle(color: theme.colorScheme.error))),
+          Expanded(
+            child: Text(
+              l10n.autofillAccessRefused,
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
+          ),
           if (decision == LibraryAccessDecision.deniedPermanently)
             TextButton(
-              onPressed: () => unawaited(ref.read(libraryAccessControllerProvider.notifier).openSettings()),
+              onPressed: () => unawaited(
+                ref
+                    .read(libraryAccessControllerProvider.notifier)
+                    .openSettings(),
+              ),
               child: Text(l10n.autofillOpenSettings),
             ),
         ],
@@ -281,7 +333,9 @@ class _ProposalCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final controller = ref.read(autofillControllerProvider.notifier);
     final path = proposal.entry.file.path;
-    final muted = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
     final allTicked = proposal.acceptedCount == proposal.changes.length;
 
     final note = switch (proposal.blockedBecause) {
@@ -300,7 +354,12 @@ class _ProposalCard extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Expanded(child: Text(proposal.entry.file.name, style: theme.textTheme.titleSmall)),
+                Expanded(
+                  child: Text(
+                    proposal.entry.file.name,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
                 // This file's changes, all at once: ticked where every one is,
                 // dashed where some are, and a tap ticks them all unless all
                 // already are.
@@ -308,9 +367,13 @@ class _ProposalCard extends ConsumerWidget {
                   Checkbox(
                     key: ValueKey('autofill-file-toggle-$path'),
                     tristate: true,
-                    value: allTicked ? true : (proposal.acceptedCount == 0 ? false : null),
+                    value: allTicked
+                        ? true
+                        : (proposal.acceptedCount == 0 ? false : null),
                     onChanged: (_) => controller.toggleFile(path, !allTicked),
-                    semanticLabel: allTicked ? l10n.autofillUntickAll : l10n.autofillTickAll,
+                    semanticLabel: allTicked
+                        ? l10n.autofillUntickAll
+                        : l10n.autofillTickAll,
                   ),
               ],
             ),
@@ -318,7 +381,10 @@ class _ProposalCard extends ConsumerWidget {
             if (proposal.notWritable.isNotEmpty)
               Text(
                 l10n.autofillNotWritableFields(
-                  [for (final f in proposal.notWritable) autofillFieldName(l10n, f)].join(', '),
+                  [
+                    for (final f in proposal.notWritable)
+                      autofillFieldName(l10n, f),
+                  ].join(', '),
                 ),
                 style: muted,
               ),
@@ -330,12 +396,19 @@ class _ProposalCard extends ConsumerWidget {
                 onChanged: (_) => controller.toggle(path, change.field),
                 title: Text(autofillFieldName(l10n, change.field)),
                 subtitle: change.field == AutofillField.cover
-                    ? _CoverChange(before: change.before as Uint8List?, after: change.after as Uint8List?)
+                    ? _CoverChange(
+                        before: change.before as Uint8List?,
+                        after: change.after as Uint8List?,
+                      )
                     : Row(
                         children: [
-                          Flexible(child: Text(_shown(change.before), style: muted)),
+                          Flexible(
+                            child: Text(_shown(change.before), style: muted),
+                          ),
                           const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs,
+                            ),
                             child: Icon(Icons.arrow_forward, size: 14),
                           ),
                           Flexible(child: Text(_shown(change.after))),
@@ -373,7 +446,11 @@ class _CoverChange extends StatelessWidget {
     dimension: 48,
     child: bytes == null
         ? const Icon(Icons.album_outlined)
-        : Image.memory(bytes, fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined)),
+        : Image.memory(
+            bytes,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined),
+          ),
   );
 }
 
@@ -392,8 +469,12 @@ class _WriteBar extends ConsumerWidget {
         child: FilledButton(
           onPressed: state.acceptedCount == 0
               ? null
-              : () => unawaited(ref.read(autofillControllerProvider.notifier).write()),
-          child: Text(l10n.autofillWrite(state.acceptedCount, state.filesWithChanges)),
+              : () => unawaited(
+                  ref.read(autofillControllerProvider.notifier).write(),
+                ),
+          child: Text(
+            l10n.autofillWrite(state.acceptedCount, state.filesWithChanges),
+          ),
         ),
       ),
     );
@@ -410,7 +491,9 @@ class _Summary extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final written = state.outcomes.values.where((o) => o == WriteOutcome.written).length;
+    final written = state.outcomes.values
+        .where((o) => o == WriteOutcome.written)
+        .length;
     final refused = {
       for (final MapEntry(:key, :value) in state.outcomes.entries)
         if (value != WriteOutcome.written) key: value,
@@ -418,9 +501,13 @@ class _Summary extends StatelessWidget {
     // Files that had ticked changes but were never reached: cancelled first.
     final unreached = [
       for (final p in state.proposals)
-        if (p.acceptedCount > 0 && !state.outcomes.containsKey(p.entry.file.path)) p.entry.file.path,
+        if (p.acceptedCount > 0 &&
+            !state.outcomes.containsKey(p.entry.file.path))
+          p.entry.file.path,
     ];
-    final retryable = refused.values.any((o) => o == WriteOutcome.inUse || o == WriteOutcome.failed);
+    final retryable = refused.values.any(
+      (o) => o == WriteOutcome.inUse || o == WriteOutcome.failed,
+    );
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -435,7 +522,8 @@ class _Summary extends StatelessWidget {
               WriteOutcome.inUse => l10n.autofillOutcomeInUse,
               WriteOutcome.denied => l10n.autofillOutcomeDenied,
               // A kind of file Orpheus writes, whose tag the editor refused.
-              WriteOutcome.unsupported when canWriteTagsTo(path) => l10n.autofillUnsafeTags,
+              WriteOutcome.unsupported when canWriteTagsTo(path) =>
+                l10n.autofillUnsafeTags,
               WriteOutcome.unsupported => l10n.autofillOutcomeUnsupported,
               _ => l10n.autofillOutcomeFailed,
             }),
@@ -449,7 +537,10 @@ class _Summary extends StatelessWidget {
         if (retryable)
           Align(
             alignment: Alignment.centerLeft,
-            child: TextButton(onPressed: onRetry, child: Text(l10n.autofillTryAgain)),
+            child: TextButton(
+              onPressed: onRetry,
+              child: Text(l10n.autofillTryAgain),
+            ),
           ),
       ],
     );

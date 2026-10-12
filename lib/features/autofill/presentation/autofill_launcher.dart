@@ -21,7 +21,9 @@ Future<void> startAutofill(
   // From the settings rather than from the controller: the controller is
   // auto-disposed, and the session it holds starts on the review screen.
   final remembered = AutofillField.decode(
-    ref.read(settingsStoreProvider).getString(AutofillController.fieldsSettingsKey),
+    ref
+        .read(settingsStoreProvider)
+        .getString(AutofillController.fieldsSettingsKey),
   );
   final fields = await AutofillFieldsDialog.ask(
     context,
@@ -32,7 +34,8 @@ Future<void> startAutofill(
 
   await Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => AutofillScreen(entries: entries, fields: fields, kind: kind),
+      builder: (_) =>
+          AutofillScreen(entries: entries, fields: fields, kind: kind),
     ),
   );
 }

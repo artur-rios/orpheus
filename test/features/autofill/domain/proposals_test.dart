@@ -13,7 +13,13 @@ import '../../../support/entries.dart';
 
 /// Turning a match into the changes the owner is shown.
 void main() {
-  final airbag = entry(id: 'ok1', title: 'Airbag', artist: 'Radiohed', album: 'OK Computer', track: 1);
+  final airbag = entry(
+    id: 'ok1',
+    title: 'Airbag',
+    artist: 'Radiohed',
+    album: 'OK Computer',
+    track: 1,
+  );
 
   const release = ReleaseDetail(
     release: ReleaseCandidate(
@@ -24,14 +30,34 @@ void main() {
       date: '1997-05-21',
     ),
     tracks: [
-      ReleaseTrack(disc: 1, position: 1, title: 'Airbag', artistCredit: [ArtistCredit(name: 'Radiohead')]),
-      ReleaseTrack(disc: 1, position: 2, title: 'Paranoid Android', artistCredit: [ArtistCredit(name: 'Radiohead')]),
+      ReleaseTrack(
+        disc: 1,
+        position: 1,
+        title: 'Airbag',
+        artistCredit: [ArtistCredit(name: 'Radiohead')],
+      ),
+      ReleaseTrack(
+        disc: 1,
+        position: 2,
+        title: 'Paranoid Android',
+        artistCredit: [ArtistCredit(name: 'Radiohead')],
+      ),
     ],
-    genres: [Genre(name: 'alternative rock', votes: 9), Genre(name: 'art rock', votes: 4)],
+    genres: [
+      Genre(name: 'alternative rock', votes: 9),
+      Genre(name: 'art rock', votes: 4),
+    ],
   );
 
-  FileTags tagsOf(Map<AutofillField, Object?> values, {Set<AutofillField>? writable, Uint8List? cover}) =>
-      FileTags(writable: writable ?? AutofillField.values.toSet(), values: values, cover: cover);
+  FileTags tagsOf(
+    Map<AutofillField, Object?> values, {
+    Set<AutofillField>? writable,
+    Uint8List? cover,
+  }) => FileTags(
+    writable: writable ?? AutofillField.values.toSet(),
+    values: values,
+    cover: cover,
+  );
 
   List<FileProposal> propose(
     Map<MusicEntry, ReleaseTrack?> assignment,
@@ -48,42 +74,64 @@ void main() {
     fallbackGenres: fallback,
   );
 
-  test('GivenAMisspeltArtist_WhenProposed_ThenOnlyTheArtistChangesAndItIsTicked', () {
-    final proposals = propose(
-      {airbag: release.tracks.first},
-      {AutofillField.title, AutofillField.artist},
-      {airbag.file.path: tagsOf({AutofillField.title: 'Airbag', AutofillField.artist: 'Radiohed'})},
-    );
+  test(
+    'GivenAMisspeltArtist_WhenProposed_ThenOnlyTheArtistChangesAndItIsTicked',
+    () {
+      final proposals = propose(
+        {airbag: release.tracks.first},
+        {AutofillField.title, AutofillField.artist},
+        {
+          airbag.file.path: tagsOf({
+            AutofillField.title: 'Airbag',
+            AutofillField.artist: 'Radiohed',
+          }),
+        },
+      );
 
-    final changes = proposals.single.changes;
-    expect(changes, hasLength(1));
-    expect(changes.single.field, AutofillField.artist);
-    expect(changes.single.before, 'Radiohed');
-    expect(changes.single.after, 'Radiohead');
-    expect(changes.single.accepted, isTrue);
-  });
+      final changes = proposals.single.changes;
+      expect(changes, hasLength(1));
+      expect(changes.single.field, AutofillField.artist);
+      expect(changes.single.before, 'Radiohed');
+      expect(changes.single.after, 'Radiohead');
+      expect(changes.single.accepted, isTrue);
+    },
+  );
 
-  test('GivenValuesEqualButForSurroundingSpace_WhenProposed_ThenThereIsNoChange', () {
-    // Review focus: whitespace is not a change; case is.
-    final proposals = propose(
-      {airbag: release.tracks.first},
-      {AutofillField.artist},
-      {airbag.file.path: tagsOf({AutofillField.artist: ' Radiohead '})},
-    );
-    expect(proposals.single.changes, isEmpty);
+  test(
+    'GivenValuesEqualButForSurroundingSpace_WhenProposed_ThenThereIsNoChange',
+    () {
+      // Review focus: whitespace is not a change; case is.
+      final proposals = propose(
+        {airbag: release.tracks.first},
+        {AutofillField.artist},
+        {
+          airbag.file.path: tagsOf({AutofillField.artist: ' Radiohead '}),
+        },
+      );
+      expect(proposals.single.changes, isEmpty);
 
-    final lower = propose(
-      {airbag: release.tracks.first},
-      {AutofillField.artist},
-      {airbag.file.path: tagsOf({AutofillField.artist: 'radiohead'})},
-    );
-    expect(lower.single.changes.single.after, 'Radiohead');
-  });
+      final lower = propose(
+        {airbag: release.tracks.first},
+        {AutofillField.artist},
+        {
+          airbag.file.path: tagsOf({AutofillField.artist: 'radiohead'}),
+        },
+      );
+      expect(lower.single.changes.single.after, 'Radiohead');
+    },
+  );
 
   group('the genre', () {
     const rock = ReleaseDetail(
-      release: ReleaseCandidate(id: 'r', title: 'T', artistCredit: [], trackCount: 1),
-      tracks: [ReleaseTrack(disc: 1, position: 1, title: 'Airbag', artistCredit: [])],
+      release: ReleaseCandidate(
+        id: 'r',
+        title: 'T',
+        artistCredit: [],
+        trackCount: 1,
+      ),
+      tracks: [
+        ReleaseTrack(disc: 1, position: 1, title: 'Airbag', artistCredit: []),
+      ],
       genres: [Genre(name: 'rock', votes: 3)],
     );
 
@@ -91,7 +139,9 @@ void main() {
       assignment: {airbag: rock.tracks.single},
       release: rock,
       fields: {AutofillField.genre},
-      tags: {airbag.file.path: tagsOf({AutofillField.genre: before})},
+      tags: {
+        airbag.file.path: tagsOf({AutofillField.genre: before}),
+      },
     ).single.changes;
 
     test('GivenTheSameGenreInAnotherCase_WhenProposed_ThenThereIsNoChange', () {
@@ -136,21 +186,32 @@ void main() {
     expect(after[AutofillField.genre], 'alternative rock');
   });
 
-  test('GivenAReleaseWithNoGenres_WhenProposed_ThenTheReleaseGroupsGenreStandsIn', () {
-    const bare = ReleaseDetail(release: ReleaseCandidate(id: 'r', title: 'T', artistCredit: [], trackCount: 1), tracks: [
-      ReleaseTrack(disc: 1, position: 1, title: 'Airbag', artistCredit: []),
-    ]);
+  test(
+    'GivenAReleaseWithNoGenres_WhenProposed_ThenTheReleaseGroupsGenreStandsIn',
+    () {
+      const bare = ReleaseDetail(
+        release: ReleaseCandidate(
+          id: 'r',
+          title: 'T',
+          artistCredit: [],
+          trackCount: 1,
+        ),
+        tracks: [
+          ReleaseTrack(disc: 1, position: 1, title: 'Airbag', artistCredit: []),
+        ],
+      );
 
-    final proposals = proposalsFor(
-      assignment: {airbag: bare.tracks.single},
-      release: bare,
-      fields: {AutofillField.genre},
-      tags: {airbag.file.path: tagsOf({})},
-      fallbackGenres: const [Genre(name: 'rock', votes: 1)],
-    );
+      final proposals = proposalsFor(
+        assignment: {airbag: bare.tracks.single},
+        release: bare,
+        fields: {AutofillField.genre},
+        tags: {airbag.file.path: tagsOf({})},
+        fallbackGenres: const [Genre(name: 'rock', votes: 1)],
+      );
 
-    expect(proposals.single.changes.single.after, 'rock');
-  });
+      expect(proposals.single.changes.single.after, 'rock');
+    },
+  );
 
   test('GivenAFieldTheFormatCannotHold_WhenProposed_ThenItIsNamedAsNotWritableAndNotProposed', () {
     final proposals = propose(
@@ -159,66 +220,97 @@ void main() {
       {
         airbag.file.path: tagsOf(
           {AutofillField.artist: 'Radiohed'},
-          writable: AutofillField.values.toSet()..remove(AutofillField.albumArtist),
+          writable: AutofillField.values.toSet()
+            ..remove(AutofillField.albumArtist),
         ),
       },
     );
 
-    expect([for (final c in proposals.single.changes) c.field], [AutofillField.artist]);
+    expect(
+      [for (final c in proposals.single.changes) c.field],
+      [AutofillField.artist],
+    );
     expect(proposals.single.notWritable, {AutofillField.albumArtist});
   });
 
-  test('GivenAnUnwritableFormat_WhenProposed_ThenTheFileIsBlockedWithNoChanges', () {
-    final ogg = MusicEntry(
-      file: AudioFile(path: '/library/song.ogg', sizeInBytes: 1024, modifiedAt: DateTime.utc(2026)),
-      metadata: const TrackMetadata(title: 'Airbag'),
-    );
-    final proposals = propose({ogg: release.tracks.first}, {AutofillField.title}, {ogg.file.path: FileTags.unwritable});
+  test(
+    'GivenAnUnwritableFormat_WhenProposed_ThenTheFileIsBlockedWithNoChanges',
+    () {
+      final ogg = MusicEntry(
+        file: AudioFile(
+          path: '/library/song.ogg',
+          sizeInBytes: 1024,
+          modifiedAt: DateTime.utc(2026),
+        ),
+        metadata: const TrackMetadata(title: 'Airbag'),
+      );
+      final proposals = propose(
+        {ogg: release.tracks.first},
+        {AutofillField.title},
+        {ogg.file.path: FileTags.unwritable},
+      );
 
-    expect(proposals.single.blockedBecause, ProposalBlock.unwritableFormat);
-    expect(proposals.single.changes, isEmpty);
-  });
+      expect(proposals.single.blockedBecause, ProposalBlock.unwritableFormat);
+      expect(proposals.single.changes, isEmpty);
+    },
+  );
 
   test('GivenAWritableKindOfFileWhoseTagsCannotBeChangedSafely_WhenProposed_ThenItIsBlockedForItsTagsNotItsKind', () {
     // A FLAC is a kind of file Orpheus writes; this one's tags could not be
     // read, or are of a shape the editor leaves alone.
-    final proposals = propose({airbag: release.tracks.first}, {AutofillField.title}, {airbag.file.path: FileTags.unwritable});
+    final proposals = propose(
+      {airbag: release.tracks.first},
+      {AutofillField.title},
+      {airbag.file.path: FileTags.unwritable},
+    );
 
     expect(proposals.single.blockedBecause, ProposalBlock.unsafeTags);
     expect(proposals.single.changes, isEmpty);
   });
 
   test('GivenAFileWithNoMatch_WhenProposed_ThenItIsBlockedAsNoMatch', () {
-    final proposals = propose({airbag: null}, {AutofillField.title}, {airbag.file.path: tagsOf({})});
+    final proposals = propose({airbag: null}, {AutofillField.title}, {
+      airbag.file.path: tagsOf({}),
+    });
 
     expect(proposals.single.blockedBecause, ProposalBlock.noMatch);
   });
 
-  test('GivenTheSameCoverIsAlreadyEmbedded_WhenProposed_ThenTheCoverIsNoChange', () {
-    final picture = Uint8List.fromList([1, 2, 3]);
+  test(
+    'GivenTheSameCoverIsAlreadyEmbedded_WhenProposed_ThenTheCoverIsNoChange',
+    () {
+      final picture = Uint8List.fromList([1, 2, 3]);
 
-    final same = propose(
-      {airbag: release.tracks.first},
-      {AutofillField.cover},
-      {airbag.file.path: tagsOf({}, cover: Uint8List.fromList([1, 2, 3]))},
-      cover: picture,
-    );
-    expect(same.single.changes, isEmpty);
+      final same = propose(
+        {airbag: release.tracks.first},
+        {AutofillField.cover},
+        {
+          airbag.file.path: tagsOf({}, cover: Uint8List.fromList([1, 2, 3])),
+        },
+        cover: picture,
+      );
+      expect(same.single.changes, isEmpty);
 
-    final different = propose(
-      {airbag: release.tracks.first},
-      {AutofillField.cover},
-      {airbag.file.path: tagsOf({})},
-      cover: picture,
-    );
-    expect(different.single.changes.single.after, picture);
-  });
+      final different = propose(
+        {airbag: release.tracks.first},
+        {AutofillField.cover},
+        {airbag.file.path: tagsOf({})},
+        cover: picture,
+      );
+      expect(different.single.changes.single.after, picture);
+    },
+  );
 
   test('GivenAProposal_WhenAChangeIsUnticked_ThenTheAcceptedCountFalls', () {
     final proposal = propose(
       {airbag: release.tracks[1]},
       {AutofillField.title, AutofillField.artist},
-      {airbag.file.path: tagsOf({AutofillField.title: 'Airbag', AutofillField.artist: 'Radiohed'})},
+      {
+        airbag.file.path: tagsOf({
+          AutofillField.title: 'Airbag',
+          AutofillField.artist: 'Radiohed',
+        }),
+      },
     ).single;
 
     final edited = proposal.withChanges([

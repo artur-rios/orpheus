@@ -24,14 +24,34 @@ String normalised(String value) {
 }
 
 const Map<String, String> _folds = {
-  'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'å': 'a',
+  'à': 'a',
+  'á': 'a',
+  'â': 'a',
+  'ã': 'a',
+  'ä': 'a',
+  'å': 'a',
   'ç': 'c',
-  'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
-  'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
+  'è': 'e',
+  'é': 'e',
+  'ê': 'e',
+  'ë': 'e',
+  'ì': 'i',
+  'í': 'i',
+  'î': 'i',
+  'ï': 'i',
   'ñ': 'n',
-  'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o', 'ø': 'o',
-  'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
-  'ý': 'y', 'ÿ': 'y',
+  'ò': 'o',
+  'ó': 'o',
+  'ô': 'o',
+  'õ': 'o',
+  'ö': 'o',
+  'ø': 'o',
+  'ù': 'u',
+  'ú': 'u',
+  'û': 'u',
+  'ü': 'u',
+  'ý': 'y',
+  'ÿ': 'y',
 };
 
 /// How closely [candidate] matches [wanted]: 2 equal, 1 one contains the
@@ -69,17 +89,24 @@ List<ReleaseCandidate> rankCandidates(
   String? artist,
 }) {
   int compare(ReleaseCandidate a, ReleaseCandidate b) {
-    final byCount = (b.trackCount == fileCount ? 1 : 0)
-        .compareTo(a.trackCount == fileCount ? 1 : 0);
+    final byCount = (b.trackCount == fileCount ? 1 : 0).compareTo(
+      a.trackCount == fileCount ? 1 : 0,
+    );
     if (byCount != 0) return byCount;
 
     final byStatus = _statusRank(a.status).compareTo(_statusRank(b.status));
     if (byStatus != 0) return byStatus;
 
-    final byTitle = _closeness(album, b.title).compareTo(_closeness(album, a.title));
+    final byTitle = _closeness(
+      album,
+      b.title,
+    ).compareTo(_closeness(album, a.title));
     if (byTitle != 0) return byTitle;
 
-    final byArtist = _closeness(artist, b.artist).compareTo(_closeness(artist, a.artist));
+    final byArtist = _closeness(
+      artist,
+      b.artist,
+    ).compareTo(_closeness(artist, a.artist));
     if (byArtist != 0) return byArtist;
 
     final byScore = b.score.compareTo(a.score);
@@ -95,7 +122,9 @@ List<ReleaseCandidate> rankCandidates(
 }
 
 int _typeRank(ReleaseCandidate release) {
-  if (release.secondaryTypes.any((type) => type.toLowerCase() == 'compilation')) {
+  if (release.secondaryTypes.any(
+    (type) => type.toLowerCase() == 'compilation',
+  )) {
     return 3;
   }
 
@@ -125,12 +154,16 @@ List<RecordingAppearance> rankAppearances(
   ];
 
   scored.sort((a, b) {
-    final byTitle = _closeness(title, b.match.title)
-        .compareTo(_closeness(title, a.match.title));
+    final byTitle = _closeness(
+      title,
+      b.match.title,
+    ).compareTo(_closeness(title, a.match.title));
     if (byTitle != 0) return byTitle;
 
-    final byArtist = _closeness(artist, creditedName(b.match.artistCredit))
-        .compareTo(_closeness(artist, creditedName(a.match.artistCredit)));
+    final byArtist = _closeness(
+      artist,
+      creditedName(b.match.artistCredit),
+    ).compareTo(_closeness(artist, creditedName(a.match.artistCredit)));
     if (byArtist != 0) return byArtist;
 
     final byStatus = _statusRank(a.appearance.release.status)
@@ -141,8 +174,9 @@ List<RecordingAppearance> rankAppearances(
         .compareTo(_typeRank(b.appearance.release));
     if (byType != 0) return byType;
 
-    final byDate = (a.appearance.release.date ?? '9999')
-        .compareTo(b.appearance.release.date ?? '9999');
+    final byDate = (a.appearance.release.date ?? '9999').compareTo(
+      b.appearance.release.date ?? '9999',
+    );
     if (byDate != 0) return byDate;
 
     return a.appearance.release.id.compareTo(b.appearance.release.id);
@@ -220,7 +254,9 @@ Map<MusicEntry, ReleaseTrack?> assignTracks(
   List<MusicEntry> files,
   ReleaseDetail release,
 ) {
-  final assigned = <MusicEntry, ReleaseTrack?>{for (final file in files) file: null};
+  final assigned = <MusicEntry, ReleaseTrack?>{
+    for (final file in files) file: null,
+  };
   final free = [...release.tracks];
 
   void claim(MusicEntry file, ReleaseTrack track) {
@@ -235,7 +271,9 @@ Map<MusicEntry, ReleaseTrack?> assignTracks(
     final number = file.metadata.track;
     final disc = file.metadata.disc ?? 1;
 
-    return free.where((t) => number != null && t.disc == disc && t.position == number);
+    return free.where(
+      (t) => number != null && t.disc == disc && t.position == number,
+    );
   }
 
   // 1. Numbers, where the title is the same track's or the file has none. These
@@ -276,7 +314,11 @@ Map<MusicEntry, ReleaseTrack?> assignTracks(
         .where(
           (t) =>
               _overlap(title, t.title) >= 0.6 &&
-              _lengthsWithin(file.duration, t.length, const Duration(seconds: 5)),
+              _lengthsWithin(
+                file.duration,
+                t.length,
+                const Duration(seconds: 5),
+              ),
         )
         .firstOrNull;
     if (track != null) claim(file, track);
@@ -289,7 +331,11 @@ Map<MusicEntry, ReleaseTrack?> assignTracks(
     if (file.title != null) continue;
     final near = free
         .where(
-          (t) => _lengthsWithin(file.duration, t.length, const Duration(seconds: 2)),
+          (t) => _lengthsWithin(
+            file.duration,
+            t.length,
+            const Duration(seconds: 2),
+          ),
         )
         .toList();
     if (near.length == 1) claim(file, near.single);

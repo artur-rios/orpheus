@@ -16,9 +16,17 @@ const Map<String, Object?> releaseSearch = {
       'disambiguation': '',
       'track-count': 12,
       'artist-credit': [
-        {'name': 'Radiohead', 'joinphrase': '', 'artist': {'id': 'a1', 'name': 'Radiohead'}},
+        {
+          'name': 'Radiohead',
+          'joinphrase': '',
+          'artist': {'id': 'a1', 'name': 'Radiohead'},
+        },
       ],
-      'release-group': {'id': 'rg-1', 'primary-type': 'Album', 'secondary-types': <String>[]},
+      'release-group': {
+        'id': 'rg-1',
+        'primary-type': 'Album',
+        'secondary-types': <String>[],
+      },
       'media': [
         {'format': 'CD', 'track-count': 12},
       ],
@@ -53,7 +61,11 @@ const Map<String, Object?> releaseLookup = {
   'artist-credit': [
     {'name': 'Radiohead', 'joinphrase': ''},
   ],
-  'release-group': {'id': 'rg-1', 'primary-type': 'Album', 'secondary-types': <String>[]},
+  'release-group': {
+    'id': 'rg-1',
+    'primary-type': 'Album',
+    'secondary-types': <String>[],
+  },
   'genres': [
     {'name': 'art rock', 'count': 4},
     {'name': 'alternative rock', 'count': 9},
@@ -117,7 +129,11 @@ const Map<String, Object?> recordingSearch = {
           'status': 'Official',
           'date': '1997-05-21',
           'track-count': 12,
-          'release-group': {'id': 'rg-1', 'primary-type': 'Album', 'secondary-types': <String>[]},
+          'release-group': {
+            'id': 'rg-1',
+            'primary-type': 'Album',
+            'secondary-types': <String>[],
+          },
           'media': [
             {
               'position': 1,

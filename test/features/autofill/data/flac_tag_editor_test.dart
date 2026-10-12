@@ -16,7 +16,9 @@ void main() {
   late Directory root;
   const writer = AudioMetadataTagWriter();
 
-  setUp(() async => root = await Directory.systemTemp.createTemp('orpheus-flac'));
+  setUp(
+    () async => root = await Directory.systemTemp.createTemp('orpheus-flac'),
+  );
   tearDown(() async {
     if (root.existsSync()) await root.delete(recursive: true);
   });
@@ -65,48 +67,65 @@ void main() {
   group('each field', () {
     for (final field in AutofillField.values) {
       final name = field.name[0].toUpperCase() + field.name.substring(1);
-      test('GivenATaggedFlac_WhenIts${name}IsWritten_ThenItReadsBackAndNothingElseChanges', () async {
-        final before = await readBack(tagged);
+      test(
+        'GivenATaggedFlac_WhenIts${name}IsWritten_ThenItReadsBackAndNothingElseChanges',
+        () async {
+          final before = await readBack(tagged);
 
-        final edited = editFlacTags(tagged, {field: proposed[field]});
-        final after = await readBack(edited);
+          final edited = editFlacTags(tagged, {field: proposed[field]});
+          final after = await readBack(edited);
 
-        expectWellFormed(edited);
-        if (field == AutofillField.cover) {
-          expect(after.cover, proposed[AutofillField.cover]);
-        } else {
-          expect(after.values[field], proposed[field]);
-          expect(after.cover, before.cover);
-        }
-        for (final other in AutofillField.values.where((f) => f != field && f != AutofillField.cover)) {
-          expect(after.values[other], before.values[other], reason: other.name);
-        }
-      });
+          expectWellFormed(edited);
+          if (field == AutofillField.cover) {
+            expect(after.cover, proposed[AutofillField.cover]);
+          } else {
+            expect(after.values[field], proposed[field]);
+            expect(after.cover, before.cover);
+          }
+          for (final other in AutofillField.values.where(
+            (f) => f != field && f != AutofillField.cover,
+          )) {
+            expect(
+              after.values[other],
+              before.values[other],
+              reason: other.name,
+            );
+          }
+        },
+      );
     }
 
-    test('GivenATaggedFlac_WhenEveryFieldIsWritten_ThenEachReadsBack', () async {
-      final after = await readBack(editFlacTags(tagged, proposed));
+    test(
+      'GivenATaggedFlac_WhenEveryFieldIsWritten_ThenEachReadsBack',
+      () async {
+        final after = await readBack(editFlacTags(tagged, proposed));
 
-      for (final field in AutofillField.values.where((f) => f != AutofillField.cover)) {
-        expect(after.values[field], proposed[field], reason: field.name);
-      }
-      expect(after.cover, proposed[AutofillField.cover]);
-    });
+        for (final field in AutofillField.values.where(
+          (f) => f != AutofillField.cover,
+        )) {
+          expect(after.values[field], proposed[field], reason: field.name);
+        }
+        expect(after.cover, proposed[AutofillField.cover]);
+      },
+    );
 
     test('GivenATaggedFlac_WhenNothingIsWritten_ThenEveryByteIsAsItWas', () {
       expect(editFlacTags(tagged, const {}), tagged);
     });
 
-    test('GivenAField_WhenWrittenAsNull_ThenItsCommentIsRemovedAndNoneWritten', () {
-      final file = flacOf([
-        streamInfoBlock(),
-        vorbisCommentBlock(['TITLE=Airbag', 'GENRE=Rock', 'COMMENT=kept']),
-      ]);
+    test(
+      'GivenAField_WhenWrittenAsNull_ThenItsCommentIsRemovedAndNoneWritten',
+      () {
+        final file = flacOf([
+          streamInfoBlock(),
+          vorbisCommentBlock(['TITLE=Airbag', 'GENRE=Rock', 'COMMENT=kept']),
+        ]);
 
-      final edited = editFlacTags(file, {AutofillField.genre: null});
+        final edited = editFlacTags(file, {AutofillField.genre: null});
 
-      expect(commentsOf(edited).comments, ['TITLE=Airbag', 'COMMENT=kept']);
-    });
+        expect(commentsOf(edited).comments, ['TITLE=Airbag', 'COMMENT=kept']);
+      },
+    );
 
     test('GivenADateAndAYear_WhenTheYearIsWritten_ThenOneFourDigitDateTakesTheirPlace', () async {
       final file = flacOf([
@@ -152,7 +171,8 @@ void main() {
       ]);
       // Byte for byte, lengths included: every kept comment is the very bytes
       // it was, and only the two changed ones differ.
-      bool unchanged(String raw) => !raw.contains('TITLE=') && !raw.substring(4).startsWith('ARTIST=');
+      bool unchanged(String raw) =>
+          !raw.contains('TITLE=') && !raw.substring(4).startsWith('ARTIST=');
       final kept = rawCommentsOf(file).where(unchanged).toList();
       expect(kept, hasLength(4));
       expect(rawCommentsOf(edited).where(unchanged), kept);
@@ -161,12 +181,23 @@ void main() {
     test('GivenTheKeyInAnyCaseAndRepeated_WhenItsFieldIsWritten_ThenOneCommentTakesThePlaceOfAll', () {
       final file = flacOf([
         streamInfoBlock(),
-        vorbisCommentBlock(['COMMENT=kept', 'title=Airbag', 'CUSTOM=kept', 'Title=Airbag (Live)']),
+        vorbisCommentBlock([
+          'COMMENT=kept',
+          'title=Airbag',
+          'CUSTOM=kept',
+          'Title=Airbag (Live)',
+        ]),
       ]);
 
-      final edited = editFlacTags(file, {AutofillField.title: 'Paranoid Android'});
+      final edited = editFlacTags(file, {
+        AutofillField.title: 'Paranoid Android',
+      });
 
-      expect(commentsOf(edited).comments, ['COMMENT=kept', 'TITLE=Paranoid Android', 'CUSTOM=kept']);
+      expect(commentsOf(edited).comments, [
+        'COMMENT=kept',
+        'TITLE=Paranoid Android',
+        'CUSTOM=kept',
+      ]);
     });
 
     test('GivenNoCommentForTheField_WhenItIsWritten_ThenItIsAppended', () {
@@ -177,19 +208,35 @@ void main() {
 
       final edited = editFlacTags(file, {AutofillField.genre: 'Rock'});
 
-      expect(commentsOf(edited).comments, ['TITLE=Airbag', 'COMMENT=kept', 'GENRE=Rock']);
+      expect(commentsOf(edited).comments, [
+        'TITLE=Airbag',
+        'COMMENT=kept',
+        'GENRE=Rock',
+      ]);
     });
 
     test('GivenAnAlbumArtistSpelledTheFfmpegWay_WhenTheAlbumArtistIsWritten_ThenAlbumArtistReplacesIt', () async {
       final file = flacOf([
         streamInfoBlock(),
-        vorbisCommentBlock(['ALBUM_ARTIST=Radiohed', 'COMMENT=kept', 'ALBUM ARTIST=Radiohed']),
+        vorbisCommentBlock([
+          'ALBUM_ARTIST=Radiohed',
+          'COMMENT=kept',
+          'ALBUM ARTIST=Radiohed',
+        ]),
       ]);
 
-      final edited = editFlacTags(file, {AutofillField.albumArtist: 'Radiohead'});
+      final edited = editFlacTags(file, {
+        AutofillField.albumArtist: 'Radiohead',
+      });
 
-      expect(commentsOf(edited).comments, ['ALBUMARTIST=Radiohead', 'COMMENT=kept']);
-      expect((await readBack(edited)).values[AutofillField.albumArtist], 'Radiohead');
+      expect(commentsOf(edited).comments, [
+        'ALBUMARTIST=Radiohead',
+        'COMMENT=kept',
+      ]);
+      expect(
+        (await readBack(edited)).values[AutofillField.albumArtist],
+        'Radiohead',
+      );
     });
 
     test('GivenAnAlbumArtistSpelledTheFfmpegWay_WhenAnotherFieldIsWritten_ThenItIsLeftAlone', () {
@@ -198,47 +245,78 @@ void main() {
         vorbisCommentBlock(['TITLE=Airbag', 'ALBUM_ARTIST=Radiohed']),
       ]);
 
-      final edited = editFlacTags(file, {AutofillField.title: 'Paranoid Android'});
+      final edited = editFlacTags(file, {
+        AutofillField.title: 'Paranoid Android',
+      });
 
-      expect(commentsOf(edited).comments, ['TITLE=Paranoid Android', 'ALBUM_ARTIST=Radiohed']);
-    });
-
-    test('GivenACommentWithNoEqualsSign_WhenAFieldIsWritten_ThenItIsKeptAsItWas', () {
-      final file = flacOf([
-        streamInfoBlock(),
-        vorbisCommentBlock(['TITLE=Airbag', 'TITLE', 'COMMENT=kept']),
+      expect(commentsOf(edited).comments, [
+        'TITLE=Paranoid Android',
+        'ALBUM_ARTIST=Radiohed',
       ]);
-
-      final edited = editFlacTags(file, {AutofillField.title: 'Paranoid Android'});
-
-      expect(commentsOf(edited).comments, ['TITLE=Paranoid Android', 'TITLE', 'COMMENT=kept']);
     });
+
+    test(
+      'GivenACommentWithNoEqualsSign_WhenAFieldIsWritten_ThenItIsKeptAsItWas',
+      () {
+        final file = flacOf([
+          streamInfoBlock(),
+          vorbisCommentBlock(['TITLE=Airbag', 'TITLE', 'COMMENT=kept']),
+        ]);
+
+        final edited = editFlacTags(file, {
+          AutofillField.title: 'Paranoid Android',
+        });
+
+        expect(commentsOf(edited).comments, [
+          'TITLE=Paranoid Android',
+          'TITLE',
+          'COMMENT=kept',
+        ]);
+      },
+    );
   });
 
   group('a number and its total in one comment', () {
     FlacBlock comments(List<String> comments) => vorbisCommentBlock(comments);
 
     test('GivenTrackNumberThreeOfTwelve_WhenTheTrackTotalIsWritten_ThenTheNumberIsPlainAndTheTotalHasItsOwnComment', () async {
-      final file = flacOf([streamInfoBlock(), comments(['TRACKNUMBER=3/12', 'COMMENT=kept'])]);
+      final file = flacOf([
+        streamInfoBlock(),
+        comments(['TRACKNUMBER=3/12', 'COMMENT=kept']),
+      ]);
 
       final edited = editFlacTags(file, {AutofillField.trackTotal: 10});
 
-      expect(commentsOf(edited).comments, ['TRACKNUMBER=3', 'COMMENT=kept', 'TRACKTOTAL=10']);
+      expect(commentsOf(edited).comments, [
+        'TRACKNUMBER=3',
+        'COMMENT=kept',
+        'TRACKTOTAL=10',
+      ]);
       final after = await readBack(edited);
       expect(after.values[AutofillField.trackNumber], 3);
       expect(after.values[AutofillField.trackTotal], 10);
     });
 
     test('GivenTrackNumberThreeOfTwelve_WhenTheTrackNumberIsWritten_ThenTheTotalMovesToItsOwnComment', () async {
-      final file = flacOf([streamInfoBlock(), comments(['TRACKNUMBER=3/12', 'COMMENT=kept'])]);
+      final file = flacOf([
+        streamInfoBlock(),
+        comments(['TRACKNUMBER=3/12', 'COMMENT=kept']),
+      ]);
 
       final edited = editFlacTags(file, {AutofillField.trackNumber: 5});
 
-      expect(commentsOf(edited).comments, ['TRACKNUMBER=5', 'COMMENT=kept', 'TRACKTOTAL=12']);
+      expect(commentsOf(edited).comments, [
+        'TRACKNUMBER=5',
+        'COMMENT=kept',
+        'TRACKTOTAL=12',
+      ]);
     });
 
     test('GivenTrackNumberThreeOfTwelveAndATotal_WhenTheTrackNumberIsWritten_ThenTheTotalCommentIsKept', () {
-      final file = flacOf([streamInfoBlock(), comments(['TRACKNUMBER=3/12', 'TOTALTRACKS=12'])]);
+      final file = flacOf([
+        streamInfoBlock(),
+        comments(['TRACKNUMBER=3/12', 'TOTALTRACKS=12']),
+      ]);
 
       final edited = editFlacTags(file, {AutofillField.trackNumber: 5});
 
@@ -246,7 +324,10 @@ void main() {
     });
 
     test('GivenTrackNumberThreeOfTwelve_WhenTheTrackTotalIsRemoved_ThenTheNumberIsPlainAndNoTotalIsLeft', () {
-      final file = flacOf([streamInfoBlock(), comments(['TRACKNUMBER=03/12', 'TRACKTOTAL=12'])]);
+      final file = flacOf([
+        streamInfoBlock(),
+        comments(['TRACKNUMBER=03/12', 'TRACKTOTAL=12']),
+      ]);
 
       final edited = editFlacTags(file, {AutofillField.trackTotal: null});
 
@@ -254,7 +335,10 @@ void main() {
     });
 
     test('GivenDiscOneOfTwo_WhenTheDiscTotalIsWritten_ThenTheNumberIsPlainAndTheTotalHasItsOwnComment', () async {
-      final file = flacOf([streamInfoBlock(), comments(['DISCNUMBER=1/2', 'TOTALDISCS=2'])]);
+      final file = flacOf([
+        streamInfoBlock(),
+        comments(['DISCNUMBER=1/2', 'TOTALDISCS=2']),
+      ]);
 
       final edited = editFlacTags(file, {AutofillField.discTotal: 3});
 
@@ -265,9 +349,15 @@ void main() {
     });
 
     test('GivenATotalThatIsNotANumber_WhenTheTrackNumberIsWritten_ThenItIsRefusedRatherThanLost', () {
-      final file = flacOf([streamInfoBlock(), comments(['TRACKNUMBER=3/twelve'])]);
+      final file = flacOf([
+        streamInfoBlock(),
+        comments(['TRACKNUMBER=3/twelve']),
+      ]);
 
-      expect(() => editFlacTags(file, {AutofillField.trackNumber: 5}), throwsFormatException);
+      expect(
+        () => editFlacTags(file, {AutofillField.trackNumber: 5}),
+        throwsFormatException,
+      );
     });
   });
 
@@ -295,15 +385,20 @@ void main() {
       expect((await readBack(edited)).cover, onePixelPng());
     });
 
-    test('GivenABackAndAFrontCover_WhenTheCoverIsNotWritten_ThenBothAreUntouched', () {
-      final edited = editFlacTags(file, {AutofillField.title: 'Paranoid Android'});
+    test(
+      'GivenABackAndAFrontCover_WhenTheCoverIsNotWritten_ThenBothAreUntouched',
+      () {
+        final edited = editFlacTags(file, {
+          AutofillField.title: 'Paranoid Android',
+        });
 
-      final before = blocksOf(file).blocks;
-      final after = blocksOf(edited).blocks;
-      expect(after.map((b) => b.type), [0, 4, 6, 6, 1]);
-      expect(after[2].body, before[2].body);
-      expect(after[3].body, before[3].body);
-    });
+        final before = blocksOf(file).blocks;
+        final after = blocksOf(edited).blocks;
+        expect(after.map((b) => b.type), [0, 4, 6, 6, 1]);
+        expect(after[2].body, before[2].body);
+        expect(after[3].body, before[3].body);
+      },
+    );
 
     test('GivenABackAndAFrontCoverLast_WhenTheCoverIsRemoved_ThenOnlyTheBackIsLeftAndItIsTheLastBlock', () {
       final coverLast = flacOf([
@@ -322,27 +417,34 @@ void main() {
       expect(after[2].last, isTrue);
     });
 
-    test('GivenNoPicture_WhenACoverIsWritten_ThenItGoesDirectlyAfterTheComments', () async {
-      final bare = flacOf([
-        streamInfoBlock(),
-        seekTableBlock(),
-        vorbisCommentBlock(['TITLE=Airbag']),
-        paddingBlock(8),
-      ]);
-      final jpeg = Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xE0, 1, 2]);
+    test(
+      'GivenNoPicture_WhenACoverIsWritten_ThenItGoesDirectlyAfterTheComments',
+      () async {
+        final bare = flacOf([
+          streamInfoBlock(),
+          seekTableBlock(),
+          vorbisCommentBlock(['TITLE=Airbag']),
+          paddingBlock(8),
+        ]);
+        final jpeg = Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xE0, 1, 2]);
 
-      final edited = editFlacTags(bare, {AutofillField.cover: jpeg});
+        final edited = editFlacTags(bare, {AutofillField.cover: jpeg});
 
-      expectWellFormed(edited);
-      final after = blocksOf(edited).blocks;
-      expect(after.map((b) => b.type), [0, 3, 4, 6, 1]);
-      expect(after[3].body, pictureBody(jpeg, mime: 'image/jpeg'));
-      expect((await readBack(edited)).cover, jpeg);
-    });
+        expectWellFormed(edited);
+        final after = blocksOf(edited).blocks;
+        expect(after.map((b) => b.type), [0, 3, 4, 6, 1]);
+        expect(after[3].body, pictureBody(jpeg, mime: 'image/jpeg'));
+        expect((await readBack(edited)).cover, jpeg);
+      },
+    );
 
     test('GivenAFrontCoverEmbeddedInTheComments_WhenTheCoverIsWritten_ThenItIsReplacedToo', () async {
-      final embedded = base64Encode(pictureBody(Uint8List.fromList([7, 7, 7]), mime: 'image/png'));
-      final embeddedBack = base64Encode(pictureBody(back, mime: 'image/png', pictureType: 4));
+      final embedded = base64Encode(
+        pictureBody(Uint8List.fromList([7, 7, 7]), mime: 'image/png'),
+      );
+      final embeddedBack = base64Encode(
+        pictureBody(back, mime: 'image/png', pictureType: 4),
+      );
       final withEmbedded = flacOf([
         streamInfoBlock(),
         vorbisCommentBlock([
@@ -352,9 +454,14 @@ void main() {
         ]),
       ]);
 
-      final edited = editFlacTags(withEmbedded, {AutofillField.cover: onePixelPng()});
+      final edited = editFlacTags(withEmbedded, {
+        AutofillField.cover: onePixelPng(),
+      });
 
-      expect(commentsOf(edited).comments, ['TITLE=Airbag', 'METADATA_BLOCK_PICTURE=$embeddedBack']);
+      expect(commentsOf(edited).comments, [
+        'TITLE=Airbag',
+        'METADATA_BLOCK_PICTURE=$embeddedBack',
+      ]);
       expect((await readBack(edited)).cover, onePixelPng());
     });
   });
@@ -385,29 +492,49 @@ void main() {
         for (final (index, block) in after.blocks.indexed)
           if (index != 3 && index != 4) block,
       ];
-      expect(untouchedAfter.map((b) => b.body), untouchedBefore.map((b) => b.body));
+      expect(
+        untouchedAfter.map((b) => b.body),
+        untouchedBefore.map((b) => b.body),
+      );
     });
 
-    test('GivenALeadingId3Tag_WhenAFieldIsWritten_ThenTheTagIsKeptVerbatimInFront', () {
-      final id3 = id3v2Tag('Airbag');
-      final file = flacOf([
-        streamInfoBlock(),
-        vorbisCommentBlock(['TITLE=Airbag']),
-      ], id3v2: id3, audio: [1, 2, 3]);
+    test(
+      'GivenALeadingId3Tag_WhenAFieldIsWritten_ThenTheTagIsKeptVerbatimInFront',
+      () {
+        final id3 = id3v2Tag('Airbag');
+        final file = flacOf(
+          [
+            streamInfoBlock(),
+            vorbisCommentBlock(['TITLE=Airbag']),
+          ],
+          id3v2: id3,
+          audio: [1, 2, 3],
+        );
 
-      final edited = editFlacTags(file, {AutofillField.title: 'Paranoid Android'});
+        final edited = editFlacTags(file, {
+          AutofillField.title: 'Paranoid Android',
+        });
 
-      expect(edited.sublist(0, id3.length), id3);
-      expect(String.fromCharCodes(edited.sublist(id3.length, id3.length + 4)), 'fLaC');
-      expectWellFormed(edited);
-      expect(commentsOf(edited).comments, ['TITLE=Paranoid Android']);
-      expect(blocksOf(edited).audio, [1, 2, 3]);
-    });
+        expect(edited.sublist(0, id3.length), id3);
+        expect(
+          String.fromCharCodes(edited.sublist(id3.length, id3.length + 4)),
+          'fLaC',
+        );
+        expectWellFormed(edited);
+        expect(commentsOf(edited).comments, ['TITLE=Paranoid Android']);
+        expect(blocksOf(edited).audio, [1, 2, 3]);
+      },
+    );
 
     test('GivenNoCommentBlock_WhenAFieldIsWritten_ThenOneIsAddedAfterTheStreamInfo', () async {
-      final file = flacOf([streamInfoBlock(), paddingBlock(32)], audio: [1, 2, 3]);
+      final file = flacOf(
+        [streamInfoBlock(), paddingBlock(32)],
+        audio: [1, 2, 3],
+      );
 
-      final edited = editFlacTags(file, {AutofillField.title: 'Paranoid Android'});
+      final edited = editFlacTags(file, {
+        AutofillField.title: 'Paranoid Android',
+      });
 
       expectWellFormed(edited);
       final after = blocksOf(edited);
@@ -415,63 +542,96 @@ void main() {
       expect(commentsOf(edited).vendor, 'Orpheus');
       expect(commentsOf(edited).comments, ['TITLE=Paranoid Android']);
       expect(after.audio, [1, 2, 3]);
-      expect((await readBack(edited)).values[AutofillField.title], 'Paranoid Android');
+      expect(
+        (await readBack(edited)).values[AutofillField.title],
+        'Paranoid Android',
+      );
     });
 
     test('GivenTheCommentsWereTheLastBlock_WhenACoverIsAdded_ThenOnlyTheCoverIsFlaggedLast', () {
-      final edited = editFlacTags(taggedFlac(tags: {'TITLE': 'Airbag'}), {AutofillField.cover: onePixelPng()});
+      final edited = editFlacTags(taggedFlac(tags: {'TITLE': 'Airbag'}), {
+        AutofillField.cover: onePixelPng(),
+      });
 
       expectWellFormed(edited);
-      expect(blocksOf(edited).blocks.map((b) => (b.type, b.last)), [(0, false), (4, false), (6, true)]);
+      expect(blocksOf(edited).blocks.map((b) => (b.type, b.last)), [
+        (0, false),
+        (4, false),
+        (6, true),
+      ]);
     });
   });
 
   group('input it cannot edit safely', () {
-    test('GivenBytesThatAreNotFlac_WhenEdited_ThenItThrowsAFormatException', () {
-      expect(
-        () => editFlacTags(Uint8List.fromList('RIFF0000WAVE'.codeUnits), {AutofillField.title: 'X'}),
-        throwsFormatException,
-      );
-    });
+    test(
+      'GivenBytesThatAreNotFlac_WhenEdited_ThenItThrowsAFormatException',
+      () {
+        expect(
+          () => editFlacTags(Uint8List.fromList('RIFF0000WAVE'.codeUnits), {
+            AutofillField.title: 'X',
+          }),
+          throwsFormatException,
+        );
+      },
+    );
 
-    test('GivenABlockLongerThanTheFile_WhenEdited_ThenItThrowsAFormatException', () {
-      final file = taggedFlac(tags: {'TITLE': 'Airbag'});
+    test(
+      'GivenABlockLongerThanTheFile_WhenEdited_ThenItThrowsAFormatException',
+      () {
+        final file = taggedFlac(tags: {'TITLE': 'Airbag'});
 
-      expect(
-        () => editFlacTags(Uint8List.sublistView(file, 0, file.length - 3), {AutofillField.title: 'X'}),
-        throwsFormatException,
-      );
-    });
+        expect(
+          () => editFlacTags(Uint8List.sublistView(file, 0, file.length - 3), {
+            AutofillField.title: 'X',
+          }),
+          throwsFormatException,
+        );
+      },
+    );
 
     test('GivenMetadataThatEndsBeforeItsLastBlock_WhenEdited_ThenItThrowsAFormatException', () {
       // The STREAMINFO block alone, not flagged last, and nothing after it.
       final file = flacOf([streamInfoBlock(), paddingBlock(4)]);
 
       expect(
-        () => editFlacTags(Uint8List.sublistView(file, 0, file.length - 8), {AutofillField.title: 'X'}),
+        () => editFlacTags(Uint8List.sublistView(file, 0, file.length - 8), {
+          AutofillField.title: 'X',
+        }),
         throwsFormatException,
       );
     });
 
-    test('GivenACommentLongerThanItsBlock_WhenEdited_ThenItThrowsAFormatException', () {
-      final body = vorbisCommentBlock(['TITLE=Airbag']).body;
-      // The comment's own length, one more than the block holds.
-      final lengthAt = body.length - 'TITLE=Airbag'.length - 4;
-      ByteData.sublistView(body).setUint32(lengthAt, 13, Endian.little);
-      final file = flacOf([streamInfoBlock(), (type: 4, body: body)]);
+    test(
+      'GivenACommentLongerThanItsBlock_WhenEdited_ThenItThrowsAFormatException',
+      () {
+        final body = vorbisCommentBlock(['TITLE=Airbag']).body;
+        // The comment's own length, one more than the block holds.
+        final lengthAt = body.length - 'TITLE=Airbag'.length - 4;
+        ByteData.sublistView(body).setUint32(lengthAt, 13, Endian.little);
+        final file = flacOf([streamInfoBlock(), (type: 4, body: body)]);
 
-      expect(() => editFlacTags(file, {AutofillField.title: 'X'}), throwsFormatException);
-    });
+        expect(
+          () => editFlacTags(file, {AutofillField.title: 'X'}),
+          throwsFormatException,
+        );
+      },
+    );
 
-    test('GivenAnId3TagLongerThanTheFile_WhenEdited_ThenItThrowsAFormatException', () {
-      final id3 = id3v2Tag('Airbag');
-      id3[9] = 0x7F;
+    test(
+      'GivenAnId3TagLongerThanTheFile_WhenEdited_ThenItThrowsAFormatException',
+      () {
+        final id3 = id3v2Tag('Airbag');
+        id3[9] = 0x7F;
 
-      expect(
-        () => editFlacTags(Uint8List.fromList([...id3.sublist(0, 10), ...'fLaC'.codeUnits]), {AutofillField.title: 'X'}),
-        throwsFormatException,
-      );
-    });
+        expect(
+          () => editFlacTags(
+            Uint8List.fromList([...id3.sublist(0, 10), ...'fLaC'.codeUnits]),
+            {AutofillField.title: 'X'},
+          ),
+          throwsFormatException,
+        );
+      },
+    );
   });
 }
 
@@ -480,7 +640,9 @@ typedef ParsedBlock = ({bool last, int type, Uint8List body});
 
 /// What comes before the first block, the blocks, and what comes after the
 /// last: read independently of the code under test.
-({Uint8List prefix, List<ParsedBlock> blocks, Uint8List audio}) blocksOf(Uint8List file) {
+({Uint8List prefix, List<ParsedBlock> blocks, Uint8List audio}) blocksOf(
+  Uint8List file,
+) {
   var offset = 0;
   if (String.fromCharCodes(file.sublist(0, 3)) == 'ID3') {
     final size = (file[6] << 21) | (file[7] << 14) | (file[8] << 7) | file[9];
@@ -495,8 +657,13 @@ typedef ParsedBlock = ({bool last, int type, Uint8List body});
   while (!last) {
     last = file[offset] & 0x80 != 0;
     final type = file[offset] & 0x7F;
-    final length = (file[offset + 1] << 16) | (file[offset + 2] << 8) | file[offset + 3];
-    blocks.add((last: last, type: type, body: file.sublist(offset + 4, offset + 4 + length)));
+    final length =
+        (file[offset + 1] << 16) | (file[offset + 2] << 8) | file[offset + 3];
+    blocks.add((
+      last: last,
+      type: type,
+      body: file.sublist(offset + 4, offset + 4 + length),
+    ));
     offset += 4 + length;
   }
 
@@ -508,7 +675,10 @@ typedef ParsedBlock = ({bool last, int type, Uint8List body});
 void expectWellFormed(Uint8List file) {
   final blocks = blocksOf(file).blocks;
   expect(blocks.first.type, 0, reason: 'STREAMINFO first');
-  expect([for (final block in blocks) block.last], [...List.filled(blocks.length - 1, false), true]);
+  expect(
+    [for (final block in blocks) block.last],
+    [...List.filled(blocks.length - 1, false), true],
+  );
 }
 
 /// Each comment of [file]'s VORBIS_COMMENT block, its four length bytes
@@ -552,9 +722,14 @@ List<String> rawCommentsOf(Uint8List file) {
 
 /// The PICTURE body the editor writes for [image]: no description and no
 /// dimensions, which a reader takes from the image itself.
-Uint8List pictureBody(Uint8List image, {required String mime, int pictureType = 3}) {
+Uint8List pictureBody(
+  Uint8List image, {
+  required String mime,
+  int pictureType = 3,
+}) {
   final data = BytesBuilder();
-  void u32(int value) => data.add((ByteData(4)..setUint32(0, value)).buffer.asUint8List());
+  void u32(int value) =>
+      data.add((ByteData(4)..setUint32(0, value)).buffer.asUint8List());
   u32(pictureType);
   u32(mime.length);
   data.add(ascii.encode(mime));

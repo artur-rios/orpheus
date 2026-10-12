@@ -28,8 +28,12 @@ class FieldChange {
   final bool accepted;
 
   /// This change, ticked or not.
-  FieldChange withAccepted(bool accepted) =>
-      FieldChange(field: field, before: before, after: after, accepted: accepted);
+  FieldChange withAccepted(bool accepted) => FieldChange(
+    field: field,
+    before: before,
+    after: after,
+    accepted: accepted,
+  );
 }
 
 /// Why a file has nothing proposed for it.
@@ -134,7 +138,9 @@ FileProposal _proposalFor(
     return FileProposal(
       entry: entry,
       track: track,
-      blockedBecause: canWriteTagsTo(entry.file.path) ? ProposalBlock.unsafeTags : ProposalBlock.unwritableFormat,
+      blockedBecause: canWriteTagsTo(entry.file.path)
+          ? ProposalBlock.unsafeTags
+          : ProposalBlock.unwritableFormat,
     );
   }
   if (track == null) {
@@ -170,7 +176,9 @@ FileProposal _proposalFor(
     // proposal to remove what the file has.
     if (after == null || (after is String && after.trim().isEmpty)) continue;
 
-    final before = field == AutofillField.cover ? current.cover : current.values[field];
+    final before = field == AutofillField.cover
+        ? current.cover
+        : current.values[field];
     if (_same(before, after)) continue;
     // MusicBrainz spells every genre in lower case, so a file's "Rock" is
     // already its rock. A genre that is new is written as MusicBrainz spells
@@ -185,7 +193,12 @@ FileProposal _proposalFor(
     changes.add(FieldChange(field: field, before: before, after: after));
   }
 
-  return FileProposal(entry: entry, track: track, changes: changes, notWritable: notWritable);
+  return FileProposal(
+    entry: entry,
+    track: track,
+    changes: changes,
+    notWritable: notWritable,
+  );
 }
 
 bool _same(Object? before, Object? after) {

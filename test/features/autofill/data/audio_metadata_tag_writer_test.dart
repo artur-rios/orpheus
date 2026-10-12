@@ -18,7 +18,9 @@ void main() {
   late Directory root;
   const writer = AudioMetadataTagWriter();
 
-  setUp(() async => root = await Directory.systemTemp.createTemp('orpheus-tags'));
+  setUp(
+    () async => root = await Directory.systemTemp.createTemp('orpheus-tags'),
+  );
   tearDown(() async {
     if (root.existsSync()) await root.delete(recursive: true);
   });
@@ -46,33 +48,50 @@ void main() {
   }
 
   group('inspect', () {
-    test('GivenAnMp3_WhenInspected_ThenItsTagsAndEveryFieldAreAvailable', skip: unwritable('.mp3'), () async {
-      final tags = await writer.inspect(copyOf('tagged.mp3'));
+    test(
+      'GivenAnMp3_WhenInspected_ThenItsTagsAndEveryFieldAreAvailable',
+      skip: unwritable('.mp3'),
+      () async {
+        final tags = await writer.inspect(copyOf('tagged.mp3'));
 
-      expect(tags.values[AutofillField.title], 'Airbag');
-      expect(tags.values[AutofillField.artist], 'Radiohed');
-      expect(tags.values[AutofillField.albumArtist], 'Radiohead');
-      expect(tags.values[AutofillField.trackNumber], 1);
-      expect(tags.values[AutofillField.trackTotal], 12);
-      expect(tags.values[AutofillField.year], 1997);
-      expect(tags.writable, AutofillField.values.toSet());
-    });
+        expect(tags.values[AutofillField.title], 'Airbag');
+        expect(tags.values[AutofillField.artist], 'Radiohed');
+        expect(tags.values[AutofillField.albumArtist], 'Radiohead');
+        expect(tags.values[AutofillField.trackNumber], 1);
+        expect(tags.values[AutofillField.trackTotal], 12);
+        expect(tags.values[AutofillField.year], 1997);
+        expect(tags.writable, AutofillField.values.toSet());
+      },
+    );
 
-    test('GivenAFlac_WhenInspected_ThenItsTagsAreReadIncludingTheAlbumArtist', skip: unwritable('.flac'), () async {
-      final tags = await writer.inspect(flac({'TITLE': 'Airbag', 'ALBUMARTIST': 'Radiohead', 'DISCTOTAL': '2'}));
+    test(
+      'GivenAFlac_WhenInspected_ThenItsTagsAreReadIncludingTheAlbumArtist',
+      skip: unwritable('.flac'),
+      () async {
+        final tags = await writer.inspect(
+          flac({
+            'TITLE': 'Airbag',
+            'ALBUMARTIST': 'Radiohead',
+            'DISCTOTAL': '2',
+          }),
+        );
 
-      expect(tags.values[AutofillField.title], 'Airbag');
-      expect(tags.values[AutofillField.albumArtist], 'Radiohead');
-      expect(tags.values[AutofillField.discTotal], 2);
-      expect(tags.writable, AutofillField.values.toSet());
-    });
+        expect(tags.values[AutofillField.title], 'Airbag');
+        expect(tags.values[AutofillField.albumArtist], 'Radiohead');
+        expect(tags.values[AutofillField.discTotal], 2);
+        expect(tags.writable, AutofillField.values.toSet());
+      },
+    );
 
     test('GivenAFlacWithALeadingId3Tag_WhenInspected_ThenNothingIsWritable', () async {
       // The reader takes the ID3 tag for the file's tags; what the owner would
       // review is not what a write changes.
       final path = p.join(root.path, 'a.flac');
       File(path).writeAsBytesSync(
-        flacOf([streamInfoBlock(), vorbisCommentBlock(['TITLE=Airbag'])], id3v2: id3v2Tag('Airbag')),
+        flacOf([
+          streamInfoBlock(),
+          vorbisCommentBlock(['TITLE=Airbag']),
+        ], id3v2: id3v2Tag('Airbag')),
       );
 
       expect((await writer.inspect(path)).writable, isEmpty);
@@ -82,64 +101,135 @@ void main() {
       // The reader takes the APE tag for the file's tags; a write would add an
       // ID3v2 tag in front, which is not what the owner reviewed.
       final path = p.join(root.path, 'a.mp3');
-      final mpeg = File(p.join('test', 'support', 'tag_fixtures', 'tagged.mp3')).readAsBytesSync().sublist(236);
+      final mpeg = File(p.join('test', 'support', 'tag_fixtures', 'tagged.mp3'))
+          .readAsBytesSync()
+          .sublist(236);
       // The APE fixture without its Monkey's Audio marker and stand-in audio.
-      File(path).writeAsBytesSync([...mpeg, ...taggedApe(tags: {'Title': 'Airbag'}).sublist(64)]);
+      File(path).writeAsBytesSync([
+        ...mpeg,
+        ...taggedApe(tags: {'Title': 'Airbag'}).sublist(64),
+      ]);
 
       expect((await writer.inspect(path)).writable, isEmpty);
     });
 
-    test('GivenAWav_WhenInspected_ThenOnlyTheFieldsItsFormatHoldsAreWritable', skip: unwritable('.wav'), () async {
-      final tags = await writer.inspect(copyOf('tagged.wav'));
+    test(
+      'GivenAWav_WhenInspected_ThenOnlyTheFieldsItsFormatHoldsAreWritable',
+      skip: unwritable('.wav'),
+      () async {
+        final tags = await writer.inspect(copyOf('tagged.wav'));
 
-      expect(tags.writable, isNot(contains(AutofillField.albumArtist)));
-      expect(tags.writable, isNot(contains(AutofillField.discNumber)));
-      expect(tags.writable, contains(AutofillField.title));
-    });
+        expect(tags.writable, isNot(contains(AutofillField.albumArtist)));
+        expect(tags.writable, isNot(contains(AutofillField.discNumber)));
+        expect(tags.writable, contains(AutofillField.title));
+      },
+    );
 
     test('GivenAnOgg_WhenInspected_ThenNothingIsWritable', () async {
       expect((await writer.inspect(copyOf('tagged.ogg'))).writable, isEmpty);
     });
 
-    test('GivenAFileThatIsNotThere_WhenInspected_ThenNothingIsWritable', () async {
-      expect((await writer.inspect(p.join(root.path, 'gone.mp3'))).writable, isEmpty);
-    });
+    test(
+      'GivenAFileThatIsNotThere_WhenInspected_ThenNothingIsWritable',
+      () async {
+        expect(
+          (await writer.inspect(p.join(root.path, 'gone.mp3'))).writable,
+          isEmpty,
+        );
+      },
+    );
 
     // A tag the ID3 editor will not touch is marked before the owner reviews
     // anything, rather than refused once they have confirmed it.
     for (final (name, tag) in [
-      ('AnId3v22Tag', () => id3Tag(frames: [frame('TT2', Uint8List.fromList([0, ...latin1.encode('Airbag')]), major: 2)], major: 2)),
-      ('AnUnsynchronisedTag', () => id3Tag(frames: [frame('TIT2', Uint8List.fromList([3, ...utf8.encode('Airbag')]))], unsynchronised: true)),
-      ('AnExtendedHeader', () => id3Tag(frames: [frame('TIT2', Uint8List.fromList([3, ...utf8.encode('Airbag')]))], extendedHeader: true)),
+      (
+        'AnId3v22Tag',
+        () => id3Tag(
+          frames: [
+            frame(
+              'TT2',
+              Uint8List.fromList([0, ...latin1.encode('Airbag')]),
+              major: 2,
+            ),
+          ],
+          major: 2,
+        ),
+      ),
+      (
+        'AnUnsynchronisedTag',
+        () => id3Tag(
+          frames: [
+            frame('TIT2', Uint8List.fromList([3, ...utf8.encode('Airbag')])),
+          ],
+          unsynchronised: true,
+        ),
+      ),
+      (
+        'AnExtendedHeader',
+        () => id3Tag(
+          frames: [
+            frame('TIT2', Uint8List.fromList([3, ...utf8.encode('Airbag')])),
+          ],
+          extendedHeader: true,
+        ),
+      ),
     ]) {
-      test('GivenAnMp3With${name}_WhenInspected_ThenNothingIsWritable', () async {
-        final path = p.join(root.path, 'a.mp3');
-        File(path).writeAsBytesSync([...tag(), ...mpegAudio()]);
+      test(
+        'GivenAnMp3With${name}_WhenInspected_ThenNothingIsWritable',
+        () async {
+          final path = p.join(root.path, 'a.mp3');
+          File(path).writeAsBytesSync([...tag(), ...mpegAudio()]);
 
-        expect((await writer.inspect(path)).writable, isEmpty);
-      });
+          expect((await writer.inspect(path)).writable, isEmpty);
+        },
+      );
     }
 
     // What the review shows as "before" is what a write replaces: the whole
     // TCON frame, and every comment of a Vorbis key — not the first genre the
     // reader splits out of them.
-    for (final (genre, shown) in [('Hip-Hop/Rap', 'Hip-Hop/Rap'), ('80s Pop', '80s Pop')]) {
-      test('GivenAnMp3WhoseTconIs${genre.replaceAll(RegExp('[^A-Za-z0-9]'), '')}_WhenInspected_ThenTheGenreIsTheWholeFrame', () async {
-        final path = p.join(root.path, 'a.mp3');
-        File(path).writeAsBytesSync(
-          id3Tag(frames: [frame('TCON', Uint8List.fromList([3, ...utf8.encode(genre)]))], trailing: mpegAudio()),
-        );
+    for (final (genre, shown) in [
+      ('Hip-Hop/Rap', 'Hip-Hop/Rap'),
+      ('80s Pop', '80s Pop'),
+    ]) {
+      test(
+        'GivenAnMp3WhoseTconIs${genre.replaceAll(RegExp('[^A-Za-z0-9]'), '')}_WhenInspected_ThenTheGenreIsTheWholeFrame',
+        () async {
+          final path = p.join(root.path, 'a.mp3');
+          File(path).writeAsBytesSync(
+            id3Tag(
+              frames: [
+                frame('TCON', Uint8List.fromList([3, ...utf8.encode(genre)])),
+              ],
+              trailing: mpegAudio(),
+            ),
+          );
 
-        expect((await writer.inspect(path)).values[AutofillField.genre], shown);
-      });
+          expect(
+            (await writer.inspect(path)).values[AutofillField.genre],
+            shown,
+          );
+        },
+      );
     }
 
-    test('GivenAFlacWithTwoGenres_WhenInspected_ThenTheGenreIsBothJoined', () async {
-      final path = p.join(root.path, 'a.flac');
-      File(path).writeAsBytesSync(flacOf([streamInfoBlock(), vorbisCommentBlock(['GENRE=Rock', 'GENRE=Pop'])]));
+    test(
+      'GivenAFlacWithTwoGenres_WhenInspected_ThenTheGenreIsBothJoined',
+      () async {
+        final path = p.join(root.path, 'a.flac');
+        File(path).writeAsBytesSync(
+          flacOf([
+            streamInfoBlock(),
+            vorbisCommentBlock(['GENRE=Rock', 'GENRE=Pop']),
+          ]),
+        );
 
-      expect((await writer.inspect(path)).values[AutofillField.genre], 'Rock; Pop');
-    });
+        expect(
+          (await writer.inspect(path)).values[AutofillField.genre],
+          'Rock; Pop',
+        );
+      },
+    );
 
     test('GivenAFlacWithTwoOfEachTextComment_WhenInspected_ThenEachFieldIsEveryValueJoined', () async {
       final path = p.join(root.path, 'a.flac');
@@ -171,7 +261,11 @@ void main() {
   AudioFile asCatalogued(String path) {
     final stat = File(path).statSync();
 
-    return AudioFile(path: path, sizeInBytes: stat.size, modifiedAt: stat.modified);
+    return AudioFile(
+      path: path,
+      sizeInBytes: stat.size,
+      modifiedAt: stat.modified,
+    );
   }
 
   final everything = <AutofillField, Object?>{
@@ -189,28 +283,60 @@ void main() {
   };
 
   group('write', () {
-    for (final name in ['tagged.mp3', 'tagged.m4a', 'tagged.wav', 'a.flac', 'a.ape']) {
-      test('GivenA${p.extension(name)}File_WhenEveryFieldItHoldsIsWritten_ThenEachReadsBack', skip: unwritable(p.extension(name)), () async {
-        final path = switch (name) {
-          'a.flac' => flac({'TITLE': 'Airbag', 'ARTIST': 'Radiohed', 'COMMENT': 'kept'}),
-          'a.ape' => ape({'Title': 'Airbag', 'Artist': 'Radiohed', 'Comment': 'kept'}),
-          _ => copyOf(name),
-        };
-        final writable = AudioMetadataTagWriter.fieldsFor(path);
-        final values = {for (final field in writable) field: everything[field]};
+    for (final name in [
+      'tagged.mp3',
+      'tagged.m4a',
+      'tagged.wav',
+      'a.flac',
+      'a.ape',
+    ]) {
+      test(
+        'GivenA${p.extension(name)}File_WhenEveryFieldItHoldsIsWritten_ThenEachReadsBack',
+        skip: unwritable(p.extension(name)),
+        () async {
+          final path = switch (name) {
+            'a.flac' => flac({
+              'TITLE': 'Airbag',
+              'ARTIST': 'Radiohed',
+              'COMMENT': 'kept',
+            }),
+            'a.ape' => ape({
+              'Title': 'Airbag',
+              'Artist': 'Radiohed',
+              'Comment': 'kept',
+            }),
+            _ => copyOf(name),
+          };
+          final writable = AudioMetadataTagWriter.fieldsFor(path);
+          final values = {
+            for (final field in writable) field: everything[field],
+          };
 
-        final outcome = await writer.write(path, values, expected: asCatalogued(path));
-        final after = await writer.inspect(path);
+          final outcome = await writer.write(
+            path,
+            values,
+            expected: asCatalogued(path),
+          );
+          final after = await writer.inspect(path);
 
-        expect(outcome, WriteOutcome.written);
-        for (final field in writable) {
-          if (field == AutofillField.cover) {
-            expect(after.cover, everything[AutofillField.cover], reason: '$name cover');
-          } else {
-            expect(after.values[field], everything[field], reason: '$name ${field.name}');
+          expect(outcome, WriteOutcome.written);
+          for (final field in writable) {
+            if (field == AutofillField.cover) {
+              expect(
+                after.cover,
+                everything[AutofillField.cover],
+                reason: '$name cover',
+              );
+            } else {
+              expect(
+                after.values[field],
+                everything[field],
+                reason: '$name ${field.name}',
+              );
+            }
           }
-        }
-      });
+        },
+      );
     }
   });
 
@@ -219,115 +345,192 @@ void main() {
     // to change exactly as it was — including the ones the package's model
     // does not hold. These read the file back with ffprobe-independent means:
     // the raw bytes must still carry the kept values.
-    for (final name in ['tagged.mp3', 'tagged.m4a', 'tagged.wav', 'a.flac', 'a.ape']) {
-      test('GivenA${p.extension(name)}FileWithTagsTheAutofillDoesNotTouch_WhenOneFieldIsWritten_ThenTheyAreAllStillThere', skip: lost[p.extension(name)], () async {
-        final path = switch (name) {
-          'a.flac' => flac({'TITLE': 'Airbag', 'COMMENT': 'kept', 'CUSTOM': 'kept'}),
-          'a.ape' => ape({
-            'Title': 'Airbag',
-            'Artist': 'Radiohed',
-            'Album Artist': 'Radiohead',
-            'Album': 'OK Computer',
-            'Year': '1997',
-            'Track': '1/12',
-            'Disc': '1/1',
-            'Genre': 'Rock',
-            'Comment': 'kept',
-            'CUSTOM': 'kept',
-          }),
-          _ => copyOf(name),
-        };
-        final before = await writer.inspect(path);
-        final rawBefore = latin1.decode(File(path).readAsBytesSync(), allowInvalid: true);
+    for (final name in [
+      'tagged.mp3',
+      'tagged.m4a',
+      'tagged.wav',
+      'a.flac',
+      'a.ape',
+    ]) {
+      test(
+        'GivenA${p.extension(name)}FileWithTagsTheAutofillDoesNotTouch_WhenOneFieldIsWritten_ThenTheyAreAllStillThere',
+        skip: lost[p.extension(name)],
+        () async {
+          final path = switch (name) {
+            'a.flac' => flac({
+              'TITLE': 'Airbag',
+              'COMMENT': 'kept',
+              'CUSTOM': 'kept',
+            }),
+            'a.ape' => ape({
+              'Title': 'Airbag',
+              'Artist': 'Radiohed',
+              'Album Artist': 'Radiohead',
+              'Album': 'OK Computer',
+              'Year': '1997',
+              'Track': '1/12',
+              'Disc': '1/1',
+              'Genre': 'Rock',
+              'Comment': 'kept',
+              'CUSTOM': 'kept',
+            }),
+            _ => copyOf(name),
+          };
+          final before = await writer.inspect(path);
+          final rawBefore = latin1.decode(
+            File(path).readAsBytesSync(),
+            allowInvalid: true,
+          );
 
-        final outcome = await writer.write(path, {AutofillField.title: 'Paranoid Android'}, expected: asCatalogued(path));
+          final outcome = await writer.write(path, {
+            AutofillField.title: 'Paranoid Android',
+          }, expected: asCatalogued(path));
 
-        final after = await writer.inspect(path);
-        // The write happened: a refused or no-op write keeps everything too.
-        expect(outcome, WriteOutcome.written, reason: name);
-        expect(after.values[AutofillField.title], 'Paranoid Android', reason: '$name title');
-        for (final field in AutofillField.values.where((f) => f != AutofillField.title)) {
-          expect(after.values[field], before.values[field], reason: '$name ${field.name}');
-        }
-        expect(after.cover, before.cover, reason: '$name cover');
-        // The tags no field covers: a comment on every format, and on the M4A
-        // the album artist (aART) the writer's model cannot hold.
-        final raw = latin1.decode(File(path).readAsBytesSync(), allowInvalid: true);
-        expect(raw, contains('kept'), reason: '$name comment');
-        if (name == 'tagged.m4a') expect(raw, contains('aART'), reason: 'm4a album artist');
-        // And every other tag, by its name and its value as the file holds
-        // them — which also catches what the reader cannot parse (and so
-        // compares equal above) but a rewrite drops, renames or reformats.
-        for (final marker in untouched[name]!) {
-          expect(occurrences(raw, marker), occurrences(rawBefore, marker), reason: '$name $marker');
-        }
-      });
+          final after = await writer.inspect(path);
+          // The write happened: a refused or no-op write keeps everything too.
+          expect(outcome, WriteOutcome.written, reason: name);
+          expect(
+            after.values[AutofillField.title],
+            'Paranoid Android',
+            reason: '$name title',
+          );
+          for (final field in AutofillField.values.where(
+            (f) => f != AutofillField.title,
+          )) {
+            expect(
+              after.values[field],
+              before.values[field],
+              reason: '$name ${field.name}',
+            );
+          }
+          expect(after.cover, before.cover, reason: '$name cover');
+          // The tags no field covers: a comment on every format, and on the M4A
+          // the album artist (aART) the writer's model cannot hold.
+          final raw = latin1.decode(
+            File(path).readAsBytesSync(),
+            allowInvalid: true,
+          );
+          expect(raw, contains('kept'), reason: '$name comment');
+          if (name == 'tagged.m4a') {
+            expect(raw, contains('aART'), reason: 'm4a album artist');
+          }
+          // And every other tag, by its name and its value as the file holds
+          // them — which also catches what the reader cannot parse (and so
+          // compares equal above) but a rewrite drops, renames or reformats.
+          for (final marker in untouched[name]!) {
+            expect(
+              occurrences(raw, marker),
+              occurrences(rawBefore, marker),
+              reason: '$name $marker',
+            );
+          }
+        },
+      );
     }
   });
 
   group('refusals', () {
-    test('GivenAFileChangedSinceItWasRead_WhenWritten_ThenItIsLeftAlone', skip: unwritable('.mp3'), () async {
-      final path = copyOf('tagged.mp3');
-      final catalogued = asCatalogued(path);
-      // Another tag editor gets there first.
-      File(path).writeAsBytesSync([...File(path).readAsBytesSync(), 0]);
+    test(
+      'GivenAFileChangedSinceItWasRead_WhenWritten_ThenItIsLeftAlone',
+      skip: unwritable('.mp3'),
+      () async {
+        final path = copyOf('tagged.mp3');
+        final catalogued = asCatalogued(path);
+        // Another tag editor gets there first.
+        File(path).writeAsBytesSync([...File(path).readAsBytesSync(), 0]);
 
-      final outcome = await writer.write(path, {AutofillField.title: 'X'}, expected: catalogued);
+        final outcome = await writer.write(path, {
+          AutofillField.title: 'X',
+        }, expected: catalogued);
 
-      expect(outcome, WriteOutcome.changedSinceRead);
-      expect((await writer.inspect(path)).values[AutofillField.title], 'Airbag');
-    });
+        expect(outcome, WriteOutcome.changedSinceRead);
+        expect(
+          (await writer.inspect(path)).values[AutofillField.title],
+          'Airbag',
+        );
+      },
+    );
 
-    test('GivenAFlacChangedSinceItWasRead_WhenWritten_ThenItIsLeftAlone', () async {
-      final path = flac({'TITLE': 'Airbag'});
-      final catalogued = asCatalogued(path);
-      File(path).writeAsBytesSync([...File(path).readAsBytesSync(), 0]);
-      final bytes = File(path).readAsBytesSync();
+    test(
+      'GivenAFlacChangedSinceItWasRead_WhenWritten_ThenItIsLeftAlone',
+      () async {
+        final path = flac({'TITLE': 'Airbag'});
+        final catalogued = asCatalogued(path);
+        File(path).writeAsBytesSync([...File(path).readAsBytesSync(), 0]);
+        final bytes = File(path).readAsBytesSync();
 
-      final outcome = await writer.write(path, {AutofillField.title: 'X'}, expected: catalogued);
+        final outcome = await writer.write(path, {
+          AutofillField.title: 'X',
+        }, expected: catalogued);
 
-      expect(outcome, WriteOutcome.changedSinceRead);
-      expect(File(path).readAsBytesSync(), bytes);
-    });
+        expect(outcome, WriteOutcome.changedSinceRead);
+        expect(File(path).readAsBytesSync(), bytes);
+      },
+    );
 
-    test('GivenAFlacThatIsGone_WhenWritten_ThenItIsReportedAsChangedAndNotCreated', () async {
-      final path = flac({'TITLE': 'Airbag'});
-      final catalogued = asCatalogued(path);
-      File(path).deleteSync();
+    test(
+      'GivenAFlacThatIsGone_WhenWritten_ThenItIsReportedAsChangedAndNotCreated',
+      () async {
+        final path = flac({'TITLE': 'Airbag'});
+        final catalogued = asCatalogued(path);
+        File(path).deleteSync();
 
-      expect(await writer.write(path, {AutofillField.title: 'X'}, expected: catalogued), WriteOutcome.changedSinceRead);
-      expect(root.listSync(), isEmpty);
-    });
+        expect(
+          await writer.write(path, {
+            AutofillField.title: 'X',
+          }, expected: catalogued),
+          WriteOutcome.changedSinceRead,
+        );
+        expect(root.listSync(), isEmpty);
+      },
+    );
 
     test(
       'GivenAFlacReachedThroughASymbolicLink_WhenWritten_ThenTheFileItPointsAtHasTheTagsAndTheLinkIsKept',
-      skip: Platform.isWindows ? 'creating a symbolic link on Windows may need privileges' : null,
+      skip: Platform.isWindows
+          ? 'creating a symbolic link on Windows may need privileges'
+          : null,
       () async {
         final target = p.join(root.path, 'real.flac');
-        File(target).writeAsBytesSync(taggedFlac(tags: {'TITLE': 'Airbag', 'COMMENT': 'kept'}));
+        File(target).writeAsBytesSync(
+          taggedFlac(tags: {'TITLE': 'Airbag', 'COMMENT': 'kept'}),
+        );
         final link = Link(p.join(root.path, 'a.flac'))..createSync(target);
 
-        final outcome = await writer.write(
-          link.path,
-          {AutofillField.title: 'Paranoid Android'},
-          expected: asCatalogued(link.path),
-        );
+        final outcome = await writer.write(link.path, {
+          AutofillField.title: 'Paranoid Android',
+        }, expected: asCatalogued(link.path));
 
         expect(outcome, WriteOutcome.written);
         expect(FileSystemEntity.isLinkSync(link.path), isTrue);
-        expect((await writer.inspect(link.path)).values[AutofillField.title], 'Paranoid Android');
-        expect((await writer.inspect(target)).values[AutofillField.title], 'Paranoid Android');
-        expect([for (final entity in root.listSync()) p.basename(entity.path)]..sort(), ['a.flac', 'real.flac']);
+        expect(
+          (await writer.inspect(link.path)).values[AutofillField.title],
+          'Paranoid Android',
+        );
+        expect(
+          (await writer.inspect(target)).values[AutofillField.title],
+          'Paranoid Android',
+        );
+        expect(
+          [for (final entity in root.listSync()) p.basename(entity.path)]
+            ..sort(),
+          ['a.flac', 'real.flac'],
+        );
       },
     );
 
     test('GivenAFlac_WhenWritten_ThenNoTemporaryFileIsLeftBehind', () async {
       final path = flac({'TITLE': 'Airbag', 'COMMENT': 'kept'});
 
-      final outcome = await writer.write(path, {AutofillField.title: 'Paranoid Android'}, expected: asCatalogued(path));
+      final outcome = await writer.write(path, {
+        AutofillField.title: 'Paranoid Android',
+      }, expected: asCatalogued(path));
 
       expect(outcome, WriteOutcome.written);
-      expect([for (final entity in root.listSync()) p.basename(entity.path)], ['a.flac']);
+      expect(
+        [for (final entity in root.listSync()) p.basename(entity.path)],
+        ['a.flac'],
+      );
     });
 
     test('GivenTwoWritesToOneFileStartedTogether_WhenTheyRun_ThenTheyRunOneAfterTheOtherAndTheSecondIsRefused', () async {
@@ -341,117 +544,204 @@ void main() {
       final catalogued = asCatalogued(path);
 
       final outcomes = await Future.wait([
-        writer.write(path, {AutofillField.title: 'Paranoid Android'}, expected: catalogued),
-        writer.write(path, {AutofillField.title: 'Subterranean Homesick Alien'}, expected: catalogued),
+        writer.write(path, {
+          AutofillField.title: 'Paranoid Android',
+        }, expected: catalogued),
+        writer.write(path, {
+          AutofillField.title: 'Subterranean Homesick Alien',
+        }, expected: catalogued),
       ]);
 
       expect(outcomes, [WriteOutcome.written, WriteOutcome.changedSinceRead]);
       final after = await writer.inspect(path);
       expect(after.writable, isNotEmpty);
       expect(after.values[AutofillField.title], 'Paranoid Android');
-      expect(latin1.decode(File(path).readAsBytesSync()), contains('COMMENT=kept'));
-      expect([for (final entity in root.listSync()) p.basename(entity.path)], ['a.flac']);
-    });
-
-    test('GivenAFlacItCannotParse_WhenWritten_ThenItFailsAndIsUntouched', () async {
-      final path = p.join(root.path, 'a.flac');
-      final whole = taggedFlac(tags: {'TITLE': 'Airbag'});
-      File(path).writeAsBytesSync(whole.sublist(0, whole.length - 3));
-      final bytes = File(path).readAsBytesSync();
-
-      final outcome = await writer.write(path, {AutofillField.title: 'X'}, expected: asCatalogued(path));
-
-      expect(outcome, WriteOutcome.failed);
-      expect(File(path).readAsBytesSync(), bytes);
-      expect([for (final entity in root.listSync()) p.basename(entity.path)], ['a.flac']);
-    });
-
-    test('GivenAnMp3WithAnUnsynchronisedTag_WhenWritten_ThenItIsUnsupportedAndUntouched', () async {
-      final path = p.join(root.path, 'a.mp3');
-      final mpeg = File(p.join('test', 'support', 'tag_fixtures', 'tagged.mp3')).readAsBytesSync().sublist(236);
-      final title = frame('TIT2', Uint8List.fromList([3, ...utf8.encode('Airbag')]));
-      File(path).writeAsBytesSync(id3Tag(frames: [title], unsynchronised: true, trailing: mpeg));
-      final bytes = File(path).readAsBytesSync();
-
-      final outcome = await writer.write(path, {AutofillField.title: 'X'}, expected: asCatalogued(path));
-
-      expect(outcome, WriteOutcome.unsupported);
-      expect(File(path).readAsBytesSync(), bytes);
-      expect([for (final entity in root.listSync()) p.basename(entity.path)], ['a.mp3']);
-    });
-
-    test('GivenAnMp3ItCannotParse_WhenWritten_ThenItFailsAndIsUntouched', () async {
-      final path = p.join(root.path, 'a.mp3');
-      final whole = File(p.join('test', 'support', 'tag_fixtures', 'tagged.mp3')).readAsBytesSync();
-      // Audio inside the tag, where its padding should be: a tag whose size
-      // overstates it, which a rewrite of the padding would cut into.
-      File(path).writeAsBytesSync([...whole.sublist(0, 9), 0x7F, ...whole.sublist(10)]);
-      final bytes = File(path).readAsBytesSync();
-
-      final outcome = await writer.write(path, {AutofillField.title: 'X'}, expected: asCatalogued(path));
-
-      expect(outcome, WriteOutcome.failed);
-      expect(File(path).readAsBytesSync(), bytes);
-      expect([for (final entity in root.listSync()) p.basename(entity.path)], ['a.mp3']);
+      expect(
+        latin1.decode(File(path).readAsBytesSync()),
+        contains('COMMENT=kept'),
+      );
+      expect(
+        [for (final entity in root.listSync()) p.basename(entity.path)],
+        ['a.flac'],
+      );
     });
 
     test(
+      'GivenAFlacItCannotParse_WhenWritten_ThenItFailsAndIsUntouched',
+      () async {
+        final path = p.join(root.path, 'a.flac');
+        final whole = taggedFlac(tags: {'TITLE': 'Airbag'});
+        File(path).writeAsBytesSync(whole.sublist(0, whole.length - 3));
+        final bytes = File(path).readAsBytesSync();
+
+        final outcome = await writer.write(path, {
+          AutofillField.title: 'X',
+        }, expected: asCatalogued(path));
+
+        expect(outcome, WriteOutcome.failed);
+        expect(File(path).readAsBytesSync(), bytes);
+        expect(
+          [for (final entity in root.listSync()) p.basename(entity.path)],
+          ['a.flac'],
+        );
+      },
+    );
+
+    test('GivenAnMp3WithAnUnsynchronisedTag_WhenWritten_ThenItIsUnsupportedAndUntouched', () async {
+      final path = p.join(root.path, 'a.mp3');
+      final mpeg = File(p.join('test', 'support', 'tag_fixtures', 'tagged.mp3'))
+          .readAsBytesSync()
+          .sublist(236);
+      final title = frame(
+        'TIT2',
+        Uint8List.fromList([3, ...utf8.encode('Airbag')]),
+      );
+      File(path).writeAsBytesSync(
+        id3Tag(frames: [title], unsynchronised: true, trailing: mpeg),
+      );
+      final bytes = File(path).readAsBytesSync();
+
+      final outcome = await writer.write(path, {
+        AutofillField.title: 'X',
+      }, expected: asCatalogued(path));
+
+      expect(outcome, WriteOutcome.unsupported);
+      expect(File(path).readAsBytesSync(), bytes);
+      expect(
+        [for (final entity in root.listSync()) p.basename(entity.path)],
+        ['a.mp3'],
+      );
+    });
+
+    test(
+      'GivenAnMp3ItCannotParse_WhenWritten_ThenItFailsAndIsUntouched',
+      () async {
+        final path = p.join(root.path, 'a.mp3');
+        final whole = File(
+          p.join('test', 'support', 'tag_fixtures', 'tagged.mp3'),
+        ).readAsBytesSync();
+        // Audio inside the tag, where its padding should be: a tag whose size
+        // overstates it, which a rewrite of the padding would cut into.
+        File(path).writeAsBytesSync([
+          ...whole.sublist(0, 9),
+          0x7F,
+          ...whole.sublist(10),
+        ]);
+        final bytes = File(path).readAsBytesSync();
+
+        final outcome = await writer.write(path, {
+          AutofillField.title: 'X',
+        }, expected: asCatalogued(path));
+
+        expect(outcome, WriteOutcome.failed);
+        expect(File(path).readAsBytesSync(), bytes);
+        expect(
+          [for (final entity in root.listSync()) p.basename(entity.path)],
+          ['a.mp3'],
+        );
+      },
+    );
+
+    test(
       'GivenAnMp3ReachedThroughASymbolicLink_WhenWritten_ThenTheFileItPointsAtHasTheTagsAndTheLinkIsKept',
-      skip: Platform.isWindows ? 'creating a symbolic link on Windows may need privileges' : null,
+      skip: Platform.isWindows
+          ? 'creating a symbolic link on Windows may need privileges'
+          : null,
       () async {
         final target = copyOf('tagged.mp3');
         final link = Link(p.join(root.path, 'a.mp3'))..createSync(target);
 
-        final outcome = await writer.write(
-          link.path,
-          {AutofillField.title: 'Paranoid Android'},
-          expected: asCatalogued(link.path),
-        );
+        final outcome = await writer.write(link.path, {
+          AutofillField.title: 'Paranoid Android',
+        }, expected: asCatalogued(link.path));
 
         expect(outcome, WriteOutcome.written);
         expect(FileSystemEntity.isLinkSync(link.path), isTrue);
-        expect((await writer.inspect(target)).values[AutofillField.title], 'Paranoid Android');
-        expect([for (final entity in root.listSync()) p.basename(entity.path)]..sort(), ['a.mp3', 'tagged.mp3']);
+        expect(
+          (await writer.inspect(target)).values[AutofillField.title],
+          'Paranoid Android',
+        );
+        expect(
+          [for (final entity in root.listSync()) p.basename(entity.path)]
+            ..sort(),
+          ['a.mp3', 'tagged.mp3'],
+        );
       },
     );
 
     // ID3 holds a total only after a number: a write that dropped the total
     // would report it written, and could delete the frame that was there.
-    for (final (name, frames, values) in <(String, List<String>, Map<AutofillField, Object?>)>[
-      ('ATrackTotalOnAFileWithNoTrack', [], {AutofillField.trackTotal: 12}),
-      ('ATrackTotalOverATrackFrameWithOnlyATotal', ['/12'], {AutofillField.trackTotal: 10}),
-      ('ATrackTotalOverAnEmptyTrackFrame', [''], {AutofillField.trackTotal: 10}),
-      ('ATrackTotalWithTheNumberRemoved', ['3/12'], {AutofillField.trackNumber: null, AutofillField.trackTotal: 12}),
-      ('ADiscTotalOnAFileWithNoDisc', [], {AutofillField.discTotal: 2}),
-    ]) {
-      test('Given${name}_WhenWritten_ThenItFailsAndTheFileIsUntouched', () async {
-        final path = p.join(root.path, 'a.mp3');
-        File(path).writeAsBytesSync(
-          id3Tag(
-            frames: [
-              frame('TIT2', Uint8List.fromList([3, ...utf8.encode('Airbag')])),
-              for (final track in frames) frame('TRCK', Uint8List.fromList([3, ...utf8.encode(track)])),
-            ],
-            trailing: mpegAudio(),
+    for (final (name, frames, values)
+        in <(String, List<String>, Map<AutofillField, Object?>)>[
+          ('ATrackTotalOnAFileWithNoTrack', [], {AutofillField.trackTotal: 12}),
+          (
+            'ATrackTotalOverATrackFrameWithOnlyATotal',
+            ['/12'],
+            {AutofillField.trackTotal: 10},
           ),
-        );
-        final bytes = File(path).readAsBytesSync();
+          (
+            'ATrackTotalOverAnEmptyTrackFrame',
+            [''],
+            {AutofillField.trackTotal: 10},
+          ),
+          (
+            'ATrackTotalWithTheNumberRemoved',
+            ['3/12'],
+            {AutofillField.trackNumber: null, AutofillField.trackTotal: 12},
+          ),
+          ('ADiscTotalOnAFileWithNoDisc', [], {AutofillField.discTotal: 2}),
+        ]) {
+      test(
+        'Given${name}_WhenWritten_ThenItFailsAndTheFileIsUntouched',
+        () async {
+          final path = p.join(root.path, 'a.mp3');
+          File(path).writeAsBytesSync(
+            id3Tag(
+              frames: [
+                frame(
+                  'TIT2',
+                  Uint8List.fromList([3, ...utf8.encode('Airbag')]),
+                ),
+                for (final track in frames)
+                  frame('TRCK', Uint8List.fromList([3, ...utf8.encode(track)])),
+              ],
+              trailing: mpegAudio(),
+            ),
+          );
+          final bytes = File(path).readAsBytesSync();
 
-        final outcome = await writer.write(path, values, expected: asCatalogued(path));
+          final outcome = await writer.write(
+            path,
+            values,
+            expected: asCatalogued(path),
+          );
 
-        expect(outcome, WriteOutcome.failed);
-        expect(File(path).readAsBytesSync(), bytes);
-        expect([for (final entity in root.listSync()) p.basename(entity.path)], ['a.mp3']);
-      });
+          expect(outcome, WriteOutcome.failed);
+          expect(File(path).readAsBytesSync(), bytes);
+          expect(
+            [for (final entity in root.listSync()) p.basename(entity.path)],
+            ['a.mp3'],
+          );
+        },
+      );
     }
 
     test('GivenAnMp3WhoseOnlyTagIsId3v1_WhenOneFieldIsWritten_ThenEveryOtherFieldStillReadsBackAndTheId3v1TagIsKept', () async {
       final path = p.join(root.path, 'a.mp3');
-      final id3v1 = id3v1Tag(title: 'Airbag', artist: 'Radiohed', album: 'OK Computer', year: '1997', track: 1, genre: 17);
+      final id3v1 = id3v1Tag(
+        title: 'Airbag',
+        artist: 'Radiohed',
+        album: 'OK Computer',
+        year: '1997',
+        track: 1,
+        genre: 17,
+      );
       File(path).writeAsBytesSync([...mpegAudio(), ...id3v1]);
       final before = await writer.inspect(path);
 
-      final outcome = await writer.write(path, {AutofillField.trackNumber: 5}, expected: asCatalogued(path));
+      final outcome = await writer.write(path, {
+        AutofillField.trackNumber: 5,
+      }, expected: asCatalogued(path));
 
       expect(outcome, WriteOutcome.written);
       final after = await writer.inspect(path);
@@ -475,32 +765,45 @@ void main() {
     test('GivenAnMp3_WhenWritten_ThenNoTemporaryFileIsLeftBehind', () async {
       final path = copyOf('tagged.mp3');
 
-      final outcome = await writer.write(path, {AutofillField.title: 'Paranoid Android'}, expected: asCatalogued(path));
+      final outcome = await writer.write(path, {
+        AutofillField.title: 'Paranoid Android',
+      }, expected: asCatalogued(path));
 
       expect(outcome, WriteOutcome.written);
-      expect([for (final entity in root.listSync()) p.basename(entity.path)], ['tagged.mp3']);
+      expect(
+        [for (final entity in root.listSync()) p.basename(entity.path)],
+        ['tagged.mp3'],
+      );
     });
 
     test('GivenAnOgg_WhenWritten_ThenItIsUnsupportedAndUntouched', () async {
       final path = copyOf('tagged.ogg');
       final bytes = File(path).readAsBytesSync();
 
-      final outcome = await writer.write(path, {AutofillField.title: 'X'}, expected: asCatalogued(path));
+      final outcome = await writer.write(path, {
+        AutofillField.title: 'X',
+      }, expected: asCatalogued(path));
 
       expect(outcome, WriteOutcome.unsupported);
       expect(File(path).readAsBytesSync(), bytes);
     });
 
-    test('GivenAFileThatIsGone_WhenWritten_ThenItIsReportedAsChanged', skip: unwritable('.mp3'), () async {
-      final path = copyOf('tagged.mp3');
-      final catalogued = asCatalogued(path);
-      File(path).deleteSync();
+    test(
+      'GivenAFileThatIsGone_WhenWritten_ThenItIsReportedAsChanged',
+      skip: unwritable('.mp3'),
+      () async {
+        final path = copyOf('tagged.mp3');
+        final catalogued = asCatalogued(path);
+        File(path).deleteSync();
 
-      expect(
-        await writer.write(path, {AutofillField.title: 'X'}, expected: catalogued),
-        WriteOutcome.changedSinceRead,
-      );
-    });
+        expect(
+          await writer.write(path, {
+            AutofillField.title: 'X',
+          }, expected: catalogued),
+          WriteOutcome.changedSinceRead,
+        );
+      },
+    );
 
     // What the gate leaves of every format it found lossy: nothing to write,
     // and a write asked for anyway refused without touching the file.
@@ -511,21 +814,26 @@ void main() {
       'a.flac',
       'a.ape',
     ].where((name) => lost.containsKey(p.extension(name)))) {
-      test('GivenA${p.extension(name)}File_WhenWritten_ThenThePreservationGateRefusesItAndLeavesItUntouched', () async {
-        final path = switch (name) {
-          'a.flac' => flac({'TITLE': 'Airbag', 'COMMENT': 'kept'}),
-          'a.ape' => ape({'Title': 'Airbag', 'Comment': 'kept'}),
-          _ => copyOf(name),
-        };
-        final bytes = File(path).readAsBytesSync();
+      test(
+        'GivenA${p.extension(name)}File_WhenWritten_ThenThePreservationGateRefusesItAndLeavesItUntouched',
+        () async {
+          final path = switch (name) {
+            'a.flac' => flac({'TITLE': 'Airbag', 'COMMENT': 'kept'}),
+            'a.ape' => ape({'Title': 'Airbag', 'Comment': 'kept'}),
+            _ => copyOf(name),
+          };
+          final bytes = File(path).readAsBytesSync();
 
-        final tags = await writer.inspect(path);
-        final outcome = await writer.write(path, {AutofillField.title: 'X'}, expected: asCatalogued(path));
+          final tags = await writer.inspect(path);
+          final outcome = await writer.write(path, {
+            AutofillField.title: 'X',
+          }, expected: asCatalogued(path));
 
-        expect(tags.writable, isEmpty, reason: name);
-        expect(outcome, WriteOutcome.unsupported, reason: name);
-        expect(File(path).readAsBytesSync(), bytes, reason: name);
-      });
+          expect(tags.writable, isEmpty, reason: name);
+          expect(outcome, WriteOutcome.unsupported, reason: name);
+          expect(File(path).readAsBytesSync(), bytes, reason: name);
+        },
+      );
     }
   });
 
@@ -553,23 +861,37 @@ void main() {
 
     for (final (windows, code, opened, probeCode, expected) in cases) {
       final system = windows ? 'Windows' : 'APosixSystem';
-      final probe = opened ? 'AndAProbeThatOpensIt' : (probeCode == null ? '' : 'AndAProbeRefusedWith$probeCode');
-      final outcome = expected.name[0].toUpperCase() + expected.name.substring(1);
-      test('Given${system}Error$code${probe}_WhenTheOutcomeIsAsked_ThenItIs$outcome', () {
-        expect(
-          outcomeFor(windows: windows, code: code, probeCode: probeCode, probeOpened: opened),
-          expected,
-        );
-      });
+      final probe = opened
+          ? 'AndAProbeThatOpensIt'
+          : (probeCode == null ? '' : 'AndAProbeRefusedWith$probeCode');
+      final outcome =
+          expected.name[0].toUpperCase() + expected.name.substring(1);
+      test(
+        'Given${system}Error$code${probe}_WhenTheOutcomeIsAsked_ThenItIs$outcome',
+        () {
+          expect(
+            outcomeFor(
+              windows: windows,
+              code: code,
+              probeCode: probeCode,
+              probeOpened: opened,
+            ),
+            expected,
+          );
+        },
+      );
     }
   });
 }
 
 /// Real MPEG audio, without a tag: the fixture MP3's, after its ID3v2 tag.
 Uint8List mpegAudio() {
-  final mp3 = File(p.join('test', 'support', 'tag_fixtures', 'tagged.mp3')).readAsBytesSync();
+  final mp3 = File(p.join('test', 'support', 'tag_fixtures', 'tagged.mp3'))
+      .readAsBytesSync();
 
-  return mp3.sublist(10 + ((mp3[6] << 21) | (mp3[7] << 14) | (mp3[8] << 7) | mp3[9]));
+  return mp3.sublist(
+    10 + ((mp3[6] << 21) | (mp3[7] << 14) | (mp3[8] << 7) | mp3[9]),
+  );
 }
 
 /// An ID3v1.1 tag: 128 bytes at the end of a file, each field zero-padded
@@ -606,8 +928,7 @@ const lost = <String, String>{
   '.m4a':
       'the ilst atom is rebuilt from the package model: a write drops aART (the album artist), '
       '©cmt (the comment) and ©too (the encoder)',
-  '.wav':
-      'the package cannot read a year-only ICRD date, so a write of any field drops it',
+  '.wav': 'the package cannot read a year-only ICRD date, so a write of any field drops it',
   '.ape':
       'the APEv2 tag is rebuilt from the package model: a write renames the Album Artist item to '
       'ALBUMARTIST and rewrites Year=1997 as DATE=1997-01-01',
@@ -626,7 +947,14 @@ String? unwritable(String extension) => lost.containsKey(extension)
 /// loss.
 const untouched = <String, List<String>>{
   'tagged.mp3': [
-    'TPE1', 'Radiohed', 'TALB', 'OK Computer', 'TRCK', '1/12', 'TDRC', '1997', //
+    'TPE1',
+    'Radiohed',
+    'TALB',
+    'OK Computer',
+    'TRCK',
+    '1/12',
+    'TDRC',
+    '1997', //
     'TCON', 'Rock', 'TPE2', 'Radiohead', 'TPOS', '1/1', 'TSSE', 'Lavf61.7.103',
     'TXXX', 'comment', 'CUSTOM', 'kept',
   ],
@@ -641,7 +969,12 @@ const untouched = <String, List<String>>{
   ],
   'a.flac': ['COMMENT=kept', 'CUSTOM=kept'],
   'a.ape': [
-    'Artist', 'Radiohed', 'Album Artist', 'Radiohead', 'Album', 'OK Computer', //
+    'Artist',
+    'Radiohed',
+    'Album Artist',
+    'Radiohead',
+    'Album',
+    'OK Computer', //
     'Year', '1997', 'Track', '1/12', 'Disc', '1/1', 'Genre', 'Rock',
     'Comment', 'CUSTOM', 'kept',
   ],

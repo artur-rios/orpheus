@@ -192,9 +192,17 @@ class AutofillController extends Notifier<AutofillState> {
 
     final text = kind == AutofillKind.record
         ? _join(releaseQueryFor(entries).album, releaseQueryFor(entries).artist)
-        : _join(recordingQueryFor(entries.single).title, recordingQueryFor(entries.single).artist);
+        : _join(
+            recordingQueryFor(entries.single).title,
+            recordingQueryFor(entries.single).artist,
+          );
 
-    state = AutofillState(stage: AutofillStage.searching, kind: kind, fields: fields, query: text);
+    state = AutofillState(
+      stage: AutofillStage.searching,
+      kind: kind,
+      fields: fields,
+      query: text,
+    );
 
     final writer = ref.read(tagWriterProvider);
     final tags = <String, FileTags>{};
@@ -234,7 +242,9 @@ class AutofillController extends Notifier<AutofillState> {
         ? proposal
         : proposal.withChanges([
             for (final change in proposal.changes)
-              change.field == field ? change.withAccepted(!change.accepted) : change,
+              change.field == field
+                  ? change.withAccepted(!change.accepted)
+                  : change,
           ]),
   );
 
@@ -242,18 +252,23 @@ class AutofillController extends Notifier<AutofillState> {
   void toggleFile(String path, bool accepted) => _edit(
     (proposal) => proposal.entry.file.path != path
         ? proposal
-        : proposal.withChanges([for (final c in proposal.changes) c.withAccepted(accepted)]),
+        : proposal.withChanges([
+            for (final c in proposal.changes) c.withAccepted(accepted),
+          ]),
   );
 
   /// Ticks or unticks every change.
   void toggleAll(bool accepted) => _edit(
-    (proposal) => proposal.withChanges([for (final c in proposal.changes) c.withAccepted(accepted)]),
+    (proposal) => proposal.withChanges([
+      for (final c in proposal.changes) c.withAccepted(accepted),
+    ]),
   );
 
   /// Writes every ticked change, then rescans.
-  Future<void> write() => _writeFiles(
-    [for (final p in state.proposals) if (p.acceptedCount > 0) p],
-  );
+  Future<void> write() => _writeFiles([
+    for (final p in state.proposals)
+      if (p.acceptedCount > 0) p,
+  ]);
 
   /// Writes again the files that were in use or failed.
   Future<void> retry() => _writeFiles([
@@ -278,10 +293,19 @@ class AutofillController extends Notifier<AutofillState> {
         );
         if (!ref.mounted) return;
 
-        final ranked = rankCandidates(found, fileCount: _entries.length, album: query.album, artist: query.artist);
+        final ranked = rankCandidates(
+          found,
+          fileCount: _entries.length,
+          album: query.album,
+          artist: query.artist,
+        );
         state = state.copyWith(candidates: ranked);
         if (ranked.isEmpty) {
-          state = state.copyWith(stage: AutofillStage.reviewing, clearRelease: true, proposals: const []);
+          state = state.copyWith(
+            stage: AutofillStage.reviewing,
+            clearRelease: true,
+            proposals: const [],
+          );
           return;
         }
 
@@ -293,12 +317,20 @@ class AutofillController extends Notifier<AutofillState> {
         );
         if (!ref.mounted) return;
 
-        final appearances = rankAppearances(found, title: query.title, artist: query.artist);
+        final appearances = rankAppearances(
+          found,
+          title: query.title,
+          artist: query.artist,
+        );
         _recordingId = found.firstOrNull?.recordingId;
         final ranked = [for (final a in appearances) a.release];
         state = state.copyWith(candidates: ranked);
         if (ranked.isEmpty) {
-          state = state.copyWith(stage: AutofillStage.reviewing, clearRelease: true, proposals: const []);
+          state = state.copyWith(
+            stage: AutofillStage.reviewing,
+            clearRelease: true,
+            proposals: const [],
+          );
           return;
         }
 
@@ -319,7 +351,9 @@ class AutofillController extends Notifier<AutofillState> {
 
       var fallback = const <Genre>[];
       final groupId = detail.releaseGroupId;
-      if (state.fields.contains(AutofillField.genre) && detail.genres.isEmpty && groupId != null) {
+      if (state.fields.contains(AutofillField.genre) &&
+          detail.genres.isEmpty &&
+          groupId != null) {
         try {
           fallback = await source.releaseGroupGenres(groupId);
         } on MetadataSourceException catch (error) {
@@ -351,7 +385,10 @@ class AutofillController extends Notifier<AutofillState> {
       state = state.copyWith(
         stage: AutofillStage.reviewing,
         release: detail,
-        coverMissing: state.fields.contains(AutofillField.cover) && cover == null && !coverUnavailable,
+        coverMissing:
+            state.fields.contains(AutofillField.cover) &&
+            cover == null &&
+            !coverUnavailable,
         coverUnavailable: coverUnavailable,
         proposals: proposalsFor(
           assignment: assignment,
@@ -372,12 +409,19 @@ class AutofillController extends Notifier<AutofillState> {
   /// else whatever the record-wide rules find.
   Map<MusicEntry, ReleaseTrack?> _assignLoneTrack(ReleaseDetail detail) {
     final entry = _entries.single;
-    final byRecording = detail.tracks.where((t) => t.recordingId != null && t.recordingId == _recordingId).firstOrNull;
+    final byRecording = detail.tracks
+        .where((t) => t.recordingId != null && t.recordingId == _recordingId)
+        .firstOrNull;
 
-    return byRecording != null ? {entry: byRecording} : assignTracks(_entries, detail);
+    return byRecording != null
+        ? {entry: byRecording}
+        : assignTracks(_entries, detail);
   }
 
-  Future<void> _writeFiles(List<FileProposal> chosen, {Map<String, WriteOutcome> keep = const {}}) async {
+  Future<void> _writeFiles(
+    List<FileProposal> chosen, {
+    Map<String, WriteOutcome> keep = const {},
+  }) async {
     // One write at a time: a second tap while the access prompt is up, or
     // while files are going out, would write every file twice.
     if (chosen.isEmpty || _writing) return;
@@ -390,8 +434,13 @@ class AutofillController extends Notifier<AutofillState> {
     }
   }
 
-  Future<void> _writeChosen(List<FileProposal> chosen, Map<String, WriteOutcome> keep) async {
-    final access = await ref.read(libraryAccessControllerProvider.notifier).ensureWritable();
+  Future<void> _writeChosen(
+    List<FileProposal> chosen,
+    Map<String, WriteOutcome> keep,
+  ) async {
+    final access = await ref
+        .read(libraryAccessControllerProvider.notifier)
+        .ensureWritable();
     if (!ref.mounted) return;
     if (!access.isGranted) {
       state = state.copyWith(stage: AutofillStage.reviewing, refusal: access);
@@ -408,7 +457,12 @@ class AutofillController extends Notifier<AutofillState> {
 
     _cancelled = false;
     final outcomes = {...keep};
-    state = state.copyWith(stage: AutofillStage.writing, written: 0, total: ordered.length, outcomes: outcomes);
+    state = state.copyWith(
+      stage: AutofillStage.writing,
+      written: 0,
+      total: ordered.length,
+      outcomes: outcomes,
+    );
 
     // Both resolved now: once the screen closes `ref` can no longer be read,
     // and the writes the owner confirmed are still to be finished and
@@ -421,11 +475,10 @@ class AutofillController extends Notifier<AutofillState> {
       if (_cancelled) break;
 
       final path = proposal.entry.file.path;
-      final outcome = await writer.write(
-        path,
-        {for (final c in proposal.changes) if (c.accepted) c.field: c.after},
-        expected: proposal.entry.file,
-      );
+      final outcome = await writer.write(path, {
+        for (final c in proposal.changes)
+          if (c.accepted) c.field: c.after,
+      }, expected: proposal.entry.file);
       outcomes[path] = outcome;
       any = any || outcome == WriteOutcome.written;
       done++;
@@ -437,20 +490,28 @@ class AutofillController extends Notifier<AutofillState> {
     if (any) unawaited(scan.rescanSoon());
     if (!ref.mounted) return;
 
-    state = state.copyWith(stage: AutofillStage.finished, outcomes: {...outcomes});
+    state = state.copyWith(
+      stage: AutofillStage.finished,
+      outcomes: {...outcomes},
+    );
   }
 
   void _edit(FileProposal Function(FileProposal proposal) edit) {
-    state = state.copyWith(proposals: [for (final p in state.proposals) edit(p)]);
+    state = state.copyWith(
+      proposals: [for (final p in state.proposals) edit(p)],
+    );
   }
 
   Future<void> _remember(Set<AutofillField> fields) async {
     try {
-      await ref.read(settingsStoreProvider).setString(fieldsSettingsKey, AutofillField.encode(fields));
+      await ref
+          .read(settingsStoreProvider)
+          .setString(fieldsSettingsKey, AutofillField.encode(fields));
     } on Object catch (error) {
       _log.fine('the autofill choice could not be saved', error);
     }
   }
 
-  static String _join(String? a, String? b) => [?a, ?b].where((s) => s.trim().isNotEmpty).join(' ');
+  static String _join(String? a, String? b) =>
+      [?a, ?b].where((s) => s.trim().isNotEmpty).join(' ');
 }

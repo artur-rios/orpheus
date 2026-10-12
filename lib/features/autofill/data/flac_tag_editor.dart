@@ -32,13 +32,20 @@ Uint8List editFlacTags(Uint8List file, Map<AutofillField, Object?> values) {
       final comments = _editComments(const [], values);
       // After STREAMINFO, which must stay first.
       if (comments.isNotEmpty) {
-        blocks.insert(1, (type: _vorbisComment, body: _encodeComments(utf8.encode('Orpheus'), comments, Uint8List(0))));
+        blocks.insert(1, (
+          type: _vorbisComment,
+          body: _encodeComments(utf8.encode('Orpheus'), comments, Uint8List(0)),
+        ));
       }
     } else {
       final parsed = _parseComments(blocks[at].body);
       blocks[at] = (
         type: _vorbisComment,
-        body: _encodeComments(parsed.vendor, _editComments(parsed.comments, values), parsed.rest),
+        body: _encodeComments(
+          parsed.vendor,
+          _editComments(parsed.comments, values),
+          parsed.rest,
+        ),
       );
     }
   }
@@ -48,8 +55,12 @@ Uint8List editFlacTags(Uint8List file, Map<AutofillField, Object?> values) {
     blocks.removeWhere(_isFrontCover);
     final cover = values[AutofillField.cover] as Uint8List?;
     if (cover != null) {
-      final comments = blocks.indexWhere((block) => block.type == _vorbisComment);
-      final at = firstFront != -1 ? firstFront : (comments != -1 ? comments + 1 : 1);
+      final comments = blocks.indexWhere(
+        (block) => block.type == _vorbisComment,
+      );
+      final at = firstFront != -1
+          ? firstFront
+          : (comments != -1 ? comments + 1 : 1);
       blocks.insert(at, (type: _picture, body: _pictureBody(cover)));
     }
   }
@@ -60,7 +71,8 @@ Uint8List editFlacTags(Uint8List file, Map<AutofillField, Object?> values) {
   // trusted: the result parses, and what comes before the metadata and the
   // audio after it are the very bytes they were.
   final written = _parse(result);
-  if (!_same(written.head, source.head) || !_same(written.audio, source.audio)) {
+  if (!_same(written.head, source.head) ||
+      !_same(written.audio, source.audio)) {
     throw StateError('the edit changed bytes outside the tags');
   }
 
@@ -89,40 +101,67 @@ _Flac _parse(Uint8List file) {
   if (_startsWith(file, 0, 'ID3')) {
     if (file.length < 10) throw const FormatException('a truncated ID3v2 tag');
     final size = file.sublist(6, 10);
-    if (size.any((byte) => byte > 0x7F)) throw const FormatException('an ID3v2 size that is not sync-safe');
+    if (size.any((byte) => byte > 0x7F)) {
+      throw const FormatException('an ID3v2 size that is not sync-safe');
+    }
     final footer = file[5] & 0x10 != 0 ? 10 : 0;
-    offset = 10 + (size[0] << 21 | size[1] << 14 | size[2] << 7 | size[3]) + footer;
+    offset =
+        10 + (size[0] << 21 | size[1] << 14 | size[2] << 7 | size[3]) + footer;
   }
-  if (!_startsWith(file, offset, 'fLaC')) throw const FormatException('not a FLAC file');
+  if (!_startsWith(file, offset, 'fLaC')) {
+    throw const FormatException('not a FLAC file');
+  }
   offset += 4;
   final head = Uint8List.sublistView(file, 0, offset);
 
   final blocks = <_Block>[];
   var last = false;
   while (!last) {
-    if (offset + 4 > file.length) throw const FormatException('the metadata ends before its last block');
+    if (offset + 4 > file.length) {
+      throw const FormatException('the metadata ends before its last block');
+    }
     last = file[offset] & 0x80 != 0;
     final type = file[offset] & 0x7F;
-    if (type == 127) throw const FormatException('an invalid metadata block type');
-    final end = offset + 4 + (file[offset + 1] << 16 | file[offset + 2] << 8 | file[offset + 3]);
-    if (end > file.length) throw const FormatException('a metadata block runs past the end of the file');
-    blocks.add((type: type, body: Uint8List.sublistView(file, offset + 4, end)));
+    if (type == 127) {
+      throw const FormatException('an invalid metadata block type');
+    }
+    final end =
+        offset +
+        4 +
+        (file[offset + 1] << 16 | file[offset + 2] << 8 | file[offset + 3]);
+    if (end > file.length) {
+      throw const FormatException(
+        'a metadata block runs past the end of the file',
+      );
+    }
+    blocks.add((
+      type: type,
+      body: Uint8List.sublistView(file, offset + 4, end),
+    ));
     offset = end;
   }
 
-  if (blocks.first.type != _streamInfo) throw const FormatException('the first metadata block is not STREAMINFO');
+  if (blocks.first.type != _streamInfo) {
+    throw const FormatException('the first metadata block is not STREAMINFO');
+  }
   if (blocks.where((block) => block.type == _vorbisComment).length > 1) {
     throw const FormatException('more than one VORBIS_COMMENT block');
   }
 
-  return (head: head, blocks: blocks, audio: Uint8List.sublistView(file, offset));
+  return (
+    head: head,
+    blocks: blocks,
+    audio: Uint8List.sublistView(file, offset),
+  );
 }
 
 Uint8List _encode(Uint8List head, List<_Block> blocks, Uint8List audio) {
   final bytes = BytesBuilder(copy: false)..add(head);
   for (final (index, block) in blocks.indexed) {
     final length = block.body.length;
-    if (length > _maxBlockLength) throw const FormatException('a metadata block too large for FLAC');
+    if (length > _maxBlockLength) {
+      throw const FormatException('a metadata block too large for FLAC');
+    }
     bytes
       ..add([
         (index == blocks.length - 1 ? 0x80 : 0) | block.type,
@@ -139,14 +178,20 @@ Uint8List _encode(Uint8List head, List<_Block> blocks, Uint8List audio) {
 
 /// A VORBIS_COMMENT body: the vendor string, the comments, each as its raw
 /// `KEY=value` bytes, and whatever follows the last comment.
-typedef _Comments = ({Uint8List vendor, List<Uint8List> comments, Uint8List rest});
+typedef _Comments = ({
+  Uint8List vendor,
+  List<Uint8List> comments,
+  Uint8List rest,
+});
 
 /// Every length here is little-endian, unlike every other length in FLAC.
 _Comments _parseComments(Uint8List body) {
   final data = ByteData.sublistView(body);
   var offset = 0;
   int length() {
-    if (offset + 4 > body.length) throw const FormatException('a VORBIS_COMMENT block that ends early');
+    if (offset + 4 > body.length) {
+      throw const FormatException('a VORBIS_COMMENT block that ends early');
+    }
     final value = data.getUint32(offset, Endian.little);
     offset += 4;
 
@@ -154,7 +199,9 @@ _Comments _parseComments(Uint8List body) {
   }
 
   Uint8List take(int length) {
-    if (length > body.length - offset) throw const FormatException('a comment runs past the end of its block');
+    if (length > body.length - offset) {
+      throw const FormatException('a comment runs past the end of its block');
+    }
     final value = Uint8List.sublistView(body, offset, offset + length);
     offset += length;
 
@@ -165,11 +212,20 @@ _Comments _parseComments(Uint8List body) {
   final count = length();
   final comments = [for (var i = 0; i < count; i++) take(length())];
 
-  return (vendor: vendor, comments: comments, rest: Uint8List.sublistView(body, offset));
+  return (
+    vendor: vendor,
+    comments: comments,
+    rest: Uint8List.sublistView(body, offset),
+  );
 }
 
-Uint8List _encodeComments(Uint8List vendor, List<Uint8List> comments, Uint8List rest) {
-  Uint8List length(int value) => (ByteData(4)..setUint32(0, value, Endian.little)).buffer.asUint8List();
+Uint8List _encodeComments(
+  Uint8List vendor,
+  List<Uint8List> comments,
+  Uint8List rest,
+) {
+  Uint8List length(int value) =>
+      (ByteData(4)..setUint32(0, value, Endian.little)).buffer.asUint8List();
 
   final bytes = BytesBuilder(copy: false)
     ..add(length(vendor.length))
@@ -191,15 +247,27 @@ Uint8List _encodeComments(Uint8List vendor, List<Uint8List> comments, Uint8List 
 const _keys = <AutofillField, ({String key, Set<String> replaces})>{
   AutofillField.title: (key: 'TITLE', replaces: {'TITLE'}),
   AutofillField.artist: (key: 'ARTIST', replaces: {'ARTIST'}),
-  AutofillField.albumArtist: (key: 'ALBUMARTIST', replaces: {'ALBUMARTIST', 'ALBUM_ARTIST', 'ALBUM ARTIST'}),
+  AutofillField.albumArtist: (
+    key: 'ALBUMARTIST',
+    replaces: {'ALBUMARTIST', 'ALBUM_ARTIST', 'ALBUM ARTIST'},
+  ),
   AutofillField.album: (key: 'ALBUM', replaces: {'ALBUM'}),
   // The reader takes iTunes' CDDB track number for a track number too, and
   // the first of them it meets wins: left in place, an old one could still
   // be what is read back.
-  AutofillField.trackNumber: (key: 'TRACKNUMBER', replaces: {'TRACKNUMBER', 'ITUNES_CDDB_TRACKNUMBER'}),
-  AutofillField.trackTotal: (key: 'TRACKTOTAL', replaces: {'TRACKTOTAL', 'TOTALTRACKS'}),
+  AutofillField.trackNumber: (
+    key: 'TRACKNUMBER',
+    replaces: {'TRACKNUMBER', 'ITUNES_CDDB_TRACKNUMBER'},
+  ),
+  AutofillField.trackTotal: (
+    key: 'TRACKTOTAL',
+    replaces: {'TRACKTOTAL', 'TOTALTRACKS'},
+  ),
   AutofillField.discNumber: (key: 'DISCNUMBER', replaces: {'DISCNUMBER'}),
-  AutofillField.discTotal: (key: 'DISCTOTAL', replaces: {'DISCTOTAL', 'TOTALDISCS'}),
+  AutofillField.discTotal: (
+    key: 'DISCTOTAL',
+    replaces: {'DISCTOTAL', 'TOTALDISCS'},
+  ),
   AutofillField.year: (key: 'DATE', replaces: {'DATE', 'YEAR'}),
   AutofillField.genre: (key: 'GENRE', replaces: {'GENRE'}),
 };
@@ -210,7 +278,10 @@ const _numbered = [
   (number: AutofillField.discNumber, total: AutofillField.discTotal),
 ];
 
-List<Uint8List> _editComments(List<Uint8List> comments, Map<AutofillField, Object?> values) {
+List<Uint8List> _editComments(
+  List<Uint8List> comments,
+  Map<AutofillField, Object?> values,
+) {
   final fields = [
     for (final field in AutofillField.values)
       if (field != AutofillField.cover && values.containsKey(field)) field,
@@ -245,18 +316,33 @@ List<Uint8List> _editComments(List<Uint8List> comments, Map<AutofillField, Objec
         final plain = _trim(Uint8List.sublistView(comment, equals + 1, slash));
         rewritten[index] = plain.isEmpty
             ? null
-            : Uint8List.fromList([...Uint8List.sublistView(comment, 0, equals + 1), ...plain]);
+            : Uint8List.fromList([
+                ...Uint8List.sublistView(comment, 0, equals + 1),
+                ...plain,
+              ]);
       }
     }
 
-    final hasTotal = comments.any((comment) => _keys[total]!.replaces.contains(_keyOf(comment)));
-    if (!values.containsKey(total) && !hasTotal && movedTotal != null && movedTotal.isNotEmpty) {
+    final hasTotal = comments.any(
+      (comment) => _keys[total]!.replaces.contains(_keyOf(comment)),
+    );
+    if (!values.containsKey(total) &&
+        !hasTotal &&
+        movedTotal != null &&
+        movedTotal.isNotEmpty) {
       // Moved only as a number, which is all the reader takes a total as: a
       // total it cannot parse would make the whole file unreadable to it.
       if (movedTotal.any((byte) => byte < 0x30 || byte > 0x39)) {
-        throw const FormatException('a total that is not a number, which making the number plain would lose');
+        throw const FormatException(
+          'a total that is not a number, which making the number plain would lose',
+        );
       }
-      appended.add(Uint8List.fromList([...utf8.encode('${_keys[total]!.key}='), ...movedTotal]));
+      appended.add(
+        Uint8List.fromList([
+          ...utf8.encode('${_keys[total]!.key}='),
+          ...movedTotal,
+        ]),
+      );
     }
   }
 
@@ -287,16 +373,27 @@ Uint8List? _comment(AutofillField field, Object? value) {
   final text = switch ((field, value)) {
     (AutofillField.year, final int year) => '$year'.padLeft(4, '0'),
     (
-      AutofillField.trackNumber || AutofillField.trackTotal || AutofillField.discNumber || AutofillField.discTotal,
+      AutofillField.trackNumber ||
+          AutofillField.trackTotal ||
+          AutofillField.discNumber ||
+          AutofillField.discTotal,
       final int number,
     ) =>
       '$number',
     (
-      AutofillField.title || AutofillField.artist || AutofillField.albumArtist || AutofillField.album || AutofillField.genre,
+      AutofillField.title ||
+          AutofillField.artist ||
+          AutofillField.albumArtist ||
+          AutofillField.album ||
+          AutofillField.genre,
       final String text,
     ) =>
       text,
-    _ => throw ArgumentError.value(value, field.name, 'not a value this field holds'),
+    _ => throw ArgumentError.value(
+      value,
+      field.name,
+      'not a value this field holds',
+    ),
   };
 
   return utf8.encode('${_keys[field]!.key}=$text');
@@ -311,7 +408,8 @@ String? _keyOf(Uint8List comment) {
   if (equals == -1) return null;
 
   return String.fromCharCodes([
-    for (final byte in Uint8List.sublistView(comment, 0, equals)) byte >= 0x61 && byte <= 0x7A ? byte - 0x20 : byte,
+    for (final byte in Uint8List.sublistView(comment, 0, equals))
+      byte >= 0x61 && byte <= 0x7A ? byte - 0x20 : byte,
   ]);
 }
 
@@ -326,7 +424,9 @@ bool _isEmbeddedFrontCover(Uint8List comment) {
   final start = comment.indexOf(0x3D) + 1;
   if (comment.length - start < 8) return false;
   try {
-    final head = base64Decode(String.fromCharCodes(Uint8List.sublistView(comment, start, start + 8)));
+    final head = base64Decode(
+      String.fromCharCodes(Uint8List.sublistView(comment, start, start + 8)),
+    );
 
     return ByteData.sublistView(head).getUint32(0) == 3;
   } on FormatException {
@@ -338,14 +438,17 @@ bool _isEmbeddedFrontCover(Uint8List comment) {
 /// Whether [block] is a picture of type 3, the front cover. A picture too
 /// short to say its type is kept, as every block this cannot read is.
 bool _isFrontCover(_Block block) =>
-    block.type == _picture && block.body.length >= 4 && ByteData.sublistView(block.body).getUint32(0) == 3;
+    block.type == _picture &&
+    block.body.length >= 4 &&
+    ByteData.sublistView(block.body).getUint32(0) == 3;
 
 /// A front-cover PICTURE body for [image]: no description, and no
 /// dimensions, colour depth or palette size — zero says "not given", and
 /// every reader takes them from the image itself.
 Uint8List _pictureBody(Uint8List image) {
   final mime = ascii.encode(_isPng(image) ? 'image/png' : 'image/jpeg');
-  Uint8List u32(int value) => (ByteData(4)..setUint32(0, value)).buffer.asUint8List();
+  Uint8List u32(int value) =>
+      (ByteData(4)..setUint32(0, value)).buffer.asUint8List();
 
   return (BytesBuilder(copy: false)
         ..add(u32(3))
@@ -365,7 +468,10 @@ const _pngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
 bool _isPng(Uint8List image) =>
     image.length >= _pngSignature.length &&
-    [for (var i = 0; i < _pngSignature.length; i++) image[i] == _pngSignature[i]].every((same) => same);
+    [
+      for (var i = 0; i < _pngSignature.length; i++)
+        image[i] == _pngSignature[i],
+    ].every((same) => same);
 
 bool _startsWith(Uint8List bytes, int offset, String marker) {
   if (bytes.length < offset + marker.length) return false;

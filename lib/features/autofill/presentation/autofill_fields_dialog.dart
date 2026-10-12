@@ -6,7 +6,10 @@ import 'autofill_field_names.dart';
 
 /// The checklist an autofill starts from.
 class AutofillFieldsDialog extends StatefulWidget {
-  const AutofillFieldsDialog._({required this.initial, required this.anyWritable});
+  const AutofillFieldsDialog._({
+    required this.initial,
+    required this.anyWritable,
+  });
 
   /// What is ticked when it opens.
   final Set<AutofillField> initial;
@@ -23,7 +26,8 @@ class AutofillFieldsDialog extends StatefulWidget {
     required bool anyWritable,
   }) => showDialog<Set<AutofillField>>(
     context: context,
-    builder: (_) => AutofillFieldsDialog._(initial: initial, anyWritable: anyWritable),
+    builder: (_) =>
+        AutofillFieldsDialog._(initial: initial, anyWritable: anyWritable),
   );
 
   @override
@@ -42,7 +46,10 @@ class _AutofillFieldsDialogState extends State<AutofillFieldsDialog> {
         title: Text(l10n.autofillFieldsTitle),
         content: Text(l10n.autofillNothingWritable),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.autofillClose)),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.autofillClose),
+          ),
         ],
       );
     }
@@ -59,18 +66,27 @@ class _AutofillFieldsDialogState extends State<AutofillFieldsDialog> {
                 dense: true,
                 value: _chosen.contains(field),
                 title: Text(autofillFieldName(l10n, field)),
-                subtitle: field == AutofillField.cover ? Text(l10n.autofillCoverNote) : null,
+                subtitle: field == AutofillField.cover
+                    ? Text(l10n.autofillCoverNote)
+                    : null,
                 onChanged: (ticked) => setState(
-                  () => ticked == true ? _chosen.add(field) : _chosen.remove(field),
+                  () => ticked == true
+                      ? _chosen.add(field)
+                      : _chosen.remove(field),
                 ),
               ),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.autofillCancel)),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.autofillCancel),
+        ),
         FilledButton(
-          onPressed: _chosen.isEmpty ? null : () => Navigator.pop(context, {..._chosen}),
+          onPressed: _chosen.isEmpty
+              ? null
+              : () => Navigator.pop(context, {..._chosen}),
           child: Text(l10n.autofillFind),
         ),
       ],

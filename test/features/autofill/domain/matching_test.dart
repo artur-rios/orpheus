@@ -36,15 +36,16 @@ void main() {
       date: date,
     );
 
-    List<String> ranked(List<ReleaseCandidate> candidates, {int files = 12}) => [
-      for (final c in rankCandidates(
-        candidates,
-        fileCount: files,
-        album: 'OK Computer',
-        artist: 'Radiohead',
-      ))
-        c.id,
-    ];
+    List<String> ranked(List<ReleaseCandidate> candidates, {int files = 12}) =>
+        [
+          for (final c in rankCandidates(
+            candidates,
+            fileCount: files,
+            album: 'OK Computer',
+            artist: 'Radiohead',
+          ))
+            c.id,
+        ];
 
     test('GivenAReleaseWithBonusTracks_WhenRanked_ThenTheOneWithAsManyTracksAsFilesComesFirst', () {
       expect(
@@ -62,7 +63,10 @@ void main() {
 
     test('GivenATitleThatOnlyContainsTheAlbum_WhenRanked_ThenTheExactTitleComesFirst', () {
       expect(
-        ranked([candidate('tribute', title: 'OK Computer Tribute'), candidate('exact')]),
+        ranked([
+          candidate('tribute', title: 'OK Computer Tribute'),
+          candidate('exact'),
+        ]),
         ['exact', 'tribute'],
       );
     });
@@ -79,17 +83,21 @@ void main() {
   });
 
   group('rankAppearances', () {
-    ReleaseCandidate release(String id, {String type = 'Album', List<String> secondary = const [], String date = '2000'}) =>
-        ReleaseCandidate(
-          id: id,
-          title: id,
-          artistCredit: const [ArtistCredit(name: 'A')],
-          trackCount: 10,
-          status: 'Official',
-          primaryType: type,
-          secondaryTypes: secondary,
-          date: date,
-        );
+    ReleaseCandidate release(
+      String id, {
+      String type = 'Album',
+      List<String> secondary = const [],
+      String date = '2000',
+    }) => ReleaseCandidate(
+      id: id,
+      title: id,
+      artistCredit: const [ArtistCredit(name: 'A')],
+      trackCount: 10,
+      status: 'Official',
+      primaryType: type,
+      secondaryTypes: secondary,
+      date: date,
+    );
 
     test('GivenARecordingOnASingleACompilationAndAnAlbum_WhenRanked_ThenTheAlbumComesFirstAndTheCompilationLast', () {
       final match = RecordingMatch(
@@ -97,14 +105,25 @@ void main() {
         title: 'Song',
         artistCredit: const [ArtistCredit(name: 'A')],
         appearances: [
-          RecordingAppearance(release: release('best of', secondary: ['Compilation']), disc: 1, position: 3),
-          RecordingAppearance(release: release('single', type: 'Single'), disc: 1, position: 1),
+          RecordingAppearance(
+            release: release('best of', secondary: ['Compilation']),
+            disc: 1,
+            position: 3,
+          ),
+          RecordingAppearance(
+            release: release('single', type: 'Single'),
+            disc: 1,
+            position: 1,
+          ),
           RecordingAppearance(release: release('album'), disc: 1, position: 5),
         ],
       );
 
       expect(
-        [for (final a in rankAppearances([match], title: 'Song', artist: 'A')) a.release.id],
+        [
+          for (final a in rankAppearances([match], title: 'Song', artist: 'A'))
+            a.release.id,
+        ],
         ['album', 'single', 'best of'],
       );
     });
@@ -144,25 +163,41 @@ void main() {
     });
 
     MusicEntry untitledAt(String path) => MusicEntry(
-      file: AudioFile(path: path, sizeInBytes: 1, modifiedAt: DateTime.utc(2026)),
+      file: AudioFile(
+        path: path,
+        sizeInBytes: 1,
+        modifiedAt: DateTime.utc(2026),
+      ),
       metadata: TrackMetadata.empty,
     );
 
     test('GivenANumberThenASpacedDashThenTheTitle_WhenItsQueryIsBuilt_ThenTheNumberIsStripped', () {
-      expect(recordingQueryFor(untitledAt('/music/03 - Lucky.flac')).title, 'Lucky');
+      expect(
+        recordingQueryFor(untitledAt('/music/03 - Lucky.flac')).title,
+        'Lucky',
+      );
     });
 
     test('GivenALeadingZeroNumberThenSpaceThenTheTitle_WhenItsQueryIsBuilt_ThenTheNumberIsStripped', () {
-      expect(recordingQueryFor(untitledAt('/music/03 Lucky.flac')).title, 'Lucky');
+      expect(
+        recordingQueryFor(untitledAt('/music/03 Lucky.flac')).title,
+        'Lucky',
+      );
     });
 
     test('GivenATitleThatStartsWithANumberWithoutASeparator_WhenItsQueryIsBuilt_ThenTheNumberIsKept', () {
-      expect(recordingQueryFor(untitledAt('/music/21 Guns.mp3')).title, '21 Guns');
+      expect(
+        recordingQueryFor(untitledAt('/music/21 Guns.mp3')).title,
+        '21 Guns',
+      );
     });
 
-    test('GivenATitleThatIsOnlyANumber_WhenItsQueryIsBuilt_ThenTheNumberIsKept', () {
-      expect(recordingQueryFor(untitledAt('/music/1984.flac')).title, '1984');
-    });
+    test(
+      'GivenATitleThatIsOnlyANumber_WhenItsQueryIsBuilt_ThenTheNumberIsKept',
+      () {
+        expect(recordingQueryFor(untitledAt('/music/1984.flac')).title, '1984');
+      },
+    );
 
     test('GivenAFileNameThatIsOnlyANumberWithALeadingZero_WhenItsQueryIsBuilt_ThenTheNumberIsKept', () {
       expect(recordingQueryFor(untitledAt('/music/03.flac')).title, '03');
@@ -170,14 +205,18 @@ void main() {
   });
 
   group('assignTracks', () {
-    ReleaseTrack track(int disc, int position, String title, {int seconds = 200}) =>
-        ReleaseTrack(
-          disc: disc,
-          position: position,
-          title: title,
-          artistCredit: const [ArtistCredit(name: 'Radiohead')],
-          length: Duration(seconds: seconds),
-        );
+    ReleaseTrack track(
+      int disc,
+      int position,
+      String title, {
+      int seconds = 200,
+    }) => ReleaseTrack(
+      disc: disc,
+      position: position,
+      title: title,
+      artistCredit: const [ArtistCredit(name: 'Radiohead')],
+      length: Duration(seconds: seconds),
+    );
 
     ReleaseDetail releaseOf(List<ReleaseTrack> tracks) => ReleaseDetail(
       release: const ReleaseCandidate(
@@ -192,7 +231,10 @@ void main() {
     test('GivenFilesNumberedLikeTheRelease_WhenAssigned_ThenEachGetsItsNumbersTrack', () {
       // No titles: the numbers are the only evidence, and they are enough.
       final files = [entry(id: '1', track: 1), entry(id: '2', track: 2)];
-      final release = releaseOf([track(1, 1, 'Airbag'), track(1, 2, 'Paranoid Android')]);
+      final release = releaseOf([
+        track(1, 1, 'Airbag'),
+        track(1, 2, 'Paranoid Android'),
+      ]);
 
       final assigned = assignTracks(files, release);
 
@@ -201,8 +243,14 @@ void main() {
     });
 
     test('GivenUnnumberedFiles_WhenAssigned_ThenTheyAreMatchedByTitle', () {
-      final files = [entry(id: '1', title: 'paranoid android'), entry(id: '2', title: 'AIRBAG')];
-      final release = releaseOf([track(1, 1, 'Airbag'), track(1, 2, 'Paranoid Android')]);
+      final files = [
+        entry(id: '1', title: 'paranoid android'),
+        entry(id: '2', title: 'AIRBAG'),
+      ];
+      final release = releaseOf([
+        track(1, 1, 'Airbag'),
+        track(1, 2, 'Paranoid Android'),
+      ]);
 
       final assigned = assignTracks(files, release);
 
@@ -216,7 +264,10 @@ void main() {
         entry(id: 'a', title: 'Opening', track: 1),
         entry(id: 'b', title: 'Second Opening', track: 1),
       ];
-      final release = releaseOf([track(1, 1, 'Opening'), track(2, 1, 'Second Opening')]);
+      final release = releaseOf([
+        track(1, 1, 'Opening'),
+        track(2, 1, 'Second Opening'),
+      ]);
 
       final assigned = assignTracks(files, release);
 
@@ -245,7 +296,10 @@ void main() {
 
     test('GivenAnUntitledUnnumberedFile_WhenItsLengthSinglesOutATrack_ThenItIsAssignedThatTrack', () {
       final files = [entry(id: 'u', duration: const Duration(seconds: 387))];
-      final release = releaseOf([track(1, 1, 'Airbag', seconds: 284), track(1, 2, 'Paranoid Android', seconds: 386)]);
+      final release = releaseOf([
+        track(1, 1, 'Airbag', seconds: 284),
+        track(1, 2, 'Paranoid Android', seconds: 386),
+      ]);
 
       expect(assignTracks(files, release)[files[0]]?.title, 'Paranoid Android');
     });
@@ -254,7 +308,12 @@ void main() {
       // Review focus: a length alone must not retitle a file the owner named.
       final files = [
         entry(id: '1', title: 'Airbag', track: 1),
-        entry(id: 'x', title: 'A Hidden Demo', track: 13, duration: const Duration(seconds: 244)),
+        entry(
+          id: 'x',
+          title: 'A Hidden Demo',
+          track: 13,
+          duration: const Duration(seconds: 244),
+        ),
       ];
       final release = releaseOf([
         track(1, 1, 'Airbag'),
@@ -275,7 +334,10 @@ void main() {
         entry(id: 'b', title: 'Second Opening', track: 1),
         entry(id: 'a', title: 'Opening', track: 1),
       ];
-      final release = releaseOf([track(1, 1, 'Opening'), track(2, 1, 'Second Opening')]);
+      final release = releaseOf([
+        track(1, 1, 'Opening'),
+        track(2, 1, 'Second Opening'),
+      ]);
 
       final assigned = assignTracks(files, release);
 
