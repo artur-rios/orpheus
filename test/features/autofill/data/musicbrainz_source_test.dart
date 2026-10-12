@@ -134,6 +134,14 @@ void main() {
     expect(appearance.position, 11);
   });
 
+  test('GivenAShortTrack_WhenRecordingsAreSearched_ThenTheLowerBoundStopsAtZero', () async {
+    final source = sourceAnswering((_) => json(const {'recordings': <Object>[]}));
+
+    await source.searchRecordings(const RecordingQuery(title: 'x', duration: Duration(seconds: 1)));
+
+    expect(requests.single.url.queryParameters['query'], endsWith('dur:[0 TO 4000]'));
+  });
+
   test('GivenAReleaseWithACover_WhenItIsFetched_ThenItsBytesComeBackFromTheCoverArtArchive', () async {
     final source = sourceAnswering((_) => http.Response.bytes([1, 2, 3], 200));
 
@@ -309,12 +317,56 @@ void main() {
       );
     });
 
-    test('GivenAShortTrack_WhenRecordingsAreSearched_ThenTheLowerBoundStopsAtZero', () async {
-      final source = sourceAnswering((_) => json(const {'recordings': <Object>[]}));
+    test('GivenARecordingWithATitleThatIsANumber_WhenRecordingsAreSearched_ThenItIsReportedAsMalformed', () async {
+      final source = sourceAnswering(
+        (_) => json(const {
+          'recordings': [
+            {'id': 'rec-1', 'title': 5},
+          ],
+        }),
+      );
 
-      await source.searchRecordings(const RecordingQuery(title: 'x', duration: Duration(seconds: 1)));
+      await expectLater(
+        source.searchRecordings(const RecordingQuery(title: 'x')),
+        throwsA(isA<MetadataSourceException>().having((e) => e.kind, 'kind', MetadataSourceFailure.malformed)),
+      );
+    });
 
-      expect(requests.single.url.queryParameters['query'], endsWith('dur:[0 TO 4000]'));
+    test('GivenAReleaseWithATrackTitleThatIsANumber_WhenItIsLookedUp_ThenItIsReportedAsMalformed', () async {
+      final source = sourceAnswering(
+        (_) => json(const {
+          'id': 'rel-1',
+          'title': 'x',
+          'media': [
+            {
+              'position': 1,
+              'tracks': [
+                {'position': 1, 'title': 5},
+              ],
+            },
+          ],
+        }),
+      );
+
+      await expectLater(
+        source.release('rel-1'),
+        throwsA(isA<MetadataSourceException>().having((e) => e.kind, 'kind', MetadataSourceFailure.malformed)),
+      );
+    });
+
+    test('GivenAGenreWithANameThatIsANumber_WhenTheGroupsGenresAreAsked_ThenItIsReportedAsMalformed', () async {
+      final source = sourceAnswering(
+        (_) => json(const {
+          'genres': [
+            {'name': 5, 'count': 1},
+          ],
+        }),
+      );
+
+      await expectLater(
+        source.releaseGroupGenres('rg-1'),
+        throwsA(isA<MetadataSourceException>().having((e) => e.kind, 'kind', MetadataSourceFailure.malformed)),
+      );
     });
   });
 }
