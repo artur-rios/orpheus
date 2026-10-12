@@ -14,6 +14,12 @@ import '../../../core/theme/breakpoints.dart';
 /// surface rather than a window, and `window_manager` has nothing to say about
 /// it.
 ///
+/// It opens maximized unless the owner last left it un-maximized, in which
+/// case it opens where they left it. What is recorded is always the window's
+/// *normal* geometry — the rectangle it returns to when un-maximized — beside
+/// whether it was maximized: a maximized window's own rectangle is the screen,
+/// and storing that would leave nothing for the restore button to go back to.
+///
 /// Geometry that will not load, or that is smaller than this application
 /// supports, is not an error: the window opens at its default size, and the
 /// owner's next move is what gets recorded.
@@ -58,6 +64,10 @@ class DesktopWindow with WindowListener {
   /// Whether the close is already under way.
   bool _closing = false;
 
+  /// The last geometry the window had while neither maximized nor minimized,
+  /// which is what is recorded beside a maximized window.
+  Rect? _restored;
+
   /// Sizes the window, restores where it was, and shows it.
   Future<void> open() async {
     await windowManager.ensureInitialized();
@@ -73,16 +83,25 @@ class DesktopWindow with WindowListener {
     await windowManager.setPreventClose(true);
 
     final stored = _read();
+    final bounds = stored?.bounds;
+    _restored = bounds;
+
     await windowManager.waitUntilReadyToShow(
       WindowOptions(
-        size: stored?.size ?? Breakpoint.defaultWindowSize,
+        size: bounds?.size ?? Breakpoint.defaultWindowSize,
         // Centred when there is nothing stored, and at the stored position
         // when there is — `setBounds` below is what actually places it, since
         // the options only carry a size.
-        center: stored == null,
+        center: bounds == null,
       ),
       () async {
-        if (stored != null) await windowManager.setBounds(stored);
+        // Placed first even when it is about to be maximized: that is the
+        // rectangle the restore button brings it back to.
+        if (bounds != null) await windowManager.setBounds(bounds);
+        // Maximized unless the owner said otherwise by leaving it that way,
+        // and before it is shown, so it appears at its full size rather than
+        // drawing once at the normal one and jumping.
+        if (stored?.maximized ?? true) await windowManager.maximize();
         await windowManager.show();
         await windowManager.focus();
       },
@@ -98,17 +117,27 @@ class DesktopWindow with WindowListener {
   void onWindowMoved() => _scheduleWrite();
 
   @override
+  void onWindowMaximize() => _scheduleWrite();
+
+  @override
+  void onWindowUnmaximize() => _scheduleWrite();
+
+  @override
   void onWindowClose() => unawaited(_finish());
 
   /// Stops listening, having written where the window ended up.
   ///
-  /// [bounds] is the geometry to record, for a caller that had to read it
+  /// [placement] is the geometry to record, for a caller that had to read it
   /// first. The close path did: it hides the window before it writes
   /// anything, and a hidden window is not a thing to ask where it is.
-  Future<void> close({Rect? bounds}) async {
+  Future<void> close({WindowPlacement? placement}) async {
+    _stopListening();
+    await _write(placement);
+  }
+
+  void _stopListening() {
     _pending?.cancel();
     windowManager.removeListener(this);
-    await _write(bounds);
   }
 
   /// Takes the window off screen, records where it was, releases what the
@@ -145,21 +174,39 @@ class DesktopWindow with WindowListener {
   }
 
   Future<void> _shutDown() async {
-    final bounds = await _measure();
+    final placement = await _measure();
 
     await windowManager.hide();
-    await close(bounds: bounds);
+
+    // Nothing measured — a minimized window — is nothing to record. Handed to
+    // [close], it would be measured again, from the hidden window.
+    _stopListening();
+    if (placement != null) await _write(placement);
+
     await onClosing?.call();
   }
 
-  /// Where the window is, or `null` where it will not say.
+  /// Where the window is and whether it is maximized, or `null` where there is
+  /// nothing worth recording.
   ///
   /// Read before the window is hidden, so what gets recorded is where the
   /// owner left it rather than whatever a hidden window reports — which is the
   /// last rectangle on Windows and rather less than that on GTK.
-  Future<Rect?> _measure() async {
+  ///
+  /// A minimized window answers `null`: what Windows reports for one is a
+  /// stub parked at -32000, and what it was before it was minimized is
+  /// already recorded.
+  Future<WindowPlacement?> _measure() async {
     try {
-      return await windowManager.getBounds();
+      if (await windowManager.isMinimized()) return null;
+      if (await windowManager.isMaximized()) {
+        return WindowPlacement(bounds: _restored, maximized: true);
+      }
+
+      final bounds = await windowManager.getBounds();
+      _restored = bounds;
+
+      return WindowPlacement(bounds: bounds, maximized: false);
     } on Object catch (error) {
       _log.warning('the window geometry could not be measured', error);
 
@@ -178,17 +225,23 @@ class DesktopWindow with WindowListener {
     );
   }
 
-  /// Records [bounds], reading them itself where the caller had none.
-  Future<void> _write([Rect? bounds]) async {
+  /// Records [placement], measuring it itself where the caller had none.
+  Future<void> _write([WindowPlacement? placement]) async {
     try {
-      bounds ??= await windowManager.getBounds();
+      placement ??= await _measure();
+      if (placement == null) return;
+
+      final bounds = placement.bounds;
       await _settings.setString(
         settingsKey,
         jsonEncode({
-          'x': bounds.left,
-          'y': bounds.top,
-          'width': bounds.width,
-          'height': bounds.height,
+          if (bounds != null) ...{
+            'x': bounds.left,
+            'y': bounds.top,
+            'width': bounds.width,
+            'height': bounds.height,
+          },
+          'maximized': placement.maximized,
         }),
       );
     } on Object catch (error) {
@@ -196,30 +249,22 @@ class DesktopWindow with WindowListener {
     }
   }
 
-  /// The stored geometry, or `null` where there is none worth using.
-  Rect? _read() {
+  /// The stored placement, or `null` where there is none worth using.
+  ///
+  /// A document written before the maximized flag existed carries no
+  /// `maximized`, and reads as maximized: that is the default, and such a
+  /// document only ever recorded where the window was, not how the owner
+  /// wanted it opened.
+  WindowPlacement? _read() {
     final stored = _settings.getString(settingsKey);
     if (stored == null) return null;
 
     try {
       final decoded = jsonDecode(stored) as Map<String, dynamic>;
-      final width = (decoded['width'] as num).toDouble();
-      final height = (decoded['height'] as num).toDouble();
 
-      // A window smaller than the minimum is geometry written by a version
-      // with a different floor, or by a window manager that ignored one. It is
-      // discarded rather than clamped: half-honouring stored geometry puts the
-      // window somewhere the owner never left it.
-      if (width < Breakpoint.minimumWindowSize.width ||
-          height < Breakpoint.minimumWindowSize.height) {
-        return null;
-      }
-
-      return Rect.fromLTWH(
-        (decoded['x'] as num).toDouble(),
-        (decoded['y'] as num).toDouble(),
-        width,
-        height,
+      return WindowPlacement(
+        bounds: _boundsFrom(decoded),
+        maximized: decoded['maximized'] as bool? ?? true,
       );
     } on Object catch (error) {
       _log.warning('the window geometry could not be read', error);
@@ -227,4 +272,37 @@ class DesktopWindow with WindowListener {
       return null;
     }
   }
+
+  /// The rectangle in [decoded], or `null` where there is none worth using.
+  static Rect? _boundsFrom(Map<String, dynamic> decoded) {
+    final x = (decoded['x'] as num?)?.toDouble();
+    final y = (decoded['y'] as num?)?.toDouble();
+    final width = (decoded['width'] as num?)?.toDouble();
+    final height = (decoded['height'] as num?)?.toDouble();
+    if (x == null || y == null || width == null || height == null) return null;
+
+    // A window smaller than the minimum is geometry written by a version with
+    // a different floor, or by a window manager that ignored one. It is
+    // discarded rather than clamped: half-honouring stored geometry puts the
+    // window somewhere the owner never left it.
+    if (width < Breakpoint.minimumWindowSize.width ||
+        height < Breakpoint.minimumWindowSize.height) {
+      return null;
+    }
+
+    return Rect.fromLTWH(x, y, width, height);
+  }
+}
+
+/// Where the window is, as it is recorded between runs.
+class WindowPlacement {
+  /// Creates a placement.
+  const WindowPlacement({required this.maximized, this.bounds});
+
+  /// The window's normal geometry — where it goes when it is not maximized —
+  /// or `null` where none is known.
+  final Rect? bounds;
+
+  /// Whether it is maximized.
+  final bool maximized;
 }

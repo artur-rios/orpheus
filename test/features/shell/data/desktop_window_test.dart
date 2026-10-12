@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 import 'package:orpheus/features/shell/data/desktop_window.dart';
+import 'package:window_manager/window_manager.dart';
 
 /// The close path: what the owner sees first, and what cannot hold it up.
 ///
@@ -32,7 +33,13 @@ void main() {
 
       // Read where it was first — a hidden window is not a thing to ask — and
       // then off the screen, before the settings write and before the quit.
-      expect(channel.calls, ['getBounds', 'hide', 'destroy']);
+      expect(channel.calls, [
+        'isMinimized',
+        'isMaximized',
+        'getBounds',
+        'hide',
+        'destroy',
+      ]);
     },
   );
 
@@ -56,6 +63,7 @@ void main() {
       expect(stored['y'], 80.0);
       expect(stored['width'], 1024.0);
       expect(stored['height'], 720.0);
+      expect(stored['maximized'], isFalse);
     },
   );
 
@@ -126,6 +134,122 @@ void main() {
       expect(channel.calls, contains('destroy'));
     },
   );
+
+  group('maximized by default', () {
+    /// Opens a window over [settings], and stops it listening afterwards so
+    /// the next test starts with no listener left behind on the singleton.
+    Future<DesktopWindow> open(InMemorySettingsStore settings) async {
+      final window = DesktopWindow(settings);
+      addTearDown(() => windowManager.removeListener(window));
+
+      await window.open();
+      await pumpEventQueue();
+
+      return window;
+    }
+
+    String placement({required bool? maximized}) => jsonEncode({
+      'x': 200.0,
+      'y': 100.0,
+      'width': 1100.0,
+      'height': 800.0,
+      'maximized': ?maximized,
+    });
+
+    test(
+      'GivenGeometryStoredBeforeTheFlagExisted_WhenTheWindowOpens_ThenItIsMaximized',
+      () async {
+        final settings = InMemorySettingsStore();
+        await settings.setString(
+          DesktopWindow.settingsKey,
+          placement(maximized: null),
+        );
+
+        await open(settings);
+
+        // Placed at its normal geometry first — that is where the restore
+        // button takes it — then maximized, and only then shown.
+        expect(channel.calls, containsAllInOrder(['setBounds', 'maximize', 'show']));
+      },
+    );
+
+    test(
+      'GivenAWindowLeftMaximized_WhenItOpens_ThenItIsMaximized',
+      () async {
+        final settings = InMemorySettingsStore();
+        await settings.setString(
+          DesktopWindow.settingsKey,
+          placement(maximized: true),
+        );
+
+        await open(settings);
+
+        expect(channel.calls, containsAllInOrder(['maximize', 'show']));
+      },
+    );
+
+    test(
+      'GivenAWindowTheOwnerLeftUnmaximized_WhenItOpens_ThenItOpensWhereTheyLeftIt',
+      () async {
+        final settings = InMemorySettingsStore();
+        await settings.setString(
+          DesktopWindow.settingsKey,
+          placement(maximized: false),
+        );
+
+        await open(settings);
+
+        expect(channel.calls, isNot(contains('maximize')));
+        expect(channel.lastBounds, const Rect.fromLTWH(200, 100, 1100, 800));
+      },
+    );
+
+    test(
+      'GivenAMaximizedWindow_WhenItIsClosed_ThenItsNormalGeometryIsKept',
+      () async {
+        // A maximized window's own rectangle is the screen. Recording that
+        // would leave the restore button nowhere to go back to.
+        final settings = InMemorySettingsStore();
+        await settings.setString(
+          DesktopWindow.settingsKey,
+          placement(maximized: true),
+        );
+        final window = await open(settings);
+        channel.bounds = const Rect.fromLTWH(0, 0, 2560, 1400);
+
+        window.onWindowClose();
+        await pumpEventQueue();
+
+        final stored =
+            jsonDecode(settings.getString(DesktopWindow.settingsKey)!)
+                as Map<String, dynamic>;
+        expect(stored['maximized'], isTrue);
+        expect(stored['x'], 200.0);
+        expect(stored['width'], 1100.0);
+      },
+    );
+
+    test(
+      'GivenAMinimizedWindow_WhenItIsClosed_ThenWhatWasStoredIsKept',
+      () async {
+        // What Windows reports for a minimized window is a stub parked off
+        // screen, and is nothing anyone wants the next launch to open at.
+        final settings = InMemorySettingsStore();
+        final before = placement(maximized: true);
+        await settings.setString(DesktopWindow.settingsKey, before);
+        final window = await open(settings);
+        channel
+          ..minimized = true
+          ..bounds = const Rect.fromLTWH(-32000, -32000, 160, 28);
+
+        window.onWindowClose();
+        await pumpEventQueue();
+
+        expect(settings.getString(DesktopWindow.settingsKey), before);
+        expect(channel.calls, contains('destroy'));
+      },
+    );
+  });
 }
 
 /// Stands in for the platform side of `window_manager`, recording what it was
@@ -143,6 +267,15 @@ class FakeWindowChannel {
   /// something other than the truth.
   Rect? boundsAfterHide;
 
+  /// Whether the window is maximized; `maximize` sets it.
+  bool maximized = false;
+
+  /// Whether the window is minimized.
+  bool minimized = false;
+
+  /// The rectangle the last `setBounds` asked for.
+  Rect? lastBounds;
+
   bool _hidden = false;
 
   /// Binds this in place of the platform.
@@ -154,6 +287,29 @@ class FakeWindowChannel {
           switch (call.method) {
             case 'hide':
               _hidden = true;
+
+              return null;
+            case 'isMaximized':
+              return maximized;
+            case 'isMinimized':
+              return minimized;
+            case 'isFullScreen':
+              return false;
+            case 'maximize':
+              maximized = true;
+
+              return null;
+            case 'setBounds':
+              // `setSize` arrives here too, carrying no position.
+              final arguments = call.arguments as Map<Object?, Object?>;
+              if (arguments['x'] case final num x) {
+                lastBounds = Rect.fromLTWH(
+                  x.toDouble(),
+                  (arguments['y']! as num).toDouble(),
+                  (arguments['width']! as num).toDouble(),
+                  (arguments['height']! as num).toDouble(),
+                );
+              }
 
               return null;
             case 'getBounds':
