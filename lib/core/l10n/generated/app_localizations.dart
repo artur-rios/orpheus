@@ -1280,6 +1280,12 @@ abstract class AppLocalizations {
   /// **'Orpheus can\'t change this kind of file'**
   String get autofillUnwritable;
 
+  /// Shown for a file of a kind Orpheus writes (MP3 or FLAC) whose tags could not be read, or are of a shape it will not change safely — on its card on the autofill review, and as why it was not written in the summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus can\'t safely change this file\'s tags'**
+  String get autofillUnsafeTags;
+
   /// Shown beside a file on the review when its kind cannot hold some of the chosen tags; the placeholder lists their names.
   ///
   /// In en, this message translates to:

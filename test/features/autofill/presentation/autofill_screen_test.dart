@@ -9,10 +9,13 @@ import 'package:orpheus/features/autofill/domain/metadata_source.dart';
 import 'package:orpheus/features/autofill/domain/release.dart';
 import 'package:orpheus/features/autofill/domain/tag_writer.dart';
 import 'package:orpheus/features/autofill/presentation/autofill_screen.dart';
+import 'package:orpheus/features/library/domain/audio_file.dart';
 import 'package:orpheus/features/library/domain/library_access.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
+import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/library/domain/music_grouping.dart';
+import 'package:orpheus/features/library/domain/track_metadata.dart';
 
 import '../../../support/entries.dart';
 import '../../../support/fakes.dart';
@@ -164,13 +167,32 @@ void main() {
     expect(button.onPressed, isNull);
   });
 
+  testWidgets('GivenAKindOfFileOrpheusCannotWrite_WhenTheScreenShows_ThenItSaysSo', (tester) async {
+    final harness = harnessFor();
+    final ogg = MusicEntry(
+      file: AudioFile(path: '/library/song.ogg', sizeInBytes: 1024, modifiedAt: DateTime.utc(2026)),
+      metadata: const TrackMetadata(title: 'Paranoid Android', artist: 'Radiohed', album: 'OK Computer', track: 2),
+    );
+
+    await tester.pumpHarness(
+      harness,
+      AutofillScreen(entries: [record.first, ogg], fields: const {AutofillField.artist}, kind: AutofillKind.record),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text("Orpheus can't change this kind of file"), findsOneWidget);
+    expect(find.text("Orpheus can't safely change this file's tags"), findsNothing);
+  });
+
   testWidgets('GivenAnUnwritableFile_WhenTheScreenShows_ThenItIsNamedWithTheReasonAndHasNoCheckbox', (tester) async {
     final harness = harnessFor();
+    // A FLAC, which Orpheus writes, whose tags it cannot change safely.
     harness.tagWriter.files[record.first.file.path] = FileTags.unwritable;
 
     await openScreen(tester, harness, {AutofillField.artist});
 
-    expect(find.text("Orpheus can't change this kind of file"), findsOneWidget);
+    expect(find.text("Orpheus can't safely change this file's tags"), findsOneWidget);
+    expect(find.text("Orpheus can't change this kind of file"), findsNothing);
     expect(find.byType(CheckboxListTile), findsNWidgets(1));
     expect(find.byKey(ValueKey('autofill-file-toggle-${record.first.file.path}')), findsNothing);
   });
@@ -206,6 +228,18 @@ void main() {
     expect(find.text('1 file updated.'), findsOneWidget);
     expect(find.textContaining('In use by playback'), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
+  });
+
+  testWidgets('GivenAFlacWhoseTagIsRefused_WhenWritten_ThenTheSummarySaysItsTagsCannotBeChangedSafely', (tester) async {
+    final harness = harnessFor();
+    harness.tagWriter.refusals[record.first.file.path] = WriteOutcome.unsupported;
+    await openScreen(tester, harness, {AutofillField.artist});
+
+    await tester.tap(find.text('Write 2 changes to 2 files'));
+    await tester.pumpAndSettle();
+
+    expect(find.text("Orpheus can't safely change this file's tags"), findsOneWidget);
+    expect(find.text("Orpheus can't change this kind of file"), findsNothing);
   });
 
   testWidgets('GivenMusicBrainzCannotBeReached_WhenTheScreenShows_ThenItSaysSoAndOffersToTryAgain', (tester) async {

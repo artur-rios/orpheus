@@ -5,7 +5,9 @@ import 'package:orpheus/features/autofill/domain/autofill_field.dart';
 import 'package:orpheus/features/autofill/domain/proposals.dart';
 import 'package:orpheus/features/autofill/domain/release.dart';
 import 'package:orpheus/features/autofill/domain/tag_writer.dart';
+import 'package:orpheus/features/library/domain/audio_file.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
+import 'package:orpheus/features/library/domain/track_metadata.dart';
 
 import '../../../support/entries.dart';
 
@@ -167,10 +169,22 @@ void main() {
   });
 
   test('GivenAnUnwritableFormat_WhenProposed_ThenTheFileIsBlockedWithNoChanges', () {
-    final ogg = entry(id: 'song.ogg');
+    final ogg = MusicEntry(
+      file: AudioFile(path: '/library/song.ogg', sizeInBytes: 1024, modifiedAt: DateTime.utc(2026)),
+      metadata: const TrackMetadata(title: 'Airbag'),
+    );
     final proposals = propose({ogg: release.tracks.first}, {AutofillField.title}, {ogg.file.path: FileTags.unwritable});
 
     expect(proposals.single.blockedBecause, ProposalBlock.unwritableFormat);
+    expect(proposals.single.changes, isEmpty);
+  });
+
+  test('GivenAWritableKindOfFileWhoseTagsCannotBeChangedSafely_WhenProposed_ThenItIsBlockedForItsTagsNotItsKind', () {
+    // A FLAC is a kind of file Orpheus writes; this one's tags could not be
+    // read, or are of a shape the editor leaves alone.
+    final proposals = propose({airbag: release.tracks.first}, {AutofillField.title}, {airbag.file.path: FileTags.unwritable});
+
+    expect(proposals.single.blockedBecause, ProposalBlock.unsafeTags);
     expect(proposals.single.changes, isEmpty);
   });
 

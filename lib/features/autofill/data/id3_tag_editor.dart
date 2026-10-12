@@ -145,18 +145,9 @@ _Mp3 _parse(Uint8List file) {
   if (file.length < 10) throw const FormatException('a truncated ID3v2 header');
   final major = file[3];
   if (major < 2) throw const FormatException('an ID3v2 version that does not exist');
-  if (major == 2) throw const UnsupportedTagException('an ID3v2.2 tag, whose frames are of another shape');
-  if (major > 4) throw UnsupportedTagException('an ID3v2.$major tag, from after this was written');
-
   final flags = file[5];
-  // A tag unsynchronised as a whole has every frame's bytes changed, and an
-  // extended header carries a checksum and restrictions this would have to
-  // keep true; both are rare, and getting either wrong corrupts the tag.
-  if (flags & _unsynchronisationFlag != 0) throw const UnsupportedTagException('an unsynchronised tag');
-  if (flags & _extendedHeaderFlag != 0) throw const UnsupportedTagException('a tag with an extended header');
-  // Besides those: experimental (0x20), and in v2.4 the footer. Any other
-  // flag is one this version does not define.
-  if (flags & (major == 4 ? 0x0F : 0x1F) != 0) throw const UnsupportedTagException('a tag flag this does not know');
+  final unsupported = _unsupportedHeader(major, flags);
+  if (unsupported != null) throw UnsupportedTagException(unsupported);
 
   final size = _readSyncSafe(file, 6);
   final footer = flags & _footerFlag != 0 ? 10 : 0;
@@ -203,6 +194,35 @@ _Mp3 _parse(Uint8List file) {
 }
 
 final _frameId = RegExp(r'^[A-Z0-9]{4}$');
+
+/// Why [editId3Tags] would refuse the ID3v2 tag a file starts with, by its
+/// header alone — [head] being at least the file's first ten bytes — or
+/// `null` where the header is one it edits, or there is no ID3v2 tag.
+///
+/// What the editor will not touch, found before the owner reviews anything:
+/// a whole file is not read to know it.
+String? unsupportedId3Header(Uint8List head) {
+  if (head.length < 10 || !_startsWith(head, 0, 'ID3') || head[3] < 2) return null;
+
+  return _unsupportedHeader(head[3], head[5]);
+}
+
+/// Why a tag of version 2.[major] with the header [flags] is one this does
+/// not edit, or `null` where it is one it does.
+String? _unsupportedHeader(int major, int flags) {
+  if (major == 2) return 'an ID3v2.2 tag, whose frames are of another shape';
+  if (major > 4) return 'an ID3v2.$major tag, from after this was written';
+  // A tag unsynchronised as a whole has every frame's bytes changed, and an
+  // extended header carries a checksum and restrictions this would have to
+  // keep true; both are rare, and getting either wrong corrupts the tag.
+  if (flags & _unsynchronisationFlag != 0) return 'an unsynchronised tag';
+  if (flags & _extendedHeaderFlag != 0) return 'a tag with an extended header';
+  // Besides those: experimental (0x20), and in v2.4 the footer. Any other
+  // flag is one this version does not define.
+  if (flags & (major == 4 ? 0x0F : 0x1F) != 0) return 'a tag flag this does not know';
+
+  return null;
+}
 
 /// What writing one field (or a number and its total) does: which frames it
 /// replaces, and the frame it writes in their place — `null` for none.

@@ -118,6 +118,13 @@ class AudioMetadataTagWriter implements TagWriter {
 }
 
 FileTags _inspect(String path, Set<AutofillField> writable) {
+  // An ID3v2 tag the editor will not touch — v2.2, unsynchronised, with an
+  // extended header — is found from its header now, so the owner is told
+  // before reviewing changes a write would then refuse.
+  if (p.extension(path).toLowerCase() == '.mp3' && unsupportedId3Header(_head(path)) != null) {
+    return FileTags.unwritable;
+  }
+
   final tags = readAllMetadata(File(path));
 
   // A FLAC file with an ID3v2 tag in front of its marker is read as an MP3:
@@ -461,6 +468,16 @@ Uint8List? _front(List<Picture> pictures) {
   }
 
   return pictures.firstOrNull?.bytes;
+}
+
+/// The first ten bytes of the file at [path], or as many as it has.
+Uint8List _head(String path) {
+  final file = File(path).openSync();
+  try {
+    return file.readSync(10);
+  } finally {
+    file.closeSync();
+  }
 }
 
 /// Every value of a field that can repeat, as one: `Rock; Pop`.

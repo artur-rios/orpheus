@@ -286,6 +286,7 @@ class _ProposalCard extends ConsumerWidget {
 
     final note = switch (proposal.blockedBecause) {
       ProposalBlock.unwritableFormat => l10n.autofillUnwritable,
+      ProposalBlock.unsafeTags => l10n.autofillUnsafeTags,
       ProposalBlock.noMatch => l10n.autofillNoMatch,
       null when proposal.changes.isEmpty => l10n.autofillNoChanges,
       null => null,
@@ -433,6 +434,8 @@ class _Summary extends StatelessWidget {
               WriteOutcome.changedSinceRead => l10n.autofillOutcomeChanged,
               WriteOutcome.inUse => l10n.autofillOutcomeInUse,
               WriteOutcome.denied => l10n.autofillOutcomeDenied,
+              // A kind of file Orpheus writes, whose tag the editor refused.
+              WriteOutcome.unsupported when canWriteTagsTo(path) => l10n.autofillUnsafeTags,
               WriteOutcome.unsupported => l10n.autofillOutcomeUnsupported,
               _ => l10n.autofillOutcomeFailed,
             }),

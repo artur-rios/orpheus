@@ -105,6 +105,21 @@ void main() {
       expect((await writer.inspect(p.join(root.path, 'gone.mp3'))).writable, isEmpty);
     });
 
+    // A tag the ID3 editor will not touch is marked before the owner reviews
+    // anything, rather than refused once they have confirmed it.
+    for (final (name, tag) in [
+      ('AnId3v22Tag', () => id3Tag(frames: [frame('TT2', Uint8List.fromList([0, ...latin1.encode('Airbag')]), major: 2)], major: 2)),
+      ('AnUnsynchronisedTag', () => id3Tag(frames: [frame('TIT2', Uint8List.fromList([3, ...utf8.encode('Airbag')]))], unsynchronised: true)),
+      ('AnExtendedHeader', () => id3Tag(frames: [frame('TIT2', Uint8List.fromList([3, ...utf8.encode('Airbag')]))], extendedHeader: true)),
+    ]) {
+      test('GivenAnMp3With${name}_WhenInspected_ThenNothingIsWritable', () async {
+        final path = p.join(root.path, 'a.mp3');
+        File(path).writeAsBytesSync([...tag(), ...mpegAudio()]);
+
+        expect((await writer.inspect(path)).writable, isEmpty);
+      });
+    }
+
     // What the review shows as "before" is what a write replaces: the whole
     // TCON frame, and every comment of a Vorbis key — not the first genre the
     // reader splits out of them.

@@ -729,6 +729,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get autofillUnwritable => 'Orpheus can\'t change this kind of file';
 
   @override
+  String get autofillUnsafeTags =>
+      'Orpheus can\'t safely change this file\'s tags';
+
+  @override
   String autofillNotWritableFields(String fields) {
     return 'This kind of file can\'t hold: $fields';
   }

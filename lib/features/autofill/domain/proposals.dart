@@ -37,6 +37,10 @@ enum ProposalBlock {
   /// Its format cannot be written.
   unwritableFormat,
 
+  /// Its format can be written, but not its tags: they could not be read, or
+  /// are of a shape the writer leaves alone rather than risk.
+  unsafeTags,
+
   /// The release has no track it matched.
   noMatch,
 }
@@ -127,7 +131,11 @@ FileProposal _proposalFor(
   required Uint8List? cover,
 }) {
   if (current.writable.isEmpty) {
-    return FileProposal(entry: entry, track: track, blockedBecause: ProposalBlock.unwritableFormat);
+    return FileProposal(
+      entry: entry,
+      track: track,
+      blockedBecause: canWriteTagsTo(entry.file.path) ? ProposalBlock.unsafeTags : ProposalBlock.unwritableFormat,
+    );
   }
   if (track == null) {
     return FileProposal(entry: entry, blockedBecause: ProposalBlock.noMatch);
