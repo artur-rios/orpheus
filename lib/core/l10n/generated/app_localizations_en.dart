@@ -738,6 +738,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'This release has no cover on the Cover Art Archive.';
 
   @override
+  String get autofillCoverUnavailable =>
+      'The cover could not be downloaded from the Cover Art Archive.';
+
+  @override
   String autofillWriting(int done, int total) {
     return 'Writing $done of $total…';
   }

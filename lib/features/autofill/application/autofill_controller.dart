@@ -61,6 +61,7 @@ class AutofillState {
     this.failure,
     this.refusal,
     this.coverMissing = false,
+    this.coverUnavailable = false,
   });
 
   /// Where it is.
@@ -102,6 +103,10 @@ class AutofillState {
   /// Whether the cover was chosen and the release had none to give.
   final bool coverMissing;
 
+  /// Whether the cover was chosen and could not be downloaded: the release
+  /// may well have one.
+  final bool coverUnavailable;
+
   /// How many changes are ticked.
   int get acceptedCount =>
       proposals.fold(0, (sum, proposal) => sum + proposal.acceptedCount);
@@ -127,6 +132,7 @@ class AutofillState {
     MetadataSourceFailure? failure,
     LibraryAccessDecision? refusal,
     bool? coverMissing,
+    bool? coverUnavailable,
   }) => AutofillState(
     stage: stage ?? this.stage,
     kind: kind ?? this.kind,
@@ -141,6 +147,7 @@ class AutofillState {
     failure: failure,
     refusal: refusal,
     coverMissing: coverMissing ?? this.coverMissing,
+    coverUnavailable: coverUnavailable ?? this.coverUnavailable,
   );
 }
 
@@ -318,11 +325,15 @@ class AutofillController extends Notifier<AutofillState> {
       }
 
       Uint8List? cover;
+      var coverUnavailable = false;
       if (state.fields.contains(AutofillField.cover)) {
         try {
           cover = await source.frontCover(releaseId);
         } on MetadataSourceException catch (error) {
+          // Not "no cover": the owner is told it could not be downloaded,
+          // and can look the release up again for another try.
           _log.info('the cover could not be fetched', error);
+          coverUnavailable = true;
         }
         if (!ref.mounted) return;
       }
@@ -334,7 +345,8 @@ class AutofillController extends Notifier<AutofillState> {
       state = state.copyWith(
         stage: AutofillStage.reviewing,
         release: detail,
-        coverMissing: state.fields.contains(AutofillField.cover) && cover == null,
+        coverMissing: state.fields.contains(AutofillField.cover) && cover == null && !coverUnavailable,
+        coverUnavailable: coverUnavailable,
         proposals: proposalsFor(
           assignment: assignment,
           release: detail,

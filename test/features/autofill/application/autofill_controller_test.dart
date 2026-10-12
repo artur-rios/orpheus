@@ -251,6 +251,20 @@ void main() {
     await controller.start(record, {AutofillField.cover, AutofillField.artist}, kind: AutofillKind.record);
 
     expect(stateOf(harness).coverMissing, isTrue);
+    expect(stateOf(harness).coverUnavailable, isFalse);
+    expect(stateOf(harness).acceptedCount, 2);
+  });
+
+  test('GivenTheCoverDownloadFails_WhenProposed_ThenItIsUnavailableNotMissingAndTheOtherChangesStand', () async {
+    final harness = harnessFor();
+    final controller = controllerOf(harness);
+    harness.metadata.coverFailure = MetadataSourceFailure.unreachable;
+
+    await controller.start(record, {AutofillField.cover, AutofillField.artist}, kind: AutofillKind.record);
+
+    expect(stateOf(harness).stage, AutofillStage.reviewing);
+    expect(stateOf(harness).coverUnavailable, isTrue);
+    expect(stateOf(harness).coverMissing, isFalse);
     expect(stateOf(harness).acceptedCount, 2);
   });
 

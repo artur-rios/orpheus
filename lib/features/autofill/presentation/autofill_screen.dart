@@ -179,6 +179,11 @@ class _Review extends ConsumerWidget {
               padding: const EdgeInsets.only(top: AppSpacing.sm),
               child: Text(l10n.autofillCoverMissing, style: theme.textTheme.bodySmall),
             ),
+          if (state.coverUnavailable)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: Text(l10n.autofillCoverUnavailable, style: theme.textTheme.bodySmall),
+            ),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(

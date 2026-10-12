@@ -27,6 +27,10 @@ class ScriptedMetadataSource implements MetadataSource {
   /// What every call throws instead, where a test wants a failure.
   MetadataSourceFailure? failure;
 
+  /// What fetching a cover throws instead, where a test wants only the
+  /// download to fail.
+  MetadataSourceFailure? coverFailure;
+
   /// Held until completed, where a test wants a lookup in flight.
   Future<void>? hold;
 
@@ -75,6 +79,8 @@ class ScriptedMetadataSource implements MetadataSource {
   Future<Uint8List?> frontCover(String releaseId) async {
     coversFetched.add(releaseId);
     await _gate();
+    final thrown = coverFailure;
+    if (thrown != null) throw MetadataSourceException(thrown);
     return covers[releaseId];
   }
 }

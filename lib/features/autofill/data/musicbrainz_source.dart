@@ -156,7 +156,16 @@ class MusicBrainzSource implements MetadataSource {
 
   @override
   Future<Uint8List?> frontCover(String releaseId) async {
-    final response = await _send(Uri.https('coverartarchive.org', '/release/$releaseId/front-500'));
+    final uri = Uri.https('coverartarchive.org', '/release/$releaseId/front-500');
+    var response = await _send(uri);
+    // The archive serves its images through a redirect to another host, and
+    // an error on the way is usually gone a moment later: asked once more
+    // before the owner is told the cover could not be downloaded.
+    if (response.statusCode >= 500) {
+      _log.info('the cover archive answered ${response.statusCode}; asking again');
+      await _wait(retryAfter);
+      response = await _send(uri);
+    }
     if (response.statusCode == 404) return null;
     if (response.statusCode != 200) {
       throw const MetadataSourceException(MetadataSourceFailure.unreachable);

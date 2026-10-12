@@ -738,6 +738,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Este lançamento não tem capa no Cover Art Archive.';
 
   @override
+  String get autofillCoverUnavailable =>
+      'Não foi possível baixar a capa do Cover Art Archive.';
+
+  @override
   String autofillWriting(int done, int total) {
     return 'Gravando $done de $total…';
   }

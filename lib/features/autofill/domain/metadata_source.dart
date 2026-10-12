@@ -79,5 +79,8 @@ abstract interface class MetadataSource {
   Future<List<RecordingMatch>> searchRecordings(RecordingQuery query);
 
   /// The front cover of release [releaseId], or `null` where it has none.
+  ///
+  /// Throws a [MetadataSourceException] where it could not be downloaded —
+  /// which is not the same as there being none.
   Future<Uint8List?> frontCover(String releaseId);
 }

@@ -924,6 +924,10 @@
   "@autofillCoverMissing": {
     "description": "Shown on the review when the chosen release has no cover to download."
   },
+  "autofillCoverUnavailable": "Não foi possível baixar a capa do Cover Art Archive.",
+  "@autofillCoverUnavailable": {
+    "description": "Shown on the review when the chosen release's cover could not be downloaded — a failure, unlike a release that has none."
+  },
   "autofillWriting": "Gravando {done} de {total}…",
   "@autofillWriting": {
     "description": "The progress shown while the files are being written.",

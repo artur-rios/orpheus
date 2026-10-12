@@ -1292,6 +1292,12 @@ abstract class AppLocalizations {
   /// **'This release has no cover on the Cover Art Archive.'**
   String get autofillCoverMissing;
 
+  /// Shown on the review when the chosen release's cover could not be downloaded — a failure, unlike a release that has none.
+  ///
+  /// In en, this message translates to:
+  /// **'The cover could not be downloaded from the Cover Art Archive.'**
+  String get autofillCoverUnavailable;
+
   /// The progress shown while the files are being written.
   ///
   /// In en, this message translates to:

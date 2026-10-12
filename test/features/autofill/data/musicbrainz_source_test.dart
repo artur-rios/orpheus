@@ -157,6 +157,24 @@ void main() {
     expect(await source.frontCover('rel-1'), isNull);
   });
 
+  test('GivenTheCoverArchiveFailsOnce_WhenTheCoverIsFetched_ThenItIsAskedAgainAndTheCoverComesBack', () async {
+    var asked = 0;
+    final source = sourceAnswering((_) => asked++ == 0 ? http.Response('', 502) : http.Response.bytes([1, 2, 3], 200));
+
+    expect(await source.frontCover('rel-1'), Uint8List.fromList([1, 2, 3]));
+    expect(requests, hasLength(2));
+  });
+
+  test('GivenTheCoverArchiveKeepsFailing_WhenTheCoverIsFetched_ThenItIsUnreachableNotMissing', () async {
+    final source = sourceAnswering((_) => http.Response('', 500));
+
+    await expectLater(
+      source.frontCover('rel-1'),
+      throwsA(isA<MetadataSourceException>().having((e) => e.kind, 'kind', MetadataSourceFailure.unreachable)),
+    );
+    expect(requests, hasLength(2));
+  });
+
   test('GivenAnAnswerThatIsNotJson_WhenItArrives_ThenItIsReportedAsMalformed', () async {
     final source = sourceAnswering((_) => http.Response('<html>', 200));
 

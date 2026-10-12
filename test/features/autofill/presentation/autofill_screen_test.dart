@@ -135,6 +135,26 @@ void main() {
     expect(find.byType(Checkbox), findsNWidgets(1));
   });
 
+  testWidgets('GivenTheCoverDownloadFails_WhenTheScreenShows_ThenItSaysItCouldNotBeDownloadedNotThatThereIsNone', (tester) async {
+    final harness = harnessFor();
+    harness.metadata.coverFailure = MetadataSourceFailure.unreachable;
+
+    await openScreen(tester, harness, {AutofillField.cover, AutofillField.artist});
+
+    expect(find.text('The cover could not be downloaded from the Cover Art Archive.'), findsOneWidget);
+    expect(find.text('This release has no cover on the Cover Art Archive.'), findsNothing);
+    expect(find.text('Write 2 changes to 2 files'), findsOneWidget);
+  });
+
+  testWidgets('GivenTheReleaseHasNoCover_WhenTheScreenShows_ThenItSaysThereIsNone', (tester) async {
+    final harness = harnessFor();
+
+    await openScreen(tester, harness, {AutofillField.cover, AutofillField.artist});
+
+    expect(find.text('This release has no cover on the Cover Art Archive.'), findsOneWidget);
+    expect(find.text('The cover could not be downloaded from the Cover Art Archive.'), findsNothing);
+  });
+
   testWidgets('GivenTheOwnerWrites_WhenItFinishes_ThenTheSummarySaysHowManyAndNamesTheRefused', (tester) async {
     final harness = harnessFor();
     harness.tagWriter.refusals[record.first.file.path] = WriteOutcome.inUse;
