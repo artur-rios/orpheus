@@ -74,8 +74,8 @@ there is one, warnings stop being read.
 
 | Not used | Why |
 | --- | --- |
-| Any HTTP client beyond `http` | `http` serves the two network calls this application makes, the lyrics lookup (`FR-LY-13`) and the desktop release check (`BR-03`). It was chosen over `dart:io`'s `HttpClient` because its `Client` is an interface, which is what lets those calls sit behind a seam a test can stand in front of (`NFR-08`). Nothing else may use it (`NFR-02`). |
+| Any HTTP client beyond `http` | `http` serves the three network calls this application makes, the lyrics lookup (`FR-LY-13`), the autofill lookup (`FR-AF-02`) and the desktop release check (`BR-03`). It was chosen over `dart:io`'s `HttpClient` because its `Client` is an interface, which is what lets those calls sit behind a seam a test can stand in front of (`NFR-08`). Nothing else may use it (`NFR-02`). |
 | Any database | The whole library is read at once and never queried piecemeal; JSON documents answer everything a database would. |
 | Any code generator beyond `gen_l10n` | Generated state classes and models would add a build step for no behaviour this project needs. |
-| Any crash or analytics reporter | Nothing leaves the machine but a lyrics query, to find a track's words, and the desktop release check (`BR-03`, `BR-29a`). |
+| Any crash or analytics reporter | Nothing leaves the machine but a lyrics query, to find a track's words, an autofill's lookup of the release the owner asked for, and the desktop release check (`BR-03`, `BR-29a`, `FR-AF-02`). |
 | A Rust core over FFI | This is the dependency Orpheus exists to shed; it has no Android build, which is what kept Alexandria's music on the desk. |

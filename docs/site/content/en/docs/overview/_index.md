@@ -35,17 +35,20 @@ interface on Windows, Linux and Android.
 
 ## What it deliberately does not do
 
-**It never touches your audio files.** No tag editing, no renaming, no moving,
-no deleting, no transcoding. They are opened for reading and that is all. The
-one thing Orpheus ever writes into a music folder is a `.lrc` next to a track
-whose words it looked up — a new file, never a replacement for one you wrote,
-and never the track itself.
+**It changes your files only when you ask.** No renaming, no moving, no
+deleting, no transcoding. The one change it ever makes to an audio file is to
+its tags, from an autofill whose every change you saw and confirmed — and it
+refuses a file another program changed since it was read. Besides that, it
+writes a `.lrc` next to a track whose words it looked up, a new file and
+never a replacement for one you wrote.
 
 **Almost no network.** No streaming, no scrobbling, no telemetry, no analytics,
-no crash reporting, no cover art fetched from anywhere. There are two
-exceptions, and both can be turned off: the lyrics lookup, and on Windows and
-Linux the check for a newer release
-([Keeping it up to date]({{< relref "/downloads#keeping-it-up-to-date" >}})).
+no crash reporting, no cover art fetched unless you ask. There are three
+exceptions: the lyrics lookup and, on Windows and Linux, the check for a newer
+release
+([Keeping it up to date]({{< relref "/downloads#keeping-it-up-to-date" >}})),
+both of which can be turned off, and the MusicBrainz and Cover Art Archive
+lookups an autofill makes when you start one.
 
 That last promise is enforced rather than asserted. The Android package declares
 an exact set of permissions, and CI reads them back out of the built package and
@@ -56,8 +59,9 @@ by a dependency.
 Nothing Orpheus sends identifies you or persists between requests: no account,
 no key, no identifier of any kind.
 
-**No library management.** Organising, tagging and de-duplicating a music
-collection is a different program. This one reads what is there.
+**No library management.** Organising and de-duplicating a music collection is
+a different program. This one reads what is there, and fills in tags only when
+you ask it to.
 
 ## What leaves the machine for the words
 

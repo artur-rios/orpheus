@@ -1240,9 +1240,9 @@ graph LR
 7. The application writes the confirmed changes one file at a time, each to a
    temporary file beside the track renamed into place, changing only the tags
    chosen and keeping every other byte of the file (`FR-AF-05`).
-8. The library is brought up to date with what was written by a rescan the
-   application starts itself, so that no screen waits for the owner to start
-   one, and the screen says how many files were updated (`FR-AF-06`).
+8. The library updates without the owner starting a scan — the application
+   starts one itself for what was written — and the screen says how many files
+   were updated (`FR-AF-06`).
 
 **Alternative Flows**
 

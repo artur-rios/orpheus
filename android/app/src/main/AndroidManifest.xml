@@ -8,7 +8,8 @@
          request on releases that predate the split, and is capped at API 32 so
          it is never asked for on a device that has the narrower permission.
 
-         Nothing is uploaded, and no artwork is fetched. -->
+         Nothing is uploaded, and no artwork is fetched unless the owner asks for
+         the cover in an autofill. -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"

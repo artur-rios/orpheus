@@ -70,20 +70,24 @@ player did not have opinions about what they should listen to next.
 
 ## What It Doesn't Do
 
-- **It never writes to the owner's audio files.** No tag editing, no renaming,
-  no moving, no deleting, no transcoding. They are opened for reading and that
-  is all. The one thing written into a music folder is a `.lrc` beside a track
-  whose words were looked up — a new file, never a replacement for one the
-  owner wrote.
+- **It changes the owner's audio files only when asked.** No renaming, no
+  moving, no deleting, no transcoding. The one change it makes to an audio file
+  is to its tags (MP3 and FLAC), from an autofill whose every change the owner
+  saw and confirmed. Besides that, it writes a `.lrc` beside a track whose
+  words were looked up — a new file, never a replacement for one the owner
+  wrote.
 - **Almost no network.** No streaming, no scrobbling, no telemetry, no
-  analytics, no crash reporting, no cover art fetched from anywhere. The single
-  exception is the lyrics lookup, which sends a track's artist and title and
-  which the owner can turn off. The Android package declares exactly seven
-  permissions and CI fails on an eighth, which is the version of this promise a
+  analytics, no crash reporting, no cover art fetched unless asked for. The
+  exceptions are the lyrics lookup, which sends a track's artist and title; on
+  Windows and Linux the check for a newer release — both of which the owner can
+  turn off — and the MusicBrainz and Cover Art Archive lookups an autofill makes
+  when the owner starts one. The Android package declares exactly nine
+  permissions and CI fails on a tenth, which is the version of this promise a
   machine can check.
 - **No accounts, no sync, no cloud.** One person, one machine, one library.
-- **No library management.** Organising, tagging and de-duplicating a music
-  collection is a different program. This one reads what is there.
+- **No library management.** Organising and de-duplicating a music collection
+  is a different program. This one reads what is there, and fills in tags only
+  when asked.
 
 ## How Success Is Measured
 
@@ -97,8 +101,8 @@ player did not have opinions about what they should listen to next.
 4. **Playback survives the phone.** Music started on Android keeps playing when
    the owner switches away, and is controllable without returning to the
    application.
-5. **The promises are checkable.** "It never touches your audio files" and
-   "nothing but the lyrics lookup leaves the machine" are enforced by the test
+5. **The promises are checkable.** "it changes your files only when you ask" and
+   "nothing but the named lookups leaves the machine" are enforced by the test
    suite and by the shipped package's permissions, not asserted in a README.
 6. **A change is safe to make.** Every flow above the platform edges is covered
    by tests that run without a real audio engine, a real filesystem, or a real

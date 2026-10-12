@@ -118,7 +118,8 @@ Requirements Document and demonstrated by use cases.
 ## 6. Out of scope
 
 Stated so that their absence is a decision rather than an omission: tag
-editing, file renaming, moving or deletion, transcoding, streaming, scrobbling,
-online metadata, cover-art or lyrics lookup, writing or re-timing lyrics back
-into the owner's files, accounts, synchronisation, playlists that can be saved
+editing beyond an autofill the owner confirms (`FR-AF`), file renaming, moving
+or deletion, transcoding, streaming, scrobbling, any lookup beyond the lyrics
+lookup, the update check and an autofill's MusicBrainz and Cover Art Archive
+lookups, writing or re-timing lyrics back into the owner's files, accounts, synchronisation, playlists that can be saved
 and named, a media session on Windows or Linux, and time-windowed statistics.

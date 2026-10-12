@@ -49,7 +49,7 @@ result in a file beside its own settings.
   the release, preselects the best match, and shows every change file by file
   as old → new, each with its own tick. Another release, or another search, is
   one tap away. Only what you leave ticked is written, into the files and into
-  the library, which updates without a scan. MP3 and FLAC can be written; the
+  the library, which updates without you starting a scan. MP3 and FLAC can be written; the
   other formats are read-only, and say so.
 - **Searches** across titles, artists and albums, ranked so a match at the start
   of a title comes above one buried in the middle of something else.
