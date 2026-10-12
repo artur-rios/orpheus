@@ -330,6 +330,63 @@ void main() {
       },
     );
 
+    // ID3 holds a total only after a number: a write that dropped the total
+    // would report it written, and could delete the frame that was there.
+    for (final (name, frames, values) in <(String, List<String>, Map<AutofillField, Object?>)>[
+      ('ATrackTotalOnAFileWithNoTrack', [], {AutofillField.trackTotal: 12}),
+      ('ATrackTotalOverATrackFrameWithOnlyATotal', ['/12'], {AutofillField.trackTotal: 10}),
+      ('ATrackTotalOverAnEmptyTrackFrame', [''], {AutofillField.trackTotal: 10}),
+      ('ATrackTotalWithTheNumberRemoved', ['3/12'], {AutofillField.trackNumber: null, AutofillField.trackTotal: 12}),
+      ('ADiscTotalOnAFileWithNoDisc', [], {AutofillField.discTotal: 2}),
+    ]) {
+      test('Given${name}_WhenWritten_ThenItFailsAndTheFileIsUntouched', () async {
+        final path = p.join(root.path, 'a.mp3');
+        File(path).writeAsBytesSync(
+          id3Tag(
+            frames: [
+              frame('TIT2', Uint8List.fromList([3, ...utf8.encode('Airbag')])),
+              for (final track in frames) frame('TRCK', Uint8List.fromList([3, ...utf8.encode(track)])),
+            ],
+            trailing: mpegAudio(),
+          ),
+        );
+        final bytes = File(path).readAsBytesSync();
+
+        final outcome = await writer.write(path, values, expected: asCatalogued(path));
+
+        expect(outcome, WriteOutcome.failed);
+        expect(File(path).readAsBytesSync(), bytes);
+        expect([for (final entity in root.listSync()) p.basename(entity.path)], ['a.mp3']);
+      });
+    }
+
+    test('GivenAnMp3WhoseOnlyTagIsId3v1_WhenOneFieldIsWritten_ThenEveryOtherFieldStillReadsBackAndTheId3v1TagIsKept', () async {
+      final path = p.join(root.path, 'a.mp3');
+      final id3v1 = id3v1Tag(title: 'Airbag', artist: 'Radiohed', album: 'OK Computer', year: '1997', track: 1, genre: 17);
+      File(path).writeAsBytesSync([...mpegAudio(), ...id3v1]);
+      final before = await writer.inspect(path);
+
+      final outcome = await writer.write(path, {AutofillField.trackNumber: 5}, expected: asCatalogued(path));
+
+      expect(outcome, WriteOutcome.written);
+      final after = await writer.inspect(path);
+      expect(before.values[AutofillField.title], 'Airbag');
+      expect(after.values[AutofillField.trackNumber], 5);
+      for (final field in [
+        AutofillField.title,
+        AutofillField.artist,
+        AutofillField.album,
+        AutofillField.year,
+        AutofillField.genre,
+      ]) {
+        expect(after.values[field], before.values[field], reason: field.name);
+      }
+      expect(after.values[AutofillField.year], 1997);
+      expect(after.values[AutofillField.genre], 'Rock');
+      final written = File(path).readAsBytesSync();
+      expect(written.sublist(written.length - 128), id3v1);
+    });
+
     test('GivenAnMp3_WhenWritten_ThenNoTemporaryFileIsLeftBehind', () async {
       final path = copyOf('tagged.mp3');
 
@@ -421,6 +478,36 @@ void main() {
       });
     }
   });
+}
+
+/// Real MPEG audio, without a tag: the fixture MP3's, after its ID3v2 tag.
+Uint8List mpegAudio() {
+  final mp3 = File(p.join('test', 'support', 'tag_fixtures', 'tagged.mp3')).readAsBytesSync();
+
+  return mp3.sublist(10 + ((mp3[6] << 21) | (mp3[7] << 14) | (mp3[8] << 7) | mp3[9]));
+}
+
+/// An ID3v1.1 tag: 128 bytes at the end of a file, each field zero-padded
+/// to its width, and the track number in the comment's last byte.
+Uint8List id3v1Tag({
+  required String title,
+  required String artist,
+  required String album,
+  required String year,
+  required int track,
+  required int genre,
+}) {
+  final tag = Uint8List(128)
+    ..setAll(0, ascii.encode('TAG'))
+    ..setAll(3, latin1.encode(title))
+    ..setAll(33, latin1.encode(artist))
+    ..setAll(63, latin1.encode(album))
+    ..setAll(93, ascii.encode(year))
+    ..setAll(97, latin1.encode('kept'));
+  tag[126] = track;
+  tag[127] = genre;
+
+  return tag;
 }
 
 /// What a write loses from each format `audio_metadata_reader` 1.8.0 writes,

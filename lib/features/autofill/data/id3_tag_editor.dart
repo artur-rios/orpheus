@@ -33,6 +33,10 @@ class UnsupportedTagException implements Exception {
 /// in front. The audio, and an ID3v1 or APE tag after it, are copied as they
 /// are.
 ///
+/// Throws an [ArgumentError], having changed nothing, where a track or disc
+/// total would be left with no number — none in [values] and none in the
+/// file: `TRCK` and `TPOS` hold a total only after a number.
+///
 /// Throws an [UnsupportedTagException], having changed nothing, for a tag
 /// this does not edit: ID3v2.2, a version after 2.4, or a tag that is
 /// unsynchronised as a whole, has an extended header or sets a flag the
@@ -242,7 +246,11 @@ List<_Slot> _slotsFor(List<_Frame> frames, Map<AutofillField, Object?> values, i
     final numberText = values.containsKey(number) ? _numberOf(number, values[number]) : existing.number;
     final totalText = values.containsKey(total) ? _numberOf(total, values[total]) : existing.total;
     // A total with no number to be the total of is not something ID3 can
-    // say: `/12` is not a position. Nothing is written for it.
+    // say: `/12` is not a position. Writing the frame without it would drop
+    // the total and report it written, so the write is refused instead.
+    if (numberText == null && totalText != null) {
+      throw ArgumentError('a ${total.name} with no ${number.name} to be the total of, which $id cannot hold');
+    }
     write({id}, id, numberText == null ? null : (totalText == null ? numberText : '$numberText/$totalText'));
   }
 

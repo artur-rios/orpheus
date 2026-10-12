@@ -280,8 +280,48 @@ void main() {
       expect(textOf(edited, 'TRCK'), '3');
     });
 
-    test('GivenNoTrackNumber_WhenOnlyTheTotalIsWritten_ThenNoTrackFrameIsWritten', () {
-      final edited = editId3Tags(mp3Of([textFrame('TIT2', 'Airbag')]), {AutofillField.trackTotal: 12});
+    // `/12` is not a position: a total with no number cannot be stored, and
+    // a write that dropped it would say it had written it.
+    test('GivenNoTrackNumber_WhenOnlyTheTotalIsWritten_ThenItIsRefused', () {
+      expect(
+        () => editId3Tags(mp3Of([textFrame('TIT2', 'Airbag')]), {AutofillField.trackTotal: 12}),
+        throwsArgumentError,
+      );
+    });
+
+    test('GivenATrackFrameWithOnlyATotal_WhenOnlyTheTotalIsWritten_ThenItIsRefused', () {
+      for (final existing in ['/12', '']) {
+        expect(
+          () => editId3Tags(mp3Of([textFrame('TRCK', existing)]), {AutofillField.trackTotal: 10}),
+          throwsArgumentError,
+          reason: existing,
+        );
+      }
+    });
+
+    test('GivenTrackThreeOfTwelve_WhenTheNumberIsRemovedAndATotalWritten_ThenItIsRefused', () {
+      final file = mp3Of([textFrame('TRCK', '3/12')]);
+
+      expect(
+        () => editId3Tags(file, {AutofillField.trackNumber: null, AutofillField.trackTotal: 12}),
+        throwsArgumentError,
+      );
+      // The total the file holds would be dropped just the same.
+      expect(() => editId3Tags(file, {AutofillField.trackNumber: null}), throwsArgumentError);
+    });
+
+    test('GivenNoDiscNumber_WhenOnlyTheDiscTotalIsWritten_ThenItIsRefused', () {
+      expect(
+        () => editId3Tags(mp3Of([textFrame('TIT2', 'Airbag')]), {AutofillField.discTotal: 2}),
+        throwsArgumentError,
+      );
+    });
+
+    test('GivenTrackThreeOfTwelve_WhenBothHalvesAreRemoved_ThenTheFrameIsRemoved', () {
+      final edited = editId3Tags(mp3Of([textFrame('TIT2', 'Airbag'), textFrame('TRCK', '3/12')]), {
+        AutofillField.trackNumber: null,
+        AutofillField.trackTotal: null,
+      });
 
       expect(idsOf(edited), ['TIT2']);
     });

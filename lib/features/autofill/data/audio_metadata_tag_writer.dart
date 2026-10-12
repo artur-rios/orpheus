@@ -211,7 +211,7 @@ WriteOutcome _write(
     case '.flac':
       return _writeEdited(path, expected, (bytes) => editFlacTags(bytes, values));
     case '.mp3':
-      return _writeEdited(path, expected, (bytes) => editId3Tags(bytes, values));
+      return _writeEdited(path, expected, (bytes) => editId3Tags(bytes, _keepingId3v1(path, bytes, values)));
   }
 
   try {
@@ -254,6 +254,32 @@ WriteOutcome _writeEdited(
   }
 
   return WriteOutcome.written;
+}
+
+/// [values], and — for an MP3 whose only tag is an ID3v1 one — every other
+/// field the reader reads from that tag, as it reads it.
+///
+/// The editor gives such a file an ID3v2 tag, and the reader reads an ID3v2
+/// tag instead of an ID3v1 one, never as well: written with only what was
+/// asked, the file would read back as having lost every other field. The
+/// ID3v1 tag itself stays at the end of the file, untouched.
+Map<AutofillField, Object?> _keepingId3v1(
+  String path,
+  Uint8List bytes,
+  Map<AutofillField, Object?> values,
+) {
+  bool marker(int offset, String text) =>
+      bytes.length >= offset + 3 && String.fromCharCodes(bytes, offset, offset + 3) == text;
+  if (marker(0, 'ID3') || bytes.length < 128 || !marker(bytes.length - 128, 'TAG')) return values;
+
+  final current = _inspect(path, AutofillField.values.toSet()).values;
+
+  return {
+    for (final MapEntry(:key, :value) in current.entries)
+      // An empty ID3v1 field is a field it does not have.
+      if (!values.containsKey(key) && value != null && value != '') key: value,
+    ...values,
+  };
 }
 
 /// What a refused write was, probing the file where its error alone cannot
