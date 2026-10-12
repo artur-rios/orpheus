@@ -86,15 +86,42 @@ class AudioServiceMediaSession implements MediaSession {
   /// changes — see `NowPlaying.sameTrackAs`.
   NowPlaying? _shown;
 
+  /// How many times [show] or [hide] has been called, so a [show] that waited
+  /// on the permission dialog can tell it has been overtaken. The first one
+  /// waits for the owner to answer, and a track that failed — or a session
+  /// hidden — while the dialog was up would otherwise be posted afterwards as
+  /// if it were playing, with nothing left to take it down.
+  int _published = 0;
+
+  /// The audio session focus is asked for through, once it is configured.
+  focus.AudioSession? _focus;
+
+  /// Whether the last interruption paused something that was playing.
+  ///
+  /// An interruption that ends hands the output back, and only playback the
+  /// interruption itself stopped is resumed: a record the owner had paused
+  /// before the call came in stays paused after it.
+  bool _pausedByInterruption = false;
+
   @override
   Stream<MediaSessionCommand> get commands => _handler.commands;
 
   @override
   Future<void> show(NowPlaying nowPlaying) async {
+    final ask = ++_published;
     await _askToNotify();
+    if (ask != _published) return;
 
     final previous = _shown;
     _shown = nowPlaying;
+
+    // Focus is asked for each time playback starts, not once: Android takes it
+    // away for a call or another player, and an application that never asks
+    // again is never told about the next one. Asking is what makes the
+    // interruptions in [_followAudioFocus] arrive at all.
+    if (nowPlaying.isPlaying && previous?.isPlaying != true) {
+      unawaited(_activate());
+    }
 
     if (previous == null || !previous.sameTrackAs(nowPlaying)) {
       _handler.mediaItem.add(_itemOf(nowPlaying));
@@ -105,6 +132,7 @@ class AudioServiceMediaSession implements MediaSession {
 
   @override
   Future<void> hide() async {
+    _published++;
     _shown = null;
     _handler.mediaItem.add(null);
     _handler.playbackState.add(
@@ -120,6 +148,20 @@ class AudioServiceMediaSession implements MediaSession {
       await subscription.cancel();
     }
     await _handler.dispose();
+  }
+
+  /// Asks Android for the audio output.
+  ///
+  /// A refusal — a call already in progress — is logged and nothing more:
+  /// what the engine does then is what it did before focus was asked for.
+  Future<void> _activate() async {
+    try {
+      if (await _focus?.setActive(true) == false) {
+        _log.info('audio focus was refused');
+      }
+    } on Object catch (error) {
+      _log.fine('audio focus could not be asked for', error);
+    }
   }
 
   /// Asks Android for permission to post the notification, once.
@@ -173,20 +215,26 @@ class AudioServiceMediaSession implements MediaSession {
       return;
     }
 
+    _focus = session;
+
     _subscriptions.addAll([
       session.interruptionEventStream.listen((event) {
         if (event.begin) {
+          _pausedByInterruption = _shown?.isPlaying ?? false;
           _handler.ask(const PauseAsked());
 
           return;
         }
 
-        // Only where the system says the output is ours again. A permanent
+        // Only where the system says the output is ours again — a permanent
         // loss ends with `shouldResume` false, and starting up again there
-        // would be this application talking over whatever took the output.
-        if (event.type == focus.AudioInterruptionType.pause) {
-          _handler.ask(const ResumeAsked());
-        }
+        // would be this application talking over whatever took the output —
+        // and only where it was the interruption that stopped it.
+        final resume =
+            _pausedByInterruption &&
+            event.type == focus.AudioInterruptionType.pause;
+        _pausedByInterruption = false;
+        if (resume) _handler.ask(const ResumeAsked());
       }),
       session.becomingNoisyEventStream.listen((_) {
         _handler.ask(const PauseAsked());
