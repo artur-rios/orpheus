@@ -214,36 +214,46 @@ FileTags _inspect(String path, Set<AutofillField> writable) {
     ApeMetadata() => tags.pictures,
   };
 
+  final replaced = _replacedIn(path, extension);
+
   return FileTags(
-    writable: writable,
+    // A field whose frames cannot be read cannot be reviewed, and what
+    // cannot be reviewed is not written over.
+    writable: writable.difference(replaced.unreadable),
     // What a write of each field replaces, read by the editor that would
     // replace it, over what the reader makes of the file: the reader keeps
     // one frame of a field and the first value of a frame, and does not
     // read every key a write removes.
-    values: {...values, ..._replacedIn(path, extension)},
+    values: {...values, ...replaced.values},
     cover: _front(pictures),
   );
 }
 
 /// What a write of each field of the MP3 or FLAC file at [path] replaces
-/// ([id3ReplacedValues], [flacReplacedValues]); nothing for another format.
+/// ([id3ReplacedValues], [flacReplacedValues]), and the fields whose
+/// frames cannot be read; nothing for another format.
 ///
 /// Nothing too where the editor cannot parse the file: a write of it fails
 /// before anything is replaced, and what the reader makes of it stands.
-Map<AutofillField, Object?> _replacedIn(String path, String extension) {
-  final replacedValues = switch (extension) {
-    '.mp3' => id3ReplacedValues,
-    '.flac' => flacReplacedValues,
-    _ => null,
-  };
-  if (replacedValues == null) return const {};
+({Map<AutofillField, Object?> values, Set<AutofillField> unreadable})
+_replacedIn(String path, String extension) {
+  const nothing = (
+    values: <AutofillField, Object?>{},
+    unreadable: <AutofillField>{},
+  );
+  if (extension != '.mp3' && extension != '.flac') return nothing;
 
   try {
-    return replacedValues(File(path).readAsBytesSync());
+    final bytes = File(path).readAsBytesSync();
+
+    return extension == '.mp3'
+        ? id3ReplacedValues(bytes)
+        // Every comment is text, read whatever its bytes.
+        : (values: flacReplacedValues(bytes), unreadable: const {});
   } on FormatException {
-    return const {};
+    return nothing;
   } on UnsupportedTagException {
-    return const {};
+    return nothing;
   }
 }
 

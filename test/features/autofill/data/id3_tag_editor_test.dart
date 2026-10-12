@@ -890,7 +890,7 @@ void main() {
     );
 
     test('GivenATagOfEveryField_WhenAsked_ThenEachIsItsValue', () {
-      expect(id3ReplacedValues(mp3Of(fieldFrames(4))), {
+      expect(id3ReplacedValues(mp3Of(fieldFrames(4))).values, {
         AutofillField.title: 'Airbag',
         AutofillField.artist: 'Radiohed',
         AutofillField.albumArtist: 'Radiohed',
@@ -916,7 +916,7 @@ void main() {
             mp3Of([
               values('TPE1', ['Sigur Rós', 'Jónsi'], encoding),
             ]),
-          )[AutofillField.artist],
+          ).values[AutofillField.artist],
           'Sigur Rós; Jónsi',
         );
       });
@@ -931,29 +931,30 @@ void main() {
               Uint8List.fromList([3, ...utf8.encode('Rock\u0000Pop')]),
             ),
           ]),
-        )[AutofillField.genre],
+        ).values[AutofillField.genre],
         'Rock; Pop',
       );
     });
 
     test('GivenAFrameHoldingNothing_WhenAsked_ThenTheFieldIsNull', () {
-      final replaced = id3ReplacedValues(mp3Of([textFrame('TIT2', '')]));
+      final replaced = id3ReplacedValues(mp3Of([textFrame('TIT2', '')])).values;
 
       expect(replaced.containsKey(AutofillField.title), isTrue);
       expect(replaced[AutofillField.title], isNull);
     });
 
     test('GivenNoFrameOfAField_WhenAsked_ThenTheFieldIsLeftOut', () {
-      expect(id3ReplacedValues(mp3Of([textFrame('TIT2', 'Airbag')])).keys, [
-        AutofillField.title,
-      ]);
+      expect(
+        id3ReplacedValues(mp3Of([textFrame('TIT2', 'Airbag')])).values.keys,
+        [AutofillField.title],
+      );
     });
 
     test('GivenAFileWithNoTag_WhenAsked_ThenNothingIsReplaced', () {
-      expect(id3ReplacedValues(audio), isEmpty);
+      expect(id3ReplacedValues(audio).values, isEmpty);
     });
 
-    test('GivenACompressedFrame_WhenAsked_ThenItsFieldIsLeftForTheReader', () {
+    test('GivenACompressedFrame_WhenAsked_ThenItsFieldIsUnreadable', () {
       final replaced = id3ReplacedValues(
         mp3Of([
           textFrame('TIT2', 'Airbag'),
@@ -965,7 +966,99 @@ void main() {
         ]),
       );
 
-      expect(replaced.keys, [AutofillField.title]);
+      expect(replaced.values, {AutofillField.title: 'Airbag'});
+      expect(replaced.unreadable, {AutofillField.artist});
+    });
+
+    test(
+      'GivenACompressedTrck_WhenAsked_ThenTheNumberAndTheTotalAreUnreadable',
+      () {
+        final replaced = id3ReplacedValues(
+          mp3Of([
+            frame(
+              'TRCK',
+              Uint8List.fromList([3, ...utf8.encode('3/12')]),
+              flags: 0x08,
+            ),
+          ]),
+        );
+
+        expect(replaced.values, isEmpty);
+        expect(replaced.unreadable, {
+          AutofillField.trackNumber,
+          AutofillField.trackTotal,
+        });
+      },
+    );
+
+    test('GivenUtf16OfAnOddLength_WhenAsked_ThenItsFieldIsUnreadable', () {
+      final replaced = id3ReplacedValues(
+        mp3Of([
+          frame('TALB', Uint8List.fromList([1, 0xFF, 0xFE, 0x41, 0x00, 0x42])),
+        ]),
+      );
+
+      expect(replaced.values, isEmpty);
+      expect(replaced.unreadable, {AutofillField.album});
+    });
+
+    test(
+      'GivenATextEncodingThatDoesNotExist_WhenAsked_ThenItsFieldIsUnreadable',
+      () {
+        final replaced = id3ReplacedValues(
+          mp3Of([
+            frame('TIT2', Uint8List.fromList([4, 0x41])),
+          ]),
+        );
+
+        expect(replaced.unreadable, {AutofillField.title});
+      },
+    );
+
+    test(
+      'GivenMalformedUtf8_WhenAsked_ThenItIsShownWithReplacementCharacters',
+      () {
+        final replaced = id3ReplacedValues(
+          mp3Of([
+            frame('TPE1', Uint8List.fromList([3, 0x41, 0, 0xFF, 0xFE, 0x42])),
+          ]),
+        );
+
+        expect(replaced.values[AutofillField.artist], 'A; \u{FFFD}\u{FFFD}B');
+        expect(replaced.unreadable, isEmpty);
+      },
+    );
+
+    for (final (frames, number, total) in [
+      (['Enero'], 'Enero', null),
+      (['4', 'Enero'], '4; Enero', null),
+      (['3/10', '4/12'], '3; 4', '10; 12'),
+      (['3/x'], 3, 'x'),
+      (['/12'], null, 12),
+    ]) {
+      test(
+        'GivenTrckFrames${frames.join('And').replaceAll(RegExp('[^A-Za-z0-9]'), '')}_WhenAsked_ThenEveryNumberAndTotalIsShownAndTextAsText',
+        () {
+          final replaced = id3ReplacedValues(
+            mp3Of([for (final text in frames) textFrame('TRCK', text)]),
+          ).values;
+
+          expect(replaced[AutofillField.trackNumber], number);
+          expect(replaced[AutofillField.trackTotal], total);
+        },
+      );
+    }
+
+    test('GivenAYearThatIsNotANumber_WhenAsked_ThenItIsShownAsText', () {
+      expect(
+        id3ReplacedValues(
+          mp3Of([
+            textFrame('TRDA', 'June 12', major: 3),
+            textFrame('TYER', '1995', major: 3),
+          ], major: 3),
+        ).values[AutofillField.year],
+        'June 12; 1995',
+      );
     });
 
     test('GivenAYearInEachOfTheFramesAWriteReplaces_WhenAsked_ThenTheYearIsEveryOneThatDiffers', () {
@@ -976,13 +1069,14 @@ void main() {
             textFrame('TYER', '1997'),
             textFrame('TRDA', '1996'),
           ]),
-        )[AutofillField.year],
+        ).values[AutofillField.year],
         '1997; 1996',
       );
     });
 
     test('GivenATrckOfANumberAlone_WhenAsked_ThenThereIsNoTotal', () {
-      final replaced = id3ReplacedValues(mp3Of([textFrame('TRCK', '3')]));
+      final replaced = id3ReplacedValues(mp3Of([textFrame('TRCK', '3')]))
+          .values;
 
       expect(replaced[AutofillField.trackNumber], 3);
       expect(replaced[AutofillField.trackTotal], isNull);

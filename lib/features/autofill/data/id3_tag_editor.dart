@@ -275,34 +275,41 @@ const _framesOf = <AutofillField, Set<String>>{
 
 /// What a write of each field into [file], a whole MP3 file, replaces: every
 /// value of every frame [editId3Tags] would replace, as [shownAsOne] puts
-/// them — what the owner reviews as the field's "before".
+/// them — what the owner reviews as the field's "before" — and the fields
+/// whose frames this cannot read, which the owner cannot review.
 ///
 /// The reader keeps one frame of each field, and the first value of a frame
 /// that holds several (`Rock\0Pop`); a write replaces them all. A text field
 /// is every value, as the frame spells it: a `/` in a v2.3 genre is part of
-/// it, not a separator. A number or a year is each value read as the reader
-/// reads it.
+/// it, not a separator. A number, a total or a year is each value read as a
+/// number — `3/12` is track 3 of 12 — or, where it is not one, its text
+/// (`Enero`, `June 12`), which no number equals.
 ///
-/// A field with no frame is left out: what the file has of it, if anything,
-/// is not in its ID3v2 tag — an ID3v1 or APE tag the reader reads instead —
-/// and is the reader's to say. So is a field with a frame this cannot read —
-/// compressed, encrypted, or not text in its encoding — though a write
-/// replaces it. A field whose frames hold nothing is `null`.
+/// A field with no frame is left out of `values`: what the file has of it, if
+/// anything, is not in its ID3v2 tag — an ID3v1 or APE tag the reader reads
+/// instead — and is the reader's to say. A field whose frames hold nothing is
+/// `null`. A field with a frame this cannot read — compressed, encrypted or
+/// otherwise flagged, or text it cannot decode — is in `unreadable` instead:
+/// a write would replace what nobody has seen.
 ///
 /// Throws, as [editId3Tags] does, where [file] cannot be parsed safely or
 /// holds a tag the editor will not touch.
 ///
 /// Pure: it reads nothing but [file].
-Map<AutofillField, Object?> id3ReplacedValues(Uint8List file) {
+({Map<AutofillField, Object?> values, Set<AutofillField> unreadable})
+id3ReplacedValues(Uint8List file) {
   final frames = _parse(file).frames;
-  final replaced = <AutofillField, Object?>{};
+  final values = <AutofillField, Object?>{};
+  final unreadable = <AutofillField>{};
 
   for (final MapEntry(key: field, value: ids) in _framesOf.entries) {
     final found = [
       for (final frame in frames)
         if (ids.contains(frame.id)) frame,
     ];
-    if (found.isEmpty || found.any((frame) => frame.formatFlags != 0)) {
+    if (found.isEmpty) continue;
+    if (found.any((frame) => frame.formatFlags != 0)) {
+      unreadable.add(field);
       continue;
     }
 
@@ -310,20 +317,21 @@ Map<AutofillField, Object?> id3ReplacedValues(Uint8List file) {
     try {
       texts = [for (final frame in found) ..._textValues(frame.body)];
     } on FormatException {
+      unreadable.add(field);
       continue;
     }
 
-    replaced[field] = shownAsOne(switch (field) {
-      AutofillField.trackNumber => texts.map((text) => _track(text).number),
-      AutofillField.trackTotal => texts.map((text) => _track(text).total),
-      AutofillField.discNumber => texts.map((text) => _disc(text).number),
-      AutofillField.discTotal => texts.map((text) => _disc(text).total),
-      AutofillField.year => texts.map(_year),
+    values[field] = shownAsOne(switch (field) {
+      AutofillField.trackNumber ||
+      AutofillField.discNumber => texts.map((text) => _halves(text).number),
+      AutofillField.trackTotal ||
+      AutofillField.discTotal => texts.map((text) => _halves(text).total),
+      AutofillField.year => texts.map((text) => _year(text) ?? text),
       _ => texts,
     });
   }
 
-  return replaced;
+  return (values: values, unreadable: unreadable);
 }
 
 /// Every value a text frame's [body] holds, without terminators and without
@@ -336,7 +344,8 @@ List<String> _textValues(Uint8List body) {
   final bytes = Uint8List.sublistView(body, 1);
   final values = switch (body[0]) {
     0 => latin1.decode(bytes).split('\u0000'),
-    3 => utf8.decode(bytes).split('\u0000'),
+    // A byte that is not UTF-8 is shown as such, rather than not at all.
+    3 => utf8.decode(bytes, allowMalformed: true).split('\u0000'),
     1 || 2 => [
       for (final part in _utf16Parts(bytes))
         // A lone zero after the last terminator is nothing, not half a
@@ -374,32 +383,24 @@ List<Uint8List> _utf16Parts(Uint8List bytes) {
   return parts..add(Uint8List.sublistView(bytes, start));
 }
 
-final _numberAndTotalAnywhere = RegExp(r'(\d+)/(\d+)');
+/// A `TRCK` or `TPOS` value's number and total: what comes before its first
+/// `/` and what comes after it, each a number where it is one and its text
+/// where it is not (`Enero`), and `null` where there is nothing.
+({Object? number, Object? total}) _halves(String text) {
+  final slash = text.indexOf('/');
 
-/// A `TRCK` value's number and total, as the reader reads them: both from
-/// `3/12`, and otherwise a number alone.
-({int? number, int? total}) _track(String text) {
-  final match = _numberAndTotalAnywhere.firstMatch(text);
-
-  return match == null
-      ? (number: int.tryParse(text), total: null)
-      : (number: int.tryParse(match[1]!), total: int.tryParse(match[2]!));
+  return slash == -1
+      ? (number: _numberOrText(text), total: null)
+      : (
+          number: _numberOrText(text.substring(0, slash)),
+          total: _numberOrText(text.substring(slash + 1)),
+        );
 }
 
-/// A `TPOS` value's number and total, as the review has always read them:
-/// the reader's, and where it has none, the halves either side of a `/`.
-({int? number, int? total}) _disc(String text) {
-  final match = _numberAndTotalAnywhere.firstMatch(text);
-  if (match != null) {
-    return (number: int.tryParse(match[1]!), total: int.tryParse(match[2]!));
-  }
+Object? _numberOrText(String text) {
+  final trimmed = text.trim();
 
-  final parts = text.split('/');
-
-  return (
-    number: int.tryParse(parts.first.trim()),
-    total: parts.length < 2 ? null : int.tryParse(parts[1].trim()),
-  );
+  return trimmed.isEmpty ? null : int.tryParse(trimmed) ?? trimmed;
 }
 
 /// The year of a date frame's value, as the reader reads it: what comes

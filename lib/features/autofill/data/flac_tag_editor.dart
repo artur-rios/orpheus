@@ -281,7 +281,12 @@ const _keys = <AutofillField, ({String key, Set<String> replaces})>{
 /// The reader reads some of those keys and not others: `ALBUM ARTIST` and
 /// `YEAR` it leaves alone, and a write removes them all the same. A text
 /// field is every value, as the comment spells it. A number or a year is
-/// each value read as the reader reads it.
+/// each value read as a number, or where it is not one as its text
+/// (`unknown`), which no number equals.
+///
+/// A total is also the total in every `3/10` its number's comments hold,
+/// after the total's own comments: a write of the total alone makes `3/10` a
+/// plain `3` (see [_editComments]), and so replaces the `/10` too.
 ///
 /// A field with no comment is left out, for the reader to say.
 ///
@@ -297,30 +302,50 @@ Map<AutofillField, Object?> flacReplacedValues(Uint8List file) {
   final comments = _parseComments(block.body).comments;
   final replaced = <AutofillField, Object?>{};
 
+  /// The value of every comment under any of [keys].
+  List<String> valuesOf(Set<String> keys) => [
+    for (final comment in comments)
+      if (keys.contains(_keyOf(comment)))
+        utf8.decode(
+          Uint8List.sublistView(comment, comment.indexOf(0x3D) + 1),
+          allowMalformed: true,
+        ),
+  ];
+
   for (final MapEntry(key: field, value: (:replaces, key: _))
       in _keys.entries) {
+    final numberOf = _numbered
+        .where((numbered) => numbered.total == field)
+        .firstOrNull
+        ?.number;
     final texts = [
-      for (final comment in comments)
-        if (replaces.contains(_keyOf(comment)))
-          utf8.decode(
-            Uint8List.sublistView(comment, comment.indexOf(0x3D) + 1),
-            allowMalformed: true,
-          ),
+      ...valuesOf(replaces),
+      if (numberOf != null)
+        for (final number in valuesOf(_keys[numberOf]!.replaces))
+          if (number.contains('/')) number.substring(number.indexOf('/') + 1),
     ];
     if (texts.isEmpty) continue;
 
     replaced[field] = shownAsOne(switch (field) {
       AutofillField.trackNumber || AutofillField.discNumber => texts.map(
-        (text) => int.tryParse(text.split('/').first),
+        (text) => _numberOrText(text.split('/').first),
       ),
       AutofillField.trackTotal ||
-      AutofillField.discTotal => texts.map(int.tryParse),
-      AutofillField.year => texts.map(_year),
+      AutofillField.discTotal => texts.map(_numberOrText),
+      AutofillField.year => texts.map((text) => _year(text) ?? text),
       _ => texts,
     });
   }
 
   return replaced;
+}
+
+/// [text] as a number where it is one, as itself where it is not, and
+/// `null` where there is nothing.
+Object? _numberOrText(String text) {
+  final trimmed = text.trim();
+
+  return trimmed.isEmpty ? null : int.tryParse(trimmed) ?? trimmed;
 }
 
 /// The year of a `DATE` (or `YEAR`) value, as the reader reads a date: a

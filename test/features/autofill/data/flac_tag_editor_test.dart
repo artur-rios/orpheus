@@ -685,6 +685,43 @@ void main() {
       },
     );
 
+    // A write of the total alone makes `3/10` a plain `3`: the `/10` is
+    // replaced as surely as a TRACKTOTAL comment is. The total's own
+    // comments come first, then the totals in its number's.
+    for (final (comments, trackTotal, discTotal) in [
+      (['TRACKNUMBER=3/10'], 10, null),
+      (['TRACKNUMBER=3/10', 'TRACKTOTAL=12'], '12; 10', null),
+      (['TRACKNUMBER=3/12', 'TOTALTRACKS=12'], 12, null),
+      (['ITUNES_CDDB_TRACKNUMBER=3/11', 'TRACKNUMBER=3/10'], '11; 10', null),
+      (['TRACKNUMBER=3/ten'], 'ten', null),
+      (['TRACKNUMBER=3/'], null, null),
+      (['DISCNUMBER=1/2'], null, 2),
+      (['DISCNUMBER=1/2', 'TOTALDISCS=3'], null, '3; 2'),
+    ]) {
+      test(
+        'Given${comments.join('And').replaceAll(RegExp('[^A-Za-z0-9]'), '')}_WhenAsked_ThenEveryTotalItHoldsIsShown',
+        () {
+          final replaced = replacedIn(comments);
+
+          expect(replaced[AutofillField.trackTotal], trackTotal);
+          expect(replaced[AutofillField.discTotal], discTotal);
+        },
+      );
+    }
+
+    for (final (date, shown) in [
+      ('DATE=unknown', 'unknown'),
+      ('YEAR=c. 1997', 'c. 1997'),
+      ('DATE=1997-05-21', 1997),
+    ]) {
+      test(
+        'Given${date.replaceAll(RegExp('[^A-Za-z0-9]'), '')}_WhenAsked_ThenTheYearIsANumberOrElseItsText',
+        () {
+          expect(replacedIn([date])[AutofillField.year], shown);
+        },
+      );
+    }
+
     test('GivenTheSameValueTwice_WhenAsked_ThenItIsShownOnce', () {
       expect(replacedIn(['GENRE=Rock', 'GENRE=Pop', 'GENRE=Rock']), {
         AutofillField.genre: 'Rock; Pop',

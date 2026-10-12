@@ -519,6 +519,131 @@ void main() {
 
       expect(tags.values[AutofillField.trackTotal], 12);
     });
+
+    test('GivenAFlacOfTrack3Of10_WhenInspectedAndATotalOf12IsProposed_ThenTheChangeIsFrom10', () async {
+      final tags = await writer.inspect(flacWith(['TRACKNUMBER=3/10']));
+
+      final change = changesFor(tags, {AutofillField.trackTotal}).single;
+      expect(change.before, 10);
+      expect(change.after, 12);
+    });
+
+    test('GivenAFlacOfTrack3Of10AndATrackTotalOf12_WhenInspected_ThenTheTotalIsBoth', () async {
+      final tags = await writer.inspect(
+        flacWith(['TRACKNUMBER=3/10', 'TRACKTOTAL=12']),
+      );
+
+      expect(tags.values[AutofillField.trackTotal], '12; 10');
+      final change = changesFor(tags, {AutofillField.trackTotal}).single;
+      expect(change.before, '12; 10');
+      expect(change.after, 12);
+    });
+
+    test('GivenAFlacOfTrack3Of12AndATrackTotalOf12_WhenInspectedAndATotalOf12IsProposed_ThenThereIsNoChange', () async {
+      final tags = await writer.inspect(
+        flacWith(['TRACKNUMBER=3/12', 'TRACKTOTAL=12']),
+      );
+
+      expect(tags.values[AutofillField.trackTotal], 12);
+      expect(changesFor(tags, {AutofillField.trackTotal}), isEmpty);
+    });
+
+    test(
+      'GivenAFlacWhoseDateIsNotADate_WhenInspected_ThenTheYearIsItsText',
+      () async {
+        final tags = await writer.inspect(flacWith(['DATE=unknown']));
+
+        expect(tags.values[AutofillField.year], 'unknown');
+        expect(changesFor(tags, {AutofillField.year}).single.before, 'unknown');
+      },
+    );
+
+    test('GivenAnMp3WhoseTrckIsEnero_WhenInspectedAndTrack5IsProposed_ThenTheChangeIsFromEnero', () async {
+      final tags = await writer.inspect(
+        mp3([
+          text('TRCK', ['Enero']),
+        ]),
+      );
+
+      expect(tags.values[AutofillField.trackNumber], 'Enero');
+      final change = changesFor(tags, {AutofillField.trackNumber}).single;
+      expect(change.before, 'Enero');
+      expect(change.after, 5);
+    });
+
+    test(
+      'GivenAnMp3WithATrckOf4AndOneOfEnero_WhenInspected_ThenTheNumberIsBoth',
+      () async {
+        final tags = await writer.inspect(
+          mp3([
+            text('TRCK', ['4']),
+            text('TRCK', ['Enero']),
+          ]),
+        );
+
+        expect(tags.values[AutofillField.trackNumber], '4; Enero');
+      },
+    );
+
+    test(
+      'GivenAnId3v23TrdaOfJune12AndATyerOf1995_WhenInspected_ThenTheYearIsBoth',
+      () async {
+        final tags = await writer.inspect(
+          mp3([
+            frame(
+              'TRDA',
+              Uint8List.fromList([1, ...encodedText('June 12', 1)]),
+              major: 3,
+            ),
+            frame(
+              'TYER',
+              Uint8List.fromList([1, ...encodedText('1995', 1)]),
+              major: 3,
+            ),
+          ], major: 3),
+        );
+
+        expect(tags.values[AutofillField.year], 'June 12; 1995');
+      },
+    );
+
+    test('GivenAnMp3WithACompressedTpe1_WhenInspected_ThenOnlyTheArtistIsNotWritable', () async {
+      final tags = await writer.inspect(
+        mp3([
+          text('TIT2', ['Airbag']),
+          frame(
+            'TPE1',
+            Uint8List.fromList([3, ...utf8.encode('Radiohed')]),
+            flags: 0x08,
+          ),
+        ]),
+      );
+
+      expect(
+        tags.writable,
+        AutofillField.values.toSet()..remove(AutofillField.artist),
+      );
+      expect(tags.values[AutofillField.title], 'Airbag');
+      final proposal = proposalFor(tags, {
+        AutofillField.title,
+        AutofillField.artist,
+      });
+      expect(proposal.notWritable, {AutofillField.artist});
+      expect(proposal.changes.map((change) => change.field), [
+        AutofillField.title,
+      ]);
+    });
+
+    test('GivenAnMp3WithInvalidUtf8InASecondArtist_WhenInspected_ThenItIsShownWithReplacementCharacters', () async {
+      final tags = await writer.inspect(
+        mp3([
+          frame('TPE1', Uint8List.fromList([3, 0x41, 0, 0xFF, 0xFE, 0x42])),
+        ]),
+      );
+
+      expect(tags.values[AutofillField.artist], 'A; \u{FFFD}\u{FFFD}B');
+      expect(tags.writable, contains(AutofillField.artist));
+    });
   });
 
   AudioFile asCatalogued(String path) {
@@ -1148,11 +1273,11 @@ void main() {
 }
 
 /// What a release proposes for [fields] of a file holding [tags]: track 5 of
-/// 12, genre `jazz`.
-List<FieldChange> changesFor(FileTags tags, Set<AutofillField> fields) {
+/// 12 on one disc, the year 1997, genre `jazz`.
+FileProposal proposalFor(FileTags tags, Set<AutofillField> fields) {
   final track = entry(id: 'a');
-  const release = ReleaseDetail(
-    release: ReleaseCandidate(
+  final release = ReleaseDetail(
+    release: const ReleaseCandidate(
       id: 'r',
       title: 'OK Computer',
       artistCredit: [ArtistCredit(name: 'Radiohead')],
@@ -1160,23 +1285,28 @@ List<FieldChange> changesFor(FileTags tags, Set<AutofillField> fields) {
       date: '1997',
     ),
     tracks: [
-      ReleaseTrack(
-        disc: 1,
-        position: 5,
-        title: 'Let Down',
-        artistCredit: [ArtistCredit(name: 'Radiohead')],
-      ),
+      for (var position = 1; position <= 12; position++)
+        ReleaseTrack(
+          disc: 1,
+          position: position,
+          title: 'Track $position',
+          artistCredit: const [ArtistCredit(name: 'Radiohead')],
+        ),
     ],
-    genres: [Genre(name: 'jazz')],
+    genres: const [Genre(name: 'jazz')],
   );
 
   return proposalsFor(
-    assignment: {track: release.tracks.single},
+    assignment: {track: release.tracks[4]},
     release: release,
     fields: fields,
     tags: {track.file.path: tags},
-  ).single.changes;
+  ).single;
 }
+
+/// The changes [proposalFor] proposes.
+List<FieldChange> changesFor(FileTags tags, Set<AutofillField> fields) =>
+    proposalFor(tags, fields).changes;
 
 /// Real MPEG audio, without a tag: the fixture MP3's, after its ID3v2 tag.
 Uint8List mpegAudio() {
