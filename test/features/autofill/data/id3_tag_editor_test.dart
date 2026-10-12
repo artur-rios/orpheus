@@ -548,7 +548,8 @@ void main() {
         textFrame('TYER', '1996', major: 3),
         textFrame('TRDA', '1995', major: 3),
       ], major: 3);
-      expect((await readBack(file)).values[AutofillField.year], 1995);
+      // Both, as the review shows them: a write replaces both.
+      expect((await readBack(file)).values[AutofillField.year], '1996; 1995');
 
       final edited = editId3Tags(file, {AutofillField.year: 1997});
 
@@ -876,6 +877,129 @@ void main() {
         );
       },
     );
+  });
+
+  group('what a write of each field replaces', () {
+    /// A text frame of [values] in [encoding], each with its terminator.
+    Uint8List values(String id, List<String> values, int encoding) => frame(
+      id,
+      Uint8List.fromList([
+        encoding,
+        for (final value in values) ...encodedText(value, encoding),
+      ]),
+    );
+
+    test('GivenATagOfEveryField_WhenAsked_ThenEachIsItsValue', () {
+      expect(id3ReplacedValues(mp3Of(fieldFrames(4))), {
+        AutofillField.title: 'Airbag',
+        AutofillField.artist: 'Radiohed',
+        AutofillField.albumArtist: 'Radiohed',
+        AutofillField.album: 'OK Computer',
+        AutofillField.trackNumber: 1,
+        AutofillField.trackTotal: 11,
+        AutofillField.discNumber: 2,
+        AutofillField.discTotal: 3,
+        AutofillField.year: 1996,
+        AutofillField.genre: 'Rock',
+      });
+    });
+
+    for (final (encoding, name) in [
+      (0, 'Latin1'),
+      (1, 'Utf16WithAByteOrderMark'),
+      (2, 'Utf16BigEndian'),
+      (3, 'Utf8'),
+    ]) {
+      test('GivenTwoValuesIn${name}_WhenAsked_ThenBothAreDecodedAndJoined', () {
+        expect(
+          id3ReplacedValues(
+            mp3Of([
+              values('TPE1', ['Sigur Rós', 'Jónsi'], encoding),
+            ]),
+          )[AutofillField.artist],
+          'Sigur Rós; Jónsi',
+        );
+      });
+    }
+
+    test('GivenValuesWithoutTerminators_WhenAsked_ThenTheLastIsWhole', () {
+      expect(
+        id3ReplacedValues(
+          mp3Of([
+            frame(
+              'TCON',
+              Uint8List.fromList([3, ...utf8.encode('Rock\u0000Pop')]),
+            ),
+          ]),
+        )[AutofillField.genre],
+        'Rock; Pop',
+      );
+    });
+
+    test('GivenAFrameHoldingNothing_WhenAsked_ThenTheFieldIsNull', () {
+      final replaced = id3ReplacedValues(mp3Of([textFrame('TIT2', '')]));
+
+      expect(replaced.containsKey(AutofillField.title), isTrue);
+      expect(replaced[AutofillField.title], isNull);
+    });
+
+    test('GivenNoFrameOfAField_WhenAsked_ThenTheFieldIsLeftOut', () {
+      expect(id3ReplacedValues(mp3Of([textFrame('TIT2', 'Airbag')])).keys, [
+        AutofillField.title,
+      ]);
+    });
+
+    test('GivenAFileWithNoTag_WhenAsked_ThenNothingIsReplaced', () {
+      expect(id3ReplacedValues(audio), isEmpty);
+    });
+
+    test('GivenACompressedFrame_WhenAsked_ThenItsFieldIsLeftForTheReader', () {
+      final replaced = id3ReplacedValues(
+        mp3Of([
+          textFrame('TIT2', 'Airbag'),
+          frame(
+            'TPE1',
+            Uint8List.fromList([3, ...utf8.encode('Radiohed')]),
+            flags: 0x08,
+          ),
+        ]),
+      );
+
+      expect(replaced.keys, [AutofillField.title]);
+    });
+
+    test('GivenAYearInEachOfTheFramesAWriteReplaces_WhenAsked_ThenTheYearIsEveryOneThatDiffers', () {
+      expect(
+        id3ReplacedValues(
+          mp3Of([
+            textFrame('TDRC', '1997-05-21'),
+            textFrame('TYER', '1997'),
+            textFrame('TRDA', '1996'),
+          ]),
+        )[AutofillField.year],
+        '1997; 1996',
+      );
+    });
+
+    test('GivenATrckOfANumberAlone_WhenAsked_ThenThereIsNoTotal', () {
+      final replaced = id3ReplacedValues(mp3Of([textFrame('TRCK', '3')]));
+
+      expect(replaced[AutofillField.trackNumber], 3);
+      expect(replaced[AutofillField.trackTotal], isNull);
+    });
+
+    test('GivenATagItCannotParse_WhenAsked_ThenItThrowsAFormatException', () {
+      expect(
+        () => id3ReplacedValues(
+          mp3Of([
+            textFrame('TIT2', 'Airbag'),
+            Uint8List(16),
+            audio.sublist(0, 32),
+          ], padding: 0),
+        ),
+        throwsFormatException,
+      );
+    });
   });
 }
 

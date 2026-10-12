@@ -95,9 +95,10 @@ class FileProposal {
 /// Case is not ignored — `radiohead` → `Radiohead` is a change an owner may
 /// want — except in a genre, which MusicBrainz only ever spells in lower
 /// case. A value is compared whole: a file holding `Rock; Pop` is changed by
-/// `rock`, which a write would leave as its only genre. [tags] holds what
-/// each file says now, by path; [fallbackGenres] are
-/// the release group's, used where the release has none; [cover] is the
+/// `rock`, which a write would leave as its only genre — and a file holding
+/// tracks `3; 4`, as text no number equals, is changed by any track number.
+/// [tags] holds what each file says now, by path; [fallbackGenres] are the
+/// release group's, used where the release has none; [cover] is the
 /// release's front cover, where the owner chose it and one was found.
 List<FileProposal> proposalsFor({
   required Map<MusicEntry, ReleaseTrack?> assignment,

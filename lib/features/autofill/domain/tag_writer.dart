@@ -44,12 +44,33 @@ class FileTags {
   /// The fields this file's format can hold and the writer can write.
   final Set<AutofillField> writable;
 
-  /// The current value of each field the file has: a `String` for the
-  /// text fields, an `int` for the numbers and the year.
+  /// The current value of each field the file has, as a write of it would
+  /// replace it: a `String` for the text fields, an `int` for the numbers and
+  /// the year — and, where the file holds a field more than once, every
+  /// value it holds, as [shownAsOne] puts them.
   final Map<AutofillField, Object?> values;
 
   /// The embedded front cover, where there is one.
   final Uint8List? cover;
+}
+
+/// Every value a file holds for one field, as one: `null` for none, the value
+/// itself for one, and for several, each once in the order the file holds
+/// them, joined as text — `Rock; Pop`, or `3; 4` for two track numbers.
+///
+/// A number the file holds more than once is text, which no number equals:
+/// writing one of them is a change, since it drops the others.
+Object? shownAsOne(Iterable<Object?> values) {
+  final distinct = <Object>{
+    for (final value in values)
+      if (value != null && value != '') value,
+  };
+
+  return switch (distinct.length) {
+    0 => null,
+    1 => distinct.single,
+    _ => distinct.join('; '),
+  };
 }
 
 /// What became of one file's write.

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import '../domain/autofill_field.dart';
+import '../domain/tag_writer.dart';
 
 /// [file], a whole FLAC file, with [values] written into its tags — and every
 /// other byte of it as it was.
@@ -271,6 +272,64 @@ const _keys = <AutofillField, ({String key, Set<String> replaces})>{
   AutofillField.year: (key: 'DATE', replaces: {'DATE', 'YEAR'}),
   AutofillField.genre: (key: 'GENRE', replaces: {'GENRE'}),
 };
+
+/// What a write of each field into [file], a whole FLAC file, replaces: the
+/// value of every comment under every key [editFlacTags] removes for it (see
+/// [_keys]), in the order the file holds them, as [shownAsOne] puts them —
+/// what the owner reviews as the field's "before".
+///
+/// The reader reads some of those keys and not others: `ALBUM ARTIST` and
+/// `YEAR` it leaves alone, and a write removes them all the same. A text
+/// field is every value, as the comment spells it. A number or a year is
+/// each value read as the reader reads it.
+///
+/// A field with no comment is left out, for the reader to say.
+///
+/// Throws a [FormatException], as [editFlacTags] does, where [file] cannot be
+/// parsed safely.
+///
+/// Pure: it reads nothing but [file].
+Map<AutofillField, Object?> flacReplacedValues(Uint8List file) {
+  final block = _parse(file).blocks
+      .where((block) => block.type == _vorbisComment)
+      .firstOrNull;
+  if (block == null) return {};
+  final comments = _parseComments(block.body).comments;
+  final replaced = <AutofillField, Object?>{};
+
+  for (final MapEntry(key: field, value: (:replaces, key: _))
+      in _keys.entries) {
+    final texts = [
+      for (final comment in comments)
+        if (replaces.contains(_keyOf(comment)))
+          utf8.decode(
+            Uint8List.sublistView(comment, comment.indexOf(0x3D) + 1),
+            allowMalformed: true,
+          ),
+    ];
+    if (texts.isEmpty) continue;
+
+    replaced[field] = shownAsOne(switch (field) {
+      AutofillField.trackNumber || AutofillField.discNumber => texts.map(
+        (text) => int.tryParse(text.split('/').first),
+      ),
+      AutofillField.trackTotal ||
+      AutofillField.discTotal => texts.map(int.tryParse),
+      AutofillField.year => texts.map(_year),
+      _ => texts,
+    });
+  }
+
+  return replaced;
+}
+
+/// The year of a `DATE` (or `YEAR`) value, as the reader reads a date: a
+/// whole date, or what comes before a `/`, or a bare number.
+int? _year(String text) =>
+    DateTime.tryParse(text)?.year ??
+    (text.contains('/')
+        ? int.tryParse(text.split('/').first)
+        : int.tryParse(text));
 
 /// The fields a comment can hold a number and its total in, as `3/12`.
 const _numbered = [

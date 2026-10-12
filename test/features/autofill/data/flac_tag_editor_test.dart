@@ -633,6 +633,75 @@ void main() {
       },
     );
   });
+
+  group('what a write of each field replaces', () {
+    Map<AutofillField, Object?> replacedIn(List<String> comments) =>
+        flacReplacedValues(
+          flacOf([streamInfoBlock(), vorbisCommentBlock(comments)]),
+        );
+
+    test('GivenACommentOfEveryField_WhenAsked_ThenEachIsItsValue', () {
+      expect(flacReplacedValues(tagged), {
+        AutofillField.title: 'Airbag',
+        AutofillField.artist: 'Radiohed',
+        AutofillField.albumArtist: 'Radiohed',
+        AutofillField.album: 'OK Computer',
+        AutofillField.trackNumber: 1,
+        AutofillField.trackTotal: 11,
+        AutofillField.discNumber: 2,
+        AutofillField.discTotal: 3,
+        AutofillField.year: 1996,
+        AutofillField.genre: 'Rock',
+      });
+    });
+
+    test(
+      'GivenEveryKeyAWriteOfEachFieldRemoves_WhenAsked_ThenEachValueIsShown',
+      () {
+        expect(
+          replacedIn([
+            'album artist=A',
+            'ALBUM_ARTIST=B',
+            'ALBUMARTIST=C',
+            'TRACKNUMBER=3/12',
+            'ITUNES_CDDB_TRACKNUMBER=4',
+            'TRACKTOTAL=12',
+            'TOTALTRACKS=13',
+            'DISCNUMBER=1',
+            'DISCTOTAL=2',
+            'TOTALDISCS=3',
+            'DATE=1997',
+            'YEAR=1996',
+          ]),
+          {
+            AutofillField.albumArtist: 'A; B; C',
+            AutofillField.trackNumber: '3; 4',
+            AutofillField.trackTotal: '12; 13',
+            AutofillField.discNumber: 1,
+            AutofillField.discTotal: '2; 3',
+            AutofillField.year: '1997; 1996',
+          },
+        );
+      },
+    );
+
+    test('GivenTheSameValueTwice_WhenAsked_ThenItIsShownOnce', () {
+      expect(replacedIn(['GENRE=Rock', 'GENRE=Pop', 'GENRE=Rock']), {
+        AutofillField.genre: 'Rock; Pop',
+      });
+    });
+
+    test('GivenNoCommentsBlock_WhenAsked_ThenNothingIsReplaced', () {
+      expect(flacReplacedValues(flacOf([streamInfoBlock()])), isEmpty);
+    });
+
+    test('GivenBytesThatAreNotFlac_WhenAsked_ThenItThrowsAFormatException', () {
+      expect(
+        () => flacReplacedValues(Uint8List.fromList('RIFF0000WAVE'.codeUnits)),
+        throwsFormatException,
+      );
+    });
+  });
 }
 
 /// A metadata block as [blocksOf] finds it.

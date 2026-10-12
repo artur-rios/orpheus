@@ -5,11 +5,14 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/features/autofill/data/audio_metadata_tag_writer.dart';
 import 'package:orpheus/features/autofill/domain/autofill_field.dart';
+import 'package:orpheus/features/autofill/domain/proposals.dart';
+import 'package:orpheus/features/autofill/domain/release.dart';
 import 'package:orpheus/features/autofill/domain/tag_writer.dart';
 import 'package:orpheus/features/library/domain/audio_file.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../support/ape_fixture.dart';
+import '../../../support/entries.dart' show entry;
 import '../../../support/flac_fixture.dart';
 import '../../../support/id3_fixture.dart';
 
@@ -255,6 +258,266 @@ void main() {
       expect(values[AutofillField.artist], 'Thom Yorke; Jonny Greenwood');
       expect(values[AutofillField.albumArtist], 'Radiohead; Radiohed');
       expect(values[AutofillField.album], 'OK Computer; OKNOTOK');
+    });
+  });
+
+  group('"before" is every value a write replaces', () {
+    /// An MP3 whose ID3v2.[major] tag holds [frames], and the audio.
+    String mp3(List<Uint8List> frames, {int major = 4}) {
+      final path = p.join(root.path, 'a.mp3');
+      File(path).writeAsBytesSync(
+        id3Tag(frames: frames, major: major, trailing: mpegAudio()),
+      );
+
+      return path;
+    }
+
+    /// A text frame whose body is [encoding] and then [values], each with
+    /// its terminator — several values in one frame, as v2.4 holds them.
+    Uint8List text(String id, List<String> values, {int encoding = 3}) => frame(
+      id,
+      Uint8List.fromList([
+        encoding,
+        for (final value in values) ...encodedText(value, encoding),
+      ]),
+    );
+
+    String flacWith(List<String> comments) {
+      final path = p.join(root.path, 'a.flac');
+      File(path).writeAsBytesSync(
+        flacOf([streamInfoBlock(), vorbisCommentBlock(comments)]),
+      );
+
+      return path;
+    }
+
+    test('GivenAnId3v24TconHoldingRockAndPop_WhenInspectedAndJazzIsProposed_ThenTheChangeIsFromBoth', () async {
+      final tags = await writer.inspect(
+        mp3([
+          text('TCON', ['Rock', 'Pop']),
+        ]),
+      );
+
+      expect(tags.values[AutofillField.genre], 'Rock; Pop');
+      final change = changesFor(tags, {AutofillField.genre}).single;
+      expect(change.before, 'Rock; Pop');
+      expect(change.after, 'jazz');
+    });
+
+    test(
+      'GivenAnId3v24Tpe1HoldingTwoArtists_WhenInspected_ThenTheArtistIsBoth',
+      () async {
+        final tags = await writer.inspect(
+          mp3([
+            text('TPE1', ['A', 'B']),
+          ]),
+        );
+
+        expect(tags.values[AutofillField.artist], 'A; B');
+      },
+    );
+
+    test(
+      'GivenTwoTit2Frames_WhenInspected_ThenTheTitleIsBothInTheirOrder',
+      () async {
+        final tags = await writer.inspect(
+          mp3([
+            text('TIT2', ['Airbag']),
+            text('TIT2', ['Airbag (Remastered)']),
+          ]),
+        );
+
+        expect(tags.values[AutofillField.title], 'Airbag; Airbag (Remastered)');
+      },
+    );
+
+    test('GivenTwoFramesOfEachTextFieldHoldingTheSameValue_WhenInspected_ThenEachShowsItOnce', () async {
+      final tags = await writer.inspect(
+        mp3([
+          for (final id in ['TIT2', 'TPE1', 'TPE2', 'TALB', 'TCON']) ...[
+            text(id, ['Same']),
+            text(id, ['Same']),
+          ],
+        ]),
+      );
+
+      for (final field in [
+        AutofillField.title,
+        AutofillField.artist,
+        AutofillField.albumArtist,
+        AutofillField.album,
+        AutofillField.genre,
+      ]) {
+        expect(tags.values[field], 'Same', reason: field.name);
+      }
+    });
+
+    test('GivenAnId3v23Utf16FrameHoldingTwoValues_WhenInspected_ThenBothAreDecoded', () async {
+      // Each value of an encoding-1 frame has a byte-order mark of its own.
+      final tags = await writer.inspect(
+        mp3([
+          frame(
+            'TPE1',
+            Uint8List.fromList([
+              1,
+              ...encodedText('Sigur Rós', 1),
+              ...encodedText('Jónsi', 1),
+            ]),
+            major: 3,
+          ),
+        ], major: 3),
+      );
+
+      expect(tags.values[AutofillField.artist], 'Sigur Rós; Jónsi');
+    });
+
+    test(
+      'GivenAnId3v23Utf16FrameHoldingOneValue_WhenInspected_ThenItIsDecoded',
+      () async {
+        final tags = await writer.inspect(
+          mp3([
+            frame(
+              'TALB',
+              Uint8List.fromList([1, ...encodedText('Ágætis byrjun', 1)]),
+              major: 3,
+            ),
+          ], major: 3),
+        );
+
+        expect(tags.values[AutofillField.album], 'Ágætis byrjun');
+      },
+    );
+
+    test('GivenAnId3v23TconOfHipHopSlashRap_WhenInspected_ThenTheSlashIsPartOfTheGenre', () async {
+      final tags = await writer.inspect(
+        mp3([
+          frame(
+            'TCON',
+            Uint8List.fromList([1, ...encodedText('Hip-Hop/Rap', 1)]),
+            major: 3,
+          ),
+        ], major: 3),
+      );
+
+      expect(tags.values[AutofillField.genre], 'Hip-Hop/Rap');
+    });
+
+    test('GivenTwoTrckFramesOf3And4Of12_WhenInspectedAndTrack5IsProposed_ThenTheNumberIsBothAndItIsAChange', () async {
+      final tags = await writer.inspect(
+        mp3([
+          text('TRCK', ['3/12']),
+          text('TRCK', ['4/12']),
+        ]),
+      );
+
+      expect(tags.values[AutofillField.trackNumber], '3; 4');
+      expect(tags.values[AutofillField.trackTotal], 12);
+      final change = changesFor(tags, {AutofillField.trackNumber}).single;
+      expect(change.before, '3; 4');
+      expect(change.after, 5);
+    });
+
+    test('GivenTwoTrckFramesOfTheSameNumber_WhenInspectedAndThatNumberIsProposed_ThenThereIsNoChange', () async {
+      final tags = await writer.inspect(
+        mp3([
+          text('TRCK', ['5/12']),
+          text('TRCK', ['5/12']),
+        ]),
+      );
+
+      expect(tags.values[AutofillField.trackNumber], 5);
+      expect(changesFor(tags, {AutofillField.trackNumber}), isEmpty);
+    });
+
+    test(
+      'GivenTwoTposFramesOfDifferentTotals_WhenInspected_ThenTheTotalIsBoth',
+      () async {
+        final tags = await writer.inspect(
+          mp3([
+            text('TPOS', ['1/2']),
+            text('TPOS', ['1/3']),
+          ]),
+        );
+
+        expect(tags.values[AutofillField.discNumber], 1);
+        expect(tags.values[AutofillField.discTotal], '2; 3');
+      },
+    );
+
+    test('GivenAnId3v24TagWithATdrcAndATyerOfDifferentYears_WhenInspected_ThenTheYearIsBoth', () async {
+      final tags = await writer.inspect(
+        mp3([
+          text('TDRC', ['1997-05-21']),
+          text('TYER', ['1996']),
+        ]),
+      );
+
+      expect(tags.values[AutofillField.year], '1997; 1996');
+    });
+
+    test('GivenAFlacWhoseAlbumArtistIsUnderAlbumSpaceArtist_WhenInspected_ThenItIsShown', () async {
+      final tags = await writer.inspect(flacWith(['ALBUM ARTIST=X']));
+
+      expect(tags.values[AutofillField.albumArtist], 'X');
+    });
+
+    test('GivenAFlacWithAnAlbumArtistUnderTwoSpellings_WhenInspected_ThenBothAreShownInTheirOrder', () async {
+      final tags = await writer.inspect(
+        flacWith(['ALBUMARTIST=Y', 'ALBUM ARTIST=X']),
+      );
+
+      expect(tags.values[AutofillField.albumArtist], 'Y; X');
+    });
+
+    test('GivenAFlacWhoseOnlyTrackTotalIsTotaltracks_WhenInspected_ThenItIsTheTrackTotal', () async {
+      final tags = await writer.inspect(flacWith(['TOTALTRACKS=12']));
+
+      expect(tags.values[AutofillField.trackTotal], 12);
+    });
+
+    test('GivenAFlacWhoseOnlyDiscTotalIsTotaldiscs_WhenInspected_ThenItIsTheDiscTotal', () async {
+      final tags = await writer.inspect(flacWith(['TOTALDISCS=2']));
+
+      expect(tags.values[AutofillField.discTotal], 2);
+    });
+
+    test(
+      'GivenAFlacWhoseOnlyYearIsUnderYear_WhenInspected_ThenItIsTheYear',
+      () async {
+        final tags = await writer.inspect(flacWith(['YEAR=1997']));
+
+        expect(tags.values[AutofillField.year], 1997);
+      },
+    );
+
+    test(
+      'GivenAFlacWithADateAndAYearThatDiffer_WhenInspected_ThenTheYearIsBoth',
+      () async {
+        final tags = await writer.inspect(
+          flacWith(['DATE=1997-05-21', 'YEAR=1996']),
+        );
+
+        expect(tags.values[AutofillField.year], '1997; 1996');
+      },
+    );
+
+    test('GivenAFlacWithAnItunesTrackNumberThatDiffers_WhenInspectedAndTrack5IsProposed_ThenTheNumberIsBothAndItIsAChange', () async {
+      final tags = await writer.inspect(
+        flacWith(['TRACKNUMBER=3/12', 'ITUNES_CDDB_TRACKNUMBER=4']),
+      );
+
+      expect(tags.values[AutofillField.trackNumber], '3; 4');
+      final change = changesFor(tags, {AutofillField.trackNumber}).single;
+      expect(change.before, '3; 4');
+      expect(change.after, 5);
+    });
+
+    test('GivenAFlacWithTwoTrackTotalSpellingsThatAgree_WhenInspected_ThenTheTotalIsTheNumber', () async {
+      final tags = await writer.inspect(
+        flacWith(['TRACKTOTAL=12', 'TOTALTRACKS=12']),
+      );
+
+      expect(tags.values[AutofillField.trackTotal], 12);
     });
   });
 
@@ -882,6 +1145,37 @@ void main() {
       );
     }
   });
+}
+
+/// What a release proposes for [fields] of a file holding [tags]: track 5 of
+/// 12, genre `jazz`.
+List<FieldChange> changesFor(FileTags tags, Set<AutofillField> fields) {
+  final track = entry(id: 'a');
+  const release = ReleaseDetail(
+    release: ReleaseCandidate(
+      id: 'r',
+      title: 'OK Computer',
+      artistCredit: [ArtistCredit(name: 'Radiohead')],
+      trackCount: 12,
+      date: '1997',
+    ),
+    tracks: [
+      ReleaseTrack(
+        disc: 1,
+        position: 5,
+        title: 'Let Down',
+        artistCredit: [ArtistCredit(name: 'Radiohead')],
+      ),
+    ],
+    genres: [Genre(name: 'jazz')],
+  );
+
+  return proposalsFor(
+    assignment: {track: release.tracks.single},
+    release: release,
+    fields: fields,
+    tags: {track.file.path: tags},
+  ).single.changes;
 }
 
 /// Real MPEG audio, without a tag: the fixture MP3's, after its ID3v2 tag.

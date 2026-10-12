@@ -321,4 +321,27 @@ void main() {
     expect(proposal.acceptedCount, 2);
     expect(edited.acceptedCount, 1);
   });
+
+  test('GivenANumberTheFileHoldsSeveralOf_WhenOneOfThemIsProposed_ThenItIsAChangeFromAllOfThem', () {
+    // A file whose frames hold track 1 and track 3 is read as the text
+    // `1; 3`, which no number equals: writing 1 drops the 3.
+    final several = propose(
+      {airbag: release.tracks.first},
+      {AutofillField.trackNumber},
+      {
+        airbag.file.path: tagsOf({AutofillField.trackNumber: '1; 3'}),
+      },
+    );
+    expect(several.single.changes.single.before, '1; 3');
+    expect(several.single.changes.single.after, 1);
+
+    final one = propose(
+      {airbag: release.tracks.first},
+      {AutofillField.trackNumber},
+      {
+        airbag.file.path: tagsOf({AutofillField.trackNumber: 1}),
+      },
+    );
+    expect(one.single.changes, isEmpty);
+  });
 }

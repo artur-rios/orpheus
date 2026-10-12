@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import '../domain/autofill_field.dart';
+import '../domain/tag_writer.dart';
 
 /// A tag [editId3Tags] will not change: one it could only rewrite by
 /// understanding more of the format than it does, and so risk corrupting.
@@ -257,6 +258,159 @@ String? _unsupportedHeader(int major, int flags) {
   return null;
 }
 
+/// The frames a write of each field replaces, every one of them (see
+/// [_slotsFor]): a number and its total share one frame.
+const _framesOf = <AutofillField, Set<String>>{
+  AutofillField.title: {'TIT2'},
+  AutofillField.artist: {'TPE1'},
+  AutofillField.albumArtist: {'TPE2'},
+  AutofillField.album: {'TALB'},
+  AutofillField.trackNumber: {'TRCK'},
+  AutofillField.trackTotal: {'TRCK'},
+  AutofillField.discNumber: {'TPOS'},
+  AutofillField.discTotal: {'TPOS'},
+  AutofillField.year: {'TDRC', 'TYER', 'TRDA'},
+  AutofillField.genre: {'TCON'},
+};
+
+/// What a write of each field into [file], a whole MP3 file, replaces: every
+/// value of every frame [editId3Tags] would replace, as [shownAsOne] puts
+/// them — what the owner reviews as the field's "before".
+///
+/// The reader keeps one frame of each field, and the first value of a frame
+/// that holds several (`Rock\0Pop`); a write replaces them all. A text field
+/// is every value, as the frame spells it: a `/` in a v2.3 genre is part of
+/// it, not a separator. A number or a year is each value read as the reader
+/// reads it.
+///
+/// A field with no frame is left out: what the file has of it, if anything,
+/// is not in its ID3v2 tag — an ID3v1 or APE tag the reader reads instead —
+/// and is the reader's to say. So is a field with a frame this cannot read —
+/// compressed, encrypted, or not text in its encoding — though a write
+/// replaces it. A field whose frames hold nothing is `null`.
+///
+/// Throws, as [editId3Tags] does, where [file] cannot be parsed safely or
+/// holds a tag the editor will not touch.
+///
+/// Pure: it reads nothing but [file].
+Map<AutofillField, Object?> id3ReplacedValues(Uint8List file) {
+  final frames = _parse(file).frames;
+  final replaced = <AutofillField, Object?>{};
+
+  for (final MapEntry(key: field, value: ids) in _framesOf.entries) {
+    final found = [
+      for (final frame in frames)
+        if (ids.contains(frame.id)) frame,
+    ];
+    if (found.isEmpty || found.any((frame) => frame.formatFlags != 0)) {
+      continue;
+    }
+
+    final List<String> texts;
+    try {
+      texts = [for (final frame in found) ..._textValues(frame.body)];
+    } on FormatException {
+      continue;
+    }
+
+    replaced[field] = shownAsOne(switch (field) {
+      AutofillField.trackNumber => texts.map((text) => _track(text).number),
+      AutofillField.trackTotal => texts.map((text) => _track(text).total),
+      AutofillField.discNumber => texts.map((text) => _disc(text).number),
+      AutofillField.discTotal => texts.map((text) => _disc(text).total),
+      AutofillField.year => texts.map(_year),
+      _ => texts,
+    });
+  }
+
+  return replaced;
+}
+
+/// Every value a text frame's [body] holds, without terminators and without
+/// the empty ones: v2.4 separates several with the terminator of the frame's
+/// encoding — one zero byte in Latin-1 and UTF-8, two in UTF-16, where each
+/// value has a byte-order mark of its own.
+List<String> _textValues(Uint8List body) {
+  if (body.isEmpty) return const [];
+
+  final bytes = Uint8List.sublistView(body, 1);
+  final values = switch (body[0]) {
+    0 => latin1.decode(bytes).split('\u0000'),
+    3 => utf8.decode(bytes).split('\u0000'),
+    1 || 2 => [
+      for (final part in _utf16Parts(bytes))
+        // A lone zero after the last terminator is nothing, not half a
+        // character.
+        if (part.any((byte) => byte != 0))
+          _utf16(
+            part,
+            bigEndian:
+                body[0] == 2 ||
+                part.length >= 2 && part[0] == 0xFE && part[1] == 0xFF,
+            bom: body[0] == 1,
+          ),
+    ],
+    _ => throw const FormatException('a text encoding that does not exist'),
+  };
+
+  return [
+    for (final value in values)
+      if (value.isNotEmpty) value,
+  ];
+}
+
+/// [bytes] of UTF-16 split at each terminator: two zero bytes that are one
+/// character, not the halves of two.
+List<Uint8List> _utf16Parts(Uint8List bytes) {
+  final parts = <Uint8List>[];
+  var start = 0;
+  for (var i = 0; i + 1 < bytes.length; i += 2) {
+    if (bytes[i] == 0 && bytes[i + 1] == 0) {
+      parts.add(Uint8List.sublistView(bytes, start, i));
+      start = i + 2;
+    }
+  }
+
+  return parts..add(Uint8List.sublistView(bytes, start));
+}
+
+final _numberAndTotalAnywhere = RegExp(r'(\d+)/(\d+)');
+
+/// A `TRCK` value's number and total, as the reader reads them: both from
+/// `3/12`, and otherwise a number alone.
+({int? number, int? total}) _track(String text) {
+  final match = _numberAndTotalAnywhere.firstMatch(text);
+
+  return match == null
+      ? (number: int.tryParse(text), total: null)
+      : (number: int.tryParse(match[1]!), total: int.tryParse(match[2]!));
+}
+
+/// A `TPOS` value's number and total, as the review has always read them:
+/// the reader's, and where it has none, the halves either side of a `/`.
+({int? number, int? total}) _disc(String text) {
+  final match = _numberAndTotalAnywhere.firstMatch(text);
+  if (match != null) {
+    return (number: int.tryParse(match[1]!), total: int.tryParse(match[2]!));
+  }
+
+  final parts = text.split('/');
+
+  return (
+    number: int.tryParse(parts.first.trim()),
+    total: parts.length < 2 ? null : int.tryParse(parts[1].trim()),
+  );
+}
+
+/// The year of a date frame's value, as the reader reads it: what comes
+/// before a `-` or a `/`, or the whole of it.
+int? _year(String text) {
+  if (text.contains('-')) return int.tryParse(text.split('-').first);
+  if (text.contains('/')) return int.tryParse(text.split('/').first);
+
+  return int.tryParse(text);
+}
+
 /// What writing one field (or a number and its total) does: which frames it
 /// replaces, and the frame it writes in their place — `null` for none.
 typedef _Slot = ({bool Function(_Frame frame) replaces, Uint8List? frame});
@@ -277,10 +431,13 @@ List<_Slot> _slotsFor(
 ) {
   final slots = <_Slot>[];
 
-  void write(Set<String> replaced, String id, String? text) => slots.add((
-    replaces: (frame) => replaced.contains(frame.id),
-    frame: text == null ? null : _frame(id, _textBody(text, major), major),
-  ));
+  void write(AutofillField field, String id, String? text) {
+    final replaced = _framesOf[field]!;
+    slots.add((
+      replaces: (frame) => replaced.contains(frame.id),
+      frame: text == null ? null : _frame(id, _textBody(text, major), major),
+    ));
+  }
 
   for (final (field, id) in const [
     (AutofillField.title, 'TIT2'),
@@ -289,7 +446,7 @@ List<_Slot> _slotsFor(
     (AutofillField.album, 'TALB'),
   ]) {
     if (values.containsKey(field)) {
-      write({id}, id, _textOf(field, values[field]));
+      write(field, id, _textOf(field, values[field]));
     }
   }
 
@@ -318,7 +475,7 @@ List<_Slot> _slotsFor(
       );
     }
     write(
-      {id},
+      number,
       id,
       numberText == null
           ? null
@@ -328,7 +485,7 @@ List<_Slot> _slotsFor(
 
   if (values.containsKey(AutofillField.year)) {
     write(
-      {'TDRC', 'TYER', 'TRDA'},
+      AutofillField.year,
       major == 4 ? 'TDRC' : 'TYER',
       _yearOf(values[AutofillField.year]),
     );
@@ -336,7 +493,7 @@ List<_Slot> _slotsFor(
 
   if (values.containsKey(AutofillField.genre)) {
     write(
-      {'TCON'},
+      AutofillField.genre,
       'TCON',
       _textOf(AutofillField.genre, values[AutofillField.genre]),
     );
