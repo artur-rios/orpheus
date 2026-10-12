@@ -9,6 +9,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- On Windows and Linux the window opens maximized. Un-maximize it and close it, and the next launch opens it where you
+  left it; maximize it again and it opens maximized again. The restore button goes back to the size you last gave it.
+- The scan at startup reads again every track whose file changed since the last scan, so a title, artist or album
+  corrected in a tag editor shows up everywhere the next time Orpheus starts — the library, the player, the queue's
+  name and the statistics. It used to trust a folder that looked unchanged and keep the old tags until a scan was
+  started by hand. The scan report says how many tracks were updated.
+- A folder added or removed while a scan is running is scanned as soon as that scan finishes, instead of waiting for the
+  next one.
+
 - A beta on Windows or Linux is offered the next beta as well as the release it leads to; a full release is still only
   ever offered full releases. Versions are compared by full SemVer 2.0.0 precedence.
 - Release process: a pre-release's `-beta.<n>` is now part of the `version:` in `pubspec.yaml` (`1.3.0-beta.1+7`), its
@@ -16,6 +25,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   exactly `v` followed by that version. See CONTRIBUTING.md, *Versioning*.
 
 ### Fixed
+
+- Not now, Skip this version and Close on the update prompt close it. They used to empty it and leave the application
+  dimmed behind an invisible dialog that swallowed the next click.
+- The update prompt says Downloading while the download runs and Checking only while the download is being verified;
+  the two were the other way round.
+- On Android, playback pauses for a phone call and for another player taking over the sound, and resumes after the
+  call only if it was playing before it.
+- Choosing something that cannot start — a track with a saved position, or a record whose files are all missing —
+  stops what was playing, rather than leaving it playing with no controls.
+- A record whose last track is missing ends normally, or goes round again on Repeat all, instead of reporting that
+  nothing in it could be played.
+- A track resumed from past half way is not counted as a second play; starting a track again with Previous counts its
+  replay; and a very short track heard to the end always counts.
+- Statistics: tracks that share a title are ranked as separate tracks rather than added together; the story's share
+  of plays is worked out over everything played rather than only the top ten; and tracks no longer in the library are
+  not reported as untagged.
+- A record or artist that is open in the library and gets renamed by a re-scan stays open under its new name.
+- Removing a folder rescans the library again; the folder's tracks used to stay until the next scan.
+- On Android, the back gesture no longer spends a press clearing a one-letter search that was not showing.
 
 - A beta on Windows or Linux reported itself as the release it leads to (`1.3.0` for `v1.3.0-beta.1`), so it was
   never offered that release when it shipped.

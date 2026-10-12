@@ -281,22 +281,24 @@ is what makes re-scanning an unchanged library cheap enough to do at every
 launch. Encoding and decoding it happen on an isolate, not on the interface's:
 on a large library the document is megabytes, and parsing it is the one piece of
 startup work that would otherwise land on the thread drawing the first screen.
-It is rewritten only when the scan actually added or removed something — a scan
-that changed nothing would encode the file that is already on disk. The *moment*
+It is rewritten only when the scan actually added, updated or removed something —
+a scan that changed nothing would encode the file that is already on disk. The *moment*
 of the scan is kept beside it in the settings rather than only inside it, because
 that does change every time and it is one short string: left in the document
 alone it never advanced for an unchanged library, so the library screen kept
-showing an older date and the cheap walk below never moved its cutoff forward.
+showing an older date.
 (`features/library/data/json_catalog_store.dart`)
 
-**The scan at startup trusts folder timestamps; the one you ask for does not.**
-A folder whose own timestamp predates the last scan has had nothing added to it,
-removed from it or renamed inside it, so its tracks are taken from the catalog
-instead of being `stat`ed one by one — on a library of eleven thousand tracks
-that is eleven thousand system calls a launch does not make. What it cannot see
-is a file rewritten in place, which changes the file's timestamp and not its
-folder's, so **Scan now** on the library screen still stats everything.
-(`features/library/data/scan_worker.dart`)
+**Every scan looks at every file, the one at startup included.** Each file's size
+and timestamp are compared with what the catalog recorded, and a file that
+changed is read again — which is how a title or an artist corrected in a tag
+editor while Orpheus was closed reaches every screen at the next launch, the
+track playing included. An earlier version trusted a folder whose own timestamp
+predated the last scan and skipped the files in it; a tag editor rewriting a file
+in place moves the file's timestamp and not its folder's, so the correction never
+arrived until a scan was started by hand. A tag editor set to *preserve* the
+file's modification time leaves nothing to compare, and **Scan now** will not see
+that edit either. (`features/library/data/scan_worker.dart`)
 
 **The player outlives the screen that started it.** The queue and the engine
 live in a controller; the bar and the full player are views of it. A file that

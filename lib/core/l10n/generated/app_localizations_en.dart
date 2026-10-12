@@ -328,8 +328,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String scanReport(int tracks, int added, int removed) {
-    return '$tracks tracks — $added new, $removed gone.';
+  String scanReport(int tracks, int added, int updated, int removed) {
+    return '$tracks tracks — $added new, $updated updated, $removed gone.';
   }
 
   @override
@@ -448,8 +448,8 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no ranking below.',
-      one: '1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no ranking below.',
+          '$count played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no artist, record or genre ranking below.',
+      one: '1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no artist, record or genre ranking below.',
     );
     return '$_temp0';
   }
