@@ -567,4 +567,4 @@ described in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Legal
 
-This project is licensed under the terms of the [MIT License](./LICENSE). Copyright (c) 2026 Artur Rios.
+This project is licensed under the [Artur Rios Attribution License](./LICENSE). It is free and open source: you may view, use, fork, modify, and extend it, provided you credit the author, Artur Rios, with a link to [artur-rios.tech](https://artur-rios.tech) or [github.com/artur-rios](https://github.com/artur-rios). Copyright (c) 2026 Artur Rios.
