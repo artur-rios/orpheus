@@ -212,10 +212,11 @@ typedef _Slot = ({bool Function(_Frame frame) replaces, Uint8List? frame});
 /// where none was replaced.
 ///
 /// Each field is written as the frame the reader reads it from, and replaces
-/// every frame the reader reads it from — the v2.3 year (`TYER`) and the v2.4
-/// one (`TDRC`) both, whichever the version, so that the one written is the
-/// one read back. The day and time of a v2.3 date (`TDAT`, `TIME`) are not a
-/// year, and are kept.
+/// every frame the reader reads it from — the v2.3 year (`TYER`), the v2.4
+/// one (`TDRC`) and the v2.3 recording dates (`TRDA`), which the reader takes
+/// for a year too, all of them whichever the version, so that the one
+/// written is the one read back. The day and time of a v2.3 date (`TDAT`,
+/// `TIME`) are not a year, and are kept.
 List<_Slot> _slotsFor(List<_Frame> frames, Map<AutofillField, Object?> values, int major) {
   final slots = <_Slot>[];
 
@@ -255,7 +256,7 @@ List<_Slot> _slotsFor(List<_Frame> frames, Map<AutofillField, Object?> values, i
   }
 
   if (values.containsKey(AutofillField.year)) {
-    write({'TDRC', 'TYER'}, major == 4 ? 'TDRC' : 'TYER', _yearOf(values[AutofillField.year]));
+    write({'TDRC', 'TYER', 'TRDA'}, major == 4 ? 'TDRC' : 'TYER', _yearOf(values[AutofillField.year]));
   }
 
   if (values.containsKey(AutofillField.genre)) {

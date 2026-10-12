@@ -77,7 +77,7 @@ void main() {
     AutofillField.trackTotal: {'TRCK'},
     AutofillField.discNumber: {'TPOS'},
     AutofillField.discTotal: {'TPOS'},
-    AutofillField.year: {'TDRC', 'TYER'},
+    AutofillField.year: {'TDRC', 'TYER', 'TRDA'},
     AutofillField.genre: {'TCON'},
     AutofillField.cover: {'APIC'},
   };
@@ -372,6 +372,23 @@ void main() {
       expect(textOf(edited, 'TYER'), '0997');
       expect(tagOf(edited).frames.skip(1).map((f) => f.raw), tagOf(file).frames.skip(1).map((f) => f.raw));
       expect((await readBack(edited)).values[AutofillField.year], 997);
+    });
+
+    test('GivenAnId3v23TagWithATyerThenATrda_WhenTheYearIsWritten_ThenTheNewYearReadsBack', () async {
+      // The reader takes a TRDA (recording dates) for the year too, and the
+      // last year frame it meets wins: left in place, the old one would
+      // still be what is read back.
+      final file = mp3Of([
+        textFrame('TIT2', 'Airbag', major: 3),
+        textFrame('TYER', '1996', major: 3),
+        textFrame('TRDA', '1995', major: 3),
+      ], major: 3);
+      expect((await readBack(file)).values[AutofillField.year], 1995);
+
+      final edited = editId3Tags(file, {AutofillField.year: 1997});
+
+      expect(idsOf(edited), ['TIT2', 'TYER']);
+      expect((await readBack(edited)).values[AutofillField.year], 1997);
     });
 
     test('GivenAnId3v23TagWithATdrc_WhenTheYearIsWritten_ThenATyerTakesItsPlace', () {
