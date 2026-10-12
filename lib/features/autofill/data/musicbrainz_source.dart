@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
@@ -81,10 +82,12 @@ class MusicBrainzSource implements MetadataSource {
       'limit': '10',
     });
 
-    return [
-      for (final release in _list(body['releases']))
-        if (release is Map<String, dynamic>) _candidateFrom(release),
-    ];
+    return _parsed(
+      () => [
+        for (final release in _list(body['releases']))
+          if (release is Map<String, dynamic>) _candidateFrom(release),
+      ],
+    );
   }
 
   @override
@@ -93,6 +96,10 @@ class MusicBrainzSource implements MetadataSource {
       'inc': 'recordings+artist-credits+genres+release-groups+media',
     });
 
+    return _parsed(() => _detailFrom(body));
+  }
+
+  ReleaseDetail _detailFrom(Map<String, dynamic> body) {
     final tracks = <ReleaseTrack>[];
     for (final medium in _list(body['media'])) {
       if (medium is! Map<String, dynamic>) continue;
@@ -129,7 +136,7 @@ class MusicBrainzSource implements MetadataSource {
   Future<List<Genre>> releaseGroupGenres(String id) async {
     final body = await _json('release-group/$id', {'inc': 'genres'});
 
-    return _genres(body['genres']);
+    return _parsed(() => _genres(body['genres']));
   }
 
   @override
@@ -139,10 +146,12 @@ class MusicBrainzSource implements MetadataSource {
       'limit': '10',
     });
 
-    return [
-      for (final recording in _list(body['recordings']))
-        if (recording is Map<String, dynamic>) _recordingFrom(recording),
-    ];
+    return _parsed(
+      () => [
+        for (final recording in _list(body['recordings']))
+          if (recording is Map<String, dynamic>) _recordingFrom(recording),
+      ],
+    );
   }
 
   @override
@@ -168,7 +177,7 @@ class MusicBrainzSource implements MetadataSource {
       if (query.title case final title? when title.trim().isNotEmpty) 'recording:"${escape(title.trim())}"',
       if (query.artist case final artist? when artist.trim().isNotEmpty) 'artist:"${escape(artist.trim())}"',
       if (duration != null)
-        'dur:[${duration.inMilliseconds - 3000} TO ${duration.inMilliseconds + 3000}]',
+        'dur:[${max(0, duration.inMilliseconds - 3000)} TO ${duration.inMilliseconds + 3000}]',
     ].join(' AND ');
   }
 
@@ -190,6 +199,17 @@ class MusicBrainzSource implements MetadataSource {
     throw const MetadataSourceException(MetadataSourceFailure.malformed);
   }
 
+  /// What [parse] makes of an answer, or [MetadataSourceFailure.malformed] when
+  /// the JSON was valid but its fields were not of the types the service
+  /// documents.
+  static T _parsed<T>(T Function() parse) {
+    try {
+      return parse();
+    } on TypeError {
+      throw const MetadataSourceException(MetadataSourceFailure.malformed);
+    }
+  }
+
   /// Sends one request in its turn, with the one retry a 503 earns.
   Future<http.Response> _send(Uri uri) async {
     var response = await _spaced(uri);
@@ -208,14 +228,16 @@ class MusicBrainzSource implements MetadataSource {
     final done = Completer<http.Response>();
 
     _turn = _turn.then((_) async {
-      final last = _last;
-      if (last != null) {
-        final since = _clock().difference(last);
-        if (since < spacing) await _wait(spacing - since);
-      }
-      _last = _clock();
-
+      // Everything that can throw stays inside the try: this callback is the
+      // queue, and an error leaving it would leave every later request waiting.
       try {
+        final last = _last;
+        if (last != null) {
+          final since = _clock().difference(last);
+          if (since < spacing) await _wait(spacing - since);
+        }
+        _last = _clock();
+
         done.complete(
           await _client.get(uri, headers: {'User-Agent': userAgent, 'Accept': 'application/json'}).timeout(timeout),
         );

@@ -157,4 +157,164 @@ void main() {
       throwsA(isA<MetadataSourceException>().having((e) => e.kind, 'kind', MetadataSourceFailure.malformed)),
     );
   });
+
+  group('the service limits', () {
+    test('GivenTwoRequestsBackToBack_WhenTheySend_ThenTheSecondWaitsOutTheRestOfTheSecond', () async {
+      var now = DateTime.utc(2026);
+      final waits = <Duration>[];
+      final source = MusicBrainzSource(
+        client: MockClient((_) async {
+          now = now.add(const Duration(milliseconds: 200));
+          return http.Response(jsonEncode(releaseGroupLookup), 200);
+        }),
+        clock: () => now,
+        wait: (delay) async {
+          waits.add(delay);
+          now = now.add(delay);
+        },
+      );
+
+      await source.releaseGroupGenres('a');
+      await source.releaseGroupGenres('b');
+
+      expect(waits, [const Duration(milliseconds: 800)]);
+    });
+
+    test('GivenTwoCallersAtOnce_WhenBothAsk_ThenTheirRequestsStillGoOutASecondApart', () async {
+      var now = DateTime.utc(2026);
+      final sentAt = <DateTime>[];
+      final source = MusicBrainzSource(
+        client: MockClient((_) async {
+          sentAt.add(now);
+          return http.Response(jsonEncode(releaseGroupLookup), 200);
+        }),
+        clock: () => now,
+        wait: (delay) async => now = now.add(delay),
+      );
+
+      await Future.wait([source.releaseGroupGenres('a'), source.releaseGroupGenres('b')]);
+
+      expect(sentAt[1].difference(sentAt[0]), greaterThanOrEqualTo(const Duration(seconds: 1)));
+    });
+
+    test('GivenTheServiceAsksForFewerRequestsOnce_WhenTheRetryIsAnswered_ThenTheAnswerComesBack', () async {
+      var calls = 0;
+      final source = MusicBrainzSource(
+        client: MockClient((_) async {
+          calls++;
+          return calls == 1 ? http.Response('', 503) : http.Response(jsonEncode(releaseGroupLookup), 200);
+        }),
+        wait: (_) async {},
+      );
+
+      final genres = await source.releaseGroupGenres('rg-1');
+
+      expect(calls, 2);
+      expect(genres.single.name, 'rock');
+    });
+
+    test('GivenTheServiceKeepsAskingForFewerRequests_WhenTheRetryFailsToo_ThenItIsReportedAsRateLimited', () async {
+      final source = MusicBrainzSource(
+        client: MockClient((_) async => http.Response('', 503)),
+        wait: (_) async {},
+      );
+
+      await expectLater(
+        source.releaseGroupGenres('rg-1'),
+        throwsA(isA<MetadataSourceException>().having((e) => e.kind, 'kind', MetadataSourceFailure.rateLimited)),
+      );
+    });
+
+    test('GivenNoNetwork_WhenAskedAnything_ThenItIsReportedAsUnreachable', () async {
+      final source = MusicBrainzSource(
+        client: MockClient((_) async => throw http.ClientException('no route to host')),
+        wait: (_) async {},
+      );
+
+      await expectLater(
+        source.searchReleases(const ReleaseQuery(album: 'x')),
+        throwsA(isA<MetadataSourceException>().having((e) => e.kind, 'kind', MetadataSourceFailure.unreachable)),
+      );
+    });
+
+    test('GivenAFailedRequest_WhenTheNextOneIsAsked_ThenTheQueueStillMoves', () async {
+      var calls = 0;
+      final source = MusicBrainzSource(
+        client: MockClient((_) async {
+          calls++;
+          if (calls == 1) throw http.ClientException('dropped');
+          return http.Response(jsonEncode(releaseGroupLookup), 200);
+        }),
+        wait: (_) async {},
+      );
+
+      await expectLater(source.releaseGroupGenres('a'), throwsA(isA<MetadataSourceException>()));
+      expect((await source.releaseGroupGenres('b')).single.name, 'rock');
+    });
+
+    test('GivenTheWaitItselfBreaks_WhenTheNextRequestIsAsked_ThenTheQueueStillMoves', () async {
+      // The clock never moves, so every request after the first has to wait.
+      final now = DateTime.utc(2026);
+      var waits = 0;
+      final source = MusicBrainzSource(
+        client: MockClient((_) async => http.Response(jsonEncode(releaseGroupLookup), 200)),
+        clock: () => now,
+        wait: (_) async {
+          waits++;
+          if (waits == 1) throw StateError('timer gone');
+        },
+      );
+
+      await source.releaseGroupGenres('a');
+      await expectLater(
+        source.releaseGroupGenres('b'),
+        throwsA(isA<MetadataSourceException>().having((e) => e.kind, 'kind', MetadataSourceFailure.unreachable)),
+      );
+      expect((await source.releaseGroupGenres('c')).single.name, 'rock');
+    }, timeout: const Timeout(Duration(seconds: 5)));
+
+    test('GivenTheClockBreaksOnce_WhenTheNextRequestIsAsked_ThenTheQueueStillMoves', () async {
+      var reads = 0;
+      final source = MusicBrainzSource(
+        client: MockClient((_) async => http.Response(jsonEncode(releaseGroupLookup), 200)),
+        clock: () {
+          reads++;
+          if (reads == 1) throw StateError('clock gone');
+          return DateTime.utc(2026).add(Duration(minutes: reads));
+        },
+        wait: (_) async {},
+      );
+
+      await expectLater(
+        source.releaseGroupGenres('a'),
+        throwsA(isA<MetadataSourceException>().having((e) => e.kind, 'kind', MetadataSourceFailure.unreachable)),
+      );
+      expect((await source.releaseGroupGenres('b')).single.name, 'rock');
+    }, timeout: const Timeout(Duration(seconds: 5)));
+  });
+
+  group('answers that are not what was promised', () {
+    test('GivenJsonWithFieldsOfTheWrongType_WhenReleasesAreSearched_ThenItIsReportedAsMalformed', () async {
+      final source = sourceAnswering(
+        (_) => json(const {
+          'releases': [
+            {'id': 7, 'title': 'x'},
+          ],
+        }),
+      );
+
+      await expectLater(
+        source.searchReleases(const ReleaseQuery(album: 'x')),
+        throwsA(isA<MetadataSourceException>().having((e) => e.kind, 'kind', MetadataSourceFailure.malformed)),
+      );
+    });
+
+    test('GivenAShortTrack_WhenRecordingsAreSearched_ThenTheLowerBoundStopsAtZero', () async {
+      final source = sourceAnswering((_) => json(const {'recordings': <Object>[]}));
+
+      await source.searchRecordings(const RecordingQuery(title: 'x', duration: Duration(seconds: 1)));
+
+      expect(requests.single.url.queryParameters['query'], endsWith('dur:[0 TO 4000]'));
+    });
+  });
 }
