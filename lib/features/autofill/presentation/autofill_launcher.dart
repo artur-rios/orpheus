@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
@@ -7,6 +7,7 @@ import '../application/autofill_controller.dart';
 import '../domain/autofill_field.dart';
 import '../domain/tag_writer.dart';
 import 'autofill_fields_dialog.dart';
+import 'autofill_screen.dart';
 
 /// Asks which tags to fill, then opens the review screen for [entries].
 Future<void> startAutofill(
@@ -29,5 +30,9 @@ Future<void> startAutofill(
   );
   if (fields == null || !context.mounted) return;
 
-  // Task 12: push AutofillScreen(entries: entries, fields: fields, kind: kind).
+  await Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => AutofillScreen(entries: entries, fields: fields, kind: kind),
+    ),
+  );
 }
