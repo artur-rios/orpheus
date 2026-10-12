@@ -160,9 +160,12 @@ void main() {
         final before = await writer.inspect(path);
         final rawBefore = latin1.decode(File(path).readAsBytesSync(), allowInvalid: true);
 
-        await writer.write(path, {AutofillField.title: 'Paranoid Android'}, expected: asCatalogued(path));
+        final outcome = await writer.write(path, {AutofillField.title: 'Paranoid Android'}, expected: asCatalogued(path));
 
         final after = await writer.inspect(path);
+        // The write happened: a refused or no-op write keeps everything too.
+        expect(outcome, WriteOutcome.written, reason: name);
+        expect(after.values[AutofillField.title], 'Paranoid Android', reason: '$name title');
         for (final field in AutofillField.values.where((f) => f != AutofillField.title)) {
           expect(after.values[field], before.values[field], reason: '$name ${field.name}');
         }
@@ -216,9 +219,15 @@ void main() {
       );
     });
 
-    // What the gate leaves of every format the package writes: nothing to
-    // write, and a write asked for anyway refused without touching the file.
-    for (final name in ['tagged.mp3', 'tagged.m4a', 'tagged.wav', 'a.flac', 'a.ape']) {
+    // What the gate leaves of every format it found lossy: nothing to write,
+    // and a write asked for anyway refused without touching the file.
+    for (final name in [
+      'tagged.mp3',
+      'tagged.m4a',
+      'tagged.wav',
+      'a.flac',
+      'a.ape',
+    ].where((name) => lost.containsKey(p.extension(name)))) {
       test('GivenA${p.extension(name)}File_WhenWritten_ThenThePreservationGateRefusesItAndLeavesItUntouched', () async {
         final path = switch (name) {
           'a.flac' => flac({'TITLE': 'Airbag', 'COMMENT': 'kept'}),
@@ -233,6 +242,41 @@ void main() {
         expect(tags.writable, isEmpty, reason: name);
         expect(outcome, WriteOutcome.unsupported, reason: name);
         expect(File(path).readAsBytesSync(), bytes, reason: name);
+      });
+    }
+  });
+
+  group('what a refused write was', () {
+    // (windows, code, probe opened, probe code) -> outcome, a row per branch.
+    final cases = <(bool, int?, bool, int?, WriteOutcome)>[
+      (false, 13, false, null, WriteOutcome.denied),
+      (false, 1, false, null, WriteOutcome.denied),
+      (false, 30, false, null, WriteOutcome.denied),
+      (false, 5, false, null, WriteOutcome.failed),
+      (false, 32, false, null, WriteOutcome.failed),
+      (false, null, false, null, WriteOutcome.failed),
+      (true, 32, false, null, WriteOutcome.inUse),
+      (true, 33, false, null, WriteOutcome.inUse),
+      (true, 19, false, null, WriteOutcome.denied),
+      (true, 5, true, null, WriteOutcome.inUse),
+      (true, 5, false, 32, WriteOutcome.inUse),
+      (true, 5, false, 33, WriteOutcome.inUse),
+      (true, 5, false, 5, WriteOutcome.denied),
+      (true, 5, false, 2, WriteOutcome.failed),
+      (true, 5, false, null, WriteOutcome.failed),
+      (true, 13, false, null, WriteOutcome.failed),
+      (true, null, false, null, WriteOutcome.failed),
+    ];
+
+    for (final (windows, code, opened, probeCode, expected) in cases) {
+      final system = windows ? 'Windows' : 'APosixSystem';
+      final probe = opened ? 'AndAProbeThatOpensIt' : (probeCode == null ? '' : 'AndAProbeRefusedWith$probeCode');
+      final outcome = expected.name[0].toUpperCase() + expected.name.substring(1);
+      test('Given${system}Error$code${probe}_WhenTheOutcomeIsAsked_ThenItIs$outcome', () {
+        expect(
+          outcomeFor(windows: windows, code: code, probeCode: probeCode, probeOpened: opened),
+          expected,
+        );
       });
     }
   });

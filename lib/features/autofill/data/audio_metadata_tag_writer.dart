@@ -194,25 +194,63 @@ WriteOutcome _write(
   try {
     updateMetadata(file, (tags) => _apply(tags, values));
   } on FileSystemException catch (error) {
-    return _outcomeOf(error);
+    return _outcomeOf(error, path);
   }
 
   return WriteOutcome.written;
 }
 
-/// What a refused write was.
+/// What a refused write was, probing the file where its error alone cannot
+/// tell.
+///
+/// Runs on the writing isolate, so the probe does too.
+WriteOutcome _outcomeOf(FileSystemException error, String path) {
+  final windows = Platform.isWindows;
+  final code = error.osError?.errorCode;
+  if (!windows || code != 5) return outcomeFor(windows: windows, code: code);
+
+  // Opening the file for writing, and nothing more: whether it is the file
+  // that refuses (read-only) or the rename over it (held open elsewhere).
+  // Never on a file that is not there, which opening to append would create.
+  if (!File(path).existsSync()) return WriteOutcome.failed;
+  try {
+    File(path).openSync(mode: FileMode.append).closeSync();
+  } on FileSystemException catch (probe) {
+    return outcomeFor(windows: windows, code: code, probeCode: probe.osError?.errorCode);
+  }
+
+  return outcomeFor(windows: windows, code: code, probeOpened: true);
+}
+
+/// What a write that failed with the system error [code] was.
 ///
 /// Windows answers a file another process holds open — the track playing,
-/// which libmpv has open — with a sharing violation (32) or, for the rename
-/// over it, access denied (5) while the file itself is writable. Elsewhere a
-/// permission error is a permission error.
-WriteOutcome _outcomeOf(FileSystemException error) {
-  final code = error.osError?.errorCode;
-  if (Platform.isWindows && (code == 32 || code == 33)) return WriteOutcome.inUse;
-  if (Platform.isWindows && code == 5) return WriteOutcome.inUse;
-  if (code == 13 || code == 1 || code == 30) return WriteOutcome.denied;
+/// which libmpv has open — with a sharing (32) or lock (33) violation, and a
+/// write-protected medium with 19. Access denied (5) is either: the rename
+/// over a file held open, or a read-only file. A probe opening the file for
+/// writing tells them apart — [probeOpened] when it could, [probeCode] the
+/// error when it could not: opened or held open is in use, denied again is
+/// denied.
+///
+/// Elsewhere a permission error (EPERM 1, EACCES 13, EROFS 30) is denied, and
+/// anything else failed.
+WriteOutcome outcomeFor({
+  required bool windows,
+  required int? code,
+  int? probeCode,
+  bool probeOpened = false,
+}) {
+  if (!windows) {
+    return code == 13 || code == 1 || code == 30 ? WriteOutcome.denied : WriteOutcome.failed;
+  }
 
-  return WriteOutcome.failed;
+  return switch (code) {
+    32 || 33 => WriteOutcome.inUse,
+    19 => WriteOutcome.denied,
+    5 when probeOpened || probeCode == 32 || probeCode == 33 => WriteOutcome.inUse,
+    5 when probeCode == 5 => WriteOutcome.denied,
+    _ => WriteOutcome.failed,
+  };
 }
 
 // The package's ParserTag, which it does not export: one of the five models
