@@ -77,7 +77,9 @@ class PermissionLibraryAccess implements LibraryAccess {
     // Android 11 and later: changing a file this application did not create
     // takes all-files access, which is a settings screen rather than a
     // dialog. Below Android 11 the plugin answers it as restricted, and the
-    // old write permission — declared up to API 29 — is what is asked for.
+    // old write permission — declared up to API 29 — is what is asked for;
+    // on Android 7 to 10 the read request granted it already, in the same
+    // dialog, so this usually answers at once.
     final everything = await Permission.manageExternalStorage.request();
     if (everything.isGranted) return LibraryAccessDecision.granted;
     if (!everything.isRestricted) {

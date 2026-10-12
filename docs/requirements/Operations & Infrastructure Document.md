@@ -92,7 +92,7 @@ developer happens to have.
 | `POST_NOTIFICATIONS` | The playback notification. |
 | `WAKE_LOCK` | Keeping the processor running through a track with the screen off. |
 | `MANAGE_EXTERNAL_STORAGE` | A registered folder on a memory card or a drive plugged into the phone; and, on Android 11 and later, changing the tags of files whose autofill the owner confirmed. |
-| `WRITE_EXTERNAL_STORAGE`, capped at API 29 | Changing the tags of files whose autofill the owner confirmed, on Android 10 and earlier. Asked for at that moment only (`FR-AF-08`). |
+| `WRITE_EXTERNAL_STORAGE`, capped at API 29 | Changing the tags of files whose autofill the owner confirmed, on Android 10 and earlier. On Android 7 to 10 it is granted together with read access, in the same system dialog, and is only ever used for an autofill the owner confirmed (`FR-AF-08`). |
 
 `MANAGE_EXTERNAL_STORAGE` is the broad one, and it is bounded by when it is asked for
 rather than by its own scope: Android mounts removable volumes outside the
@@ -101,9 +101,13 @@ so a folder on one is unreadable until this is granted. It is never requested
 on a launch, never on a scan, and never on the way into a folder picker — only
 once a folder the owner registered has been walked and reported unreachable,
 and then from a card on the folders screen that says what it allows. The one
-other moment is on Android 11 and later, when the owner confirms an autofill
-and the application is about to change the tags of files it did not make
-(`FR-AF-08`); it is not asked for before that confirmation. Granting it widens
+other moment is on Android 11 and later, at the first autofill the owner
+confirms, when the application is about to change the tags of files it did not
+make (`FR-AF-08`); it is not asked for before that confirmation. On Android 7
+to 10 there is no such moment of its own: Android grants
+`WRITE_EXTERNAL_STORAGE` together with read access, in the same system dialog
+the library's first scan raises, and the application uses it only for an
+autofill the owner confirmed. Granting it widens
 nothing about what the application does: the folders walked are the folders
 registered, the only thing written is the tags the owner confirmed (`BR-02`),
 and `BR-03` is unchanged.

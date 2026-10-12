@@ -188,7 +188,7 @@ Realises F-17.
 | **FR-AF-05** | Only confirmed changes may be written, only into the file's metadata, and a file changed since it was read must not be written. A format that cannot be written without losing other metadata must not be offered: only MP3 and FLAC are written, each by an editor that changes only the frames or comments asked for and keeps every other byte, and a format is written only once tests prove a write loses nothing else. M4A, WAV, APE, OGG, Opus and the rest are read-only. A write must go to a temporary file beside the track and be renamed into place, through a symbolic link to the real file. |
 | **FR-AF-06** | Written changes must reach the library, and every screen, without the owner starting a scan. |
 | **FR-AF-07** | A file that could not be written must be named with the reason, and a file refused because it was in use must be retryable. |
-| **FR-AF-08** | On Android, permission to change audio files must be asked for only when the owner confirms an autofill, and a refusal must write nothing. |
+| **FR-AF-08** | On Android 11 and later, all-files access must be asked for only when the owner confirms an autofill. On Android 7 to 10, write access is granted together with read access, in the same system dialog, and must only ever be used for an autofill the owner confirmed. Either way, a refusal must write nothing. |
 
 ### 2.9 Visualisation (VZ)
 

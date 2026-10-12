@@ -205,7 +205,11 @@ The library starts empty and stays empty until you point it somewhere. Open
 **Folders**, add the folder your music is in — or press **Add my music folder**,
 which offers the platform's conventional one — and the scan starts. On Android
 the system asks for permission to read audio files at that point; it is asked
-for once you have registered a folder, never before. Android also asks to be
+for once you have registered a folder, never before. On Android 7 to 10 that
+same dialog also grants write access — Android asks for the two together — and
+Orpheus only ever uses it for an autofill whose changes you confirmed. On
+Android 11 and later, changing tags takes all-files access, asked for at the
+first autofill you confirm. Android also asks to be
 allowed to post the playback notification, and that one is asked for the first
 time you press play. Refusing it costs the notification and nothing else —
 playback still runs, and still runs in the background.

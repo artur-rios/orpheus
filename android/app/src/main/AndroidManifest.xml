@@ -16,11 +16,15 @@
         android:maxSdkVersion="32"/>
 
     <!-- Changing a track's tags, on Android 10 and earlier, and nothing else.
-         Asked for at one moment only: the owner has reviewed an autofill's
-         changes and confirmed them. On Android 11 and later the same write
-         goes through all-files access below, and this is never asked for —
-         which is why it is capped at API 29. What is written is the file's
-         tags and nothing else: never its audio, its name or its place. -->
+         On Android 7 to 10 it is granted together with the read access above,
+         in the same system dialog: Android groups the two storage permissions,
+         and the request for reading the library obtains this one as well. It
+         is only ever used for an autofill the owner reviewed and confirmed,
+         and a refusal writes nothing. On Android 11 and later the same write
+         goes through all-files access below, asked for at the first confirmed
+         autofill, and this is never asked for — which is why it is capped at
+         API 29. What is written is the file's tags and nothing else: never
+         its audio, its name or its place. -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29"/>
