@@ -85,7 +85,10 @@ class FileProposal {
 /// Only real changes are listed: a value equal to the current one once both
 /// are trimmed is left out, so the screen shows nothing that would not change.
 /// Case is not ignored — `radiohead` → `Radiohead` is a change an owner may
-/// want. [tags] holds what each file says now, by path; [fallbackGenres] are
+/// want — except in a genre, which MusicBrainz only ever spells in lower
+/// case. A value is compared whole: a file holding `Rock; Pop` is changed by
+/// `rock`, which a write would leave as its only genre. [tags] holds what
+/// each file says now, by path; [fallbackGenres] are
 /// the release group's, used where the release has none; [cover] is the
 /// release's front cover, where the owner chose it and one was found.
 List<FileProposal> proposalsFor({
@@ -161,6 +164,15 @@ FileProposal _proposalFor(
 
     final before = field == AutofillField.cover ? current.cover : current.values[field];
     if (_same(before, after)) continue;
+    // MusicBrainz spells every genre in lower case, so a file's "Rock" is
+    // already its rock. A genre that is new is written as MusicBrainz spells
+    // it.
+    if (field == AutofillField.genre &&
+        before is String &&
+        after is String &&
+        before.trim().toLowerCase() == after.trim().toLowerCase()) {
+      continue;
+    }
 
     changes.add(FieldChange(field: field, before: before, after: after));
   }

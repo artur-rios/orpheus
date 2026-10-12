@@ -104,6 +104,53 @@ void main() {
     test('GivenAFileThatIsNotThere_WhenInspected_ThenNothingIsWritable', () async {
       expect((await writer.inspect(p.join(root.path, 'gone.mp3'))).writable, isEmpty);
     });
+
+    // What the review shows as "before" is what a write replaces: the whole
+    // TCON frame, and every comment of a Vorbis key — not the first genre the
+    // reader splits out of them.
+    for (final (genre, shown) in [('Hip-Hop/Rap', 'Hip-Hop/Rap'), ('80s Pop', '80s Pop')]) {
+      test('GivenAnMp3WhoseTconIs${genre.replaceAll(RegExp('[^A-Za-z0-9]'), '')}_WhenInspected_ThenTheGenreIsTheWholeFrame', () async {
+        final path = p.join(root.path, 'a.mp3');
+        File(path).writeAsBytesSync(
+          id3Tag(frames: [frame('TCON', Uint8List.fromList([3, ...utf8.encode(genre)]))], trailing: mpegAudio()),
+        );
+
+        expect((await writer.inspect(path)).values[AutofillField.genre], shown);
+      });
+    }
+
+    test('GivenAFlacWithTwoGenres_WhenInspected_ThenTheGenreIsBothJoined', () async {
+      final path = p.join(root.path, 'a.flac');
+      File(path).writeAsBytesSync(flacOf([streamInfoBlock(), vorbisCommentBlock(['GENRE=Rock', 'GENRE=Pop'])]));
+
+      expect((await writer.inspect(path)).values[AutofillField.genre], 'Rock; Pop');
+    });
+
+    test('GivenAFlacWithTwoOfEachTextComment_WhenInspected_ThenEachFieldIsEveryValueJoined', () async {
+      final path = p.join(root.path, 'a.flac');
+      File(path).writeAsBytesSync(
+        flacOf([
+          streamInfoBlock(),
+          vorbisCommentBlock([
+            'TITLE=Airbag',
+            'TITLE=Airbag (Remastered)',
+            'ARTIST=Thom Yorke',
+            'ARTIST=Jonny Greenwood',
+            'ALBUMARTIST=Radiohead',
+            'ALBUM_ARTIST=Radiohed',
+            'ALBUM=OK Computer',
+            'ALBUM=OKNOTOK',
+          ]),
+        ]),
+      );
+
+      final values = (await writer.inspect(path)).values;
+
+      expect(values[AutofillField.title], 'Airbag; Airbag (Remastered)');
+      expect(values[AutofillField.artist], 'Thom Yorke; Jonny Greenwood');
+      expect(values[AutofillField.albumArtist], 'Radiohead; Radiohed');
+      expect(values[AutofillField.album], 'OK Computer; OKNOTOK');
+    });
   });
 
   AudioFile asCatalogued(String path) {

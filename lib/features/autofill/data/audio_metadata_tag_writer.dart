@@ -124,7 +124,12 @@ FileTags _inspect(String path, Set<AutofillField> writable) {
       AutofillField.discNumber: tags.discNumber ?? _first(tags.partOfSet),
       AutofillField.discTotal: tags.totalDics ?? _second(tags.partOfSet),
       AutofillField.year: tags.year,
-      AutofillField.genre: tags.genres.firstOrNull,
+      // The TCON frame's text as it stands, which is what a write replaces:
+      // the reader's genres split it at `;`, `/`, `|` and `,` — "Hip-Hop/Rap"
+      // is two — and look anything with a digit up in the ID3v1 table, where
+      // "80s Pop" is nothing. Only an ID3v1 tag, which has no TCON, has its
+      // genre as the reader names it.
+      AutofillField.genre: _nonEmpty(tags.contentType) ?? tags.genres.firstOrNull,
     },
     Mp4Metadata() => {
       AutofillField.title: tags.title,
@@ -137,17 +142,20 @@ FileTags _inspect(String path, Set<AutofillField> writable) {
       AutofillField.year: tags.year?.year,
       AutofillField.genre: tags.genre,
     },
+    // Every value of a text field, joined: a write replaces every comment of
+    // its keys, and a second artist or genre it would drop is part of what
+    // the owner reviews.
     VorbisMetadata() => {
-      AutofillField.title: tags.title.firstOrNull,
-      AutofillField.artist: tags.artist.firstOrNull,
-      AutofillField.albumArtist: tags.albumArtist.firstOrNull,
-      AutofillField.album: tags.album.firstOrNull,
+      AutofillField.title: _joined(tags.title),
+      AutofillField.artist: _joined(tags.artist),
+      AutofillField.albumArtist: _joined(tags.albumArtist),
+      AutofillField.album: _joined(tags.album),
       AutofillField.trackNumber: tags.trackNumber.firstOrNull,
       AutofillField.trackTotal: tags.trackTotal,
       AutofillField.discNumber: tags.discNumber,
       AutofillField.discTotal: tags.discTotal,
       AutofillField.year: tags.date.firstOrNull?.year,
-      AutofillField.genre: tags.genres.firstOrNull,
+      AutofillField.genre: _joined(tags.genres),
     },
     RiffMetadata() => {
       AutofillField.title: tags.title,
@@ -438,6 +446,11 @@ Uint8List? _front(List<Picture> pictures) {
 
   return pictures.firstOrNull?.bytes;
 }
+
+/// Every value of a field that can repeat, as one: `Rock; Pop`.
+String? _joined(List<String> values) => values.isEmpty ? null : values.join('; ');
+
+String? _nonEmpty(String? text) => text == null || text.isEmpty ? null : text;
 
 int? _first(String? partOfSet) => int.tryParse((partOfSet ?? '').split('/').first.trim());
 

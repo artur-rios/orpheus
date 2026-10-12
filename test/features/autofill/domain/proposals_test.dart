@@ -78,6 +78,43 @@ void main() {
     expect(lower.single.changes.single.after, 'Radiohead');
   });
 
+  group('the genre', () {
+    const rock = ReleaseDetail(
+      release: ReleaseCandidate(id: 'r', title: 'T', artistCredit: [], trackCount: 1),
+      tracks: [ReleaseTrack(disc: 1, position: 1, title: 'Airbag', artistCredit: [])],
+      genres: [Genre(name: 'rock', votes: 3)],
+    );
+
+    List<FieldChange> genreChanges(String? before) => proposalsFor(
+      assignment: {airbag: rock.tracks.single},
+      release: rock,
+      fields: {AutofillField.genre},
+      tags: {airbag.file.path: tagsOf({AutofillField.genre: before})},
+    ).single.changes;
+
+    test('GivenTheSameGenreInAnotherCase_WhenProposed_ThenThereIsNoChange', () {
+      // MusicBrainz spells every genre in lower case: "Rock" is already rock.
+      expect(genreChanges('Rock'), isEmpty);
+      expect(genreChanges(' ROCK '), isEmpty);
+    });
+
+    test('GivenADifferentGenre_WhenProposed_ThenItChangesToTheGenreAsMusicBrainzSpellsIt', () {
+      final change = genreChanges('Pop').single;
+
+      expect(change.before, 'Pop');
+      expect(change.after, 'rock');
+    });
+
+    test('GivenEveryGenreTheFileHoldsJoined_WhenOneOfThemIsProposed_ThenItIsAChangeFromAllOfThem', () {
+      // A write replaces every GENRE comment, so "Rock; Pop" becoming "rock"
+      // loses Pop: a change the owner has to see.
+      final change = genreChanges('Rock; Pop').single;
+
+      expect(change.before, 'Rock; Pop');
+      expect(change.after, 'rock');
+    });
+  });
+
   test('GivenEveryField_WhenProposedForAnEmptyFile_ThenNumbersYearAndGenreComeFromTheRelease', () {
     final proposals = propose(
       {airbag: release.tracks[1]},
