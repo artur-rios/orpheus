@@ -225,12 +225,15 @@ WriteOutcome _writeFlac(
   AudioFile expected,
 ) {
   try {
-    final bytes = File(path).readAsBytesSync();
+    // The file itself, where the library reaches it through a link: what is
+    // read is what is replaced.
+    final target = resolvedTarget(path);
+    final bytes = File(target).readAsBytesSync();
     // What was read is what is rewritten, so it has to be the file the
     // check above saw.
     if (bytes.length != expected.sizeInBytes) return WriteOutcome.changedSinceRead;
 
-    replaceFileAtomically(path, editFlacTags(bytes, values));
+    replaceFileAtomically(target, editFlacTags(bytes, values));
   } on FileSystemException catch (error) {
     return _outcomeOf(error, path);
   }

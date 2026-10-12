@@ -224,6 +224,28 @@ void main() {
       expect(root.listSync(), isEmpty);
     });
 
+    test(
+      'GivenAFlacReachedThroughASymbolicLink_WhenWritten_ThenTheFileItPointsAtHasTheTagsAndTheLinkIsKept',
+      skip: Platform.isWindows ? 'creating a symbolic link on Windows may need privileges' : null,
+      () async {
+        final target = p.join(root.path, 'real.flac');
+        File(target).writeAsBytesSync(taggedFlac(tags: {'TITLE': 'Airbag', 'COMMENT': 'kept'}));
+        final link = Link(p.join(root.path, 'a.flac'))..createSync(target);
+
+        final outcome = await writer.write(
+          link.path,
+          {AutofillField.title: 'Paranoid Android'},
+          expected: asCatalogued(link.path),
+        );
+
+        expect(outcome, WriteOutcome.written);
+        expect(FileSystemEntity.isLinkSync(link.path), isTrue);
+        expect((await writer.inspect(link.path)).values[AutofillField.title], 'Paranoid Android');
+        expect((await writer.inspect(target)).values[AutofillField.title], 'Paranoid Android');
+        expect([for (final entity in root.listSync()) p.basename(entity.path)]..sort(), ['a.flac', 'real.flac']);
+      },
+    );
+
     test('GivenAFlac_WhenWritten_ThenNoTemporaryFileIsLeftBehind', () async {
       final path = flac({'TITLE': 'Airbag', 'COMMENT': 'kept'});
 
