@@ -671,8 +671,8 @@ abstract class AppLocalizations {
   /// What the last scan changed.
   ///
   /// In en, this message translates to:
-  /// **'{tracks} tracks — {added} new, {removed} gone.'**
-  String scanReport(int tracks, int added, int removed);
+  /// **'{tracks} tracks — {added} new, {updated} updated, {removed} gone.'**
+  String scanReport(int tracks, int added, int updated, int removed);
 
   /// How many files were listed but not understood.
   ///
@@ -827,7 +827,7 @@ abstract class AppLocalizations {
   /// Explains why the totals can be larger than the rankings.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Every played track carries an artist, record or genre tag, so each appears in some ranking below.} =1{1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no ranking below.} other{{count} played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no ranking below.}}'**
+  /// **'{count, plural, =0{Every played track carries an artist, record or genre tag, so each appears in an artist, record or genre ranking below.} =1{1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no artist, record or genre ranking below.} other{{count} played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no artist, record or genre ranking below.}}'**
   String statsUntaggedNote(int count);
 
   /// The updates section of the preferences.
@@ -1099,6 +1099,282 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Made with Orpheus'**
   String get storyMadeWith;
+
+  /// The action, on a record and on a track, that fills its tags from MusicBrainz.
+  ///
+  /// In en, this message translates to:
+  /// **'Autofill tags…'**
+  String get autofillAction;
+
+  /// The title of the dialog that asks which tags an autofill should fill.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill which tags?'**
+  String get autofillFieldsTitle;
+
+  /// The button that confirms the chosen tags and starts the MusicBrainz lookup.
+  ///
+  /// In en, this message translates to:
+  /// **'Find'**
+  String get autofillFind;
+
+  /// Shown in the field dialog when none of the selected files is of a kind whose tags Orpheus can write.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus can only change the tags of MP3 and FLAC files.'**
+  String get autofillNothingWritable;
+
+  /// The note under the cover art checkbox in the field dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads the cover from the Cover Art Archive and stores it in each file.'**
+  String get autofillCoverNote;
+
+  /// The name of the title tag, in the field dialog and the review.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get autofillFieldTitle;
+
+  /// The name of the artist tag, in the field dialog and the review.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist'**
+  String get autofillFieldArtist;
+
+  /// The name of the album artist tag, in the field dialog and the review.
+  ///
+  /// In en, this message translates to:
+  /// **'Album artist'**
+  String get autofillFieldAlbumArtist;
+
+  /// The name of the album tag, in the field dialog and the review.
+  ///
+  /// In en, this message translates to:
+  /// **'Album'**
+  String get autofillFieldAlbum;
+
+  /// The name of the track number tag, in the field dialog and the review.
+  ///
+  /// In en, this message translates to:
+  /// **'Track number'**
+  String get autofillFieldTrackNumber;
+
+  /// The name of the track total tag, in the field dialog and the review.
+  ///
+  /// In en, this message translates to:
+  /// **'Track total'**
+  String get autofillFieldTrackTotal;
+
+  /// The name of the disc number tag, in the field dialog and the review.
+  ///
+  /// In en, this message translates to:
+  /// **'Disc number'**
+  String get autofillFieldDiscNumber;
+
+  /// The name of the disc total tag, in the field dialog and the review.
+  ///
+  /// In en, this message translates to:
+  /// **'Disc total'**
+  String get autofillFieldDiscTotal;
+
+  /// The name of the year tag, in the field dialog and the review.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get autofillFieldYear;
+
+  /// The name of the genre tag, in the field dialog and the review.
+  ///
+  /// In en, this message translates to:
+  /// **'Genre'**
+  String get autofillFieldGenre;
+
+  /// The name of the embedded cover picture, in the field dialog and the review.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover art'**
+  String get autofillFieldCover;
+
+  /// Shown on the autofill screen while the lookup runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking this up on MusicBrainz…'**
+  String get autofillSearching;
+
+  /// Shown on the autofill screen when the lookup could not connect.
+  ///
+  /// In en, this message translates to:
+  /// **'MusicBrainz could not be reached.'**
+  String get autofillUnreachable;
+
+  /// Shown on the autofill screen when MusicBrainz turned the request away for being too frequent.
+  ///
+  /// In en, this message translates to:
+  /// **'MusicBrainz is busy. Try again in a moment.'**
+  String get autofillRateLimited;
+
+  /// The button on the autofill screen that repeats a failed lookup.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get autofillTryAgain;
+
+  /// Shown on the autofill screen when the lookup found no release.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found on MusicBrainz.'**
+  String get autofillNothingFound;
+
+  /// The label of the search field on the autofill screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Search MusicBrainz'**
+  String get autofillSearchLabel;
+
+  /// The button that repeats the lookup with the text the owner typed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search again'**
+  String get autofillSearchAgain;
+
+  /// The control on the autofill screen that picks another release than the one proposed.
+  ///
+  /// In en, this message translates to:
+  /// **'Different release'**
+  String get autofillDifferentRelease;
+
+  /// The button on the autofill screen that writes the ticked changes into the files.
+  ///
+  /// In en, this message translates to:
+  /// **'Write {changes, plural, =0{0 changes} =1{1 change} other{{changes} changes}} to {files, plural, =0{0 files} =1{1 file} other{{files} files}}'**
+  String autofillWrite(int changes, int files);
+
+  /// The control on the autofill screen that ticks every change.
+  ///
+  /// In en, this message translates to:
+  /// **'Tick all'**
+  String get autofillTickAll;
+
+  /// The control on the autofill screen that unticks every change.
+  ///
+  /// In en, this message translates to:
+  /// **'Untick all'**
+  String get autofillUntickAll;
+
+  /// Shown beside a file whose tags already equal the proposal.
+  ///
+  /// In en, this message translates to:
+  /// **'Already matches'**
+  String get autofillNoChanges;
+
+  /// Shown beside a file that matches no track of the chosen release.
+  ///
+  /// In en, this message translates to:
+  /// **'No match on this release'**
+  String get autofillNoMatch;
+
+  /// Shown beside a file on the review whose kind Orpheus cannot write.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus can\'t change this kind of file'**
+  String get autofillUnwritable;
+
+  /// Shown for a file of a kind Orpheus writes (MP3 or FLAC) whose tags could not be read, or are of a shape it will not change safely — on its card on the autofill review, and as why it was not written in the summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus can\'t safely change this file\'s tags'**
+  String get autofillUnsafeTags;
+
+  /// Shown beside a file on the review when its kind cannot hold some of the chosen tags; the placeholder lists their names.
+  ///
+  /// In en, this message translates to:
+  /// **'This kind of file can\'t hold: {fields}'**
+  String autofillNotWritableFields(String fields);
+
+  /// Shown on the review when the chosen release has no cover to download.
+  ///
+  /// In en, this message translates to:
+  /// **'This release has no cover on the Cover Art Archive.'**
+  String get autofillCoverMissing;
+
+  /// Shown on the review when the chosen release's cover could not be downloaded — a failure, unlike a release that has none.
+  ///
+  /// In en, this message translates to:
+  /// **'The cover could not be downloaded from the Cover Art Archive.'**
+  String get autofillCoverUnavailable;
+
+  /// The progress shown while the files are being written.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing {done} of {total}…'**
+  String autofillWriting(int done, int total);
+
+  /// The button that abandons an autofill.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get autofillCancel;
+
+  /// The button that leaves the autofill screen or its dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get autofillClose;
+
+  /// The summary shown when an autofill has finished writing.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No files were updated.} =1{1 file updated.} other{{count} files updated.}}'**
+  String autofillWritten(int count);
+
+  /// The result shown beside a file that changed on disk after Orpheus read it, so it was left alone.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed since Orpheus read it — not written'**
+  String get autofillOutcomeChanged;
+
+  /// The result shown beside a file that playback was holding open.
+  ///
+  /// In en, this message translates to:
+  /// **'In use by playback — try again once it has moved on'**
+  String get autofillOutcomeInUse;
+
+  /// The result shown beside a file that had ticked changes but was never reached, because the owner cancelled the write first.
+  ///
+  /// In en, this message translates to:
+  /// **'Not written — cancelled first'**
+  String get autofillOutcomeNotWritten;
+
+  /// The result shown beside a file the system would not let Orpheus change.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus isn\'t allowed to change it'**
+  String get autofillOutcomeDenied;
+
+  /// The result shown beside a file whose write failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not be written'**
+  String get autofillOutcomeFailed;
+
+  /// The result shown beside a file whose kind Orpheus cannot write.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus can\'t change this kind of file'**
+  String get autofillOutcomeUnsupported;
+
+  /// Shown when the system refused Orpheus write access to the music library.
+  ///
+  /// In en, this message translates to:
+  /// **'Orpheus needs permission to change your music files. Nothing was written.'**
+  String get autofillAccessRefused;
+
+  /// The button that opens the system settings where write access can be granted.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get autofillOpenSettings;
 }
 
 class _AppLocalizationsDelegate

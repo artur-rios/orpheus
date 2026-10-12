@@ -153,6 +153,10 @@ class InstallerUpdate implements UpdateInstaller {
         );
       }
 
+      // Said once at the end whatever the server declared, which is how the
+      // prompt knows the wait from here on is the checksum.
+      onProgress?.call(1);
+
       return bytes.takeBytes();
     } on UpdateException {
       rethrow;

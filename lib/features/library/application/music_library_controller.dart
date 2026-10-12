@@ -23,12 +23,10 @@ class MusicLibraryController extends AsyncNotifier<MusicCatalog> {
   /// changed something — several megabytes of JSON is the most expensive thing
   /// a launch does, and for an unchanged library it would encode the file that
   /// is already there — but the *time* of the scan changes every time, and a
-  /// scan that declined to write it left two things wrong: the folders screen
-  /// showed the date of the last scan that happened to change something, and
-  /// the cheap walk's `unchangedSince` cutoff never advanced, so every folder
-  /// touched since then was stat'ed in full at every launch for good.
+  /// scan that declined to write it left the folders screen showing the date of
+  /// the last scan that happened to change something.
   ///
-  /// One key holding one timestamp costs nothing to write and fixes both.
+  /// One key holding one timestamp costs nothing to write and fixes that.
   static const String lastScanSettingsKey = 'lastScanAt';
 
   @override

@@ -330,8 +330,8 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String scanReport(int tracks, int added, int removed) {
-    return '$tracks faixas — $added novas, $removed removidas.';
+  String scanReport(int tracks, int added, int updated, int removed) {
+    return '$tracks faixas — $added novas, $updated atualizadas, $removed removidas.';
   }
 
   @override
@@ -451,9 +451,9 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count faixas tocadas não têm tag de artista, disco ou gênero, então elas são contadas nos totais acima mas não aparecem em nenhum ranking abaixo.',
-      one: '1 faixa tocada não tem tag de artista, disco ou gênero, então ela é contada nos totais acima mas não aparece em nenhum ranking abaixo.',
-      zero: 'Toda faixa tocada tem tag de artista, disco ou gênero, então todas aparecem em algum ranking abaixo.',
+          '$count faixas tocadas não têm tag de artista, disco ou gênero, então elas são contadas nos totais acima mas não aparecem em nenhum ranking de artista, disco ou gênero abaixo.',
+      one: '1 faixa tocada não tem tag de artista, disco ou gênero, então ela é contada nos totais acima mas não aparece em nenhum ranking de artista, disco ou gênero abaixo.',
+      zero: 'Toda faixa tocada tem tag de artista, disco ou gênero, então todas aparecem em algum ranking de artista, disco ou gênero abaixo.',
     );
     return '$_temp0';
   }
@@ -623,4 +623,181 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get storyMadeWith => 'Feito com o Orpheus';
+
+  @override
+  String get autofillAction => 'Preencher tags…';
+
+  @override
+  String get autofillFieldsTitle => 'Preencher quais tags?';
+
+  @override
+  String get autofillFind => 'Buscar';
+
+  @override
+  String get autofillNothingWritable =>
+      'O Orpheus só altera tags de arquivos MP3 e FLAC.';
+
+  @override
+  String get autofillCoverNote =>
+      'Baixa a capa do Cover Art Archive e a guarda em cada arquivo.';
+
+  @override
+  String get autofillFieldTitle => 'Título';
+
+  @override
+  String get autofillFieldArtist => 'Artista';
+
+  @override
+  String get autofillFieldAlbumArtist => 'Artista do álbum';
+
+  @override
+  String get autofillFieldAlbum => 'Álbum';
+
+  @override
+  String get autofillFieldTrackNumber => 'Número da faixa';
+
+  @override
+  String get autofillFieldTrackTotal => 'Total de faixas';
+
+  @override
+  String get autofillFieldDiscNumber => 'Número do disco';
+
+  @override
+  String get autofillFieldDiscTotal => 'Total de discos';
+
+  @override
+  String get autofillFieldYear => 'Ano';
+
+  @override
+  String get autofillFieldGenre => 'Gênero';
+
+  @override
+  String get autofillFieldCover => 'Capa';
+
+  @override
+  String get autofillSearching => 'Buscando no MusicBrainz…';
+
+  @override
+  String get autofillUnreachable => 'Não foi possível acessar o MusicBrainz.';
+
+  @override
+  String get autofillRateLimited =>
+      'O MusicBrainz está ocupado. Tente de novo em instantes.';
+
+  @override
+  String get autofillTryAgain => 'Tentar de novo';
+
+  @override
+  String get autofillNothingFound => 'Nada encontrado no MusicBrainz.';
+
+  @override
+  String get autofillSearchLabel => 'Buscar no MusicBrainz';
+
+  @override
+  String get autofillSearchAgain => 'Buscar de novo';
+
+  @override
+  String get autofillDifferentRelease => 'Outro lançamento';
+
+  @override
+  String autofillWrite(int changes, int files) {
+    String _temp0 = intl.Intl.pluralLogic(
+      changes,
+      locale: localeName,
+      other: '$changes alterações',
+      one: '1 alteração',
+      zero: '0 alterações',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      files,
+      locale: localeName,
+      other: '$files arquivos',
+      one: '1 arquivo',
+      zero: '0 arquivos',
+    );
+    return 'Gravar $_temp0 em $_temp1';
+  }
+
+  @override
+  String get autofillTickAll => 'Marcar tudo';
+
+  @override
+  String get autofillUntickAll => 'Desmarcar tudo';
+
+  @override
+  String get autofillNoChanges => 'Já está igual';
+
+  @override
+  String get autofillNoMatch => 'Sem correspondência neste lançamento';
+
+  @override
+  String get autofillUnwritable => 'O Orpheus não altera este tipo de arquivo';
+
+  @override
+  String get autofillUnsafeTags =>
+      'O Orpheus não consegue alterar as tags deste arquivo com segurança';
+
+  @override
+  String autofillNotWritableFields(String fields) {
+    return 'Este tipo de arquivo não comporta: $fields';
+  }
+
+  @override
+  String get autofillCoverMissing =>
+      'Este lançamento não tem capa no Cover Art Archive.';
+
+  @override
+  String get autofillCoverUnavailable =>
+      'Não foi possível baixar a capa do Cover Art Archive.';
+
+  @override
+  String autofillWriting(int done, int total) {
+    return 'Gravando $done de $total…';
+  }
+
+  @override
+  String get autofillCancel => 'Cancelar';
+
+  @override
+  String get autofillClose => 'Fechar';
+
+  @override
+  String autofillWritten(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count arquivos atualizados.',
+      one: '1 arquivo atualizado.',
+      zero: 'Nenhum arquivo atualizado.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get autofillOutcomeChanged => 'Alterado desde a leitura — não gravado';
+
+  @override
+  String get autofillOutcomeInUse =>
+      'Em uso pela reprodução — tente de novo depois';
+
+  @override
+  String get autofillOutcomeNotWritten => 'Não gravado — cancelado antes';
+
+  @override
+  String get autofillOutcomeDenied =>
+      'O Orpheus não tem permissão para alterá-lo';
+
+  @override
+  String get autofillOutcomeFailed => 'Não foi possível gravar';
+
+  @override
+  String get autofillOutcomeUnsupported =>
+      'O Orpheus não altera este tipo de arquivo';
+
+  @override
+  String get autofillAccessRefused =>
+      'O Orpheus precisa de permissão para alterar seus arquivos de música. Nada foi gravado.';
+
+  @override
+  String get autofillOpenSettings => 'Abrir configurações';
 }

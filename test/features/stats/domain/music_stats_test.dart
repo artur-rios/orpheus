@@ -184,7 +184,67 @@ void main() {
       expect(stats.tracks.single.name, 'zzz-removed.flac');
       expect(stats.artists, isEmpty);
       expect(stats.albums, isEmpty);
-      expect(stats.untaggedTracks, 1);
+      // Not counted as untagged: there is no file left to go and tag, and a
+      // library that failed to load would otherwise report every track the
+      // owner ever played as missing its tags.
+      expect(stats.untaggedTracks, 0);
+    },
+  );
+
+  test(
+    'GivenTwoTracksThatShareATitle_WhenTheTracksAreRanked_ThenTheyAreTwoLines',
+    () {
+      // A track is a file. Keyed by title, five records that each open with
+      // an "Intro" became one line at the top of the chart with all their
+      // plays added together.
+      final intros = albumArtistsAcross([
+        entry(id: 'a', title: 'Intro', artist: 'Aretha', album: 'One',
+            directory: '/library/aretha'),
+        entry(id: 'b', title: 'Intro', artist: 'Bowie', album: 'Two',
+            directory: '/library/bowie'),
+        entry(id: 'c', title: 'Outro', artist: 'Bowie', album: 'Two',
+            directory: '/library/bowie'),
+      ]);
+
+      final stats = musicStatsFrom(
+        history: historyOf({
+          intros[0].file.path: 3,
+          intros[1].file.path: 3,
+          intros[2].file.path: 4,
+        }),
+        catalog: MusicCatalog(entries: intros),
+      );
+
+      expect(
+        [for (final line in stats.tracks) (line.name, line.plays)],
+        [('Outro', 4), ('Intro', 3), ('Intro', 3)],
+      );
+    },
+  );
+
+  test(
+    'GivenMoreArtistsThanTheRankingHolds_WhenTheLeadersShareIsWorkedOut_ThenItIsAShareOfEveryPlay',
+    () {
+      // The ranking keeps ten lines; the share is of everything it counted.
+      // Worked out from the ten alone, a leader with 20 of 520 plays claimed
+      // a sixth of the owner's listening.
+      final many = [
+        for (var index = 0; index < 51; index++)
+          entry(id: 'artist$index', title: 'T$index', artist: 'Artist $index'),
+      ];
+
+      final stats = musicStatsFrom(
+        history: historyOf({
+          for (var index = 0; index < 51; index++)
+            many[index].file.path: index == 0 ? 20 : 10,
+        }),
+        catalog: catalogOf(many),
+        limit: 10,
+      );
+
+      expect(stats.artists, hasLength(10));
+      expect(stats.artists.first.name, 'Artist 0');
+      expect(stats.artists.first.share, closeTo(20 / 520, 0.0001));
     },
   );
 

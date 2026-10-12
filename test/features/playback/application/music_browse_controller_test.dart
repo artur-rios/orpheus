@@ -1,7 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
+import 'package:orpheus/features/library/domain/music_catalog.dart';
+import 'package:orpheus/features/library/domain/music_entry.dart';
+import 'package:orpheus/features/library/domain/music_grouping.dart';
 import 'package:orpheus/features/playback/application/music_browse_controller.dart';
 
+import '../../../support/entries.dart';
 import '../../../support/test_container.dart';
 
 /// Drilling into the library, and finding the way back out.
@@ -100,6 +104,78 @@ void main() {
         final harness = Harness();
 
         expect(controllerOf(harness).back(), isFalse);
+      },
+    );
+  });
+
+  group('a library re-tagged while it is open', () {
+    final okComputer = [
+      entry(id: 'ok1', title: 'Airbag', artist: 'Radiohed', album: 'OK'),
+      entry(id: 'ok2', title: 'Karma', artist: 'Radiohed', album: 'OK'),
+    ];
+
+    /// The record with every artist and album rewritten as [artist] and
+    /// [album], as a re-scan of re-tagged files would find it.
+    MusicCatalog retagged(String artist, String album) => MusicCatalog(
+      entries: albumArtistsAcross([
+        for (final e in okComputer)
+          MusicEntry(
+            file: e.file,
+            metadata: e.metadata.copyWith(artist: artist, album: album),
+          ),
+      ]),
+    );
+
+    test(
+      'GivenARecordIsOpen_WhenARescanFindsItRenamed_ThenTheRecordIsFollowedToItsNewName',
+      () async {
+        final harness = Harness(library: okComputer);
+        await harness.library();
+        controllerOf(harness)
+          ..openArtist('Radiohed')
+          ..openAlbum('OK', 'Radiohed');
+
+        harness
+            .read(musicLibraryControllerProvider.notifier)
+            .replaceWith(retagged('Radiohead', 'OK Computer'));
+
+        expect(stateOf(harness).inAlbum, isTrue);
+        expect(stateOf(harness).album, 'OK Computer');
+        expect(stateOf(harness).artist, 'Radiohead');
+      },
+    );
+
+    test(
+      'GivenAnArtistIsOpen_WhenARescanFindsTheirNameCorrected_ThenTheArtistIsFollowed',
+      () async {
+        final harness = Harness(library: okComputer);
+        await harness.library();
+        controllerOf(harness).openArtist('Radiohed');
+
+        harness
+            .read(musicLibraryControllerProvider.notifier)
+            .replaceWith(retagged('Radiohead', 'OK'));
+
+        expect(stateOf(harness).inArtist, isTrue);
+        expect(stateOf(harness).artist, 'Radiohead');
+      },
+    );
+
+    test(
+      'GivenARecordIsOpen_WhenEveryFileOfItIsGone_ThenTheOwnerIsTakenBackToTheTop',
+      () async {
+        final harness = Harness(library: okComputer);
+        await harness.library();
+        controllerOf(harness)
+          ..openArtist('Radiohed')
+          ..openAlbum('OK', 'Radiohed');
+
+        harness
+            .read(musicLibraryControllerProvider.notifier)
+            .replaceWith(MusicCatalog.empty);
+
+        expect(stateOf(harness).inAlbum, isFalse);
+        expect(stateOf(harness).inArtist, isFalse);
       },
     );
   });

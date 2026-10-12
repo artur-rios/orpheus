@@ -27,6 +27,7 @@ Section 4 is the traceability.
 | `UX` | Shell, preferences and presentation |
 | `LY` | Lyrics |
 | `VZ` | Visualisation |
+| `AF` | Autofill |
 
 ### 1.3 Keywords
 
@@ -174,7 +175,22 @@ Realises F-15.
 | **FR-LY-11** | A timed gap between verses must leave no line distinguished, rather than leaving the previous line lit through it. |
 | **FR-LY-12** | The reader must accept the forms real files are written in: several times against one line, a `[offset:]` correction, per-word times, ID3v2.2 through v2.4, the four ID3 text encodings, and unsynchronisation. Times it cannot resolve must be declined rather than approximated (`BR-31`). |
 
-### 2.8 Visualisation (VZ)
+### 2.8 Autofill (AF)
+
+Realises F-17.
+
+| ID | Requirement |
+| --- | --- |
+| **FR-AF-01** | The owner must be able to start an autofill on a record or on a single track, and choose which of title, artist, album artist, album, track number and total, disc number and total, year, genre and cover it may change; the choice must persist, and cover must be unticked until chosen. |
+| **FR-AF-02** | The application must look the record up on MusicBrainz (and the cover on the Cover Art Archive) only when the owner starts an autofill, identify itself, and send at most one request a second. |
+| **FR-AF-03** | The best-matching release must be preselected, every other candidate must be selectable, and the search must be editable. |
+| **FR-AF-04** | Every proposed change must be shown per file as the current value and the new one, each with its own confirmation; values that would not change must not be shown. |
+| **FR-AF-05** | Only confirmed changes may be written, only into the file's metadata, and a file changed since it was read must not be written. A format that cannot be written without losing other metadata must not be offered: only MP3 and FLAC are written, each by an editor that changes only the frames or comments asked for and keeps every other byte, and a format is written only once tests prove a write loses nothing else. M4A, WAV, APE, OGG, Opus and the rest are read-only. A write must go to a temporary file beside the track and be renamed into place, through a symbolic link to the real file. |
+| **FR-AF-06** | Written changes must reach the library, and every screen, without the owner starting a scan. |
+| **FR-AF-07** | A file that could not be written must be named with the reason, and a file refused because it was in use must be retryable. |
+| **FR-AF-08** | On Android 11 and later, all-files access must be asked for only when the owner confirms an autofill. On Android 7 to 10, write access is granted together with read access, in the same system dialog, and must only ever be used for an autofill the owner confirmed. Either way, a refusal must write nothing. |
+
+### 2.9 Visualisation (VZ)
 
 Realises F-16.
 
@@ -197,13 +213,13 @@ Realises F-16.
 | ID | Requirement |
 | --- | --- |
 | **NFR-01** | **One source, three targets.** Windows, Linux and Android must build from the same source with no per-platform implementation of any feature above the platform edges. |
-| **NFR-02** | **Two network calls, named.** The application must make no network request other than the lyrics lookup of `FR-LY-13` and, on Windows and Linux, the release check of `BR-03` — the one request at startup for the newest release (the latest full release, or for a build that is itself a pre-release, the release list), and the download of an installer and its checksums the owner accepted. No telemetry, analytics, crash reporting, scrobbling, cover-art or other metadata lookup may be added. The Android package must declare exactly the permissions its manifest lists, and this must be verifiable from the built package. |
-| **NFR-03** | **Read-only on the owner's media.** No audio file may be written, renamed, moved or deleted. |
+| **NFR-02** | **Three network calls, named.** The application must make no network request other than the lyrics lookup of `FR-LY-13`, the MusicBrainz and Cover Art Archive lookups an autofill makes when the owner starts one (`FR-AF-02`), and, on Windows and Linux, the release check of `BR-03` — the one request at startup for the newest release (the latest full release, or for a build that is itself a pre-release, the release list), and the download of an installer and its checksums the owner accepted. No telemetry, analytics, crash reporting, scrobbling or other lookup may be added. The Android package must declare exactly the permissions its manifest lists, and this must be verifiable from the built package. |
+| **NFR-03** | **Audio files are changed for confirmed tags only.** No audio file may be renamed, moved, deleted or re-encoded, and its tags may be written only for changes the owner confirmed (`FR-AF-05`). |
 | **NFR-04** | **Startup is not gated on a scan.** The library from the last scan must be on screen before a new scan is started. |
 | **NFR-05** | **Scanning is proportional to change.** Re-scanning an unchanged library must not re-parse it. |
 | **NFR-06** | **The cover cache is proportional to records, not files.** |
 | **NFR-07** | **Testability at the edges.** Every outward dependency must sit behind an interface bound in one composition root, and must be overridable in a test. |
-| **NFR-08** | **No test may reach outside its process** — not to the developer's preferences, their application-support folder, their listening statistics, the native audio engine, a platform media service, a music folder, or the network. The lyrics lookup and the sidecar writer must be overridable, and no test may open a socket. |
+| **NFR-08** | **No test may reach outside its process** — not to the developer's preferences, their application-support folder, their listening statistics, the native audio engine, a platform media service, a music folder, or the network. The lyrics lookup, the sidecar writer, the metadata source and the tag writer must be overridable, and no test may open a socket. |
 | **NFR-09** | **A clean analyzer.** `flutter analyze` must pass with no issues and no known-warnings list. |
 | **NFR-10** | **Every judgement is documented where it lives.** A rule that exists only in a document is a rule the next change will break. |
 | **NFR-11** | **Failures are surfaced, never swallowed** — except where a documented rule says otherwise, as in `FR-ST-04`. |
@@ -231,6 +247,7 @@ Realises F-16.
 | F-14 Localization | FR-UX-09, FR-CT-06 |
 | F-15 Lyrics | FR-LY-01 … FR-LY-17 |
 | F-16 Sound bars | FR-VZ-01 … FR-VZ-11 |
+| F-17 Autofill tags | FR-AF-01 … FR-AF-08 |
 
 ### 4.2 Requirements to use cases
 
@@ -244,6 +261,7 @@ Realises F-16.
 | UX | UC-28, UC-29 |
 | LY | UC-30, UC-31, UC-33 |
 | VZ | UC-32 |
+| AF | UC-34 |
 
 ## 5. Data model
 

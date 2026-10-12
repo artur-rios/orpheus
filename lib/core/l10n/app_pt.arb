@@ -431,7 +431,7 @@
       }
     }
   },
-  "scanReport": "{tracks} faixas — {added} novas, {removed} removidas.",
+  "scanReport": "{tracks} faixas — {added} novas, {updated} atualizadas, {removed} removidas.",
   "@scanReport": {
     "description": "What the last scan changed.",
     "placeholders": {
@@ -439,6 +439,9 @@
         "type": "int"
       },
       "added": {
+        "type": "int"
+      },
+      "updated": {
         "type": "int"
       },
       "removed": {
@@ -566,7 +569,7 @@
       }
     }
   },
-  "statsUntaggedNote": "{count, plural, =0{Toda faixa tocada tem tag de artista, disco ou gênero, então todas aparecem em algum ranking abaixo.} =1{1 faixa tocada não tem tag de artista, disco ou gênero, então ela é contada nos totais acima mas não aparece em nenhum ranking abaixo.} other{{count} faixas tocadas não têm tag de artista, disco ou gênero, então elas são contadas nos totais acima mas não aparecem em nenhum ranking abaixo.}}",
+  "statsUntaggedNote": "{count, plural, =0{Toda faixa tocada tem tag de artista, disco ou gênero, então todas aparecem em algum ranking de artista, disco ou gênero abaixo.} =1{1 faixa tocada não tem tag de artista, disco ou gênero, então ela é contada nos totais acima mas não aparece em nenhum ranking de artista, disco ou gênero abaixo.} other{{count} faixas tocadas não têm tag de artista, disco ou gênero, então elas são contadas nos totais acima mas não aparecem em nenhum ranking de artista, disco ou gênero abaixo.}}",
   "@statsUntaggedNote": {
     "description": "Explains why the totals can be larger than the rankings.",
     "placeholders": {
@@ -779,5 +782,215 @@
   "storyMadeWith": "Feito com o Orpheus",
   "@storyMadeWith": {
     "description": "The line at the foot of a shared card, which travels with the picture."
+  },
+  "autofillAction": "Preencher tags…",
+  "@autofillAction": {
+    "description": "The action, on a record and on a track, that fills its tags from MusicBrainz."
+  },
+  "autofillFieldsTitle": "Preencher quais tags?",
+  "@autofillFieldsTitle": {
+    "description": "The title of the dialog that asks which tags an autofill should fill."
+  },
+  "autofillFind": "Buscar",
+  "@autofillFind": {
+    "description": "The button that confirms the chosen tags and starts the MusicBrainz lookup."
+  },
+  "autofillNothingWritable": "O Orpheus só altera tags de arquivos MP3 e FLAC.",
+  "@autofillNothingWritable": {
+    "description": "Shown in the field dialog when none of the selected files is of a kind whose tags Orpheus can write."
+  },
+  "autofillCoverNote": "Baixa a capa do Cover Art Archive e a guarda em cada arquivo.",
+  "@autofillCoverNote": {
+    "description": "The note under the cover art checkbox in the field dialog."
+  },
+  "autofillFieldTitle": "Título",
+  "@autofillFieldTitle": {
+    "description": "The name of the title tag, in the field dialog and the review."
+  },
+  "autofillFieldArtist": "Artista",
+  "@autofillFieldArtist": {
+    "description": "The name of the artist tag, in the field dialog and the review."
+  },
+  "autofillFieldAlbumArtist": "Artista do álbum",
+  "@autofillFieldAlbumArtist": {
+    "description": "The name of the album artist tag, in the field dialog and the review."
+  },
+  "autofillFieldAlbum": "Álbum",
+  "@autofillFieldAlbum": {
+    "description": "The name of the album tag, in the field dialog and the review."
+  },
+  "autofillFieldTrackNumber": "Número da faixa",
+  "@autofillFieldTrackNumber": {
+    "description": "The name of the track number tag, in the field dialog and the review."
+  },
+  "autofillFieldTrackTotal": "Total de faixas",
+  "@autofillFieldTrackTotal": {
+    "description": "The name of the track total tag, in the field dialog and the review."
+  },
+  "autofillFieldDiscNumber": "Número do disco",
+  "@autofillFieldDiscNumber": {
+    "description": "The name of the disc number tag, in the field dialog and the review."
+  },
+  "autofillFieldDiscTotal": "Total de discos",
+  "@autofillFieldDiscTotal": {
+    "description": "The name of the disc total tag, in the field dialog and the review."
+  },
+  "autofillFieldYear": "Ano",
+  "@autofillFieldYear": {
+    "description": "The name of the year tag, in the field dialog and the review."
+  },
+  "autofillFieldGenre": "Gênero",
+  "@autofillFieldGenre": {
+    "description": "The name of the genre tag, in the field dialog and the review."
+  },
+  "autofillFieldCover": "Capa",
+  "@autofillFieldCover": {
+    "description": "The name of the embedded cover picture, in the field dialog and the review."
+  },
+  "autofillSearching": "Buscando no MusicBrainz…",
+  "@autofillSearching": {
+    "description": "Shown on the autofill screen while the lookup runs."
+  },
+  "autofillUnreachable": "Não foi possível acessar o MusicBrainz.",
+  "@autofillUnreachable": {
+    "description": "Shown on the autofill screen when the lookup could not connect."
+  },
+  "autofillRateLimited": "O MusicBrainz está ocupado. Tente de novo em instantes.",
+  "@autofillRateLimited": {
+    "description": "Shown on the autofill screen when MusicBrainz turned the request away for being too frequent."
+  },
+  "autofillTryAgain": "Tentar de novo",
+  "@autofillTryAgain": {
+    "description": "The button on the autofill screen that repeats a failed lookup."
+  },
+  "autofillNothingFound": "Nada encontrado no MusicBrainz.",
+  "@autofillNothingFound": {
+    "description": "Shown on the autofill screen when the lookup found no release."
+  },
+  "autofillSearchLabel": "Buscar no MusicBrainz",
+  "@autofillSearchLabel": {
+    "description": "The label of the search field on the autofill screen."
+  },
+  "autofillSearchAgain": "Buscar de novo",
+  "@autofillSearchAgain": {
+    "description": "The button that repeats the lookup with the text the owner typed."
+  },
+  "autofillDifferentRelease": "Outro lançamento",
+  "@autofillDifferentRelease": {
+    "description": "The control on the autofill screen that picks another release than the one proposed."
+  },
+  "autofillWrite": "Gravar {changes, plural, =0{0 alterações} =1{1 alteração} other{{changes} alterações}} em {files, plural, =0{0 arquivos} =1{1 arquivo} other{{files} arquivos}}",
+  "@autofillWrite": {
+    "description": "The button on the autofill screen that writes the ticked changes into the files.",
+    "placeholders": {
+      "changes": {
+        "type": "int"
+      },
+      "files": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillTickAll": "Marcar tudo",
+  "@autofillTickAll": {
+    "description": "The control on the autofill screen that ticks every change."
+  },
+  "autofillUntickAll": "Desmarcar tudo",
+  "@autofillUntickAll": {
+    "description": "The control on the autofill screen that unticks every change."
+  },
+  "autofillNoChanges": "Já está igual",
+  "@autofillNoChanges": {
+    "description": "Shown beside a file whose tags already equal the proposal."
+  },
+  "autofillNoMatch": "Sem correspondência neste lançamento",
+  "@autofillNoMatch": {
+    "description": "Shown beside a file that matches no track of the chosen release."
+  },
+  "autofillUnwritable": "O Orpheus não altera este tipo de arquivo",
+  "@autofillUnwritable": {
+    "description": "Shown beside a file on the review whose kind Orpheus cannot write."
+  },
+  "autofillUnsafeTags": "O Orpheus não consegue alterar as tags deste arquivo com segurança",
+  "@autofillUnsafeTags": {
+    "description": "Shown for a file of a kind Orpheus writes (MP3 or FLAC) whose tags could not be read, or are of a shape it will not change safely — on its card on the autofill review, and as why it was not written in the summary."
+  },
+  "autofillNotWritableFields": "Este tipo de arquivo não comporta: {fields}",
+  "@autofillNotWritableFields": {
+    "description": "Shown beside a file on the review when its kind cannot hold some of the chosen tags; the placeholder lists their names.",
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "autofillCoverMissing": "Este lançamento não tem capa no Cover Art Archive.",
+  "@autofillCoverMissing": {
+    "description": "Shown on the review when the chosen release has no cover to download."
+  },
+  "autofillCoverUnavailable": "Não foi possível baixar a capa do Cover Art Archive.",
+  "@autofillCoverUnavailable": {
+    "description": "Shown on the review when the chosen release's cover could not be downloaded — a failure, unlike a release that has none."
+  },
+  "autofillWriting": "Gravando {done} de {total}…",
+  "@autofillWriting": {
+    "description": "The progress shown while the files are being written.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillCancel": "Cancelar",
+  "@autofillCancel": {
+    "description": "The button that abandons an autofill."
+  },
+  "autofillClose": "Fechar",
+  "@autofillClose": {
+    "description": "The button that leaves the autofill screen or its dialog."
+  },
+  "autofillWritten": "{count, plural, =0{Nenhum arquivo atualizado.} =1{1 arquivo atualizado.} other{{count} arquivos atualizados.}}",
+  "@autofillWritten": {
+    "description": "The summary shown when an autofill has finished writing.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillOutcomeChanged": "Alterado desde a leitura — não gravado",
+  "@autofillOutcomeChanged": {
+    "description": "The result shown beside a file that changed on disk after Orpheus read it, so it was left alone."
+  },
+  "autofillOutcomeInUse": "Em uso pela reprodução — tente de novo depois",
+  "@autofillOutcomeInUse": {
+    "description": "The result shown beside a file that playback was holding open."
+  },
+  "autofillOutcomeNotWritten": "Não gravado — cancelado antes",
+  "@autofillOutcomeNotWritten": {
+    "description": "The result shown beside a file that had ticked changes but was never reached, because the owner cancelled the write first."
+  },
+  "autofillOutcomeDenied": "O Orpheus não tem permissão para alterá-lo",
+  "@autofillOutcomeDenied": {
+    "description": "The result shown beside a file the system would not let Orpheus change."
+  },
+  "autofillOutcomeFailed": "Não foi possível gravar",
+  "@autofillOutcomeFailed": {
+    "description": "The result shown beside a file whose write failed."
+  },
+  "autofillOutcomeUnsupported": "O Orpheus não altera este tipo de arquivo",
+  "@autofillOutcomeUnsupported": {
+    "description": "The result shown beside a file whose kind Orpheus cannot write."
+  },
+  "autofillAccessRefused": "O Orpheus precisa de permissão para alterar seus arquivos de música. Nada foi gravado.",
+  "@autofillAccessRefused": {
+    "description": "Shown when the system refused Orpheus write access to the music library."
+  },
+  "autofillOpenSettings": "Abrir configurações",
+  "@autofillOpenSettings": {
+    "description": "The button that opens the system settings where write access can be granted."
   }
 }

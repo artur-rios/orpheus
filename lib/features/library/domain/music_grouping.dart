@@ -66,11 +66,11 @@ List<MusicGroup> albumsIn(List<MusicEntry> library) {
   // artists — this keys by `(album, albumArtist)` precisely so they stay two
   // groups — and with no tiebreak their relative order was whichever the map
   // happened to iterate them in, which is insertion order and not anything an
-  // owner could predict or rely on.
-  return _sortedByName(
-    groups,
-    tiebreak: (group) => group.entries.first.albumArtist,
-  );
+  // owner could predict or rely on. The whole rule lives in [_albumOrder],
+  // because [inArtistOrder] has to queue an artist's records in exactly the
+  // order this lists them.
+  return [...groups]
+    ..sort((a, b) => _albumOrder(a.entries.first, b.entries.first));
 }
 
 /// [artist]'s albums, alphabetically, where [artist] is an album artist.
@@ -154,9 +154,16 @@ List<AudioFile> artistOf(MusicEntry entry, List<MusicEntry> library) {
 /// [artistOf] performs the same album-then-track ordering, but it starts from a
 /// single seed track and a whole library to filter down from; this sorts the
 /// list it is given, which is what the callers that already hold a group need.
+///
+/// The albums come in the order the artist's screen lists them — the rule is
+/// [_albumOrder], shared with [albumsIn] — so pressing play on an artist plays
+/// the records top to bottom as the owner sees them. An earlier version sorted
+/// case-sensitively with the untitled group first, which played `abbey road`
+/// after `Zooropa` and the loose tracks the screen lists last ahead of
+/// everything.
 List<AudioFile> inArtistOrder(List<MusicEntry> entries) {
   final ordered = [...entries]..sort((a, b) {
-    final byAlbum = (a.album ?? '').compareTo(b.album ?? '');
+    final byAlbum = _albumOrder(a, b);
     if (byAlbum != 0) return byAlbum;
 
     return _trackComparison(a, b);
@@ -344,25 +351,40 @@ List<MusicGroup> _groupedBy(
   ]);
 }
 
-/// [groups], sorted by name and, on a tie, by [tiebreak].
-List<MusicGroup> _sortedByName(
-  List<MusicGroup> groups, {
-  String? Function(MusicGroup group)? tiebreak,
-}) => [...groups]
-  ..sort((a, b) {
-    final byNameResult = byName(a.name, b.name);
-    if (byNameResult != 0 || tiebreak == null) return byNameResult;
+/// [groups], sorted by name.
+List<MusicGroup> _sortedByName(List<MusicGroup> groups) =>
+    [...groups]..sort((a, b) => byName(a.name, b.name));
 
-    return byName(tiebreak(a), tiebreak(b));
-  });
+/// Where [a]'s record sits relative to [b]'s: by title as [byName] orders it,
+/// then by album artist, then by the exact title.
+///
+/// The last step is what keeps two records whose titles differ only in case —
+/// `Abc` and `abc`, which [albumsIn] keys as two — from comparing equal, which
+/// would let a queue interleave their tracks by track number and list them in
+/// whichever order the sort happened to leave them.
+int _albumOrder(MusicEntry a, MusicEntry b) {
+  final byTitle = byName(a.album, b.album);
+  if (byTitle != 0) return byTitle;
+
+  final byArtist = byName(a.albumArtist, b.albumArtist);
+  if (byArtist != 0) return byArtist;
+
+  return (a.album ?? '').compareTo(b.album ?? '');
+}
 
 /// Disc, then track number, then title — the order a record is listened to.
+///
+/// A track with no disc tag counts as disc 1. Most single-disc records carry
+/// no disc tag at all, and on a set where only some tracks say, the silent
+/// ones are far likelier to be the first disc than any other. Comparing discs
+/// only when both sides named one — what this did before — was not an order at
+/// all: an untagged track compared equal to both discs and fell through to the
+/// track number, so it could sort ahead of disc 2's tracks against one
+/// neighbour and behind them against another, and the record came back
+/// interleaved.
 int _trackComparison(MusicEntry a, MusicEntry b) {
-  final leftDisc = a.metadata.disc;
-  final rightDisc = b.metadata.disc;
-  if (leftDisc != null && rightDisc != null && leftDisc != rightDisc) {
-    return leftDisc.compareTo(rightDisc);
-  }
+  final byDisc = (a.metadata.disc ?? 1).compareTo(b.metadata.disc ?? 1);
+  if (byDisc != 0) return byDisc;
 
   final left = a.metadata.track;
   final right = b.metadata.track;

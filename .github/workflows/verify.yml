@@ -96,6 +96,7 @@ jobs:
           android.permission.READ_EXTERNAL_STORAGE
           android.permission.READ_MEDIA_AUDIO
           android.permission.WAKE_LOCK
+          android.permission.WRITE_EXTERNAL_STORAGE
           io.github.artur_rios.orpheus.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
           PERMISSIONS
           sed -i 's/^ *//' expected-permissions.txt

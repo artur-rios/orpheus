@@ -13,6 +13,12 @@ void main() {
     l10n = await AppLocalizations.delegate.load(const Locale('pt'));
   });
 
+  test('GivenNothingToWrite_WhenTheButtonIsRead_ThenPortugueseSaysZero', () {
+    expect(l10n.autofillWrite(0, 0), 'Gravar 0 alterações em 0 arquivos');
+    expect(l10n.autofillWrite(1, 1), 'Gravar 1 alteração em 1 arquivo');
+    expect(l10n.autofillWrite(3, 2), 'Gravar 3 alterações em 2 arquivos');
+  });
+
   test(
     'GivenNoUnreadableFile_WhenTheScanIsReported_ThenPortugueseSaysNone',
     () {
@@ -35,12 +41,13 @@ void main() {
       expect(
         l10n.statsUntaggedNote(0),
         'Toda faixa tocada tem tag de artista, disco ou gênero, então todas '
-        'aparecem em algum ranking abaixo.',
+        'aparecem em algum ranking de artista, disco ou gênero abaixo.',
       );
       expect(
         l10n.statsUntaggedNote(1),
         '1 faixa tocada não tem tag de artista, disco ou gênero, então ela é '
-        'contada nos totais acima mas não aparece em nenhum ranking abaixo.',
+        'contada nos totais acima mas não aparece em nenhum ranking de '
+        'artista, disco ou gênero abaixo.',
       );
     },
   );

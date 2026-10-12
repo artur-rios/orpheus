@@ -328,8 +328,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String scanReport(int tracks, int added, int removed) {
-    return '$tracks tracks — $added new, $removed gone.';
+  String scanReport(int tracks, int added, int updated, int removed) {
+    return '$tracks tracks — $added new, $updated updated, $removed gone.';
   }
 
   @override
@@ -449,9 +449,9 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no ranking below.',
-      one: '1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no ranking below.',
-      zero: 'Every played track carries an artist, record or genre tag, so each appears in some ranking below.',
+          '$count played tracks carry no artist, record or genre tag, so they are counted in the totals above but appear in no artist, record or genre ranking below.',
+      one: '1 played track carries no artist, record or genre tag, so it is counted in the totals above but appears in no artist, record or genre ranking below.',
+      zero: 'Every played track carries an artist, record or genre tag, so each appears in an artist, record or genre ranking below.',
     );
     return '$_temp0';
   }
@@ -620,4 +620,181 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storyMadeWith => 'Made with Orpheus';
+
+  @override
+  String get autofillAction => 'Autofill tags…';
+
+  @override
+  String get autofillFieldsTitle => 'Fill which tags?';
+
+  @override
+  String get autofillFind => 'Find';
+
+  @override
+  String get autofillNothingWritable =>
+      'Orpheus can only change the tags of MP3 and FLAC files.';
+
+  @override
+  String get autofillCoverNote =>
+      'Downloads the cover from the Cover Art Archive and stores it in each file.';
+
+  @override
+  String get autofillFieldTitle => 'Title';
+
+  @override
+  String get autofillFieldArtist => 'Artist';
+
+  @override
+  String get autofillFieldAlbumArtist => 'Album artist';
+
+  @override
+  String get autofillFieldAlbum => 'Album';
+
+  @override
+  String get autofillFieldTrackNumber => 'Track number';
+
+  @override
+  String get autofillFieldTrackTotal => 'Track total';
+
+  @override
+  String get autofillFieldDiscNumber => 'Disc number';
+
+  @override
+  String get autofillFieldDiscTotal => 'Disc total';
+
+  @override
+  String get autofillFieldYear => 'Year';
+
+  @override
+  String get autofillFieldGenre => 'Genre';
+
+  @override
+  String get autofillFieldCover => 'Cover art';
+
+  @override
+  String get autofillSearching => 'Looking this up on MusicBrainz…';
+
+  @override
+  String get autofillUnreachable => 'MusicBrainz could not be reached.';
+
+  @override
+  String get autofillRateLimited =>
+      'MusicBrainz is busy. Try again in a moment.';
+
+  @override
+  String get autofillTryAgain => 'Try again';
+
+  @override
+  String get autofillNothingFound => 'Nothing found on MusicBrainz.';
+
+  @override
+  String get autofillSearchLabel => 'Search MusicBrainz';
+
+  @override
+  String get autofillSearchAgain => 'Search again';
+
+  @override
+  String get autofillDifferentRelease => 'Different release';
+
+  @override
+  String autofillWrite(int changes, int files) {
+    String _temp0 = intl.Intl.pluralLogic(
+      changes,
+      locale: localeName,
+      other: '$changes changes',
+      one: '1 change',
+      zero: '0 changes',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      files,
+      locale: localeName,
+      other: '$files files',
+      one: '1 file',
+      zero: '0 files',
+    );
+    return 'Write $_temp0 to $_temp1';
+  }
+
+  @override
+  String get autofillTickAll => 'Tick all';
+
+  @override
+  String get autofillUntickAll => 'Untick all';
+
+  @override
+  String get autofillNoChanges => 'Already matches';
+
+  @override
+  String get autofillNoMatch => 'No match on this release';
+
+  @override
+  String get autofillUnwritable => 'Orpheus can\'t change this kind of file';
+
+  @override
+  String get autofillUnsafeTags =>
+      'Orpheus can\'t safely change this file\'s tags';
+
+  @override
+  String autofillNotWritableFields(String fields) {
+    return 'This kind of file can\'t hold: $fields';
+  }
+
+  @override
+  String get autofillCoverMissing =>
+      'This release has no cover on the Cover Art Archive.';
+
+  @override
+  String get autofillCoverUnavailable =>
+      'The cover could not be downloaded from the Cover Art Archive.';
+
+  @override
+  String autofillWriting(int done, int total) {
+    return 'Writing $done of $total…';
+  }
+
+  @override
+  String get autofillCancel => 'Cancel';
+
+  @override
+  String get autofillClose => 'Close';
+
+  @override
+  String autofillWritten(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files updated.',
+      one: '1 file updated.',
+      zero: 'No files were updated.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get autofillOutcomeChanged =>
+      'Changed since Orpheus read it — not written';
+
+  @override
+  String get autofillOutcomeInUse =>
+      'In use by playback — try again once it has moved on';
+
+  @override
+  String get autofillOutcomeNotWritten => 'Not written — cancelled first';
+
+  @override
+  String get autofillOutcomeDenied => 'Orpheus isn\'t allowed to change it';
+
+  @override
+  String get autofillOutcomeFailed => 'Could not be written';
+
+  @override
+  String get autofillOutcomeUnsupported =>
+      'Orpheus can\'t change this kind of file';
+
+  @override
+  String get autofillAccessRefused =>
+      'Orpheus needs permission to change your music files. Nothing was written.';
+
+  @override
+  String get autofillOpenSettings => 'Open settings';
 }

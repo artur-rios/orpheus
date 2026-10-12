@@ -83,7 +83,7 @@ Future<void> main() async {
     if (!container.read(preferencesControllerProvider).rescansAtStartup) return;
 
     unawaited(
-      container.read(scanControllerProvider.notifier).scan(quick: true),
+      container.read(scanControllerProvider.notifier).scan(),
     );
   });
 

@@ -32,6 +32,13 @@ abstract interface class LibraryAccess {
   /// Opens the system settings where a permanently refused permission can be
   /// granted, where the platform offers such a screen.
   Future<void> openSettings();
+
+  /// Asks to be allowed to change the owner's audio files, and answers
+  /// whether it is.
+  ///
+  /// Asked for at one moment only: an autofill whose changes the owner has
+  /// just confirmed. On the desktops there is nothing to ask.
+  Future<LibraryAccessDecision> requestWrite();
 }
 
 /// What the owner said.
