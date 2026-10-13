@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-13
+
 ### Added
 
 - Edit a track's tags by hand. From a song's menu — its ⋮ button, a right-click or a long press — choose *Edit tags…*
@@ -191,7 +193,8 @@ A pre-release built from the `diagnose/android-usb-folder` branch to diagnose fo
 - Release downloads: a Windows installer, a portable Windows archive, a Linux installer and an Android APK, with
   `SHA256SUMS.txt`.
 
-[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/artur-rios/orpheus/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/artur-rios/orpheus/compare/v1.2.1...v1.3.0
 [1.2.2-beta.1]: https://github.com/artur-rios/orpheus/compare/v1.2.1...v1.2.2-beta.1
 [1.2.1]: https://github.com/artur-rios/orpheus/compare/v1.2.0...v1.2.1
