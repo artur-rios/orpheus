@@ -71,6 +71,7 @@ import '../../features/stats/data/platform_story_share.dart';
 import '../../features/stats/domain/music_stats.dart';
 import '../../features/stats/domain/play_history.dart';
 import '../../features/stats/domain/story_share.dart';
+import '../../features/tag_editor/application/tag_edit_controller.dart';
 import '../../features/tag_editor/data/file_picker_cover_picker.dart';
 import '../../features/tag_editor/data/io_file_stamps.dart';
 import '../../features/tag_editor/domain/cover_picker.dart';
@@ -182,6 +183,16 @@ final tagWriterProvider = Provider<TagWriter>(
 final autofillControllerProvider =
     NotifierProvider<AutofillController, AutofillState>(
       AutofillController.new,
+      isAutoDispose: true,
+    );
+
+/// One tag edit, from the file read to the edit written.
+///
+/// Auto-disposed: it lives as long as the dialog watching it, so a closed
+/// dialog is a forgotten edit.
+final tagEditControllerProvider =
+    NotifierProvider<TagEditController, TagEditState>(
+      TagEditController.new,
       isAutoDispose: true,
     );
 
