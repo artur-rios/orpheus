@@ -107,9 +107,18 @@ class FakeTagWriter implements TagWriter {
   /// Every write, in order: the path and what was written.
   final List<(String, Map<AutofillField, Object?>)> writes = [];
 
+  /// What each write was told the file was, in order.
+  final List<AudioFile> expectations = [];
+
+  /// Paths whose tags cannot be read: `inspect` throws for them.
+  final Set<String> unreadable = {};
+
   @override
-  Future<FileTags> inspect(String path) async =>
-      files[path] ?? FileTags.unwritable;
+  Future<FileTags> inspect(String path) async {
+    if (unreadable.contains(path)) throw StateError('unreadable: $path');
+
+    return files[path] ?? FileTags.unwritable;
+  }
 
   @override
   Future<WriteOutcome> write(
@@ -118,6 +127,7 @@ class FakeTagWriter implements TagWriter {
     required AudioFile expected,
   }) async {
     await hold;
+    expectations.add(expected);
     final refused = refusals[path];
     if (refused != null) return refused;
 

@@ -13,7 +13,7 @@ result in a file beside its own settings.
 
 > **Status:** complete and tested — the unit and widget suite green and
 > `flutter analyze` clean. Every use case in the [specifications](#specifications),
-> UC-01 to UC-34, is implemented — see the [roadmap](#roadmap). All three
+> UC-01 to UC-35, is implemented — see the [roadmap](#roadmap). All three
 > release builds and the Windows installer are produced and verified by CI on
 > every pull request. It runs on Linux, Windows and Android: the fixes released
 > since 1.0.0 came from running it on a Windows machine and an Android phone.
@@ -51,6 +51,11 @@ result in a file beside its own settings.
   one tap away. Only what you leave ticked is written, into the files and into
   the library, which updates without you starting a scan. MP3 and FLAC can be written; the
   other formats are read-only, and say so.
+- **Lets you fix a track's tags by hand.** From a track's menu, choose
+  *Edit tags…*: the form holds what the file says — title, artist, album
+  artist, album, track and disc numbers and totals, year, genre and the cover,
+  which you can replace with a JPEG or PNG or remove. Only what you change is
+  written, and the library updates by itself.
 - **Searches** across titles, artists and albums, ranked so a match at the start
   of a title comes above one buried in the middle of something else.
 - **Says what you actually listen to** — total plays, and the most played
@@ -64,10 +69,10 @@ result in a file beside its own settings.
 
 - **It changes your files only when you ask.** No renaming, no moving, no
   deleting, no transcoding. The one change it ever makes to an audio file is to
-  its tags, from an autofill whose every change you saw and confirmed — and it
-  refuses a file another program changed since it was read. Besides that, it
-  writes a `.lrc` next to a track whose words it looked up, a new file and
-  never a replacement for one you wrote.
+  its tags, from an autofill whose every change you saw and confirmed or an
+  edit you made by hand — and it refuses a file another program changed since
+  it was read. Besides that, it writes a `.lrc` next to a track whose words it
+  looked up, a new file and never a replacement for one you wrote.
 - **Almost no network.** No streaming, no scrobbling, no telemetry, no
   analytics, no crash reporting, no cover art fetched unless you ask. There are
   three exceptions: the lyrics lookup described above, which can be turned off;
@@ -81,10 +86,11 @@ result in a file beside its own settings.
   only: a folder you registered has turned out to be on a memory card or a
   drive plugged into the phone, which Android mounts where no narrower
   permission reaches; and, on Android 11 and later, when you confirm an
-  autofill, which has to change the files. A library that lives where Android
-  expects it, and that you never autofill, never meets it, and granting it
-  changes nothing about the promise above — the folders read are still the
-  folders you registered, and the only thing written is the tags you confirmed.
+  autofill or a tag edit, which has to change the files. A library that lives
+  where Android expects it, and whose tags you never change from Orpheus, never
+  meets it, and granting it changes nothing about the promise above — the
+  folders read are still the folders you registered, and the only thing written
+  is the tags you confirmed.
 - **No accounts, no sync, no cloud.** One person, one machine, one library.
   Nothing Orpheus sends identifies you, or persists between requests: there is
   no account, no key, and no identifier of any kind.
@@ -207,9 +213,9 @@ which offers the platform's conventional one — and the scan starts. On Android
 the system asks for permission to read audio files at that point; it is asked
 for once you have registered a folder, never before. On Android 7 to 10 that
 same dialog also grants write access — Android asks for the two together — and
-Orpheus only ever uses it for an autofill whose changes you confirmed. On
+Orpheus only ever uses it for an autofill or a tag edit you confirmed. On
 Android 11 and later, changing tags takes all-files access, asked for at the
-first autofill you confirm. Android also asks to be
+first autofill or tag edit you confirm. Android also asks to be
 allowed to post the playback notification, and that one is asked for the first
 time you press play. Refusing it costs the notification and nothing else —
 playback still runs, and still runs in the background.
@@ -505,8 +511,8 @@ not written, and on Windows the track playing may be refused as in use.
 ## Roadmap
 
 Nine milestones covering thirty-four issues: one foundation issue plus one
-issue per use case from UC-01 to UC-33. UC-34 came after the backlog was filed
-and has no issue or milestone; it is listed after M-09. Milestones are
+issue per use case from UC-01 to UC-33. UC-34 and UC-35 came after the backlog
+was filed and have no milestone; they are listed after M-09. Milestones are
 dependency-ordered — no milestone depends on a later one, and every milestone
 after `M-01` depends on it.
 
@@ -611,11 +617,12 @@ Built, tested and specified, and merged.
 
 ### After the backlog — Autofill
 
-Built, tested and specified, and merged. It has no issue, so the use case itself is linked.
+Built, tested and specified, and merged. UC-34 has no issue, so the use case itself is linked.
 
 | Issue | Work | Spec |
 | --- | --- | --- |
 | [UC-34](docs/requirements/Use%20Case%20Specification%20Document.md#uc-34-autofill-a-records-tags) | UC-34 — Autofill a record's tags — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [#53](https://github.com/artur-rios/orpheus/issues/53) | UC-35 — Edit a track's tags by hand — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
 ## Changelog
 

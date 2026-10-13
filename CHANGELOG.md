@@ -7,6 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-13
+
+### Added
+
+- Edit a track's tags by hand. From a song's menu — its ⋮ button, a right-click or a long press — choose *Edit tags…*
+  to change its title, artist, album artist, album, track and disc numbers and totals, year and genre, and to replace
+  its cover with a JPEG or PNG or remove it. Only the fields you change are written, through the same MP3 and FLAC
+  editors autofill uses, and the library updates without a scan. A file in use can be tried again, and one another
+  program changed since it was read can be reloaded (#53).
+
 ## [1.3.0] - 2026-10-12
 
 ### Added
@@ -183,7 +193,8 @@ A pre-release built from the `diagnose/android-usb-folder` branch to diagnose fo
 - Release downloads: a Windows installer, a portable Windows archive, a Linux installer and an Android APK, with
   `SHA256SUMS.txt`.
 
-[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/artur-rios/orpheus/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/artur-rios/orpheus/compare/v1.2.1...v1.3.0
 [1.2.2-beta.1]: https://github.com/artur-rios/orpheus/compare/v1.2.1...v1.2.2-beta.1
 [1.2.1]: https://github.com/artur-rios/orpheus/compare/v1.2.0...v1.2.1

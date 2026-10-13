@@ -28,6 +28,7 @@ Section 4 is the traceability.
 | `LY` | Lyrics |
 | `VZ` | Visualisation |
 | `AF` | Autofill |
+| `TE` | Tag editing |
 
 ### 1.3 Keywords
 
@@ -188,7 +189,7 @@ Realises F-17.
 | **FR-AF-05** | Only confirmed changes may be written, only into the file's metadata, and a file changed since it was read must not be written. A format that cannot be written without losing other metadata must not be offered: only MP3 and FLAC are written, each by an editor that changes only the frames or comments asked for and keeps every other byte, and a format is written only once tests prove a write loses nothing else. M4A, WAV, APE, OGG, Opus and the rest are read-only. A write must go to a temporary file beside the track and be renamed into place, through a symbolic link to the real file. |
 | **FR-AF-06** | Written changes must reach the library, and every screen, without the owner starting a scan. |
 | **FR-AF-07** | A file that could not be written must be named with the reason, and a file refused because it was in use must be retryable. |
-| **FR-AF-08** | On Android 11 and later, all-files access must be asked for only when the owner confirms an autofill. On Android 7 to 10, write access is granted together with read access, in the same system dialog, and must only ever be used for an autofill the owner confirmed. Either way, a refusal must write nothing. |
+| **FR-AF-08** | On Android 11 and later, all-files access must be asked for only when the owner confirms an autofill or a tag edit. On Android 7 to 10, write access is granted together with read access, in the same system dialog, and must only ever be used for an autofill or a tag edit the owner confirmed. Either way, a refusal must write nothing. |
 
 ### 2.9 Visualisation (VZ)
 
@@ -208,13 +209,24 @@ Realises F-16.
 | **FR-VZ-10** | The visualiser must carry an accessible name, and where the system asks for reduced motion it must stop moving while the rest of the screen is unchanged (`NFR-12`). |
 | **FR-VZ-11** | Scratch data written during an analysis must be deleted however the analysis ends, including where it fails or times out. |
 
+### 2.10 Tag editing (TE)
+
+Realises F-18.
+
+| ID | Requirement |
+| --- | --- |
+| **FR-TE-01** | The owner must be able to edit, from a single track's menu, its title, artist, album artist, album, track number and total, disc number and total, year, genre and front cover, starting from what the file itself holds. A cover must be a JPEG or a PNG. |
+| **FR-TE-02** | A field the file's format cannot hold must be shown as not editable, and a file Orpheus cannot write must say so and offer nothing to save. |
+| **FR-TE-03** | Only the fields the owner changed may be written, through the same writer and under the same rules as `FR-AF-05`, measured against the file as it was when the editor read it; a field cleared removes the tag. Track and disc numbers and totals must be whole numbers of one or more, a total must have its number (ID3 cannot hold one without the other), and the year from 1 to 9999. |
+| **FR-TE-04** | A saved edit must reach the library and every screen without the owner starting a scan. A file that could not be written must be named with the reason as in `FR-AF-07`, keeping the owner's edits, and one changed by another program since it was read must offer to be read again. |
+
 ## 3. Non-functional requirements
 
 | ID | Requirement |
 | --- | --- |
 | **NFR-01** | **One source, three targets.** Windows, Linux and Android must build from the same source with no per-platform implementation of any feature above the platform edges. |
 | **NFR-02** | **Three network calls, named.** The application must make no network request other than the lyrics lookup of `FR-LY-13`, the MusicBrainz and Cover Art Archive lookups an autofill makes when the owner starts one (`FR-AF-02`), and, on Windows and Linux, the release check of `BR-03` — the one request at startup for the newest release (the latest full release, or for a build that is itself a pre-release, the release list), and the download of an installer and its checksums the owner accepted. No telemetry, analytics, crash reporting, scrobbling or other lookup may be added. The Android package must declare exactly the permissions its manifest lists, and this must be verifiable from the built package. |
-| **NFR-03** | **Audio files are changed for confirmed tags only.** No audio file may be renamed, moved, deleted or re-encoded, and its tags may be written only for changes the owner confirmed (`FR-AF-05`). |
+| **NFR-03** | **Audio files are changed for confirmed tags only.** No audio file may be renamed, moved, deleted or re-encoded, and its tags may be written only for changes the owner confirmed (`FR-AF-05`, `FR-TE-03`). |
 | **NFR-04** | **Startup is not gated on a scan.** The library from the last scan must be on screen before a new scan is started. |
 | **NFR-05** | **Scanning is proportional to change.** Re-scanning an unchanged library must not re-parse it. |
 | **NFR-06** | **The cover cache is proportional to records, not files.** |
@@ -248,6 +260,7 @@ Realises F-16.
 | F-15 Lyrics | FR-LY-01 … FR-LY-17 |
 | F-16 Sound bars | FR-VZ-01 … FR-VZ-11 |
 | F-17 Autofill tags | FR-AF-01 … FR-AF-08 |
+| F-18 Edit a track's tags | FR-TE-01 … FR-TE-04 |
 
 ### 4.2 Requirements to use cases
 
@@ -262,6 +275,7 @@ Realises F-16.
 | LY | UC-30, UC-31, UC-33 |
 | VZ | UC-32 |
 | AF | UC-34 |
+| TE | UC-35 |
 
 ## 5. Data model
 

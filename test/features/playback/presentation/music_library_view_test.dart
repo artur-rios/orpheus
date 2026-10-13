@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
@@ -5,6 +6,7 @@ import 'package:orpheus/features/playback/domain/music_layout.dart';
 import 'package:orpheus/features/playback/presentation/music_library_view.dart';
 import 'package:orpheus/features/playback/presentation/music_rows.dart';
 import 'package:orpheus/features/shell/domain/shell_destination.dart';
+import 'package:orpheus/features/tag_editor/presentation/edit_tags_dialog.dart';
 
 import '../../../support/entries.dart';
 import '../../../support/pump.dart';
@@ -193,6 +195,48 @@ void main() {
         harness.read(audioPlaybackControllerProvider).queue.tracks.length,
         greaterThan(0),
       );
+    },
+  );
+
+  testWidgets(
+    'GivenASongRow_WhenItsMenuIsOpenedByItsButton_ThenTheOwnerCanEditItsTags',
+    (tester) async {
+      final harness = Harness(library: library);
+      await tester.pumpHarness(harness, area());
+      await tester.tap(find.text('Songs'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(MusicRowMenu),
+              matching: find.byIcon(Icons.more_vert),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit tags…'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EditTagsDialog), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'GivenASongRow_WhenItIsRightClicked_ThenEditTagsIsOffered',
+    (tester) async {
+      final harness = Harness(library: library);
+      await tester.pumpHarness(harness, area());
+      await tester.tap(find.text('Songs'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byType(MusicRowMenu).first,
+        buttons: kSecondaryMouseButton,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit tags…'), findsOneWidget);
     },
   );
 
