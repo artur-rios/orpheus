@@ -10,6 +10,7 @@ import '../../autofill/application/autofill_controller.dart';
 import '../../autofill/presentation/autofill_launcher.dart';
 import '../../library/domain/music_entry.dart';
 import '../../library/domain/music_grouping.dart';
+import '../../tag_editor/presentation/edit_tags_launcher.dart';
 import '../application/audio_playback_controller.dart';
 import '../domain/music_layout.dart';
 import 'album_art.dart';
@@ -482,6 +483,12 @@ class MusicRowMenu extends ConsumerWidget {
             startAutofill(context, ref, [entry], kind: AutofillKind.track),
           ),
           child: Text(l10n.autofillAction),
+        ),
+        // By hand, for what autofill could not find or found wrong.
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.edit_outlined),
+          onPressed: () => unawaited(startTagEdit(context, entry)),
+          child: Text(l10n.tagEditAction),
         ),
       ],
       builder: (context, controller, _) => GestureDetector(
