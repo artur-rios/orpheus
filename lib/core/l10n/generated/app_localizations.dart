@@ -1375,6 +1375,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open settings'**
   String get autofillOpenSettings;
+
+  /// The action, in a track's menu, that opens the form its tags are edited in by hand.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit tags…'**
+  String get tagEditAction;
+
+  /// The title of the form a track's tags are edited in by hand.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit tags'**
+  String get tagEditTitle;
+
+  /// The button on the tag editor that writes the changed tags into the file.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get tagEditSave;
+
+  /// The button on the tag editor that opens the system dialog to pick a picture for the cover.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose image…'**
+  String get tagEditChooseCover;
+
+  /// The button on the tag editor that takes the cover out of the file.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get tagEditRemoveCover;
+
+  /// The accessible name of the placeholder the tag editor shows for a file with no cover.
+  ///
+  /// In en, this message translates to:
+  /// **'No cover'**
+  String get tagEditNoCover;
+
+  /// Shown on the tag editor when the picked file is not a JPEG or PNG picture; the cover is left as it was.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a JPEG or PNG image'**
+  String get tagEditCoverNotImage;
+
+  /// Shown under a track or disc number field on the tag editor holding something that is not a whole number of one or more.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number'**
+  String get tagEditWholeNumber;
+
+  /// Shown under the year field on the tag editor holding something that is not a year.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a year from 1 to 9999'**
+  String get tagEditYearRange;
+
+  /// The button on the tag editor that reads the file again after another program changed it, dropping the edits.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get tagEditReload;
+
+  /// The message shown once the tag editor wrote the changed tags into the file.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags saved'**
+  String get tagEditSaved;
 }
 
 class _AppLocalizationsDelegate

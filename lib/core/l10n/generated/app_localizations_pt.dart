@@ -800,4 +800,37 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get autofillOpenSettings => 'Abrir configurações';
+
+  @override
+  String get tagEditAction => 'Editar tags…';
+
+  @override
+  String get tagEditTitle => 'Editar tags';
+
+  @override
+  String get tagEditSave => 'Salvar';
+
+  @override
+  String get tagEditChooseCover => 'Escolher imagem…';
+
+  @override
+  String get tagEditRemoveCover => 'Remover';
+
+  @override
+  String get tagEditNoCover => 'Sem capa';
+
+  @override
+  String get tagEditCoverNotImage => 'Escolha uma imagem JPEG ou PNG';
+
+  @override
+  String get tagEditWholeNumber => 'Digite um número inteiro';
+
+  @override
+  String get tagEditYearRange => 'Digite um ano de 1 a 9999';
+
+  @override
+  String get tagEditReload => 'Recarregar';
+
+  @override
+  String get tagEditSaved => 'Tags salvas';
 }

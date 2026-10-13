@@ -797,4 +797,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get autofillOpenSettings => 'Open settings';
+
+  @override
+  String get tagEditAction => 'Edit tags…';
+
+  @override
+  String get tagEditTitle => 'Edit tags';
+
+  @override
+  String get tagEditSave => 'Save';
+
+  @override
+  String get tagEditChooseCover => 'Choose image…';
+
+  @override
+  String get tagEditRemoveCover => 'Remove';
+
+  @override
+  String get tagEditNoCover => 'No cover';
+
+  @override
+  String get tagEditCoverNotImage => 'Choose a JPEG or PNG image';
+
+  @override
+  String get tagEditWholeNumber => 'Enter a whole number';
+
+  @override
+  String get tagEditYearRange => 'Enter a year from 1 to 9999';
+
+  @override
+  String get tagEditReload => 'Reload';
+
+  @override
+  String get tagEditSaved => 'Tags saved';
 }

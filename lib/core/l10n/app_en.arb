@@ -992,5 +992,49 @@
   "autofillOpenSettings": "Open settings",
   "@autofillOpenSettings": {
     "description": "The button that opens the system settings where write access can be granted."
+  },
+  "tagEditAction": "Edit tags…",
+  "@tagEditAction": {
+    "description": "The action, in a track's menu, that opens the form its tags are edited in by hand."
+  },
+  "tagEditTitle": "Edit tags",
+  "@tagEditTitle": {
+    "description": "The title of the form a track's tags are edited in by hand."
+  },
+  "tagEditSave": "Save",
+  "@tagEditSave": {
+    "description": "The button on the tag editor that writes the changed tags into the file."
+  },
+  "tagEditChooseCover": "Choose image…",
+  "@tagEditChooseCover": {
+    "description": "The button on the tag editor that opens the system dialog to pick a picture for the cover."
+  },
+  "tagEditRemoveCover": "Remove",
+  "@tagEditRemoveCover": {
+    "description": "The button on the tag editor that takes the cover out of the file."
+  },
+  "tagEditNoCover": "No cover",
+  "@tagEditNoCover": {
+    "description": "The accessible name of the placeholder the tag editor shows for a file with no cover."
+  },
+  "tagEditCoverNotImage": "Choose a JPEG or PNG image",
+  "@tagEditCoverNotImage": {
+    "description": "Shown on the tag editor when the picked file is not a JPEG or PNG picture; the cover is left as it was."
+  },
+  "tagEditWholeNumber": "Enter a whole number",
+  "@tagEditWholeNumber": {
+    "description": "Shown under a track or disc number field on the tag editor holding something that is not a whole number of one or more."
+  },
+  "tagEditYearRange": "Enter a year from 1 to 9999",
+  "@tagEditYearRange": {
+    "description": "Shown under the year field on the tag editor holding something that is not a year."
+  },
+  "tagEditReload": "Reload",
+  "@tagEditReload": {
+    "description": "The button on the tag editor that reads the file again after another program changed it, dropping the edits."
+  },
+  "tagEditSaved": "Tags saved",
+  "@tagEditSaved": {
+    "description": "The message shown once the tag editor wrote the changed tags into the file."
   }
 }
