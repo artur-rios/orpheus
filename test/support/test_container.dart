@@ -19,6 +19,7 @@ import 'fake_autofill.dart';
 import 'fake_media_player.dart';
 import 'fake_media_session.dart';
 import 'fake_story_share.dart';
+import 'fake_tag_editor.dart';
 import 'fake_track_probe.dart';
 import 'fake_updates.dart';
 import 'fakes.dart';
@@ -52,12 +53,16 @@ class Harness {
     HostPlatform? platform,
     ScriptedMetadataSource? metadata,
     FakeTagWriter? tagWriter,
+    FakeFileStamps? stamps,
+    FakeCoverPicker? coverPicker,
   }) : player = FakeMediaPlayer(),
        storyShare = storyShare ?? RecordingStoryShare(),
        releases = releases ?? ScriptedReleaseSource(),
        updates = updates ?? ScriptedUpdateInstaller(),
        metadata = metadata ?? ScriptedMetadataSource(),
        tagWriter = tagWriter ?? FakeTagWriter(),
+       stamps = stamps ?? FakeFileStamps(),
+       coverPicker = coverPicker ?? FakeCoverPicker(),
        shutdown = RecordingAppShutdown(),
        _runningVersion = runningVersion ?? AppVersion.tryParse('1.0.0'),
        session = FakeMediaSession(),
@@ -117,6 +122,8 @@ class Harness {
         // application that writes into an audio file. No test does either.
         metadataSourceProvider.overrideWithValue(this.metadata),
         tagWriterProvider.overrideWithValue(this.tagWriter),
+        fileStampsProvider.overrideWithValue(this.stamps),
+        coverPickerProvider.overrideWithValue(this.coverPicker),
         appShutdownProvider.overrideWithValue(shutdown),
         storyShareProvider.overrideWithValue(this.storyShare),
         runningVersionProvider.overrideWithValue(_runningVersion),
@@ -152,6 +159,12 @@ class Harness {
   /// The files autofill reads and writes, in place of the owner's music
   /// folder.
   final FakeTagWriter tagWriter;
+
+  /// The file stamps every tag edit is measured against.
+  final FakeFileStamps stamps;
+
+  /// The cover picker.
+  final FakeCoverPicker coverPicker;
 
   /// Whether the application was asked to quit so an installer could run.
   final RecordingAppShutdown shutdown;

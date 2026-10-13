@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Edit a track's tags by hand. From a song's menu — its ⋮ button, a right-click or a long press — choose *Edit tags…*
+  to change its title, artist, album artist, album, track and disc numbers and totals, year and genre, and to replace
+  its cover with a JPEG or PNG or remove it. Only the fields you change are written, through the same MP3 and FLAC
+  editors autofill uses, and the library updates without a scan. A file in use can be tried again, and one another
+  program changed since it was read can be reloaded (#53).
+
 ## [1.3.0] - 2026-10-12
 
 ### Added

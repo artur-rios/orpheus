@@ -18,7 +18,7 @@ done.
 | Actor | Description |
 | --- | --- |
 | **Owner** | The single human user, and the only actor with intent. Interacts with every use case below. |
-| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill the owner confirmed (UC-34). |
+| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed (UC-34, UC-35). |
 | **Metadata service** | MusicBrainz, and the Cover Art Archive for covers. Asked only when the owner starts an autofill (UC-34), at most once a second, and sent nothing that identifies the owner. |
 | **Playback engine** | The libmpv-backed engine linked in process. Opens files, reports position and duration, and reports what it cannot decode. Never modifies a file. |
 | **Host platform** | Windows, Linux or Android. Grants or refuses read access, provides the folder picker, and — on Android alone — provides the media session and the foreground service. |
@@ -92,6 +92,10 @@ graph LR
         UC34[UC-34: Autofill a record's tags]
     end
 
+    subgraph "Tag editing (TE)"
+        UC35[UC-35: Edit a track's tags by hand]
+    end
+
     OWNER --> UC01
     OWNER --> UC07
     OWNER --> UC13
@@ -101,6 +105,7 @@ graph LR
     OWNER --> UC30
     OWNER --> UC32
     OWNER --> UC34
+    OWNER --> UC35
 ```
 
 ---
@@ -1258,6 +1263,42 @@ graph LR
 | AF-08 | On Android, permission to change audio files is refused | Nothing is written. On Android 11 and later all-files access is asked for only once the owner confirms; on Android 7 to 10 write access came with read access, in the same system dialog, and is used for nothing but a confirmed autofill (`FR-AF-08`). Where the refusal is permanent the settings page is offered. |
 | AF-09 | The owner cancels while the files are being written | The file being written is finished — a write leaves a file whole or as it was — and no further file is opened. The files already written stay written and are reported as such, and the library is brought up to date with them. |
 
+### UC-35: Edit a track's tags by hand
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-35 |
+| **Name** | Edit a track's tags by hand |
+| **Actors** | Owner, Local filesystem, Host platform |
+| **Description** | The owner opens a form over one track's own tags and cover, changes what they want, and only what they changed is written — into the file and into the library. |
+| **Preconditions** | The library holds the track. |
+| **Postconditions** | Exactly the fields the owner changed are in the file's tags, and the library and every screen show them. No audio, file name or place has changed, and no other tag has. Where the owner cancelled, or changed nothing, nothing has been written. |
+| **Requirements** | FR-TE-01, FR-TE-02, FR-TE-03, FR-TE-04 |
+
+**Main Flow**
+
+1. The owner picks *Edit tags…* from a track's menu — its button, a right-click, or a long press.
+2. The application reads the file's own tags and cover, and notes its size and time (`FR-TE-01`).
+3. The form shows title, artist, album artist, album, track number and total, disc number and total, year and genre as
+   the file holds them, and its front cover with *Choose image…* and *Remove*.
+4. The owner changes what they want. *Save* is offered once something changed and every number is valid (`FR-TE-03`).
+5. The owner presses *Save*. The application writes only the changed fields, against the file as it was read
+   (`FR-TE-03`).
+6. The form closes, the screen says the tags were saved, and the library updates without the owner starting a scan
+   (`FR-TE-04`).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | The file is not MP3 or FLAC, or its tags cannot be changed safely | The form says so and offers nothing to save (`FR-TE-02`). |
+| AF-02 | The format cannot hold a field | That field is shown and cannot be edited, and is named under the form (`FR-TE-02`). |
+| AF-03 | The owner changes nothing, or a number is not valid | *Save* stays unavailable, and an invalid number says why. |
+| AF-04 | The owner picks a file that is not a JPEG or PNG | The cover is left as it was and the form says why (`FR-TE-01`). |
+| AF-05 | The file cannot be written | As UC-34 AF-07, for one file; the owner's edits stay in the form, and a file in use or that failed can be tried again. A file changed by another program since it was read offers *Reload*, which reads it again (`FR-TE-04`). |
+| AF-06 | On Android, permission to change audio files is refused | As UC-34 AF-08; nothing is written. |
+| AF-07 | The owner cancels | Nothing is written. |
+
 ---
 
 ## 3. Use case — requirements traceability
@@ -1297,6 +1338,7 @@ graph LR
 | UC-31 Follow and jump | FR-LY-04, FR-LY-05, FR-LY-06, FR-LY-11 |
 | UC-32 See the music move | FR-VZ-01 … FR-VZ-11 |
 | UC-34 Autofill a record's tags | FR-AF-01 … FR-AF-08 |
+| UC-35 Edit a track's tags by hand | FR-TE-01 … FR-TE-04 |
 
 ## 4. State diagrams
 

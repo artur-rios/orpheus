@@ -17,8 +17,10 @@ Orpheus is a single-owner music player for Windows, Linux and Android. It reads
 audio files already present on the machine, derives a browsable library from
 their tags, and plays them.
 
-It is not a library manager, not a streaming client, not a tag editor, and not
-a synchronisation service. It has no server and no account. It reaches a
+It is not a library manager, not a streaming client, and not a synchronisation
+service. The one thing it changes in an audio file is its tags — a record at a
+time by autofill, or one track at a time by hand — and only when the owner
+confirms. It has no server and no account. It reaches a
 network for exactly one thing — the words of a track that has none on the
 machine — and the owner can turn that off.
 
@@ -103,6 +105,7 @@ Requirements Document and demonstrated by use cases.
 | **F-15** | Lyrics | Where the machine holds a track's words — a `.lrc` beside it, or the track's own tags — they are shown; where they carry times, the line being sung is lit, the sheet follows the music, and a line can be tapped to play from there. Nothing is fetched, guessed or written. |
 | **F-16** | Sound bars | The player draws the spectrum of the recording being played, measured from its own samples with the engine that plays it, analysed once per track and kept. Until an analysis lands, and for a file that cannot be decoded, a deterministic stand-in is drawn in its place and named as one. |
 | **F-17** | Autofill tags | On a record, or on a single track, the owner chooses which tags to fill; Orpheus finds the release on MusicBrainz, shows every change file by file as the current value and the new one, and writes only the changes the owner leaves ticked — into the files and into the library. Only MP3 and FLAC can be written; every other format is read-only. The cover comes from the Cover Art Archive and is unticked until chosen. |
+| **F-18** | Edit a track's tags | From a track's menu, the owner edits its title, artist, album artist, album, track and disc numbers and totals, year, genre and front cover by hand, starting from what the file holds; only what they changed is written, into the file and into the library. Only MP3 and FLAC can be written. |
 
 ## 5. Constraints
 
@@ -110,7 +113,7 @@ Requirements Document and demonstrated by use cases.
 | --- | --- |
 | **C-01** | Three targets — Windows, Linux, Android — from one source. No per-platform implementation of any feature above the platform edges. |
 | **C-02** | No network access beyond the lyrics lookup (`FR-LY-13`) and the update check, which the owner can turn off, and the MusicBrainz and Cover Art Archive lookups an autofill makes only when the owner starts one (`FR-AF-02`). No playback depends on any of them. Enforced by the shipped Android package declaring exactly the permissions its manifest lists and no others. |
-| **C-03** | The owner's audio files are opened for reading, and written only to change their metadata — never renamed, moved, deleted or re-encoded — and only for changes the owner has confirmed (`FR-AF-05`). Only MP3 and FLAC are written, each by an editor that changes only what was asked for and keeps every other byte. |
+| **C-03** | The owner's audio files are opened for reading, and written only to change their metadata — never renamed, moved, deleted or re-encoded — and only for changes the owner has confirmed (`FR-AF-05`, `FR-TE-03`). Only MP3 and FLAC are written, each by an editor that changes only what was asked for and keeps every other byte. |
 | **C-04** | No server, no database, no account, no synchronisation. |
 | **C-05** | Every flow above the platform edges must be testable without a real audio engine, a real device, or the developer's own filesystem. |
 | **C-06** | Android 7 (API 24) is the minimum supported release. The engine would run on 23; three of the plugins will not, and the highest floor is the floor. |
