@@ -71,6 +71,10 @@ import '../../features/stats/data/platform_story_share.dart';
 import '../../features/stats/domain/music_stats.dart';
 import '../../features/stats/domain/play_history.dart';
 import '../../features/stats/domain/story_share.dart';
+import '../../features/tag_editor/data/file_picker_cover_picker.dart';
+import '../../features/tag_editor/data/io_file_stamps.dart';
+import '../../features/tag_editor/domain/cover_picker.dart';
+import '../../features/tag_editor/domain/file_stamps.dart';
 import '../../features/updates/application/update_controller.dart';
 import '../../features/updates/data/github_release_source.dart';
 import '../../features/updates/data/installer_update.dart';
@@ -199,6 +203,17 @@ final libraryAccessProvider = Provider<LibraryAccess>(
 /// The platform's folder chooser.
 final folderPickerProvider = Provider<FolderPicker>(
   (ref) => const FilePickerFolderPicker(),
+);
+
+/// The platform's image chooser, for a cover picked by hand.
+final coverPickerProvider = Provider<CoverPicker>(
+  (ref) => const FilePickerCoverPicker(),
+);
+
+/// A file's size and time as the disk has them now, which a tag edit is
+/// measured against.
+final fileStampsProvider = Provider<FileStamps>(
+  (ref) => const IoFileStamps(),
 );
 
 /// Whether a queued file is still there.
