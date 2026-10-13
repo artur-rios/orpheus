@@ -44,7 +44,7 @@ Orpheus looks the words up and saves them beside it.
 {{< blocks/section color="white" type="row" >}}
 {{% blocks/feature icon="fa-solid fa-lock" title="It changes your files only when you ask" %}}
 No renaming, no moving, no deleting, no transcoding. The one change it makes is
-to a file's tags, from an autofill whose every change you confirmed.
+to a file's tags, from an autofill or an edit by hand, and only what you confirmed.
 {{% /blocks/feature %}}
 
 {{% blocks/feature icon="fa-solid fa-mobile-screen" title="It keeps playing on Android" %}}

@@ -29,6 +29,7 @@ interface on Windows, Linux and Android.
 | **Draws the music itself** | The bars on the player are the spectrum of the recording, measured from its own samples by the engine that plays it. |
 | **Keeps playing on Android** | From a notification and the lock screen — and stops for a phone call, and for headphones pulled out of the socket. |
 | **Shows the words, in time with the music** | Your own files first; a lookup for the tracks that have none. |
+| **Fixes tags, from MusicBrainz or by hand** | Autofill a record from MusicBrainz, or edit one track's tags and cover yourself — only what you confirm is written. |
 | **Says what you actually listen to** | Total plays, and the most played tracks, artists, records and genres — counted from your own listening and nobody else's. |
 | **Adapts to the window** | A rail down the side on a desktop, a bar across the bottom on a phone. |
 | **Light and dark, English and Brazilian Portuguese** | |
@@ -37,10 +38,10 @@ interface on Windows, Linux and Android.
 
 **It changes your files only when you ask.** No renaming, no moving, no
 deleting, no transcoding. The one change it ever makes to an audio file is to
-its tags, from an autofill whose every change you saw and confirmed — and it
-refuses a file another program changed since it was read. Besides that, it
-writes a `.lrc` next to a track whose words it looked up, a new file and
-never a replacement for one you wrote.
+its tags, from an autofill whose every change you saw and confirmed or an edit
+you made by hand — and it refuses a file another program changed since it was
+read. Besides that, it writes a `.lrc` next to a track whose words it looked
+up, a new file and never a replacement for one you wrote.
 
 **Almost no network.** No streaming, no scrobbling, no telemetry, no analytics,
 no crash reporting, no cover art fetched unless you ask. There are three
