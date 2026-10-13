@@ -69,14 +69,16 @@ MusicBrainz, and renaming them is churn this change does not need.
 lib/features/tag_editor/
   domain/tag_edits.dart            pure: what the form changed, and number/cover validation
   domain/cover_picker.dart         interface: ask the owner for an image file's bytes
+  domain/file_stamps.dart          interface: a file's size and modification time as it is now
   data/file_picker_cover_picker.dart   CoverPicker over file_picker
+  data/io_file_stamps.dart         FileStamps over dart:io
   application/tag_edit_controller.dart load → edit → save, per track
   presentation/edit_tags_dialog.dart   the form
-  presentation/edit_tags_launcher.dart startTagEdit(context, ref, entry)
+  presentation/edit_tags_launcher.dart startTagEdit(context, entry)
 ```
 
-`coverPickerProvider` is added to `core/di/providers.dart`, beside `folderPickerProvider`, for the same reason: a native
-dialog cannot be opened in a widget test.
+`coverPickerProvider` and `fileStampsProvider` are added to `core/di/providers.dart`, beside `folderPickerProvider`, for
+the same reason: a native dialog cannot be opened, and a real file should not be touched, in a widget test.
 
 ### 3.1 Domain — `tag_edits.dart`
 
@@ -119,11 +121,14 @@ loading ──inspect──▶ editing ──save──▶ saving ──written�
               └─ unwritable     └──────────┴─ anything else: editing + outcome
 ```
 
-- `load`: `tagWriter.inspect(path)`; `canWriteTagsTo(path)` false or `writable` empty → `unwritable` (with which of the
-  two, for the message).
+- `load`: `canWriteTagsTo(path)` false → `unwritable` (format). Otherwise `fileStamps.stamp(path)`, then
+  `tagWriter.inspect(path)`; `writable` empty, or either throwing → `unwritable` (unsafe). The stamp — the file's size
+  and modification time when its tags were read — is what a save passes as `expected`, **not** the catalog's entry:
+  the catalog is only refreshed by the rescan a save starts, so measuring against it would refuse a second save made
+  before that rescan lands, and every save after *Reload*.
 - `save(edits)`: one at a time (a second tap is ignored while saving).
   1. `libraryAccessController.ensureWritable()`; refused → back to `editing` with the refusal.
-  2. `tagWriter.write(path, edits, expected: entry.file)`.
+  2. `tagWriter.write(path, edits, expected: stamp)`.
   3. `written` → `rescanSoon()`, state `saved`. Anything else → `editing` with the outcome; the form is untouched.
 - `reload()`: after `changedSinceRead`, inspects again and replaces the starting values.
 
@@ -133,7 +138,7 @@ still finishes and is still followed by a rescan if the dialog closes mid-save.
 ### 3.3 Presentation
 
 **Menu.** `MusicRowMenu` gains *Edit tags…* (`Icons.edit_outlined`) directly after *Autofill tags…*, calling
-`startTagEdit(context, ref, entry)`. One menu, so the three-dots button, right-click and long press all reach it.
+`startTagEdit(context, entry)`. One menu, so the three-dots button, right-click and long press all reach it.
 
 **Dialog.** `EditTagsDialog`, shown with `showDialog`; below 600 logical pixels wide it is `Dialog.fullscreen`,
 otherwise a dialog about 480 wide, scrolling.
@@ -166,7 +171,7 @@ menu ─▶ startTagEdit ─▶ EditTagsDialog ─▶ TagEditController.load ─
                                    ▼
             tagEdits(before, form) ─▶ TagEditController.save
                                           ├─ ensureWritable (Android)
-                                          ├─ TagWriter.write(path, edits, expected: entry.file)
+                                          ├─ TagWriter.write(path, edits, expected: stamp from load)
                                           └─ written ─▶ ScanController.rescanSoon ─▶ catalog ─▶ every screen
 ```
 
