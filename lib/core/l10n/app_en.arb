@@ -1029,6 +1029,10 @@
   "@tagEditYearRange": {
     "description": "Shown under the year field on the tag editor holding something that is not a year."
   },
+  "tagEditNumberForTotal": "Enter a number, or clear the total",
+  "@tagEditNumberForTotal": {
+    "description": "Shown under a track or disc number field on the tag editor left blank while its total is not: the file cannot hold a total with no number."
+  },
   "tagEditReload": "Reload",
   "@tagEditReload": {
     "description": "The button on the tag editor that reads the file again after another program changed it, dropping the edits."

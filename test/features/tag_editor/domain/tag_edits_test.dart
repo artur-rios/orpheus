@@ -230,6 +230,75 @@ void main() {
         AutofillField.year: NumberProblem.yearOutOfRange,
       });
     });
+
+    // ID3 holds a number and its total as one `3/12`, and has no way to say
+    // `/12`: the writer refuses a total with no number, so the form must.
+    final numbered = FileTags(
+      writable: AutofillField.values.toSet(),
+      values: const {
+        AutofillField.trackNumber: 3,
+        AutofillField.trackTotal: 12,
+        AutofillField.discTotal: 2,
+      },
+    );
+
+    TagForm numberedWith(Map<AutofillField, String> changes) =>
+        TagForm(text: {...opened(numbered), ...changes});
+
+    test('GivenATrackNumberClearedWhileItsTotalStays_WhenChecked_ThenTheNumberIsNamed', () {
+      expect(
+        numberProblems(numbered, numberedWith({AutofillField.trackNumber: ''})),
+        {AutofillField.trackNumber: NumberProblem.totalWithoutNumber},
+      );
+    });
+
+    test('GivenATotalTypedWithNoNumber_WhenChecked_ThenTheNumberIsNamed', () {
+      final bare = FileTags(writable: AutofillField.values.toSet());
+
+      expect(
+        numberProblems(
+          bare,
+          const TagForm(text: {AutofillField.trackTotal: '12'}),
+        ),
+        {AutofillField.trackNumber: NumberProblem.totalWithoutNumber},
+      );
+    });
+
+    test(
+      'GivenANumberAndItsTotalBothCleared_WhenChecked_ThenItIsNoProblem',
+      () {
+        expect(
+          numberProblems(
+            numbered,
+            numberedWith({
+              AutofillField.trackNumber: '',
+              AutofillField.trackTotal: '',
+            }),
+          ),
+          isEmpty,
+        );
+      },
+    );
+
+    test('GivenAFileWithATotalAndNoNumber_WhenAnotherFieldChanges_ThenItIsNoProblem', () {
+      expect(
+        numberProblems(numbered, numberedWith({AutofillField.title: 'Airbag'})),
+        isEmpty,
+      );
+    });
+
+    test(
+      'GivenADiscTotalChangedWithNoDiscNumber_WhenChecked_ThenTheNumberIsNamed',
+      () {
+        expect(
+          numberProblems(
+            numbered,
+            numberedWith({AutofillField.discTotal: '3'}),
+          ),
+          {AutofillField.discNumber: NumberProblem.totalWithoutNumber},
+        );
+      },
+    );
   });
 
   group('isSupportedCover', () {

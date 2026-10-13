@@ -829,6 +829,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get tagEditYearRange => 'Digite um ano de 1 a 9999';
 
   @override
+  String get tagEditNumberForTotal => 'Digite um número ou apague o total';
+
+  @override
   String get tagEditReload => 'Recarregar';
 
   @override

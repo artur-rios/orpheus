@@ -1430,6 +1430,12 @@ abstract class AppLocalizations {
   /// **'Enter a year from 1 to 9999'**
   String get tagEditYearRange;
 
+  /// Shown under a track or disc number field on the tag editor left blank while its total is not: the file cannot hold a total with no number.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number, or clear the total'**
+  String get tagEditNumberForTotal;
+
   /// The button on the tag editor that reads the file again after another program changed it, dropping the edits.
   ///
   /// In en, this message translates to:

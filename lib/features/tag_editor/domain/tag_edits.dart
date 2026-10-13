@@ -72,7 +72,17 @@ enum NumberProblem {
 
   /// Not a year from 1 to 9999.
   yearOutOfRange,
+
+  /// Blank while its total is not: ID3 holds the two as one `3/12`, and has
+  /// no way to say `/12`.
+  totalWithoutNumber,
 }
+
+/// Each number field and the total it is the number of.
+const List<(AutofillField, AutofillField)> _numberedPairs = [
+  (AutofillField.trackNumber, AutofillField.trackTotal),
+  (AutofillField.discNumber, AutofillField.discTotal),
+];
 
 /// [field] of [before] as the form shows it: the text of what the file holds,
 /// with several values already joined by `shownAsOne` (`Rock; Pop`), or empty.
@@ -103,15 +113,33 @@ NumberProblem? numberProblem(AutofillField field, String text) {
 /// be written.
 ///
 /// Only changed ones: a field the file holds twice is shown as `3; 4`, which
-/// is not a number, and must not stop a save the owner made elsewhere.
+/// is not a number, and must not stop a save the owner made elsewhere. A pair
+/// the owner touched that would be left with a total and no number names the
+/// number — the writer would refuse it, and nothing could make a retry work.
 Map<AutofillField, NumberProblem> numberProblems(
   FileTags before,
   TagForm form,
-) => {
-  for (final field in numberFields)
-    if (_changedText(before, form, field) case final text?)
-      field: ?numberProblem(field, text),
-};
+) {
+  final problems = <AutofillField, NumberProblem>{
+    for (final field in numberFields)
+      if (_changedText(before, form, field) case final text?)
+        field: ?numberProblem(field, text),
+  };
+
+  for (final (number, total) in _numberedPairs) {
+    final touched =
+        _changedText(before, form, number) != null ||
+        _changedText(before, form, total) != null;
+    if (!touched || problems.containsKey(number)) continue;
+
+    if (_formText(before, form, number).isEmpty &&
+        _formText(before, form, total).isNotEmpty) {
+      problems[number] = NumberProblem.totalWithoutNumber;
+    }
+  }
+
+  return problems;
+}
 
 /// What [form] changes in a file holding [before]: each changed field and
 /// the value to write, `null` removing the tag. Empty when nothing changed.
@@ -157,6 +185,11 @@ Map<AutofillField, Object?> tagEdits(FileTags before, TagForm form) {
 bool isSupportedCover(Uint8List bytes) =>
     _startsWith(bytes, const [0xFF, 0xD8, 0xFF]) ||
     _startsWith(bytes, const [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+
+/// [field] as the file would hold it after [form]: what the owner typed where
+/// they changed it, else what the file holds, trimmed.
+String _formText(FileTags before, TagForm form, AutofillField field) =>
+    _changedText(before, form, field) ?? shownText(before, field).trim();
 
 /// [field]'s text in [form], trimmed, where the owner changed it and the file
 /// can hold it; `null` otherwise.

@@ -217,7 +217,7 @@ Realises F-18.
 | --- | --- |
 | **FR-TE-01** | The owner must be able to edit, from a single track's menu, its title, artist, album artist, album, track number and total, disc number and total, year, genre and front cover, starting from what the file itself holds. A cover must be a JPEG or a PNG. |
 | **FR-TE-02** | A field the file's format cannot hold must be shown as not editable, and a file Orpheus cannot write must say so and offer nothing to save. |
-| **FR-TE-03** | Only the fields the owner changed may be written, through the same writer and under the same rules as `FR-AF-05`, measured against the file as it was when the editor read it; a field cleared removes the tag. Track and disc numbers and totals must be whole numbers of one or more, and the year from 1 to 9999. |
+| **FR-TE-03** | Only the fields the owner changed may be written, through the same writer and under the same rules as `FR-AF-05`, measured against the file as it was when the editor read it; a field cleared removes the tag. Track and disc numbers and totals must be whole numbers of one or more, a total must have its number (ID3 cannot hold one without the other), and the year from 1 to 9999. |
 | **FR-TE-04** | A saved edit must reach the library and every screen without the owner starting a scan. A file that could not be written must be named with the reason as in `FR-AF-07`, keeping the owner's edits, and one changed by another program since it was read must offer to be read again. |
 
 ## 3. Non-functional requirements

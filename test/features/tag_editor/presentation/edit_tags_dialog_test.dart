@@ -144,6 +144,19 @@ void main() {
     },
   );
 
+  testWidgets('GivenATotalWithNoNumber_WhenTyped_ThenSaveIsOffAndWhyIsShown', (
+    tester,
+  ) async {
+    await open(tester, harnessFor());
+
+    await tester.enterText(field(AutofillField.trackNumber), '');
+    await tester.enterText(field(AutofillField.trackTotal), '12');
+    await tester.pump();
+
+    expect(find.text('Enter a number, or clear the total'), findsOneWidget);
+    expect(saveOf(tester, 'Save'), isNull);
+  });
+
   testWidgets(
     'GivenAFieldTheFormatCannotHold_WhenTheEditorOpens_ThenItIsOffAndNamed',
     (tester) async {

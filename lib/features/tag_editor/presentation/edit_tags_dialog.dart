@@ -198,6 +198,7 @@ class _EditTagsDialogState extends ConsumerState<EditTagsDialog> {
           null => null,
           NumberProblem.notAWholeNumber => l10n.tagEditWholeNumber,
           NumberProblem.yearOutOfRange => l10n.tagEditYearRange,
+          NumberProblem.totalWithoutNumber => l10n.tagEditNumberForTotal,
         },
       ),
       onChanged: (_) => setState(() {}),

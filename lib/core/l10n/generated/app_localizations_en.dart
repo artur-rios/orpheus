@@ -826,6 +826,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tagEditYearRange => 'Enter a year from 1 to 9999';
 
   @override
+  String get tagEditNumberForTotal => 'Enter a number, or clear the total';
+
+  @override
   String get tagEditReload => 'Reload';
 
   @override
