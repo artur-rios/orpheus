@@ -35,6 +35,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   does a save that wrote songs.
 - Edit the tags of the selected songs together, even from different albums and artists: the same form as for an album
   or an artist, over exactly those songs. One selected song opens the one-track editor.
+- Playlists. A new *Playlists* tab, after Genres, lists them, the most recently changed first, as rows or tiles, with
+  *New playlist* at the top. Each playlist's menu — its ⋮ button, a right-click or a touch and hold — has *Rename…*,
+  *Choose cover…*, *Remove cover* (only once it has a cover of your own), *Export to .m3u…* and *Delete…*, which asks
+  first and never touches a song. The cover is a JPEG or PNG of your own, or else a mosaic of up to four of its albums'
+  covers.
+- Add to a playlist. *Add to playlist…* is on a song's menu, in the bar and the right-click menu of a selection, and on
+  an album's and an artist's ⋮ menu. Pick a playlist, or *New playlist…* first in the list; the songs go at the end, and
+  a message says *Added N songs to X*. Songs a playlist already holds are asked about — *Add anyway*, *Skip those* or
+  *Cancel* — and a playlist may hold a song more than once.
+- Open a playlist to *Play* or *Shuffle* it, or tap a song to play from there. Drag a song's handle to reorder, and use
+  *Remove from playlist* on a song's menu or on a selection, which here counts each copy of a song on its own and also
+  offers *Add to playlist…* and *Edit tags…*. Back ends a selection, then closes the playlist. A song whose file the
+  library no longer has stays in the playlist, greyed out and labelled *Missing*, and is skipped when it plays, so an
+  unplugged drive does not empty a playlist.
+- Export a playlist to `.m3u`. *Export to .m3u…* writes an extended M3U in UTF-8 to the file you choose, and nothing
+  else; the name is made safe for Windows.
+- Playlists are kept in `playlists.json` in Orpheus's own data, never in your music folders, and every change is written
+  atomically. A document Orpheus cannot read, or that another version wrote, is kept aside as
+  `playlists.json.bad-<time>` and never overwritten; if it cannot be set aside, the Playlists tab shows an error and
+  nothing is saved over it.
 
 ### Changed
 
@@ -49,6 +69,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The album row's autofill button moved into its new ⋮ menu, beside *Edit tags…*.
 - Touch and hold on a song now selects it instead of opening its menu, which is on its ⋮ button and a right-click.
   Touch and hold on an album or an artist still opens its menu.
+- On a phone, *Edit tags…* in a selection's bar is an icon with a tooltip, where the bar is narrower than 480 logical
+  pixels, so the count keeps its room. The bar's other actions are icons at any width.
 
 ## [1.4.0] - 2026-10-13
 

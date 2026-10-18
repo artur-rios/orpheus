@@ -20,7 +20,8 @@ their tags, and plays them.
 It is not a library manager, not a streaming client, and not a synchronisation
 service. The one thing it changes in an audio file is its tags — a record at a
 time by autofill, or by hand for one track or many at once — and only when the
-owner confirms. It has no server and no account. It reaches a
+owner confirms. The playlists the owner makes are kept in its own data, never in
+the music folders. It has no server and no account. It reaches a
 network for exactly one thing — the words of a track that has none on the
 machine — and the owner can turn that off.
 
@@ -108,6 +109,7 @@ Requirements Document and demonstrated by use cases.
 | **F-18** | Edit a track's tags | From a track's menu, the owner edits its title, artist, album artist, album, track and disc numbers and totals, year, genre and front cover by hand, starting from what the file holds; only what they changed is written, into the file and into the library. Only MP3 and FLAC can be written. |
 | **F-19** | Edit the tags of several tracks | From an album's or an artist's menu, the owner edits the artist, album artist, album, track total, disc number and total, year, genre and front cover of all its tracks in one form. A field the tracks disagree on is shown as mixed and left alone unless typed in; title and track number are not offered. Only what they changed is written, to each track that can hold it, into the file and into the library; the tracks that cannot be written are named. Only MP3 and FLAC can be written. |
 | **F-20** | Select several songs | In any list of songs — all songs, inside an album or a genre, or search results — the owner touches and holds a song, or Ctrl-clicks or Shift-clicks one, to start a selection; tick boxes take the place of the track number or cover while it lasts, and a tap picks a song instead of playing it. A bar shows how many are selected, with *Select all*, a way out and *Edit tags…*, which opens the form of F-19 over exactly those songs. A song's own menu stays on its ⋮ button. Esc, Back or leaving the list ends the selection, and so does a save that wrote songs. |
+| **F-21** | Playlists | The owner keeps named playlists. *Add to playlist…*, on a song, on a selection, or on an album or an artist, adds songs at the end of one the owner picks or of a new one, and asks before adding songs a playlist already holds. A Playlists tab lists them, most recently changed first, as rows or tiles; opening one shows its songs in the owner's order, with *Play* and *Shuffle*, and a drag handle on each song to reorder it. Songs can be removed one at a time or from a selection, and a playlist can be renamed, given a cover of the owner's own or the mosaic of up to four of its albums' covers, exported to an extended `.m3u` file the owner chooses, and deleted after asking, which never touches a song. A song whose file the library no longer has stays in the playlist, shown as missing and skipped when playing. Playlists are kept in Orpheus's own data, never in the music folders, and a stored document it cannot read is kept aside rather than written over. |
 
 ## 5. Constraints
 
@@ -126,5 +128,5 @@ Stated so that their absence is a decision rather than an omission: tag
 editing beyond an autofill or a tag edit the owner confirms (`FR-AF`, `FR-TE`),
 file renaming, moving or deletion, transcoding, streaming, scrobbling, any
 lookup beyond the lyrics lookup, the update check and an autofill's MusicBrainz and Cover Art Archive
-lookups, writing or re-timing lyrics back into the owner's files, accounts, synchronisation, playlists that can be saved
-and named, a media session on Windows or Linux, and time-windowed statistics.
+lookups, writing or re-timing lyrics back into the owner's files, accounts, synchronisation, importing a playlist from
+a file, a media session on Windows or Linux, and time-windowed statistics.

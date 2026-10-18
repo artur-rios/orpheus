@@ -9,6 +9,7 @@
 library;
 
 import 'dart:math';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -64,6 +65,15 @@ import '../../features/playback/domain/song_selection.dart';
 import '../../features/playback/domain/track_analysis.dart';
 import '../../features/playback/domain/track_energy.dart';
 import '../../features/playback/domain/track_probe.dart';
+import '../../features/playlists/application/playlist_browse_controller.dart';
+import '../../features/playlists/application/playlists_controller.dart';
+import '../../features/playlists/data/file_picker_file_saver.dart';
+import '../../features/playlists/data/file_playlist_cover_store.dart';
+import '../../features/playlists/data/json_playlist_store.dart';
+import '../../features/playlists/domain/file_saver.dart';
+import '../../features/playlists/domain/playlist.dart';
+import '../../features/playlists/domain/playlist_cover_store.dart';
+import '../../features/playlists/domain/playlist_store.dart';
 import '../../features/shell/application/preferences_controller.dart';
 import '../../features/shell/application/shell_controller.dart';
 import '../../features/shell/domain/shell_destination.dart';
@@ -116,6 +126,19 @@ final hostPlatformProvider = Provider<HostPlatform>(
 
 /// The clock, so that a test can pin what "now" is.
 final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
+/// Where the ids of new things come from, so that a test can name them.
+///
+/// Random rather than counted: an id has to stay unique across runs and
+/// devices, and no counter survives both. 128 bits as hexadecimal, from the
+/// operating system's source.
+final idGeneratorProvider = Provider<String Function()>((ref) {
+  final random = Random.secure();
+  return () => [
+    for (var i = 0; i < 16; i++)
+      random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+  ].join();
+});
 
 /// Where a shuffle gets its randomness.
 ///
@@ -282,6 +305,69 @@ final playbackPositionsProvider = Provider<PlaybackPositionStore>(
 final playHistoryStoreProvider = Provider<PlayHistoryStore>(
   (ref) => JsonPlayHistoryStore(ref.watch(appDirectoriesProvider).support),
 );
+
+/// Where the playlists are kept.
+final playlistStoreProvider = Provider<PlaylistStore>(
+  (ref) => JsonPlaylistStore(ref.watch(appDirectoriesProvider).support),
+);
+
+/// Where the pictures chosen as playlist covers are kept.
+final playlistCoverStoreProvider = Provider<PlaylistCoverStore>(
+  (ref) => FilePlaylistCoverStore(ref.watch(appDirectoriesProvider).support),
+);
+
+/// The platform's save dialog, for a playlist exported to a file.
+final fileSaverProvider = Provider<FileSaver>(
+  (ref) => const FilePickerFileSaver(),
+);
+
+/// The playlists.
+///
+/// Not retried when the store cannot be read: that failure is a document that
+/// could not be set aside, which asking again does not mend, and a retry would
+/// only delay the error that every change must report.
+final playlistsControllerProvider =
+    AsyncNotifierProvider<PlaylistsController, List<Playlist>>(
+      PlaylistsController.new,
+      retry: (_, _) => null,
+    );
+
+/// Which playlist is open, or `null` for the list of them.
+final playlistBrowseProvider =
+    NotifierProvider<PlaylistBrowseController, String?>(
+      PlaylistBrowseController.new,
+    );
+
+/// The playlist that is open, as it is now, or `null` when none is.
+///
+/// The open id read against the playlists: an id that names none — the
+/// playlist was deleted while it was open — is none open, and so is any id
+/// while the playlists are still being read. The one answer to "is a playlist
+/// open", for the tab that shows it and the Back that closes it alike.
+final openPlaylistProvider = Provider<Playlist?>((ref) {
+  final open = ref.watch(playlistBrowseProvider);
+  if (open == null) return null;
+
+  final playlists = ref.watch(playlistsControllerProvider).value ?? const [];
+  for (final playlist in playlists) {
+    if (playlist.id == open) return playlist;
+  }
+
+  return null;
+});
+
+/// The picture the owner chose as a playlist's cover, or `null` for none.
+///
+/// Keyed by the playlist's id *and* the time it last changed. The file is
+/// named by the id alone, so a second picture chosen for the same playlist
+/// would come under a key already read and never be read again; choosing one
+/// changes the playlist, which moves the time. Auto-disposed, as the album
+/// sleeves are.
+final playlistCoverProvider =
+    FutureProvider.family<Uint8List?, ({String id, DateTime modifiedAt})>(
+      (ref, key) => ref.read(playlistCoverStoreProvider).read(key.id),
+      isAutoDispose: true,
+    );
 
 /// What counts a play, and what has been counted.
 ///

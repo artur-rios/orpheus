@@ -196,7 +196,7 @@ class _Controls extends StatelessWidget {
             child: _ViewSwitcher(selected: view, navigator: navigator),
           ),
           shuffle,
-          _LayoutSwitcher(selected: layout),
+          MusicLayoutSwitcher(selected: layout),
         ],
       );
     }
@@ -210,7 +210,7 @@ class _Controls extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             shuffle,
-            _LayoutSwitcher(selected: layout),
+            MusicLayoutSwitcher(selected: layout),
           ],
         ),
       ],
@@ -290,10 +290,12 @@ class _List extends StatelessWidget {
 /// Rows or tiles, remembered.
 ///
 /// One choice for every browser, not one per screen: an owner who prefers a
-/// wall of sleeves prefers it under a genre too.
-class _LayoutSwitcher extends ConsumerWidget {
-  const _LayoutSwitcher({required this.selected});
+/// wall of sleeves prefers it under a genre too, and for their playlists.
+class MusicLayoutSwitcher extends ConsumerWidget {
+  /// Creates the switcher, showing [selected].
+  const MusicLayoutSwitcher({required this.selected, super.key});
 
+  /// The layout in use.
   final MusicLayout selected;
 
   @override

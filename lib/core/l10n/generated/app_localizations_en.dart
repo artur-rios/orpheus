@@ -989,4 +989,154 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get musicSelectionLabel => 'Selected songs';
+
+  @override
+  String get playlistTab => 'Playlists';
+
+  @override
+  String get playlistNew => 'New playlist';
+
+  @override
+  String get playlistNameLabel => 'Name';
+
+  @override
+  String get playlistNameRequired => 'Give the playlist a name';
+
+  @override
+  String get playlistCreate => 'Create';
+
+  @override
+  String playlistSongCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count songs',
+      one: '1 song',
+      zero: 'No songs',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get playlistEmpty => 'No playlists yet';
+
+  @override
+  String get playlistActions => 'Playlist actions';
+
+  @override
+  String get playlistBackToList => 'All playlists';
+
+  @override
+  String get playlistCoverLabel => 'Playlist cover';
+
+  @override
+  String get playlistRename => 'Rename…';
+
+  @override
+  String get playlistRenameTitle => 'Rename playlist';
+
+  @override
+  String get playlistRenameConfirm => 'Rename';
+
+  @override
+  String get playlistChooseCover => 'Choose cover…';
+
+  @override
+  String get playlistRemoveCover => 'Remove cover';
+
+  @override
+  String get playlistCoverNotImage =>
+      'Choose a JPEG or PNG image for the cover';
+
+  @override
+  String get playlistExport => 'Export to .m3u…';
+
+  @override
+  String playlistExportSaved(String path) {
+    return 'Saved to $path';
+  }
+
+  @override
+  String get playlistExported => 'Playlist exported';
+
+  @override
+  String playlistExportFailed(String name) {
+    return 'Couldn\'t export $name';
+  }
+
+  @override
+  String get playlistDelete => 'Delete…';
+
+  @override
+  String playlistDeleteTitle(String name) {
+    return 'Delete $name?';
+  }
+
+  @override
+  String get playlistDeleteBody => 'The songs stay in your library.';
+
+  @override
+  String get playlistDeleteConfirm => 'Delete';
+
+  @override
+  String get playlistSaveFailed => 'Couldn\'t save the playlists';
+
+  @override
+  String get playlistShuffle => 'Shuffle';
+
+  @override
+  String playlistSummary(String songs, String length) {
+    return '$songs · $length';
+  }
+
+  @override
+  String get playlistNoSongs => 'No songs in this playlist yet';
+
+  @override
+  String get playlistMissing => 'Missing';
+
+  @override
+  String playlistMissingBy(String artist) {
+    return 'Missing · $artist';
+  }
+
+  @override
+  String get playlistRemoveFrom => 'Remove from playlist';
+
+  @override
+  String get playlistReorder => 'Drag to reorder';
+
+  @override
+  String get playlistAddTo => 'Add to playlist…';
+
+  @override
+  String get playlistAddToTitle => 'Add to playlist';
+
+  @override
+  String get playlistAddToNew => 'New playlist…';
+
+  @override
+  String playlistAdded(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Added $count songs to $name',
+      one: 'Added 1 song to $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get playlistNothingAdded => 'Nothing added';
+
+  @override
+  String playlistDuplicateTitle(String name) {
+    return 'Already in $name — add again?';
+  }
+
+  @override
+  String get playlistAddAnyway => 'Add anyway';
+
+  @override
+  String get playlistSkipThose => 'Skip those';
 }

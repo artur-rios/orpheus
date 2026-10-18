@@ -224,7 +224,11 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(selected(harness), hasLength(12));
       expect(find.text('12 selecionadas'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Editar tags…'), findsOneWidget);
+      // With the bar's actions beside it, *Edit tags…* is an icon on a phone,
+      // as are they: the count keeps the room.
+      expect(find.byTooltip('Editar tags…'), findsOneWidget);
+      expect(find.byTooltip('Adicionar à playlist…'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Editar tags…'), findsNothing);
     },
   );
 

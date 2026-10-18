@@ -13,7 +13,7 @@ result in a file beside its own settings.
 
 > **Status:** complete and tested — the unit and widget suite green and
 > `flutter analyze` clean. Every use case in the [specifications](#specifications),
-> UC-01 to UC-38, is implemented — see the [roadmap](#roadmap). All three
+> UC-01 to UC-39, is implemented — see the [roadmap](#roadmap). All three
 > release builds and the Windows installer are produced and verified by CI on
 > every pull request. It runs on Linux, Windows and Android: the fixes released
 > since 1.0.0 came from running it on a Windows machine and an Android phone.
@@ -68,6 +68,15 @@ result in a file beside its own settings.
   songs…* on a right-click — opens the same form for exactly those songs,
   wherever they come from. Esc, ✕, Back or leaving the list ends it. A song's
   own menu is on its ⋮ button.
+- **Keeps playlists.** *Add to playlist…* on a song's menu, on a selection, or
+  on an album's or an artist's ⋮ menu puts songs at the end of a playlist, or of
+  a new one, and asks first about any it already holds. The Playlists tab lists
+  them, newest change first, as rows or tiles; open one to play it, shuffle it,
+  tap a song to play from there, drag the handles to reorder, and remove songs.
+  Each has a cover of your own or a mosaic of its albums', can be renamed,
+  exported to `.m3u`, and deleted — the songs stay. A song whose file has gone
+  stays in the playlist, greyed out and skipped, so an unplugged drive empties
+  nothing. Playlists live in Orpheus's own data, never in your music folders.
 - **Searches** across titles, artists, albums and genres — all together, or
   one kind at a time with a selector — ranked so a match at the start of a
   title comes above one buried in the middle of something else.
@@ -494,8 +503,9 @@ not written, and on Windows the track playing may be refused as in use.
   a `SYLT` frame whose times are counted in MPEG frames rather than milliseconds
   is declined rather than approximated: turning those into a position needs the
   frame rate of the audio behind them, and this reads headers, not streams.
-- **No playlists.** Queues are built from a track, a record, an artist, or the
-  whole library shuffled. There is nothing to save and name yet.
+- **Playlists are made by hand and cannot be imported.** A playlist holds the
+  songs you added, in the order you left them; it can be exported to `.m3u`, but
+  an `.m3u` cannot be read back in, and none fills itself.
 - **The statistics are all-time, with no windows.** "This month" is a control, a
   parameter, and a second set of numbers to explain, and none of it is worth
   adding before anyone has read the first set. The history stores a count per
@@ -524,8 +534,9 @@ not written, and on Windows the track playing may be refused as in use.
 ## Roadmap
 
 Nine milestones covering thirty-four issues: one foundation issue plus one
-issue per use case from UC-01 to UC-33. UC-34, UC-35, UC-36, UC-37 and UC-38 came after
-the backlog was filed and have no milestone; they are listed after M-09.
+issue per use case from UC-01 to UC-33. UC-34, UC-35, UC-36, UC-37, UC-38 and
+UC-39 came after the backlog was filed and have no milestone; they are listed
+after M-09.
 Milestones are dependency-ordered — no milestone depends on a later one, and
 every milestone after `M-01` depends on it.
 
@@ -630,7 +641,7 @@ Built, tested and specified, and merged.
 
 ### After the backlog — Tags and genres
 
-Built, tested and specified, and merged. UC-34, UC-36, UC-37 and UC-38 have no issue, so the use case itself is linked.
+Built, tested and specified, and merged. UC-34, UC-36, UC-37, UC-38 and UC-39 have no issue, so the use case itself is linked.
 
 | Issue | Work | Spec |
 | --- | --- | --- |
@@ -639,6 +650,7 @@ Built, tested and specified, and merged. UC-34, UC-36, UC-37 and UC-38 have no i
 | [UC-36](docs/requirements/Use%20Case%20Specification%20Document.md#uc-36-browse-and-play-by-genre) | UC-36 — Browse and play by genre — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [UC-37](docs/requirements/Use%20Case%20Specification%20Document.md#uc-37-edit-the-tags-of-several-tracks-at-once) | UC-37 — Edit the tags of several tracks at once — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [UC-38](docs/requirements/Use%20Case%20Specification%20Document.md#uc-38-select-several-songs-and-edit-their-tags) | UC-38 — Select several songs and edit their tags — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-39](docs/requirements/Use%20Case%20Specification%20Document.md#uc-39-keep-playlists) | UC-39 — Keep playlists — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
 ## Changelog
 

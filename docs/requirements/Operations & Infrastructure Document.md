@@ -35,12 +35,14 @@ patching a global, and it is the mechanism behind `NFR-07` and `NFR-08`.
 
 **IR-05** — Everything this application persists lives inside the platform's
 application-support directory for it. Nothing is written anywhere else, and
-the only things written into the owner's music folders are a `.lrc` beside a track whose words were looked up (`BR-29a`), and the tags of files whose autofill the owner confirmed (`FR-AF-05`).
+the only things written into the owner's music folders are a `.lrc` beside a track whose words were looked up (`BR-29a`), and the tags of files whose autofill the owner confirmed (`FR-AF-05`). The one other file it writes is a playlist the owner exports, to the place they chose (`FR-PS-11`).
 
 | What | Where |
 | --- | --- |
 | Catalog | `catalog.json` |
 | Play history | `play-history.json` |
+| Playlists | `playlists.json`, and a `playlists.json.bad-<time>` for one that could not be read |
+| Playlist covers | `playlist-covers/` |
 | Cover cache | `covers/` |
 | Analysed spectra | `energy/` |
 | Preferences | the platform's own preference store |

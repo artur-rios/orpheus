@@ -1225,5 +1225,211 @@
   "musicSelectionLabel": "Selected songs",
   "@musicSelectionLabel": {
     "description": "What the tag editor calls the songs selected in a song list, in its subtitle."
+  },
+  "playlistTab": "Playlists",
+  "@playlistTab": {
+    "description": "The Playlists destination in the navigation panel, and the content area's heading while it shows."
+  },
+  "playlistNew": "New playlist",
+  "@playlistNew": {
+    "description": "The button on the Playlists tab that makes a playlist, and the title of the dialog it opens."
+  },
+  "playlistNameLabel": "Name",
+  "@playlistNameLabel": {
+    "description": "The label of the field in which a playlist's name is typed, when making or renaming one."
+  },
+  "playlistNameRequired": "Give the playlist a name",
+  "@playlistNameRequired": {
+    "description": "Shown under the name field when the owner submits a blank name for a playlist."
+  },
+  "playlistCreate": "Create",
+  "@playlistCreate": {
+    "description": "The button that makes the playlist named in the New playlist dialog."
+  },
+  "playlistSongCount": "{count, plural, =0{No songs} =1{1 song} other{{count} songs}}",
+  "@playlistSongCount": {
+    "description": "How many songs a playlist holds, under its name on the Playlists tab.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "playlistEmpty": "No playlists yet",
+  "@playlistEmpty": {
+    "description": "What the Playlists tab says when the owner has made none."
+  },
+  "playlistActions": "Playlist actions",
+  "@playlistActions": {
+    "description": "The tooltip of the ⋮ button on a playlist's row or tile, which opens its menu."
+  },
+  "playlistBackToList": "All playlists",
+  "@playlistBackToList": {
+    "description": "The tooltip of the button that goes from an open playlist back to the list of them."
+  },
+  "playlistCoverLabel": "Playlist cover",
+  "@playlistCoverLabel": {
+    "description": "The accessibility label of a playlist's picture: the owner's own cover, or the mosaic of its records."
+  },
+  "playlistRename": "Rename…",
+  "@playlistRename": {
+    "description": "The playlist menu item that asks for a new name."
+  },
+  "playlistRenameTitle": "Rename playlist",
+  "@playlistRenameTitle": {
+    "description": "The title of the dialog that asks for a playlist's new name."
+  },
+  "playlistRenameConfirm": "Rename",
+  "@playlistRenameConfirm": {
+    "description": "The button that gives the playlist the name typed in the rename dialog."
+  },
+  "playlistChooseCover": "Choose cover…",
+  "@playlistChooseCover": {
+    "description": "The playlist menu item that opens the image chooser to give the playlist a picture of the owner's own."
+  },
+  "playlistRemoveCover": "Remove cover",
+  "@playlistRemoveCover": {
+    "description": "The playlist menu item, shown only when the playlist has a picture of the owner's own, that takes it off so the mosaic of its records shows again."
+  },
+  "playlistCoverNotImage": "Choose a JPEG or PNG image for the cover",
+  "@playlistCoverNotImage": {
+    "description": "Shown when the file chosen as a playlist's cover is not a JPEG or PNG image; nothing is changed."
+  },
+  "playlistExport": "Export to .m3u…",
+  "@playlistExport": {
+    "description": "The playlist menu item that saves the playlist as an .m3u file where the owner chooses."
+  },
+  "playlistExportSaved": "Saved to {path}",
+  "@playlistExportSaved": {
+    "description": "Shown once a playlist has been exported, naming the file it was saved as.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistExported": "Playlist exported",
+  "@playlistExported": {
+    "description": "Shown once a playlist has been exported to a place the system gives no file path for, such as Android's document provider."
+  },
+  "playlistExportFailed": "Couldn't export {name}",
+  "@playlistExportFailed": {
+    "description": "Shown when a playlist could not be saved as an .m3u file.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistDelete": "Delete…",
+  "@playlistDelete": {
+    "description": "The playlist menu item that asks before deleting the playlist."
+  },
+  "playlistDeleteTitle": "Delete {name}?",
+  "@playlistDeleteTitle": {
+    "description": "The question asked before a playlist is deleted.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistDeleteBody": "The songs stay in your library.",
+  "@playlistDeleteBody": {
+    "description": "Under the question asked before a playlist is deleted: only the playlist goes, never a song or a file."
+  },
+  "playlistDeleteConfirm": "Delete",
+  "@playlistDeleteConfirm": {
+    "description": "The button that deletes the playlist, in the question asked first."
+  },
+  "playlistSaveFailed": "Couldn't save the playlists",
+  "@playlistSaveFailed": {
+    "description": "Shown when making, renaming, giving a cover to or deleting a playlist could not be saved; nothing was changed."
+  },
+  "playlistShuffle": "Shuffle",
+  "@playlistShuffle": {
+    "description": "The button in an open playlist's header that plays every song in it that is in the library, in an order nobody chose."
+  },
+  "playlistSummary": "{songs} · {length}",
+  "@playlistSummary": {
+    "description": "Under an open playlist's name: how many songs it holds (already worded, e.g. '4 songs') and how long they last together (e.g. '1:02:15').",
+    "placeholders": {
+      "songs": {
+        "type": "String"
+      },
+      "length": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistNoSongs": "No songs in this playlist yet",
+  "@playlistNoSongs": {
+    "description": "What an open playlist shows in place of its rows when it holds no songs."
+  },
+  "playlistMissing": "Missing",
+  "@playlistMissing": {
+    "description": "Under the title of a song in a playlist whose file is no longer in the library and whose artist is not known; the row cannot be played."
+  },
+  "playlistMissingBy": "Missing · {artist}",
+  "@playlistMissingBy": {
+    "description": "Under the title of a song in a playlist whose file is no longer in the library, with the artist it had when it was added; the row cannot be played.",
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistRemoveFrom": "Remove from playlist",
+  "@playlistRemoveFrom": {
+    "description": "The song menu item, and the selection bar button and menu item, that take the song or the selected songs out of the open playlist; the files stay in the library."
+  },
+  "playlistReorder": "Drag to reorder",
+  "@playlistReorder": {
+    "description": "The accessibility label of the handle on each row of an open playlist, by which the row is dragged to another place."
+  },
+  "playlistAddTo": "Add to playlist…",
+  "@playlistAddTo": {
+    "description": "The song, album and artist menu item, the selection menu item and the selection bar button that add the song, the tracks or the selected songs to a playlist the owner then chooses."
+  },
+  "playlistAddToTitle": "Add to playlist",
+  "@playlistAddToTitle": {
+    "description": "The title of the dialog that lists the playlists to add songs to."
+  },
+  "playlistAddToNew": "New playlist…",
+  "@playlistAddToNew": {
+    "description": "The first row of the dialog that lists the playlists to add songs to: it asks for a name, makes the playlist and adds the songs to it."
+  },
+  "playlistAdded": "{count, plural, =1{Added 1 song to {name}} other{Added {count} songs to {name}}}",
+  "@playlistAdded": {
+    "description": "Shown once songs have been added to a playlist, with how many were added and the playlist's name.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistNothingAdded": "Nothing added",
+  "@playlistNothingAdded": {
+    "description": "Shown when the owner chose to skip the songs already in a playlist and there were no others, so nothing was added."
+  },
+  "playlistDuplicateTitle": "Already in {name} — add again?",
+  "@playlistDuplicateTitle": {
+    "description": "The question asked when some of the songs about to be added to a playlist are already in it.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistAddAnyway": "Add anyway",
+  "@playlistAddAnyway": {
+    "description": "The answer to the already-in-the-playlist question that adds every song, the ones already there a second time."
+  },
+  "playlistSkipThose": "Skip those",
+  "@playlistSkipThose": {
+    "description": "The answer to the already-in-the-playlist question that adds only the songs that are not there yet."
   }
 }

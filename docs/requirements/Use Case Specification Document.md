@@ -18,7 +18,7 @@ done.
 | Actor | Description |
 | --- | --- |
 | **Owner** | The single human user, and the only actor with intent. Interacts with every use case below. |
-| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed (UC-34, UC-35, UC-37, UC-38). |
+| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, to the one file the owner chose for an export (UC-39), and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed (UC-34, UC-35, UC-37, UC-38). |
 | **Metadata service** | MusicBrainz, and the Cover Art Archive for covers. Asked only when the owner starts an autofill (UC-34), at most once a second, and sent nothing that identifies the owner. |
 | **Playback engine** | The libmpv-backed engine linked in process. Opens files, reports position and duration, and reports what it cannot decode. Never modifies a file. |
 | **Host platform** | Windows, Linux or Android. Grants or refuses read access, provides the folder picker, and — on Android alone — provides the media session and the foreground service. |
@@ -99,6 +99,10 @@ graph LR
         UC38[UC-38: Select several songs and edit their tags]
     end
 
+    subgraph "Playlists (PS)"
+        UC39[UC-39: Keep playlists]
+    end
+
     OWNER --> UC01
     OWNER --> UC07
     OWNER --> UC13
@@ -111,6 +115,7 @@ graph LR
     OWNER --> UC35
     OWNER --> UC37
     OWNER --> UC38
+    OWNER --> UC39
 ```
 
 ---
@@ -1019,14 +1024,14 @@ graph LR
 | **ID** | UC-28 |
 | **Name** | Navigate the application shell |
 | **Actors** | Owner |
-| **Description** | The owner moves between the four areas of the application. |
+| **Description** | The owner moves between the five areas of the application. |
 | **Preconditions** | None. |
 | **Postconditions** | None. |
 | **Requirements** | FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-07 |
 
 **Main Flow**
 
-1. The shell presents four destinations — music, genres, queue, folders.
+1. The shell presents five destinations — music, genres, playlists, queue, folders.
 2. Where the window is wide enough they are a rail down the side; where it is
    not they are a bar across the bottom.
 3. The owner selects one and the content area changes.
@@ -1037,15 +1042,16 @@ graph LR
 | ID | Condition | Outcome |
 | --- | --- | --- |
 | AF-01 | The window is resized across the breakpoint | The arrangement changes with it, without losing where the owner was. |
-| AF-02 | The system back gesture is used with somewhere to go back to | It goes back a level in the music area or in the genres area, or clears a search, rather than closing the application. |
+| AF-02 | The system back gesture is used with somewhere to go back to | It goes back a level in the music area or in the genres area, closes an open playlist, or clears a search, rather than closing the application. |
 | AF-03 | The system back gesture is used with nowhere to go | It does whatever the platform does with it. |
 
-> **Four destinations, deliberately.** This application does one thing, and a
+> **Five destinations, deliberately.** This application does one thing, and a
 > navigation panel listing six ways into it would be six ways of asking the
 > owner where they want to be before they have heard anything. Genres earned
 > its place beside Music because the owner listens by mood as often as by
-> artist. The statistics screen is reached from the bar rather than becoming a
-> fifth (FR-UX-03).
+> artist, and Playlists earned its place beside Genres because a playlist is the
+> owner's own order, which neither of them can give. The statistics screen is
+> reached from the bar rather than becoming a sixth (FR-UX-03).
 
 ---
 
@@ -1423,7 +1429,7 @@ graph LR
 | **Description** | In a list of songs the owner picks several, and edits their tags in the one form of UC-37, however the songs are spread over albums and artists. |
 | **Preconditions** | A list of songs is on screen: all songs, the songs of an album or of a genre, or search results. |
 | **Postconditions** | Where the owner saved, the songs Orpheus could write hold exactly the fields the owner changed, as in UC-37, and the selection has ended. Where the owner stopped, cancelled or saved nothing, no tag has changed. Nothing has been played by the selecting. |
-| **Requirements** | FR-UX-11, FR-UX-12, FR-TE-09 |
+| **Requirements** | FR-UX-11, FR-UX-12, FR-UX-13, FR-TE-09 |
 
 **Main Flow**
 
@@ -1453,6 +1459,70 @@ graph LR
 | AF-08 | The owner touches and holds an album or an artist | Its menu opens, as before (`FR-UX-12`). |
 | AF-09 | The owner cancels the form, or it writes no song | The selection stays, so the owner can adjust it. |
 | AF-10 | The owner taps a song when nothing is selected | It plays, as before. |
+| AF-11 | The bar is narrower than 480 logical pixels, as on a phone held upright | *Edit tags…* in it is an icon with a tooltip, so the count keeps its room (`FR-UX-13`). |
+
+### UC-39: Keep playlists
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-39 |
+| **Name** | Keep playlists |
+| **Actors** | Owner, Local filesystem, Host platform |
+| **Description** | The owner makes named playlists, adds songs to them from wherever they are listed, plays them in an order of their own, and renames, covers, exports and deletes them. |
+| **Preconditions** | None. Songs can be added once the library holds some. |
+| **Postconditions** | The playlists the owner left are stored in the application's own data and are there at the next launch, in the order the owner arranged them. No audio file, and nothing in a music folder, has been created, changed or removed; an export has written the one file the owner chose. |
+| **Requirements** | FR-PS-01 … FR-PS-13, FR-UX-01, FR-UX-13 |
+
+**Main Flow**
+
+1. The owner opens the Playlists destination. It lists the playlists, the most recently changed first, as rows or tiles,
+   each with its cover, name and number of songs (`FR-PS-07`); with none yet it says so and offers *New playlist*.
+2. The owner picks *New playlist*, gives it a name and confirms. It is stored and listed (`FR-PS-01`).
+3. Elsewhere, the owner picks *Add to playlist…* — on a song's menu, in the bar or the right-click menu of a
+   selection, or on an album's or an artist's ⋮ menu (`FR-PS-02`). A dialog lists the playlists, *New playlist…*
+   first, and the owner picks one.
+4. The songs go at the end of the playlist, in the order given, and a message says *Added N songs to X*.
+5. The owner opens a playlist. Its header shows the cover, the number of songs and their length, with *Play* and
+   *Shuffle*; below are its songs in the owner's order, each with a drag handle.
+6. The owner taps a song; the playlist plays from it, and the queue is named after the playlist (`FR-PS-08`). *Play*
+   starts at the first song, *Shuffle* plays them all in a random order.
+7. The owner drags a song's handle to another place; the order is stored at once (`FR-PS-05`).
+8. The owner picks *Remove from playlist* on a song's menu; that entry goes, and the song and its file stay
+   (`FR-PS-04`).
+9. From the playlist's menu — its ⋮ button, a right-click or a touch and hold — the owner picks *Rename…*,
+   *Choose cover…*, *Remove cover* (offered only while the playlist has a cover of its own), *Export to .m3u…* or
+   *Delete…* (`FR-PS-01`, `FR-PS-06`, `FR-PS-11`).
+10. *Rename…* asks for a name and stores it. *Choose cover…* asks for a JPEG or PNG and keeps a copy of it in the
+    application's own data for this playlist; *Remove cover* returns to the mosaic of up to four of its albums' covers.
+11. *Export to .m3u…* asks where to save `<name>.m3u` and writes the extended M3U there, naming the place when it is
+    done.
+12. *Delete…* asks *Delete X?* and says the songs stay in the library; on confirming, the playlist and its cover are
+    removed and the list is shown.
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | Some of the songs being added are already in the chosen playlist | *Already in X — add again?* is asked with *Add anyway*, *Skip those* and *Cancel*. *Add anyway* adds all of them, *Skip those* adds only the others, *Cancel* adds nothing (`FR-PS-03`). |
+| AF-02 | *Skip those* leaves nothing to add | Nothing is stored, and the message says *Nothing added*. |
+| AF-03 | The owner cancels the playlist dialog or the name dialog | Nothing is created and nothing is added. |
+| AF-04 | The name is blank | The dialog says to give the playlist a name and stays open; a name is trimmed, and may repeat another playlist's (`FR-PS-01`). |
+| AF-05 | An album or an artist is added | Its songs are gathered from the whole library, an album in track order and an artist in the order the artist is listed, not only those on screen (`FR-PS-02`). |
+| AF-06 | A song's file is no longer in the library — a drive is unplugged, a folder is unreachable | The song stays in the playlist, greyed and labelled *Missing* with what was saved of it. Tapping it does nothing, *Play* and *Shuffle* skip it, and the owner can select and remove it. When the file is back it is an ordinary song again (`FR-PS-09`). |
+| AF-07 | Every song in the playlist is missing, or it has none | *Play* and *Shuffle* are disabled, and an empty playlist says it has no songs yet. |
+| AF-08 | The library is still loading, or could not be read | The playlist shows the loading state or the error with a retry in place of its songs, so that no song is shown missing for want of an answer (`FR-PS-09`). |
+| AF-09 | The owner starts a selection in a playlist | Each entry is selected on its own, so a song that is in twice can be picked once; dragging is not offered; the bar offers *Remove from playlist*, *Add to playlist…* and *Edit tags…*, the last two over the songs the library holds, each once, in the playlist's order. Missing entries can be picked and removed (`FR-PS-10`). |
+| AF-10 | Back is used in a playlist | It ends a selection if there is one, and otherwise closes the playlist and shows the list (`FR-PS-07`). |
+| AF-11 | The playlist is deleted while it is open | The list is shown. |
+| AF-12 | The file picked as a cover is not a JPEG or a PNG | A message says to choose a JPEG or PNG image; the cover is unchanged. Cancelling the picker changes nothing. |
+| AF-13 | The owner cancels the save dialog of an export | Nothing is written and nothing is said. |
+| AF-14 | The export could not be written | A message says that the playlist could not be exported; the playlist is unchanged, and nothing else is written (`NFR-03`). |
+| AF-15 | The owner cancels *Delete…* | Nothing is removed. |
+| AF-16 | The playlists cannot be stored — a full disk, a locked file | A message says the playlists could not be saved; what is on screen and what is stored are as they were (`FR-PS-12`). |
+| AF-17 | The stored document cannot be read, or was written by another version | It is kept aside as `playlists.json.bad-<time>`, never overwritten, and the application starts with no playlists (`FR-PS-13`). |
+| AF-18 | The stored document can be neither read nor kept aside | The Playlists destination shows the error with a retry; no playlist can be created or changed, so nothing is written over the document (`FR-PS-13`). |
+| AF-19 | The selection's bar is narrower than 480 logical pixels, as on a phone held upright | *Edit tags…* in it is an icon with a tooltip (`FR-UX-13`). |
+| AF-20 | A scan runs, or a music folder cannot be reached | No playlist changes; songs whose files the scan no longer finds are shown as missing (AF-06). |
 
 ---
 
@@ -1496,7 +1566,8 @@ graph LR
 | UC-35 Edit a track's tags by hand | FR-TE-01 … FR-TE-04 |
 | UC-36 Browse and play by genre | FR-CT-05, FR-CT-06, FR-CT-12 … FR-CT-19, FR-UX-01 |
 | UC-37 Edit the tags of several tracks at once | FR-TE-05 … FR-TE-08 |
-| UC-38 Select several songs and edit their tags | FR-UX-11, FR-UX-12, FR-TE-09 |
+| UC-38 Select several songs and edit their tags | FR-UX-11, FR-UX-12, FR-UX-13, FR-TE-09 |
+| UC-39 Keep playlists | FR-PS-01 … FR-PS-13, FR-UX-01, FR-UX-13 |
 
 ## 4. State diagrams
 
