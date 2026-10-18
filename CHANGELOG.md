@@ -30,8 +30,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Select several songs. In any list of songs — all of them, inside an album or a genre, or search results —
   touch and hold a song, or Ctrl-click or Shift-click it, to start a selection. Tick boxes take the place of the
   track number or cover, a tap picks a song instead of playing it, and Shift-click picks a stretch. A bar above the
-  list shows how many are selected, with *Select all*, a ✕ to stop and *Edit tags of N songs…*; so does a
-  right-click on a selected song. Esc, ✕, the system Back on Android, or leaving the list ends the selection, and so
+  list shows how many are selected, with *Select all*, a ✕ to stop and *Edit tags…*; a right-click on a selected song
+  offers the same action as *Edit tags of N songs…*. Esc, ✕, the system Back on Android, or leaving the list ends the selection, and so
   does a save that wrote songs.
 - Edit the tags of the selected songs together, even from different albums and artists: the same form as for an album
   or an artist, over exactly those songs. One selected song opens the one-track editor.
@@ -48,7 +48,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   card is of all plays, so the shares can add up to more than 100%.
 - The album row's autofill button moved into its new ⋮ menu, beside *Edit tags…*.
 - Touch and hold on a song now selects it instead of opening its menu, which is on its ⋮ button and a right-click.
-  Touch and hold on an album, an artist or a genre still opens its menu.
+  Touch and hold on an album or an artist still opens its menu.
 
 ## [1.4.0] - 2026-10-13
 

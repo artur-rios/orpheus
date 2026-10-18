@@ -1428,12 +1428,12 @@ graph LR
 **Main Flow**
 
 1. The owner starts a selection on a song: touch and hold, Ctrl-click or Shift-click (`FR-UX-11`). The song is selected,
-   tick boxes take the place of the track numbers and covers, and a bar above the list shows *1 selected*, *Select all*,
-   a way to stop, and *Edit tags of 1 song…*.
+   tick boxes take the place of the track numbers and covers, and a bar above the list shows *1 selected*, a way to
+   stop, and *Edit tags…*, with *Select all* while some songs are not picked.
 2. The owner adds songs: a tap, a click or a touch and hold on a song toggles it instead of playing it; Ctrl-click
    toggles; Shift-click selects every song from the last one toggled to the one clicked. The bar shows the count.
-3. The owner picks *Edit tags of N songs…* in the bar, or right-clicks a selected song and picks it in the menu that
-   opens (`FR-TE-09`).
+3. The owner picks *Edit tags…* in the bar, or right-clicks a selected song and picks *Edit tags of N songs…* in the
+   menu that opens (`FR-TE-09`).
 4. The form of UC-37 opens over exactly the selected songs, in the order of the list, and the owner goes on as there
    (`FR-TE-05` … `FR-TE-08`). The selection stays while the form is open.
 5. The form closes with songs written; the selection ends, the list shows the new tags, and the library updates without
@@ -1450,7 +1450,7 @@ graph LR
 | AF-05 | A rescan after a save removes selected songs from the list | They drop out of the selection; if none remain, it ends. |
 | AF-06 | The owner right-clicks a song outside the selection | That song's own menu opens, as when nothing is selected. |
 | AF-07 | The owner presses a song's ⋮ button | That song's own menu opens, whether or not it is selected. |
-| AF-08 | The owner touches and holds an album, an artist or a genre | Its menu opens, as before (`FR-UX-12`). |
+| AF-08 | The owner touches and holds an album or an artist | Its menu opens, as before (`FR-UX-12`). |
 | AF-09 | The owner cancels the form, or it writes no song | The selection stays, so the owner can adjust it. |
 | AF-10 | The owner taps a song when nothing is selected | It plays, as before. |
 

@@ -64,10 +64,10 @@ result in a file beside its own settings.
   album or a genre, or search results — touch and hold one, or Ctrl-click or
   Shift-click it, and tick boxes appear: tap to add or remove songs instead of
   playing them, Shift-click to take a stretch, *Select all* for the lot. A bar
-  shows how many are picked, and *Edit tags of N songs…* — in it, or on a
-  right-click — opens the same form for exactly those songs, wherever they
-  come from. Esc, ✕, Back or leaving the list ends it. A song's own menu is on
-  its ⋮ button.
+  shows how many are picked, and *Edit tags…* — in it, or *Edit tags of N
+  songs…* on a right-click — opens the same form for exactly those songs,
+  wherever they come from. Esc, ✕, Back or leaving the list ends it. A song's
+  own menu is on its ⋮ button.
 - **Searches** across titles, artists, albums and genres — all together, or
   one kind at a time with a selector — ranked so a match at the start of a
   title comes above one buried in the middle of something else.

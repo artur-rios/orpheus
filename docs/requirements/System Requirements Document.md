@@ -160,7 +160,7 @@ wherever a test can enforce it.
 | **FR-UX-09** | Both language catalogs must stay complete, every message must carry a description, and a translation must use the same placeholders as its original (`BR-27`). |
 | **FR-UX-10** | The desktop window's size and position must be restored between runs, and a minimum size enforced. |
 | **FR-UX-11** | A list of songs — all songs, the songs of an album or of a genre, and search results — must let the owner select several of them. Touch and hold, Ctrl-click and Shift-click start a selection; while it lasts a tap toggles a song instead of playing it, the number selected and the actions that apply to them are shown, and Esc, Back, a control on screen, or leaving the list end it. |
-| **FR-UX-12** | Touch and hold on a song must start a selection rather than open its menu; a song's menu stays on its ⋮ button and a right-click, which on a selected song opens a menu for the selection. Touch and hold on an album, an artist or a genre still opens its menu. |
+| **FR-UX-12** | Touch and hold on a song must start a selection rather than open its menu; a song's menu stays on its ⋮ button and a right-click, which on a selected song opens a menu for the selection. Touch and hold on an album or an artist still opens its menu. |
 
 ### 2.7 Lyrics (LY)
 
