@@ -28,6 +28,34 @@ void main() {
     expect(harness.read(playlistBrowseProvider), isNull);
   });
 
+  test(
+    'GivenAnOpenAutoPlaylist_WhenTheyAreHiddenAndShownAgain_ThenNoneIsOpen',
+    () async {
+      final harness = Harness();
+      final preferences = harness.read(preferencesControllerProvider.notifier);
+      harness.read(playlistBrowseProvider.notifier).open(autoLatelyId);
+
+      await preferences.setShowsAutoPlaylists(false);
+      await preferences.setShowsAutoPlaylists(true);
+
+      expect(harness.read(playlistBrowseProvider), isNull);
+    },
+  );
+
+  test(
+    'GivenAnOpenPlaylistOfTheOwners_WhenAutoPlaylistsAreHidden_ThenItStaysOpen',
+    () async {
+      final harness = Harness();
+      harness.read(playlistBrowseProvider.notifier).open('p1');
+
+      await harness
+          .read(preferencesControllerProvider.notifier)
+          .setShowsAutoPlaylists(false);
+
+      expect(harness.read(playlistBrowseProvider), 'p1');
+    },
+  );
+
   group('the open playlist', () {
     final made = DateTime.utc(2026);
     final roadTrip = Playlist(

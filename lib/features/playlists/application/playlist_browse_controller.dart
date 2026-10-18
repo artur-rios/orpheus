@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/di/providers.dart';
+import '../domain/auto_playlists.dart';
+
 /// Which playlist the owner has open, or `null` while they are looking at the
 /// list of them.
 ///
@@ -8,7 +11,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// comes back to it.
 class PlaylistBrowseController extends Notifier<String?> {
   @override
-  String? build() => null;
+  String? build() {
+    // Turning the auto playlists off closes one that is open, rather than
+    // leaving it to reappear when they are turned back on.
+    ref.listen(
+      preferencesControllerProvider.select((state) => state.showsAutoPlaylists),
+      (_, shown) {
+        final open = state;
+        if (!shown && open != null && isAutoPlaylistId(open)) state = null;
+      },
+    );
+
+    return null;
+  }
 
   /// Opens the playlist [id].
   void open(String id) => state = id;

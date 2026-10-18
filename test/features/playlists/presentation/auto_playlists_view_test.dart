@@ -204,6 +204,26 @@ void main() {
     );
 
     testWidgets(
+      'GivenAnOpenAutoPlaylist_WhenThePreferenceIsTurnedOffAndOn_ThenTheTabShowsTheList',
+      (tester) async {
+        final harness = await showOpen(tester, autoAllTimeId);
+        expect(find.text('Alpha'), findsOneWidget);
+        final preferences = harness.read(
+          preferencesControllerProvider.notifier,
+        );
+
+        await preferences.setShowsAutoPlaylists(false);
+        await tester.pumpAndSettle();
+        await preferences.setShowsAutoPlaylists(true);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Auto playlists'), findsOneWidget);
+        expect(row('All-time favourites'), findsOneWidget);
+        expect(find.text('Alpha'), findsNothing);
+      },
+    );
+
+    testWidgets(
       'GivenAPlaylistsFileThatCannotBeRead_WhenTheTabIsShown_ThenTheSectionIsAboveTheFailure',
       (tester) async {
         final harness = harnessOf();
