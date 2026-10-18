@@ -71,11 +71,19 @@ wherever a test can enforce it.
 | **FR-CT-04** | The owner must be able to return from any level to the one above it, and on Android the system back gesture must do so. |
 | **FR-CT-05** | A listing must be presentable as rows or as a grid of sleeves, and the choice must persist. |
 | **FR-CT-06** | Every track must be named by its tags and never by its file name (`BR-05`), with a single localized word standing in for each absent tag (`BR-06`). |
-| **FR-CT-07** | Search must match titles, artists and records together. |
-| **FR-CT-08** | Search results must be ranked so that a match at the start of a name outranks a match within it. |
+| **FR-CT-07** | Search must match titles, artists, records and genres, together or one kind at a time, as the owner chooses with a selector of *All*, *Songs*, *Artists*, *Albums* and *Genres*. A track matches a choice only through the fields that choice names, and the results stay a list of tracks. The choice must be kept while the application runs, and be *All* again at the next launch. |
+| **FR-CT-08** | Search results must be ranked so that a match at the start of a name outranks a match within it, within each choice of `FR-CT-07`. |
 | **FR-CT-09** | Search must be clearable, and clearing it must return the owner to the listing they were on. |
 | **FR-CT-10** | A library with nothing in it must say so, and say what to do about it, rather than showing an empty list. |
 | **FR-CT-11** | A record's sleeve must be decoded once per distinct picture and shared by every screen showing it. |
+| **FR-CT-12** | The library must be browsable by genre, from a destination of its own in the shell: the genres listed, then inside one the artists, records and songs that carry it, as rows or as sleeves. The place the owner has reached there must be kept apart from the one in the music area, and be there when they return. |
+| **FR-CT-13** | A record must be listed under every genre any of its tracks carries, and opening it from a genre must show the whole record, not only the tracks tagged with that genre (`BR-37`). An artist's tracks with no album name are not a record: under a genre they are listed as the artist's untitled group, holding only the tracks tagged with it (`BR-40`). |
+| **FR-CT-14** | Playing a genre, or shuffling it, must queue only the tracks tagged with it. Inside a genre, playing an artist must queue that artist's records listed under the genre, whole, in the order shown, and playing a record or a track inside a record must play the whole record (`BR-38`). |
+| **FR-CT-15** | A track with several genres must be listed under each of them. Every value a file holds must be kept, from every format that can hold several: a genre value is split at `;`, `|` and `,` and never at `/`, a genre repeated on a track counts once, an MP3's ID3v2.4 genre frame keeps each of its values, and an ID3v1 numeric reference such as `(17)` is read as the genre it names (`BR-39`). A file holding several genre atoms in MP4 keeps only one. |
+| **FR-CT-16** | Genres must be matched ignoring case and surrounding spaces, so `rock` and `Rock ` are one genre, shown in the spelling most tracks use — on a tie, the alphabetically first (`BR-39`). |
+| **FR-CT-17** | Tracks with no genre must form a *No genre* group, listed after every genre and under the same rules: a record with any untagged track is listed there, and playing it plays only the untagged tracks (`BR-40`). A library with no genre tags at all must show only that group. |
+| **FR-CT-18** | The owner must be able to return from any level of a genre to the one above it, and on Android the system back gesture must do so, after clearing a search. |
+| **FR-CT-19** | A scan must not take the owner out of a record that has just lost the open genre's tag: it stays on screen, drawn whole from the library, and plays whole. A level left with nothing in it, or a genre that no longer exists, must be stepped out of. |
 
 ### 2.3 Playback (PL)
 
@@ -129,9 +137,9 @@ wherever a test can enforce it.
 | **FR-ST-06** | The play history must persist between runs, written atomically. |
 | **FR-ST-07** | A play history that cannot be read must start over rather than prevent the application from running. |
 | **FR-ST-08** | The application must present the total number of plays and the number of distinct tracks they came from. |
-| **FR-ST-09** | The application must present four rankings — most played tracks, artists, records and genres — read from the play history against the catalog (`BR-23`). |
+| **FR-ST-09** | The application must present four rankings — most played tracks, artists, records and genres — read from the play history against the catalog (`BR-23`). A track with several genres must credit each of them with its plays, and a genre's share of the plays must be of all plays, so shares may add up to more than 100%. |
 | **FR-ST-10** | Every ranking must be drawn even when it is empty. |
-| **FR-ST-11** | A played track whose tags name no artist, record or genre must be counted in the totals, excluded from those rankings, and the discrepancy must be explained on screen (`BR-24`). |
+| **FR-ST-11** | A played track whose tags name no artist, record or genre must be counted in the totals, excluded from those rankings, and the discrepancy must be explained on screen (`BR-24`). A track has no genre only when it has none at all. |
 | **FR-ST-12** | A played file the catalog no longer holds must still count, and must be named by its file. |
 | **FR-ST-13** | The statistics must be read once per opening and must not reorder themselves while being read; reading them again must be one action away. |
 | **FR-ST-14** | The statistics screen must not fail because the library could not be read. |
@@ -141,9 +149,9 @@ wherever a test can enforce it.
 
 | ID | Requirement |
 | --- | --- |
-| **FR-UX-01** | The shell must present three destinations — music, queue, folders — and no more. |
+| **FR-UX-01** | The shell must present four destinations — music, genres, queue, folders — and no more. |
 | **FR-UX-02** | The destinations must be a rail where the window is wide enough and a bar across the bottom where it is not, decided by width at every size (`BR-28`). |
-| **FR-UX-03** | The statistics screen must be reachable from the shell without becoming a fourth destination. |
+| **FR-UX-03** | The statistics screen must be reachable from the shell without becoming a fifth destination. |
 | **FR-UX-04** | The owner must be able to choose light, dark, or the system's setting; the choice must persist. |
 | **FR-UX-05** | The owner must be able to choose English, Brazilian Portuguese, or the system's language; the choice must persist. |
 | **FR-UX-06** | A preference must apply immediately and be written behind; one that applied but could not be written must be reported (`BR-25`). |
@@ -246,7 +254,7 @@ Realises F-18.
 | F-01 Library sources | FR-LB-01 … FR-LB-08 |
 | F-02 Scanning and tag reading | FR-LB-09 … FR-LB-18 |
 | F-03 Library derivation | FR-CT-02, FR-CT-06 |
-| F-04 Browsing | FR-CT-01, FR-CT-03, FR-CT-04, FR-CT-05, FR-CT-10, FR-CT-11 |
+| F-04 Browsing | FR-CT-01, FR-CT-03, FR-CT-04, FR-CT-05, FR-CT-10, FR-CT-11, FR-CT-12 … FR-CT-19 |
 | F-05 Search | FR-CT-07, FR-CT-08, FR-CT-09 |
 | F-06 Playback | FR-PL-01 … FR-PL-07, FR-PL-20 |
 | F-07 Repeat and resume | FR-PL-08 … FR-PL-13 |
@@ -267,7 +275,7 @@ Realises F-18.
 | Area | Use cases |
 | --- | --- |
 | LB | UC-01, UC-02, UC-03, UC-04, UC-05, UC-06 |
-| CT | UC-07, UC-08, UC-09, UC-10, UC-11, UC-12 |
+| CT | UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-36 |
 | PL | UC-13 … UC-23 |
 | BG | UC-24, UC-25 |
 | ST | UC-26, UC-27 |
@@ -283,7 +291,7 @@ Everything the application persists, and where.
 
 | Document | Location | Contents |
 | --- | --- | --- |
-| **Catalog** | `catalog.json` in the application-support directory | One entry per audio file: path, size, modification time, and every tag read from it, plus the id of its cover. Written atomically; versioned. |
+| **Catalog** | `catalog.json` in the application-support directory | One entry per audio file: path, size, modification time, and every tag read from it — every genre a file holds, not only the first — plus the id of its cover. Written atomically; versioned. |
 | **Play history** | `play-history.json`, beside the catalog | One entry per file ever played: path, play count, and when it last counted. Written atomically; versioned. |
 | **Cover cache** | a `covers` directory | One file per distinct picture, named by the hash of its bytes. |
 | **Analysis cache** | an `energy` directory | One file per analysed track — the measured spectrum, about a hundred kilobytes for a four-minute track — named by a key carrying the file's path, length and modification time. Disposable: deleting it costs a second per track and nothing else. |

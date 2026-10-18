@@ -13,7 +13,7 @@ result in a file beside its own settings.
 
 > **Status:** complete and tested — the unit and widget suite green and
 > `flutter analyze` clean. Every use case in the [specifications](#specifications),
-> UC-01 to UC-35, is implemented — see the [roadmap](#roadmap). All three
+> UC-01 to UC-36, is implemented — see the [roadmap](#roadmap). All three
 > release builds and the Windows installer are produced and verified by CI on
 > every pull request. It runs on Linux, Windows and Android: the fixes released
 > since 1.0.0 came from running it on a Windows machine and an Android phone.
@@ -23,8 +23,10 @@ result in a file beside its own settings.
 - **Reads a library from folders you choose.** Register one or more folders and
   Orpheus walks them, reads the tags out of every audio file, and pulls out the
   cover art. Nothing is indexed that you did not point it at.
-- **Browses by artist, album and song**, in rows or as a wall of sleeves, with a
-  breadcrumb back out of whatever you drilled into.
+- **Browses by artist, album, song and genre**, in rows or as a wall of sleeves,
+  with a breadcrumb back out of whatever you drilled into. Genres have a tab of
+  their own: a record is listed under every genre its tracks carry and opens
+  whole, while playing a genre plays only the tracks tagged with it.
 - **Plays a track, a record, an artist, or everything shuffled**, with a queue
   you can see and jump around in, repeat, and a resume point per track.
 - **Shows what is playing everywhere** — a persistent bar across the bottom, and
@@ -56,8 +58,9 @@ result in a file beside its own settings.
   artist, album, track and disc numbers and totals, year, genre and the cover,
   which you can replace with a JPEG or PNG or remove. Only what you change is
   written, and the library updates by itself.
-- **Searches** across titles, artists and albums, ranked so a match at the start
-  of a title comes above one buried in the middle of something else.
+- **Searches** across titles, artists, albums and genres — all together, or
+  one kind at a time with a selector — ranked so a match at the start of a
+  title comes above one buried in the middle of something else.
 - **Says what you actually listen to** — total plays, and the most played
   tracks, artists, records and genres, counted from your own listening and
   nobody else's.
@@ -511,7 +514,7 @@ not written, and on Windows the track playing may be refused as in use.
 ## Roadmap
 
 Nine milestones covering thirty-four issues: one foundation issue plus one
-issue per use case from UC-01 to UC-33. UC-34 and UC-35 came after the backlog
+issue per use case from UC-01 to UC-33. UC-34, UC-35 and UC-36 came after the backlog
 was filed and have no milestone; they are listed after M-09. Milestones are
 dependency-ordered — no milestone depends on a later one, and every milestone
 after `M-01` depends on it.
@@ -615,14 +618,15 @@ Built, tested and specified, and merged.
 | --- | --- | --- |
 | [#33](https://github.com/artur-rios/orpheus/issues/33) | UC-32 — See the music move — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
-### After the backlog — Autofill
+### After the backlog — Tags and genres
 
-Built, tested and specified, and merged. UC-34 has no issue, so the use case itself is linked.
+Built, tested and specified, and merged. UC-34 and UC-36 have no issue, so the use case itself is linked.
 
 | Issue | Work | Spec |
 | --- | --- | --- |
 | [UC-34](docs/requirements/Use%20Case%20Specification%20Document.md#uc-34-autofill-a-records-tags) | UC-34 — Autofill a record's tags — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [#53](https://github.com/artur-rios/orpheus/issues/53) | UC-35 — Edit a track's tags by hand — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-36](docs/requirements/Use%20Case%20Specification%20Document.md#uc-36-browse-and-play-by-genre) | UC-36 — Browse and play by genre — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
 ## Changelog
 

@@ -23,7 +23,7 @@ interface on Windows, Linux and Android.
 | | |
 | --- | --- |
 | **Reads a library from folders you choose** | Registers one or more folders, walks them, reads the tags out of every audio file and pulls out the cover art. Nothing is indexed that you did not point it at. |
-| **Browses by artist, album and song** | In rows or as a wall of sleeves, with a breadcrumb back out of whatever you drilled into. |
+| **Browses by artist, album, song and genre** | In rows or as a wall of sleeves, with a breadcrumb back out of whatever you drilled into. Genres have a tab of their own: a record is listed under every genre its tracks carry, and playing a genre plays only the tracks tagged with it. |
 | **Plays a track, a record, an artist, or everything shuffled** | With a queue you can see and jump around in, repeat, and a resume point per track. |
 | **Shows what is playing everywhere** | A persistent bar across the bottom, and a full player with the record's own sleeve as large as the window allows. |
 | **Draws the music itself** | The bars on the player are the spectrum of the recording, measured from its own samples by the engine that plays it. |

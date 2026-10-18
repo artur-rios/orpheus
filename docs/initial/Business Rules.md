@@ -21,10 +21,11 @@ erDiagram
 | --- | --- |
 | **Library folder** | A directory on disk the owner registered as a source. Several may exist. Stored as a path. |
 | **Audio file** | One file with a supported extension found under a library folder. Identified by its absolute path. |
-| **Track metadata** | What the file's tags say: title, artist, album artist, album, genre, track and disc numbers, year, duration, and the id of its cover. Every field is optional. |
+| **Track metadata** | What the file's tags say: title, artist, album artist, album, genres (none, one or several), track and disc numbers, year, duration, and the id of its cover. Every field is optional. |
 | **Cover** | A picture extracted at scan time, addressed by a hash of its bytes. |
 | **Record** | Not stored. A grouping derived from the files that share an album and an album artist. |
 | **Artist** | Not stored. A grouping derived from the album artist. |
+| **Genre** | Not stored. A grouping derived from the genres the tracks carry; a track with several is in each, and a track with none is in the *No genre* group. |
 | **Queue** | What is playing and in what order. Lives for a session; never persisted. |
 | **Resume point** | Where playback stopped in one file. |
 | **Track plays** | How many times one file has counted as played, and when it last did. |
@@ -273,3 +274,52 @@ interface presents it as measurement.
 isolate, it never delays a track opening, and a failure — a format that will not
 decode, a full disk, a read-only cache — costs the bars of that one track and
 nothing else.
+
+## 11. Genres
+
+**BR-37 — Browsing is by record: a record is listed under every genre any of
+its tracks carries, and is opened whole.** A record with ten Rock tracks and
+two Pop ones is a Rock record and a Pop record. Opening it from Pop shows all
+twelve tracks, not the two, because the record is the thing being browsed and a
+fragment of it is not a record the owner owns.
+
+**BR-38 — Playing is by track: playing a genre plays only the tracks tagged
+with it.** Browsing and playing are deliberately different questions, and the
+owner who presses play on Rock has asked for Rock. The Pop tracks of a record
+listed under Rock are not in the queue, however the record is listed. What is
+seen is what plays: inside a genre, an artist plays the records listed under
+that genre, whole and in the order shown, and not everything the artist ever
+made; a record plays whole.
+
+> *The two rules are never reconciled by weakening either.* Playing only the
+> genre's tracks from a record opened whole would make the screen and the
+> queue disagree, and listing only the genre's tracks inside the record would
+> make a record open on a fragment of itself. Each rule holds where it
+> applies.
+
+**BR-39 — A genre is its name, split on `;`, `|` and `,`, and never on `/`, and
+matched without regard to case or surrounding spaces.** `Hip-Hop/Rap`,
+`R&B/Soul` and `Singer/Songwriter` are one genre each, in every format, MP3
+included; `Rock; Pop` is two, however the format delivers it — and the
+application itself writes a FLAC file's genres back as one joined value, which
+unsplit would become a genre called *Rock; Pop*. A genre repeated on one track
+counts once. `rock` and `Rock ` are one genre, shown in the spelling most
+tracks use and, on a tie, the alphabetically first. One rule, applied by the
+tab, the queues and the statistics alike.
+
+> *A change from before, stated rather than hidden:* an MP3's `Hip-Hop/Rap` was
+> read as two genres, `Hip-Hop` and `Rap`, because the tag library splits that
+> frame at `/`. The scan now reads the frame itself, keeping every value of an
+> ID3v2.4 frame and resolving ID3v1 numeric references such as `(17)` to their
+> names. An MP4 file with several genre atoms keeps only one, which is a known
+> limitation rather than a rule.
+
+**BR-40 — A track with no genre is in a group of its own, and an artist's
+loose tracks are not a record.** The *No genre* group is listed last and
+follows the same rules as any genre: a record with any untagged track is listed
+there, and playing it plays only the untagged tracks. In the music area an
+artist's tracks with no album name form one untitled group; under a genre that
+group is not treated as a record, because one loose Pop single would otherwise
+file every loose track of that artist under Pop. Under a genre it holds only
+the tracks tagged with that genre, and under *No genre*, only the untagged
+ones.
