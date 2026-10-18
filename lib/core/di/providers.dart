@@ -47,6 +47,7 @@ import '../../features/playback/application/genre_browse_controller.dart';
 import '../../features/playback/application/media_session_controller.dart';
 import '../../features/playback/application/music_browse_controller.dart';
 import '../../features/playback/application/music_layout_controller.dart';
+import '../../features/playback/application/song_selection_controller.dart';
 import '../../features/playback/application/track_energy_controller.dart';
 import '../../features/playback/data/file_energy_store.dart';
 import '../../features/playback/data/file_track_probe.dart';
@@ -59,6 +60,7 @@ import '../../features/playback/domain/media_player.dart';
 import '../../features/playback/domain/media_session.dart';
 import '../../features/playback/domain/music_layout.dart';
 import '../../features/playback/domain/playback_position_store.dart';
+import '../../features/playback/domain/song_selection.dart';
 import '../../features/playback/domain/track_analysis.dart';
 import '../../features/playback/domain/track_energy.dart';
 import '../../features/playback/domain/track_probe.dart';
@@ -431,6 +433,12 @@ final lyricsVisibilityProvider =
 /// Which area the shell is showing.
 final shellControllerProvider =
     NotifierProvider<ShellController, ShellDestination>(ShellController.new);
+
+/// The songs the owner has picked in a list.
+final songSelectionProvider =
+    NotifierProvider<SongSelectionController, SongSelection>(
+      SongSelectionController.new,
+    );
 
 /// What the owner has typed into the search field.
 final searchTermProvider = NotifierProvider<SearchTermController, String>(
