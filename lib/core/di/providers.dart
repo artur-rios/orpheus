@@ -338,6 +338,24 @@ final playlistBrowseProvider =
       PlaylistBrowseController.new,
     );
 
+/// The playlist that is open, as it is now, or `null` when none is.
+///
+/// The open id read against the playlists: an id that names none — the
+/// playlist was deleted while it was open — is none open, and so is any id
+/// while the playlists are still being read. The one answer to "is a playlist
+/// open", for the tab that shows it and the Back that closes it alike.
+final openPlaylistProvider = Provider<Playlist?>((ref) {
+  final open = ref.watch(playlistBrowseProvider);
+  if (open == null) return null;
+
+  final playlists = ref.watch(playlistsControllerProvider).value ?? const [];
+  for (final playlist in playlists) {
+    if (playlist.id == open) return playlist;
+  }
+
+  return null;
+});
+
 /// The picture the owner chose as a playlist's cover, or `null` for none.
 ///
 /// Keyed by the playlist's id *and* the time it last changed. The file is

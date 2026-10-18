@@ -1082,4 +1082,29 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get playlistSaveFailed => 'Não foi possível salvar as playlists';
+
+  @override
+  String get playlistShuffle => 'Embaralhar';
+
+  @override
+  String playlistSummary(String songs, String length) {
+    return '$songs · $length';
+  }
+
+  @override
+  String get playlistNoSongs => 'Nenhuma faixa nesta playlist ainda';
+
+  @override
+  String get playlistMissing => 'Não encontrada';
+
+  @override
+  String playlistMissingBy(String artist) {
+    return 'Não encontrada · $artist';
+  }
+
+  @override
+  String get playlistRemoveFrom => 'Remover da playlist';
+
+  @override
+  String get playlistReorder => 'Arraste para reordenar';
 }

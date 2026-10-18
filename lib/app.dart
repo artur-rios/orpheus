@@ -70,8 +70,13 @@ class _ShellWithBack extends ConsumerWidget {
     final destination = ref.watch(shellControllerProvider);
     final browse = ref.watch(musicBrowseControllerProvider);
     final genre = ref.watch(genreBrowseControllerProvider);
+    // Open and still there: a playlist deleted while it was open leaves its
+    // id behind, and the tab shows the list of them then — so there is no
+    // level for back to climb, and a press spent closing an id nobody can see
+    // would look like it did nothing.
     final inPlaylist =
-        destination == ShellDestination.playlists && _playlistIsOpen(ref);
+        destination == ShellDestination.playlists &&
+        ref.watch(openPlaylistProvider) != null;
     // The same test the shell uses to decide results are showing: a single
     // character left in the field shows the listing, and a back press that
     // spent itself clearing an invisible term would look like it did nothing.
@@ -128,20 +133,5 @@ class _ShellWithBack extends ConsumerWidget {
       },
       child: const MediaSessionNamesScope(child: ShellScreen()),
     );
-  }
-
-  /// Whether a playlist is open and still there.
-  ///
-  /// A playlist deleted while it was open leaves its id behind, and the tab
-  /// shows the list of them then — so there is no level for back to climb,
-  /// and a press spent closing an id nobody can see would look like it did
-  /// nothing.
-  static bool _playlistIsOpen(WidgetRef ref) {
-    final open = ref.watch(playlistBrowseProvider);
-    if (open == null) return false;
-
-    final playlists = ref.watch(playlistsControllerProvider).value;
-
-    return playlists?.any((playlist) => playlist.id == open) ?? false;
   }
 }

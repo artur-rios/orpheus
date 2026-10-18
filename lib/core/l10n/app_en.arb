@@ -1341,5 +1341,46 @@
   "playlistSaveFailed": "Couldn't save the playlists",
   "@playlistSaveFailed": {
     "description": "Shown when making, renaming, giving a cover to or deleting a playlist could not be saved; nothing was changed."
+  },
+  "playlistShuffle": "Shuffle",
+  "@playlistShuffle": {
+    "description": "The button in an open playlist's header that plays every song in it that is in the library, in an order nobody chose."
+  },
+  "playlistSummary": "{songs} · {length}",
+  "@playlistSummary": {
+    "description": "Under an open playlist's name: how many songs it holds (already worded, e.g. '4 songs') and how long they last together (e.g. '1:02:15').",
+    "placeholders": {
+      "songs": {
+        "type": "String"
+      },
+      "length": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistNoSongs": "No songs in this playlist yet",
+  "@playlistNoSongs": {
+    "description": "What an open playlist shows in place of its rows when it holds no songs."
+  },
+  "playlistMissing": "Missing",
+  "@playlistMissing": {
+    "description": "Under the title of a song in a playlist whose file is no longer in the library and whose artist is not known; the row cannot be played."
+  },
+  "playlistMissingBy": "Missing · {artist}",
+  "@playlistMissingBy": {
+    "description": "Under the title of a song in a playlist whose file is no longer in the library, with the artist it had when it was added; the row cannot be played.",
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistRemoveFrom": "Remove from playlist",
+  "@playlistRemoveFrom": {
+    "description": "The song menu item, and the selection bar button and menu item, that take the song or the selected songs out of the open playlist; the files stay in the library."
+  },
+  "playlistReorder": "Drag to reorder",
+  "@playlistReorder": {
+    "description": "The accessibility label of the handle on each row of an open playlist, by which the row is dragged to another place."
   }
 }

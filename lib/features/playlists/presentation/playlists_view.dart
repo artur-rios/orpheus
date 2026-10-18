@@ -12,15 +12,16 @@ import '../../shell/presentation/async_state_view.dart';
 import '../domain/playlist.dart';
 import 'playlist_cover.dart';
 import 'playlist_menu.dart';
+import 'playlist_view.dart';
 
 /// The Playlists area.
 ///
 /// The owner's playlists, the most recently changed first, as rows or tiles —
 /// the same choice the albums follow — and, once one is opened, that playlist.
 ///
-/// Which one is open is [playlistBrowseProvider]'s, not this widget's, so that
-/// Back can close it from the shell. An id it holds that names no playlist —
-/// one deleted while it was open — reads as none open: the list.
+/// Which one is open is [openPlaylistProvider]'s, not this widget's, so that
+/// Back can close it from the shell. An id that names no playlist — one
+/// deleted while it was open — reads as none open: the list.
 class PlaylistsView extends ConsumerWidget {
   /// Creates the area.
   const PlaylistsView({super.key});
@@ -28,7 +29,7 @@ class PlaylistsView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final playlists = ref.watch(playlistsControllerProvider);
-    final openId = ref.watch(playlistBrowseProvider);
+    final open = ref.watch(openPlaylistProvider);
 
     // The failure, and nothing else: while the stored playlists could not be
     // read every change is refused, so there is no *New playlist* to offer.
@@ -36,9 +37,7 @@ class PlaylistsView extends ConsumerWidget {
       value: playlists,
       onRetry: () => ref.invalidate(playlistsControllerProvider),
       builder: (context, all) {
-        for (final playlist in all) {
-          if (playlist.id == openId) return _OpenPlaylist(playlist: playlist);
-        }
+        if (open != null) return const PlaylistView();
 
         return all.isEmpty
             ? const _NoPlaylists()
@@ -258,47 +257,6 @@ class _NoPlaylists extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// An open playlist: for now its name, and the way back to the list.
-///
-/// What is inside a playlist — its songs, playing them, reordering — is
-/// built in its own view; this is the place that view takes.
-class _OpenPlaylist extends ConsumerWidget {
-  const _OpenPlaylist({required this.playlist});
-
-  final Playlist playlist;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            IconButton(
-              tooltip: l10n.playlistBackToList,
-              icon: const Icon(Icons.arrow_back),
-              onPressed: ref.read(playlistBrowseProvider.notifier).close,
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                playlist.name,
-                style: theme.textTheme.titleLarge,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        const Expanded(child: SizedBox.shrink()),
-      ],
     );
   }
 }

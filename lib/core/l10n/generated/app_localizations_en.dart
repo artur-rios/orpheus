@@ -1077,4 +1077,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get playlistSaveFailed => 'Couldn\'t save the playlists';
+
+  @override
+  String get playlistShuffle => 'Shuffle';
+
+  @override
+  String playlistSummary(String songs, String length) {
+    return '$songs · $length';
+  }
+
+  @override
+  String get playlistNoSongs => 'No songs in this playlist yet';
+
+  @override
+  String get playlistMissing => 'Missing';
+
+  @override
+  String playlistMissingBy(String artist) {
+    return 'Missing · $artist';
+  }
+
+  @override
+  String get playlistRemoveFrom => 'Remove from playlist';
+
+  @override
+  String get playlistReorder => 'Drag to reorder';
 }

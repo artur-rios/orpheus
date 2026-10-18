@@ -1771,6 +1771,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t save the playlists'**
   String get playlistSaveFailed;
+
+  /// The button in an open playlist's header that plays every song in it that is in the library, in an order nobody chose.
+  ///
+  /// In en, this message translates to:
+  /// **'Shuffle'**
+  String get playlistShuffle;
+
+  /// Under an open playlist's name: how many songs it holds (already worded, e.g. '4 songs') and how long they last together (e.g. '1:02:15').
+  ///
+  /// In en, this message translates to:
+  /// **'{songs} · {length}'**
+  String playlistSummary(String songs, String length);
+
+  /// What an open playlist shows in place of its rows when it holds no songs.
+  ///
+  /// In en, this message translates to:
+  /// **'No songs in this playlist yet'**
+  String get playlistNoSongs;
+
+  /// Under the title of a song in a playlist whose file is no longer in the library and whose artist is not known; the row cannot be played.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing'**
+  String get playlistMissing;
+
+  /// Under the title of a song in a playlist whose file is no longer in the library, with the artist it had when it was added; the row cannot be played.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing · {artist}'**
+  String playlistMissingBy(String artist);
+
+  /// The song menu item, and the selection bar button and menu item, that take the song or the selected songs out of the open playlist; the files stay in the library.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from playlist'**
+  String get playlistRemoveFrom;
+
+  /// The accessibility label of the handle on each row of an open playlist, by which the row is dragged to another place.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder'**
+  String get playlistReorder;
 }
 
 class _AppLocalizationsDelegate
