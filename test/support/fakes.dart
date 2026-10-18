@@ -421,6 +421,9 @@ class UnwritableSettingsStore extends InMemorySettingsStore {
   Future<void> setFetchesLyricsOnline(bool value) async => _refuse();
 
   @override
+  Future<void> setShowsAutoPlaylists(bool value) async => _refuse();
+
+  @override
   Future<void> setVolume(double value) async => _refuse();
 
   @override

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
+import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 
 import '../../../support/fakes.dart';
 import '../../../support/test_container.dart';
@@ -86,6 +87,62 @@ void main() {
         harness.read(preferencesControllerProvider).unsaved,
         isFalse,
       );
+    },
+  );
+
+  // Whether the auto playlists are shown; the Preferences switch sets it.
+  test(
+    'GivenNothingWasChosen_WhenThePreferencesAreRead_ThenAutoPlaylistsAreShown',
+    () {
+      final harness = Harness();
+
+      expect(
+        harness.read(preferencesControllerProvider).showsAutoPlaylists,
+        isTrue,
+      );
+    },
+  );
+
+  test(
+    'GivenAStoreWithItOff_WhenThePreferencesAreRead_ThenAutoPlaylistsAreHidden',
+    () {
+      final harness = Harness(
+        settings: InMemorySettingsStore(showsAutoPlaylists: false),
+      );
+
+      expect(
+        harness.read(preferencesControllerProvider).showsAutoPlaylists,
+        isFalse,
+      );
+    },
+  );
+
+  test(
+    'GivenTheStoreTakesTheChange_WhenAutoPlaylistsAreTurnedOff_ThenItIsRememberedForNextLaunch',
+    () async {
+      final harness = Harness();
+      final preferences = harness.read(preferencesControllerProvider.notifier);
+
+      await preferences.setShowsAutoPlaylists(false);
+
+      final state = harness.read(preferencesControllerProvider);
+      expect(state.showsAutoPlaylists, isFalse);
+      expect(state.unsaved, isFalse);
+      expect(harness.settings.showsAutoPlaylists, isFalse);
+    },
+  );
+
+  test(
+    'GivenThePreferenceCannotBeSaved_WhenAutoPlaylistsAreTurnedOff_ThenItHoldsForTheSessionAndSaysSo',
+    () async {
+      final harness = Harness(settings: UnwritableSettingsStore());
+      final preferences = harness.read(preferencesControllerProvider.notifier);
+
+      await preferences.setShowsAutoPlaylists(false);
+
+      final state = harness.read(preferencesControllerProvider);
+      expect(state.showsAutoPlaylists, isFalse);
+      expect(state.unsaved, isTrue);
     },
   );
 }

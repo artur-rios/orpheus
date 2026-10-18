@@ -70,6 +70,7 @@ import '../../features/playlists/application/playlists_controller.dart';
 import '../../features/playlists/data/file_picker_file_saver.dart';
 import '../../features/playlists/data/file_playlist_cover_store.dart';
 import '../../features/playlists/data/json_playlist_store.dart';
+import '../../features/playlists/domain/auto_playlists.dart';
 import '../../features/playlists/domain/file_saver.dart';
 import '../../features/playlists/domain/playlist.dart';
 import '../../features/playlists/domain/playlist_cover_store.dart';
@@ -360,6 +361,45 @@ final openPlaylistProvider = Provider<Playlist?>((ref) {
   }
 
   return null;
+});
+
+/// The auto playlists — *Favourites lately* and *All-time favourites* — as
+/// playlists to show, computed from the play history, the library and the
+/// clock.
+///
+/// Empty while the *Show auto playlists* preference is off (and then neither
+/// the history nor the library is waited for), loading until both the history
+/// and the library have loaded — a song is present only in a catalog that has
+/// loaded — and an error where the library could not be read. Recomputed
+/// whenever a play is recorded, the library changes or the preference does;
+/// there is no timer, so the 30-day window moves on at the next of those.
+///
+/// The playlists carry ids ([autoLatelyId], [autoAllTimeId]) and **no names**:
+/// a provider has no `BuildContext` to localise one with, so the views map the
+/// id to the name. See [autoPlaylists].
+final autoPlaylistsProvider = Provider<AsyncValue<List<Playlist>>>((ref) {
+  final shown = ref.watch(
+    preferencesControllerProvider.select((state) => state.showsAutoPlaylists),
+  );
+  if (!shown) return const AsyncData(<Playlist>[]);
+
+  final history = ref.watch(playHistoryProvider);
+  final catalog = ref.watch(musicLibraryControllerProvider);
+  if (catalog.hasError) {
+    return AsyncError(catalog.error!, catalog.stackTrace ?? StackTrace.empty);
+  }
+  if (history.hasError) {
+    return AsyncError(history.error!, history.stackTrace ?? StackTrace.empty);
+  }
+  if (!history.hasValue || !catalog.hasValue) return const AsyncLoading();
+
+  return AsyncData(
+    autoPlaylists(
+      history.requireValue,
+      catalog.requireValue.byPath,
+      ref.read(clockProvider)(),
+    ),
+  );
 });
 
 /// The picture the owner chose as a playlist's cover, or `null` for none.
