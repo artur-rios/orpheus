@@ -361,7 +361,7 @@ class MusicGroupMenu extends ConsumerWidget {
               startAutofill(
                 context,
                 ref,
-                _gathered(ref),
+                _gathered(context, ref),
                 kind: AutofillKind.record,
               ),
             ),
@@ -372,7 +372,7 @@ class MusicGroupMenu extends ConsumerWidget {
           onPressed: () => unawaited(
             startManyTagEdit(
               context,
-              _gathered(ref),
+              _gathered(context, ref),
               label: musicGroupName(group, l10n, kind: kind),
             ),
           ),
@@ -389,23 +389,36 @@ class MusicGroupMenu extends ConsumerWidget {
     );
   }
 
-  /// Everything in the library that belongs to [group], read when an item is
-  /// pressed rather than when the row was built.
+  /// Everything that belongs to [group], read when an item is pressed rather
+  /// than when the row was built.
   ///
-  /// From the whole library, never from [MusicGroup.entries] alone: the group
-  /// was cut by a screen that may not hold the whole record, and an edit to
-  /// "the album" that skipped the tracks the screen left out would leave it
-  /// half-tagged. [MusicGroup.entries] is only the answer while the library is
-  /// not loaded.
-  List<MusicEntry> _gathered(WidgetRef ref) {
+  /// A named album and an artist are gathered from the whole library, never
+  /// from [MusicGroup.entries] alone: the group was cut by a screen that may
+  /// not hold the whole of it — an artist inside a genre shows only their
+  /// records listed under it — and an edit to "the album" or "the artist" that
+  /// skipped the tracks the screen left out would leave it half-tagged.
+  ///
+  /// An untitled album is gathered from the part of the library the nearest
+  /// [MusicScope] browses, as its play buttons are: a nameless group is not a
+  /// record, so inside a genre it is only the artist's loose tracks of that
+  /// genre, and the others have nothing to do with what the owner is looking
+  /// at. Outside a scope that is the whole library too.
+  ///
+  /// [MusicGroup.entries] is only the answer while the library is not loaded.
+  List<MusicEntry> _gathered(BuildContext context, WidgetRef ref) {
     final library = ref.read(musicLibraryControllerProvider).value?.entries;
     if (library == null || group.entries.isEmpty) return group.entries;
 
     final first = group.entries.first;
+    if (kind == MusicGroupKind.artist) {
+      return entriesOfArtist(first.albumArtist, library);
+    }
 
-    return kind == MusicGroupKind.album
-        ? tracksOfAlbum(first.album, first.albumArtist, library)
-        : entriesOfArtist(first.albumArtist, library);
+    final from = first.album == null
+        ? musicWithinOf(context) ?? library
+        : library;
+
+    return tracksOfAlbum(first.album, first.albumArtist, from);
   }
 }
 
