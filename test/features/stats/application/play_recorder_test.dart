@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/features/stats/application/play_recorder.dart';
+import 'package:orpheus/features/stats/data/json_play_history_store.dart';
 import 'package:orpheus/features/stats/domain/play_history.dart';
 
 import '../../../support/fakes.dart';
@@ -87,6 +91,160 @@ void main() {
   );
 
   test(
+    'GivenAPlayIsRecorded_WhenItIsWritten_ThenItCarriesItsDate',
+    () async {
+      final store = InMemoryPlayHistoryStore();
+      final recorder = recorderOver(store);
+
+      await recorder.record('/library/a.flac');
+
+      expect(store.history.tracks['/library/a.flac']!.recent, [now]);
+    },
+  );
+
+  test(
+    'GivenDatesOlderThanNinetyDaysAreHeld_WhenAPlayIsRecorded_ThenTheyAreDroppedFromWhatIsHeldAndWritten',
+    () async {
+      final old = now.subtract(const Duration(days: 100));
+      final store = InMemoryPlayHistoryStore(
+        PlayHistory(
+          tracks: {
+            '/library/b.flac': TrackPlays(
+              path: '/library/b.flac',
+              plays: 6,
+              lastPlayedAt: old,
+              recent: [old],
+            ),
+          },
+        ),
+      );
+      final recorder = recorderOver(store);
+
+      await recorder.record('/library/a.flac');
+
+      expect(store.history.tracks['/library/b.flac']!.recent, isEmpty);
+      expect(store.history.tracks['/library/b.flac']!.plays, 6);
+      expect((await recorder.current()).tracks['/library/b.flac']!.recent, isEmpty);
+    },
+  );
+
+  test(
+    'GivenAListener_WhenAPlayIsRecorded_ThenItHearsTheHistoryWithThePlayInIt',
+    () async {
+      final recorder = recorderOver(InMemoryPlayHistoryStore());
+      final heard = <PlayHistory>[];
+      final subscription = recorder.changes.listen(heard.add);
+      addTearDown(subscription.cancel);
+
+      await recorder.record('/library/a.flac');
+      await pumpEventQueue();
+
+      expect(heard, hasLength(1));
+      expect(heard.single.tracks['/library/a.flac']!.plays, 1);
+    },
+  );
+
+  test(
+    'GivenAStoreThatCannotBeRead_WhenTheHistoryIsAskedFor_ThenItIsEmptyRatherThanAnError',
+    () async {
+      final recorder = PlayRecorder(store: _UnreadableStore(), clock: () => now);
+
+      expect((await recorder.current()).isEmpty, isTrue);
+    },
+  );
+
+  test(
+    'GivenAStoreThatCannotBeRead_WhenPlaysAreRecorded_ThenNothingIsWrittenAndNothingIsThrownAtThePlayer',
+    () async {
+      // A history that could not be read must not be replaced by one that
+      // knows only this run's plays.
+      final store = _UnreadableStore();
+      final recorder = PlayRecorder(store: store, clock: () => now);
+
+      await expectLater(recorder.record('/library/a.flac'), completes);
+      await expectLater(recorder.record('/library/b.flac'), completes);
+
+      expect(store.writes, 0);
+      expect((await recorder.current()).isEmpty, isTrue);
+    },
+  );
+
+  group('over the history on disk', () {
+    late Directory directory;
+    late JsonPlayHistoryStore store;
+
+    setUp(() async {
+      directory = await Directory.systemTemp.createTemp('orpheus-recorder');
+      store = JsonPlayHistoryStore('${directory.path}/support', clock: () => now);
+      await Directory(store.directory).create(recursive: true);
+    });
+
+    tearDown(() async {
+      if (directory.existsSync()) await directory.delete(recursive: true);
+    });
+
+    test(
+      'GivenAVersionOneHistory_WhenAPlayIsRecorded_ThenVersionTwoIsWrittenWithEveryCountKept',
+      () async {
+        await File(store.path).writeAsBytes(
+          utf8.encode(
+            '{"version":1,"tracks":['
+            '{"path":"/library/a.flac","plays":12,"lastPlayedAt":"2026-09-03T12:00:00.000Z"},'
+            '{"path":"/library/b.flac","plays":5,"lastPlayedAt":"2026-07-14T21:15:30.000Z"},'
+            '{"path":"/library/c.flac","plays":3,"lastPlayedAt":"2025-12-31T23:59:59.999Z"}'
+            ']}',
+          ),
+        );
+        final recorder = PlayRecorder(store: store, clock: () => now);
+
+        await recorder.record('/library/b.flac');
+
+        final written = jsonDecode(File(store.path).readAsStringSync()) as Map<String, dynamic>;
+        expect(written['version'], 2);
+        expect(written['tracks'], [
+          {
+            'path': '/library/a.flac',
+            'plays': 12,
+            'lastPlayedAt': '2026-09-03T12:00:00.000Z',
+            'recent': <String>[],
+          },
+          {
+            'path': '/library/b.flac',
+            'plays': 6,
+            'lastPlayedAt': now.toIso8601String(),
+            'recent': [now.toIso8601String()],
+          },
+          {
+            'path': '/library/c.flac',
+            'plays': 3,
+            'lastPlayedAt': '2025-12-31T23:59:59.999Z',
+            'recent': <String>[],
+          },
+        ]);
+      },
+    );
+
+    test(
+      'GivenAnUnreadableHistoryThatCannotBeSetAside_WhenPlaysAreRecorded_ThenTheFileIsNeverWrittenAndRecordStillCompletes',
+      () async {
+        final garbage = utf8.encode('{ not json, but the owner may want it back');
+        await File(store.path).writeAsBytes(garbage);
+        final blocker = Directory('${store.path}.bad-20260903T120000');
+        await blocker.create();
+        await File('${blocker.path}/keep').writeAsString('x');
+        final recorder = PlayRecorder(store: store, clock: () => now);
+
+        await expectLater(recorder.record('/library/a.flac'), completes);
+        await expectLater(recorder.record('/library/a.flac'), completes);
+
+        expect(File(store.path).readAsBytesSync(), garbage);
+        expect(File('${store.path}.tmp').existsSync(), isFalse);
+        expect((await recorder.current()).isEmpty, isTrue);
+      },
+    );
+  });
+
+  test(
     'GivenAStoredHistory_WhenTheRecorderIsAskedTwice_ThenTheStoreIsReadOnce',
     () async {
       final store = _CountingStore();
@@ -108,6 +266,21 @@ class _RefusingStore implements PlayHistoryStore {
   @override
   Future<void> write(PlayHistory history) async =>
       throw StateError('the history could not be written');
+}
+
+/// A store whose file could not be read: locked, or unreadable and impossible
+/// to set aside.
+class _UnreadableStore implements PlayHistoryStore {
+  int writes = 0;
+
+  @override
+  Future<PlayHistory> read() async =>
+      throw const FileSystemException('the history could not be read');
+
+  @override
+  Future<void> write(PlayHistory history) async {
+    writes++;
+  }
 }
 
 /// A store that counts how often it was read.

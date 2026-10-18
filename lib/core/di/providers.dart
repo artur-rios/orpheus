@@ -78,6 +78,7 @@ import '../../features/shell/application/preferences_controller.dart';
 import '../../features/shell/application/shell_controller.dart';
 import '../../features/shell/domain/shell_destination.dart';
 import '../../features/stats/application/music_stats_controller.dart';
+import '../../features/stats/application/play_history_controller.dart';
 import '../../features/stats/application/play_recorder.dart';
 import '../../features/stats/data/json_play_history_store.dart';
 import '../../features/stats/data/platform_story_share.dart';
@@ -302,8 +303,13 @@ final playbackPositionsProvider = Provider<PlaybackPositionStore>(
 );
 
 /// Where the play history is kept.
+///
+/// On the application's clock, which is what its dates are trimmed against.
 final playHistoryStoreProvider = Provider<PlayHistoryStore>(
-  (ref) => JsonPlayHistoryStore(ref.watch(appDirectoriesProvider).support),
+  (ref) => JsonPlayHistoryStore(
+    ref.watch(appDirectoriesProvider).support,
+    clock: ref.watch(clockProvider),
+  ),
 );
 
 /// Where the playlists are kept.
@@ -374,12 +380,27 @@ final playlistCoverProvider =
 /// One for the application: the player writes to it and the statistics screen
 /// reads from it, and a second one would be a screen showing a total the last
 /// play is missing from.
-final playRecorderProvider = Provider<PlayRecorder>(
-  (ref) => PlayRecorder(
+final playRecorderProvider = Provider<PlayRecorder>((ref) {
+  final recorder = PlayRecorder(
     store: ref.watch(playHistoryStoreProvider),
     clock: ref.watch(clockProvider),
-  ),
-);
+  );
+  ref.onDispose(recorder.dispose);
+
+  return recorder;
+});
+
+/// The play history as it is now, updated after each play is recorded.
+///
+/// An [AsyncNotifier] over [playRecorderProvider] (see
+/// [PlayHistoryController]), for what follows the owner's listening — the
+/// auto playlists. Not auto-disposed: it is the recorder's history, which
+/// outlives every screen. The statistics screen does not watch it; it reads
+/// the recorder once per opening, as it always has.
+final playHistoryProvider =
+    AsyncNotifierProvider<PlayHistoryController, PlayHistory>(
+      PlayHistoryController.new,
+    );
 
 /// The folders the library is built from.
 final libraryFoldersControllerProvider =
