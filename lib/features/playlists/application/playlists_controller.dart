@@ -93,11 +93,26 @@ class PlaylistsController extends AsyncNotifier<List<Playlist>> {
     (playlist) => playlist.removing(entryIds, ref.read(clockProvider)()),
   );
 
-  /// Moves the entry at [from] in the playlist [playlistId] to [to], by
-  /// `Playlist.moving`'s rule.
-  Future<void> move(String playlistId, int from, int to) => _edit(
+  /// Moves the entry [entryId] of the playlist [playlistId] to just before
+  /// the entry [beforeEntryId], or to the end when that is `null`.
+  ///
+  /// Named by entry id, and resolved against the stored list when this
+  /// change's turn comes, not when it was asked for: the owner's drop was
+  /// worked out on the order they saw, which a change queued ahead of it —
+  /// or one that failed — can make different from the stored one. An entry
+  /// that is gone by then is not moved; a [beforeEntryId] that is gone sends
+  /// the entry to the end (see `Playlist.movingEntry`).
+  Future<void> move(
+    String playlistId,
+    String entryId, {
+    String? beforeEntryId,
+  }) => _edit(
     playlistId,
-    (playlist) => playlist.moving(from, to, ref.read(clockProvider)()),
+    (playlist) => playlist.movingEntry(
+      entryId,
+      beforeEntryId,
+      ref.read(clockProvider)(),
+    ),
   );
 
   /// Calls the playlist [playlistId] [name].

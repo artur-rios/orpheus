@@ -307,22 +307,31 @@ void main() {
       final harness = harnessOver(playlists: [stored('p', entries: three())]);
       final controller = await controllerOf(harness);
 
-      await controller.move('p', 0, 3);
+      await controller.move('p', 'e0');
 
       expect(entryIdsOf(harness), ['e1', 'e2', 'e0']);
+      expect(harness.playlistStore.playlists.single.modifiedAt, now);
     });
 
     test(
-      'GivenABadIndex_WhenAnEntryIsMoved_ThenItThrowsAndWritesNothing',
+      'GivenEntries_WhenOneIsMovedBeforeAnother_ThenItLandsThere',
       () async {
-        final harness = harnessOver(
-          playlists: [
-            stored('p', entries: [snapshotOf('e0', songA)]),
-          ],
-        );
+        final harness = harnessOver(playlists: [stored('p', entries: three())]);
         final controller = await controllerOf(harness);
 
-        await expectLater(controller.move('p', 5, 0), throwsRangeError);
+        await controller.move('p', 'e2', beforeEntryId: 'e1');
+
+        expect(entryIdsOf(harness), ['e0', 'e2', 'e1']);
+      },
+    );
+
+    test(
+      'GivenAnEntryThatIsNotThere_WhenItIsMoved_ThenNothingIsWritten',
+      () async {
+        final harness = harnessOver(playlists: [stored('p', entries: three())]);
+        final controller = await controllerOf(harness);
+
+        await controller.move('p', 'gone', beforeEntryId: 'e0');
 
         expect(harness.playlistStore.writes, 0);
       },
@@ -492,6 +501,60 @@ void main() {
         expect(pathsOf(harness.playlistStore.playlists.single), [
           songB.file.path,
         ]);
+      },
+    );
+
+    List<PlaylistEntry> three() => [
+      snapshotOf('e0', songA),
+      snapshotOf('e1', songB),
+      snapshotOf('e2', songC),
+    ];
+
+    test(
+      'GivenAFailedMove_WhenAQuickSecondMoveFollows_ThenItAppliesByIdentity',
+      () async {
+        final harness = harnessOver(playlists: [stored('p', entries: three())]);
+        final controller = await controllerOf(harness);
+        harness.playlistStore.failNextWrite = Exception('disk full');
+
+        // e0 dropped at the end, and before that is saved, e2 dropped at the
+        // top of what the owner then saw: e1, e2, e0.
+        final failing = controller.move('p', 'e0');
+        final following = controller.move('p', 'e2', beforeEntryId: 'e1');
+
+        await expectLater(failing, throwsException);
+        await following;
+        // The second drop on top of what is stored: e2 before e1.
+        expect(entryIdsOf(harness), ['e0', 'e2', 'e1']);
+      },
+    );
+
+    test(
+      'GivenARemoveNotYetSaved_WhenAMoveFollows_ThenTheDraggedEntryMoves',
+      () async {
+        final harness = harnessOver(playlists: [stored('p', entries: three())]);
+        final controller = await controllerOf(harness);
+
+        final removing = controller.remove('p', {'e0'});
+        final moving = controller.move('p', 'e2', beforeEntryId: 'e1');
+        await Future.wait([removing, moving]);
+
+        expect(entryIdsOf(harness), ['e2', 'e1']);
+      },
+    );
+
+    test(
+      'GivenAnEntryRemovedMeanwhile_WhenAMoveOfItRuns_ThenNothingMoves',
+      () async {
+        final harness = harnessOver(playlists: [stored('p', entries: three())]);
+        final controller = await controllerOf(harness);
+
+        final removing = controller.remove('p', {'e1'});
+        final moving = controller.move('p', 'e1', beforeEntryId: 'e0');
+        await Future.wait([removing, moving]);
+
+        expect(entryIdsOf(harness), ['e0', 'e2']);
+        expect(harness.playlistStore.writes, 1);
       },
     );
 

@@ -73,9 +73,9 @@ void main() {
     );
   });
 
-  group('moving', () {
+  group('movingEntry', () {
     test(
-      'GivenTheSameSongTwice_WhenOneCopyIsMovedForward_ThenOnlyThatCopyMoves',
+      'GivenTheSameSongTwice_WhenOneCopyIsMovedDown_ThenOnlyThatCopyMoves',
       () {
         final playlist = playlistOf([
           song('x1', path: '/library/x.flac'),
@@ -84,15 +84,14 @@ void main() {
           song('x2', path: '/library/x.flac'),
         ]);
 
-        // ReorderableListView: dropping before index 3 means "after z".
-        final next = playlist.moving(0, 3, t1);
+        final next = playlist.movingEntry('x1', 'x2', t1);
 
         expect(ids(next), ['y', 'z', 'x1', 'x2']);
       },
     );
 
     test(
-      'GivenTheSameSongTwice_WhenOneCopyIsMovedBackward_ThenOnlyThatCopyMoves',
+      'GivenTheSameSongTwice_WhenOneCopyIsMovedUp_ThenOnlyThatCopyMoves',
       () {
         final playlist = playlistOf([
           song('x1', path: '/library/x.flac'),
@@ -101,37 +100,55 @@ void main() {
           song('z'),
         ]);
 
-        final next = playlist.moving(2, 0, t1);
+        final next = playlist.movingEntry('x2', 'x1', t1);
 
         expect(ids(next), ['x2', 'x1', 'y', 'z']);
       },
     );
 
-    test('GivenAnEntry_WhenItIsDroppedAfterTheEnd_ThenItIsLast', () {
+    test('GivenNothingToGoBefore_WhenAnEntryIsMoved_ThenItIsLast', () {
       final playlist = playlistOf([song('a'), song('b'), song('c')]);
 
-      expect(ids(playlist.moving(0, 3, t1)), ['b', 'c', 'a']);
+      expect(ids(playlist.movingEntry('a', null, t1)), ['b', 'c', 'a']);
     });
 
-    test('GivenAnEntry_WhenItIsDroppedWhereItIs_ThenNothingMoves', () {
-      final playlist = playlistOf([song('a'), song('b'), song('c')]);
+    test(
+      'GivenTheEntryToGoBeforeIsGone_WhenAnEntryIsMoved_ThenItIsLast',
+      () {
+        final playlist = playlistOf([song('a'), song('b'), song('c')]);
 
-      expect(ids(playlist.moving(1, 1, t1)), ['a', 'b', 'c']);
-      expect(ids(playlist.moving(1, 2, t1)), ['a', 'b', 'c']);
-    });
+        expect(ids(playlist.movingEntry('a', 'gone', t1)), ['b', 'c', 'a']);
+      },
+    );
 
-    test('GivenAnIndexOutsideTheList_WhenMoved_ThenItIsRefused', () {
-      final playlist = playlistOf([song('a'), song('b')]);
+    test(
+      'GivenTheEntryIsGone_WhenItIsMoved_ThenThePlaylistIsUnchanged',
+      () {
+        final playlist = playlistOf([song('a'), song('b')]);
 
-      expect(() => playlist.moving(2, 0, t1), throwsRangeError);
-      expect(() => playlist.moving(0, 3, t1), throwsRangeError);
-      expect(() => playlist.moving(-1, 0, t1), throwsRangeError);
-    });
+        expect(playlist.movingEntry('gone', 'a', t1), same(playlist));
+      },
+    );
+
+    test(
+      'GivenAnEntryAlreadyWhereItIsPut_WhenMoved_ThenThePlaylistIsUnchanged',
+      () {
+        final playlist = playlistOf([song('a'), song('b'), song('c')]);
+
+        expect(playlist.movingEntry('b', 'c', t1), same(playlist));
+        expect(playlist.movingEntry('b', 'b', t1), same(playlist));
+        expect(playlist.movingEntry('c', null, t1), same(playlist));
+      },
+    );
 
     test('GivenAMove_WhenItIsMade_ThenModifiedAtMoves', () {
-      final next = playlistOf([song('a'), song('b')]).moving(0, 2, t1);
+      final next = playlistOf([
+        song('a'),
+        song('b'),
+      ]).movingEntry('b', 'a', t1);
 
       expect(next.modifiedAt, t1);
+      expect(next.createdAt, t0);
     });
   });
 

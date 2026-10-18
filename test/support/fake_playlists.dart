@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:orpheus/features/playlists/domain/file_saver.dart';
@@ -24,6 +25,14 @@ class FakePlaylistStore implements PlaylistStore {
   /// set aside.
   Exception? failRead;
 
+  /// When true, each [write] waits for its own completer in [heldWrites] to
+  /// be completed before it stores anything or throws: a disk that takes its
+  /// time, released one write at a time.
+  bool holdWrites = false;
+
+  /// The writes waiting while [holdWrites] is on, oldest first.
+  final List<Completer<void>> heldWrites = [];
+
   @override
   Future<List<Playlist>> read() async {
     final failure = failRead;
@@ -34,6 +43,12 @@ class FakePlaylistStore implements PlaylistStore {
 
   @override
   Future<void> write(List<Playlist> all) async {
+    if (holdWrites) {
+      final held = Completer<void>();
+      heldWrites.add(held);
+      await held.future;
+    }
+
     final failure = failNextWrite;
     if (failure != null) {
       failNextWrite = null;

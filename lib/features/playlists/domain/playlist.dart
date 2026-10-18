@@ -148,18 +148,27 @@ class Playlist {
     at: at,
   );
 
-  /// This playlist with the entry at [from] moved to [to].
+  /// This playlist with the entry [entryId] moved to just before the entry
+  /// [beforeEntryId], or to the end when that is `null`.
   ///
-  /// [to] follows `ReorderableListView`'s rule: it is the index the entry was
-  /// dropped at *before* it is taken out of the list, so moving forward lands
-  /// one place earlier than [to] says. Both run from `0` to the length;
-  /// anything else throws a [RangeError].
-  Playlist moving(int from, int to, DateTime at) {
-    RangeError.checkValidIndex(from, entries, 'from');
-    RangeError.checkValueInInterval(to, 0, entries.length, 'to');
+  /// By entry id rather than index: a move is worked out on the order the
+  /// owner saw, and applied to the order that is stored, which a change still
+  /// on its way — or one that failed — can make different. An id names the
+  /// same place in both. So: when [entryId] is not in the playlist any more
+  /// there is nothing to move, and this playlist is answered as it is; when
+  /// [beforeEntryId] is not, the entry goes to the end. A move that leaves
+  /// the order as it was — put before itself, say — also answers this
+  /// playlist.
+  Playlist movingEntry(String entryId, String? beforeEntryId, DateTime at) {
+    final index = entries.indexWhere((entry) => entry.id == entryId);
+    if (index < 0 || beforeEntryId == entryId) return this;
+
     final moved = [...entries];
-    final entry = moved.removeAt(from);
-    moved.insert(from < to ? to - 1 : to, entry);
+    final entry = moved.removeAt(index);
+    final before = moved.indexWhere((other) => other.id == beforeEntryId);
+    moved.insert(before < 0 ? moved.length : before, entry);
+    if (_sameEntries(moved, entries)) return this;
+
     return _copy(entries: moved, at: at);
   }
 

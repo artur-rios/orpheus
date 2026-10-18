@@ -347,6 +347,79 @@ void main() {
     );
 
     testWidgets(
+      'GivenAPlaylist_WhenARowIsDraggedDown_ThenItMovesAndIsSaved',
+      (tester) async {
+        final harness = await show(tester, roadTrip);
+
+        await dragOnto(tester, 'Alpha', 'Charlie');
+
+        expect(storedIds(harness), ['e2', 'e3', 'e1', 'e4']);
+        expect(titlesInOrder(tester), ['Ghost', 'Bravo', 'Alpha', 'Charlie']);
+      },
+    );
+
+    testWidgets(
+      'GivenAMoveThatCannotBeSaved_WhenARowIsDragged_ThenTheStoredOrderIsBack',
+      (tester) async {
+        final harness = await show(tester, roadTrip);
+        harness.playlistStore.failNextWrite = Exception('disk full');
+
+        await dragOnto(tester, 'Charlie', 'Alpha');
+
+        expect(storedIds(harness), ['e1', 'e2', 'e3', 'e4']);
+        expect(titlesInOrder(tester), ['Alpha', 'Ghost', 'Bravo', 'Charlie']);
+        expect(find.text("Couldn't save the playlists"), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'GivenTwoQuickDrops_WhenTheFirstIsSaved_ThenTheSecondStaysOnScreen',
+      (tester) async {
+        final harness = await show(tester, roadTrip);
+        final store = harness.playlistStore..holdWrites = true;
+
+        await dragOnto(tester, 'Charlie', 'Alpha');
+        await dragOnto(tester, 'Bravo', 'Charlie');
+        const both = ['Bravo', 'Charlie', 'Alpha', 'Ghost'];
+        expect(titlesInOrder(tester), both);
+
+        store.heldWrites.removeAt(0).complete();
+        await tester.pumpAndSettle();
+        expect(storedIds(harness), ['e4', 'e1', 'e2', 'e3']);
+        expect(titlesInOrder(tester), both);
+
+        store.heldWrites.removeAt(0).complete();
+        await tester.pumpAndSettle();
+        expect(storedIds(harness), ['e3', 'e4', 'e1', 'e2']);
+        expect(titlesInOrder(tester), both);
+      },
+    );
+
+    testWidgets(
+      'GivenAFailedDropAndAQuickSecond_WhenBothAreDone_ThenTheSecondMovedItsRow',
+      (tester) async {
+        final harness = await show(tester, roadTrip);
+        final store = harness.playlistStore
+          ..holdWrites = true
+          ..failNextWrite = Exception('disk full');
+
+        // Charlie to the top, and before that is saved, Alpha back above it.
+        await dragOnto(tester, 'Charlie', 'Alpha');
+        await dragOnto(tester, 'Alpha', 'Charlie');
+
+        store.heldWrites.removeAt(0).complete();
+        await tester.pumpAndSettle();
+        store.heldWrites.removeAt(0).complete();
+        await tester.pumpAndSettle();
+
+        // Alpha went before Charlie in the stored order, where Charlie never
+        // left the end: it is Alpha that moved, not the row in its old place.
+        expect(storedIds(harness), ['e2', 'e3', 'e1', 'e4']);
+        expect(titlesInOrder(tester), ['Ghost', 'Bravo', 'Alpha', 'Charlie']);
+      },
+    );
+
+    testWidgets(
       'GivenAPlaylist_WhenARowIsHeld_ThenItIsSelectedRatherThanDragged',
       (tester) async {
         final harness = await show(tester, roadTrip);

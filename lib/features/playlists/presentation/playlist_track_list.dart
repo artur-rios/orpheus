@@ -65,11 +65,14 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
   /// `ref` to reach it with.
   late final SongSelectionController _selection;
 
-  /// The order the owner dropped a row into, shown until the playlist that
-  /// was stored with it arrives.
+  /// The order the owner dropped rows into, shown until the stored playlist
+  /// has the same order.
   ///
   /// Without it the row would spring back to where it was for as long as
-  /// the write took, and then jump to where it was put.
+  /// the write took, and then jump to where it was put. Kept through a
+  /// stored playlist that is a drop behind it — two quick drops arrive one
+  /// at a time — and given up when a move fails or when entries come or go,
+  /// since then it is no longer a reordering of what is stored.
   List<PlaylistEntry>? _moved;
 
   /// The name this list's selection is made under.
@@ -89,9 +92,7 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
   @override
   void didUpdateWidget(PlaylistTrackList oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // The stored playlist has caught up with the drop, or something else
-    // changed it: either way it is what to show now.
-    if (!identical(oldWidget.playlist, widget.playlist)) _moved = null;
+    if (!identical(oldWidget.playlist, widget.playlist)) _catchUp();
 
     final before = scopeOf(oldWidget.playlist);
     if (before == _scope) return;
@@ -117,6 +118,29 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
 
     _focus.dispose();
     super.dispose();
+  }
+
+  /// Settles what is shown against a newly stored playlist: the order the
+  /// owner dropped into while it is still a reordering of the stored entries
+  /// and the store has not reached it, with the stored entries' own values;
+  /// the stored playlist once it has, or once entries came or went.
+  void _catchUp() {
+    final moved = _moved;
+    if (moved == null) return;
+
+    final stored = widget.playlist.entries;
+    final byId = {for (final entry in stored) entry.id: entry};
+    final reordering =
+        byId.length == moved.length &&
+        moved.every((entry) => byId.containsKey(entry.id));
+    var caughtUp = reordering;
+    for (var i = 0; caughtUp && i < moved.length; i++) {
+      caughtUp = moved[i].id == stored[i].id;
+    }
+
+    _moved = reordering && !caughtUp
+        ? [for (final entry in moved) byId[entry.id]!]
+        : null;
   }
 
   /// The entries' ids, in the playlist's order.
@@ -245,36 +269,45 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
 
   /// A row dropped by its handle at [to], the place it now holds: shown
   /// there at once, and stored.
+  ///
+  /// Stored as which entry moved and which it now comes before, read off the
+  /// order on screen — which is a drop ahead of the stored one when the last
+  /// is not yet saved — so the store applies it to the same rows the owner
+  /// moved, whatever has happened to the stored order meanwhile.
   void _reorder(int from, int to) {
     if (from == to) return;
-    // The playlist's rule is the older one, which counts [to] before the
-    // row is taken out: one further on when it moves down the list.
-    final before = from < to ? to + 1 : to;
+    final entries = _entries;
+    final entryId = entries[from].id;
+    // [to] is where the row is once it is out of its old place: moving down,
+    // what then follows it is one further on in the order before the drop.
+    final after = from < to ? to + 1 : to;
+    final beforeEntryId = after < entries.length ? entries[after].id : null;
+
     final playlist = widget.playlist;
-    // The order on screen, which is a drop ahead of the stored one when the
-    // last was not yet saved, moved by the playlist's own rule.
     final shown = Playlist(
       id: playlist.id,
       name: playlist.name,
-      entries: _entries,
+      entries: entries,
       createdAt: playlist.createdAt,
       modifiedAt: playlist.modifiedAt,
     );
     setState(
-      () => _moved = shown.moving(from, before, playlist.modifiedAt).entries,
+      () => _moved = shown
+          .movingEntry(entryId, beforeEntryId, playlist.modifiedAt)
+          .entries,
     );
 
-    unawaited(_store(from, before));
+    unawaited(_store(entryId, beforeEntryId));
   }
 
-  Future<void> _store(int from, int to) async {
+  Future<void> _store(String entryId, String? beforeEntryId) async {
     final messenger = ScaffoldMessenger.of(context);
     final failed = AppLocalizations.of(context).playlistSaveFailed;
 
     try {
       await ref
           .read(playlistsControllerProvider.notifier)
-          .move(widget.playlist.id, from, to);
+          .move(widget.playlist.id, entryId, beforeEntryId: beforeEntryId);
     } on Object catch (error) {
       _log.warning('Could not reorder ${widget.playlist.id}: $error');
       // Back to the order that is stored.
