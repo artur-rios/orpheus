@@ -77,21 +77,25 @@ class _GroupRows extends ConsumerWidget {
         // would open on a record of one track.
         final artist = group.entries.first.albumArtist;
 
-        return ListTile(
-          leading: _GroupArt(group: group, kind: kind, side: 44),
-          title: Text(musicGroupName(group, l10n, kind: kind)),
-          subtitle: Text(
-            kind == MusicGroupKind.album
-                ? artist ?? l10n.musicUnknownArtist
-                : l10n.musicTrackCount(group.entries.length),
+        return MusicGroupMenu(
+          group: group,
+          kind: kind,
+          builder: (context, menu) => ListTile(
+            leading: _GroupArt(group: group, kind: kind, side: 44),
+            title: Text(musicGroupName(group, l10n, kind: kind)),
+            subtitle: Text(
+              kind == MusicGroupKind.album
+                  ? artist ?? l10n.musicUnknownArtist
+                  : l10n.musicTrackCount(group.entries.length),
+            ),
+            trailing: _GroupActions(group: group, kind: kind, menu: menu),
+            // Drilling in rather than playing: playing a whole artist or
+            // record is on the buttons beside it, where it is a decision
+            // rather than something a mis-aimed click does.
+            onTap: () => kind == MusicGroupKind.artist
+                ? controller.openArtist(group.name)
+                : controller.openAlbum(group.name, artist),
           ),
-          trailing: _GroupActions(group: group, kind: kind),
-          // Drilling in rather than playing: playing a whole artist or record
-          // is on the buttons beside it, where it is a decision rather than
-          // something a mis-aimed click does.
-          onTap: () => kind == MusicGroupKind.artist
-              ? controller.openArtist(group.name)
-              : controller.openAlbum(group.name, artist),
         );
       },
     );
@@ -132,63 +136,67 @@ class _GroupGrid extends ConsumerWidget {
         final group = groups[index];
         final artist = group.entries.first.albumArtist;
 
-        return Card(
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: () => kind == MusicGroupKind.artist
-                ? controller.openArtist(group.name)
-                : controller.openAlbum(group.name, artist),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: Center(
-                    // Laid out by what the tile is given rather than by a fixed
-                    // size: the grid's columns change with the width of the
-                    // window, and a picture that ignored that would either
-                    // overflow the narrow case or float in the wide one.
-                    child: LayoutBuilder(
-                      builder: (context, constraints) => _GroupArt(
-                        group: group,
-                        kind: kind,
-                        side: constraints.biggest.shortestSide,
+        return MusicGroupMenu(
+          group: group,
+          kind: kind,
+          builder: (context, menu) => Card(
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => kind == MusicGroupKind.artist
+                  ? controller.openArtist(group.name)
+                  : controller.openAlbum(group.name, artist),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Center(
+                      // Laid out by what the tile is given rather than by a fixed
+                      // size: the grid's columns change with the width of the
+                      // window, and a picture that ignored that would either
+                      // overflow the narrow case or float in the wide one.
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => _GroupArt(
+                          group: group,
+                          kind: kind,
+                          side: constraints.biggest.shortestSide,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                  ),
-                  child: Text(
-                    musicGroupName(group, l10n, kind: kind),
-                    style: theme.textTheme.bodyMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                  ),
-                  child: Text(
-                    kind == MusicGroupKind.album
-                        ? artist ?? l10n.musicUnknownArtist
-                        : l10n.musicTrackCount(group.entries.length),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    child: Text(
+                      musicGroupName(group, l10n, kind: kind),
+                      style: theme.textTheme.bodyMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-                // The same controls the row carries, so choosing tiles costs
-                // the owner nothing they could do with rows.
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: _GroupActions(group: group, kind: kind),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                    ),
+                    child: Text(
+                      kind == MusicGroupKind.album
+                          ? artist ?? l10n.musicUnknownArtist
+                          : l10n.musicTrackCount(group.entries.length),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // The same controls the row carries, so choosing tiles costs
+                  // the owner nothing they could do with rows.
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _GroupActions(group: group, kind: kind, menu: menu),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -246,10 +254,18 @@ class _GroupArt extends StatelessWidget {
 /// owner came here to do, and a control they have to go looking for is one
 /// they stop using.
 class _GroupActions extends ConsumerWidget {
-  const _GroupActions({required this.group, required this.kind});
+  const _GroupActions({
+    required this.group,
+    required this.kind,
+    required this.menu,
+  });
 
   final MusicGroup group;
   final MusicGroupKind kind;
+
+  /// The menu the ⋮ button opens, owned by the [MusicGroupMenu] around the
+  /// row.
+  final MenuController menu;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -278,14 +294,13 @@ class _GroupActions extends ConsumerWidget {
           // button happens to have in hand.
           onPressed: () => _play(ref, within, shuffled: true),
         ),
-        if (kind == MusicGroupKind.album)
-          IconButton(
-            tooltip: l10n.autofillAction,
-            icon: const Icon(Icons.auto_fix_high_outlined),
-            onPressed: () => unawaited(
-              startAutofill(context, ref, group.entries, kind: AutofillKind.record),
-            ),
-          ),
+        // Autofill and the editor live in the menu: they are what an owner does
+        // to a record now and then, not what they came here to do.
+        IconButton(
+          tooltip: l10n.musicGroupActions,
+          icon: const Icon(Icons.more_vert),
+          onPressed: () => menu.isOpen ? menu.close() : menu.open(),
+        ),
       ],
     );
   }
@@ -305,6 +320,92 @@ class _GroupActions extends ConsumerWidget {
           ? player.playAlbum(first, shuffled: shuffled, within: within)
           : player.playArtist(first, shuffled: shuffled, within: within),
     );
+  }
+}
+
+/// An album's or an artist's own actions: autofill (albums only) and the tag
+/// editor.
+///
+/// Opened as a track's menu is — right-click, long press, or the ⋮ button on
+/// the row — so the same gestures work on every kind of row. The row is built
+/// by [builder] and handed the [MenuController], so the button sits wherever
+/// the row wants it.
+class MusicGroupMenu extends ConsumerWidget {
+  /// Creates the wrapper.
+  const MusicGroupMenu({
+    required this.group,
+    required this.kind,
+    required this.builder,
+    super.key,
+  });
+
+  /// The album or artist the menu acts on.
+  final MusicGroup group;
+
+  /// Whether [group] is an artist or an album.
+  final MusicGroupKind kind;
+
+  /// The row, wired to open the menu through the controller it is given.
+  final Widget Function(BuildContext context, MenuController menu) builder;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+
+    return MenuAnchor(
+      menuChildren: [
+        if (kind == MusicGroupKind.album)
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.auto_fix_high_outlined),
+            onPressed: () => unawaited(
+              startAutofill(
+                context,
+                ref,
+                _gathered(ref),
+                kind: AutofillKind.record,
+              ),
+            ),
+            child: Text(l10n.autofillAction),
+          ),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.edit_outlined),
+          onPressed: () => unawaited(
+            startManyTagEdit(
+              context,
+              _gathered(ref),
+              label: musicGroupName(group, l10n, kind: kind),
+            ),
+          ),
+          child: Text(l10n.tagEditAction),
+        ),
+      ],
+      builder: (context, controller, _) => GestureDetector(
+        onSecondaryTapDown: (details) =>
+            controller.open(position: details.localPosition),
+        onLongPressStart: (details) =>
+            controller.open(position: details.localPosition),
+        child: builder(context, controller),
+      ),
+    );
+  }
+
+  /// Everything in the library that belongs to [group], read when an item is
+  /// pressed rather than when the row was built.
+  ///
+  /// From the whole library, never from [MusicGroup.entries] alone: the group
+  /// was cut by a screen that may not hold the whole record, and an edit to
+  /// "the album" that skipped the tracks the screen left out would leave it
+  /// half-tagged. [MusicGroup.entries] is only the answer while the library is
+  /// not loaded.
+  List<MusicEntry> _gathered(WidgetRef ref) {
+    final library = ref.read(musicLibraryControllerProvider).value?.entries;
+    if (library == null || group.entries.isEmpty) return group.entries;
+
+    final first = group.entries.first;
+
+    return kind == MusicGroupKind.album
+        ? tracksOfAlbum(first.album, first.albumArtist, library)
+        : entriesOfArtist(first.albumArtist, library);
   }
 }
 

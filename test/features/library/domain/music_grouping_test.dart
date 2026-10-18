@@ -228,6 +228,42 @@ void main() {
     );
   });
 
+  group('entriesOfArtist', () {
+    test(
+      'GivenAnArtistWithTwoAlbums_WhenAskedForTheirEntries_ThenBothAlbumsAreReturnedInOrder',
+      () {
+        final library = [
+          entry(id: '1', title: 'Zed', artist: 'A', album: 'Beta', track: 1),
+          entry(id: '2', title: 'Other', artist: 'B', album: 'Alpha', track: 1),
+          entry(id: '3', title: 'Two', artist: 'A', album: 'Alpha', track: 2),
+          entry(id: '4', title: 'One', artist: 'A', album: 'Alpha', track: 1),
+        ];
+
+        final entries = entriesOfArtist('A', library);
+
+        expect([for (final e in entries) e.title], ['One', 'Two', 'Zed']);
+      },
+    );
+
+    test(
+      'GivenTheUntaggedArtist_WhenAskedForTheirEntries_ThenOnlyTheUntaggedEntriesAreReturned',
+      () {
+        // An entry with a performer but no album artist falls back to the
+        // performer, so it belongs to that artist and not to the untagged
+        // group.
+        final library = [
+          entry(id: '1', title: 'Named', artist: 'A', album: 'Hits'),
+          entry(id: '2', title: 'Bare'),
+          entry(id: '3', title: 'Also bare', album: 'Loose'),
+        ];
+
+        final entries = entriesOfArtist(null, library);
+
+        expect([for (final e in entries) e.title], ['Also bare', 'Bare']);
+      },
+    );
+  });
+
   group('albumOf', () {
     test(
       'GivenACompilationOpenedFromOneGuestsTrack_WhenTheAlbumIsQueued_ThenTheWholeRecordIsQueued',

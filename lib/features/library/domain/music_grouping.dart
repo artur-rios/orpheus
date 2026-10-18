@@ -194,11 +194,25 @@ List<AudioFile> artistOf(MusicEntry entry, List<MusicEntry> library) {
 /// case-sensitively with the untitled group first, which played `abbey road`
 /// after `Zooropa` and the loose tracks the screen lists last ahead of
 /// everything.
-List<AudioFile> inArtistOrder(List<MusicEntry> entries) {
-  final ordered = [...entries]..sort(_recordThenTrackOrder);
+List<AudioFile> inArtistOrder(List<MusicEntry> entries) => [
+  for (final entry in _artistOrdered(entries)) entry.file,
+];
 
-  return [for (final entry in ordered) entry.file];
-}
+/// Every entry whose album artist is [artist], album by album as
+/// [inArtistOrder] orders them.
+///
+/// The entries themselves rather than their files, for the caller that has to
+/// read what they say — the tag editor opens a form over them. `null` selects
+/// the untagged group, as [albumsOfArtist] does.
+List<MusicEntry> entriesOfArtist(String? artist, List<MusicEntry> library) =>
+    _artistOrdered([
+      for (final entry in library)
+        if (entry.albumArtist == artist) entry,
+    ]);
+
+/// [entries] in the order an artist's records are listened to.
+List<MusicEntry> _artistOrdered(List<MusicEntry> entries) =>
+    [...entries]..sort(_recordThenTrackOrder);
 
 /// Whether [entry] carries the genre [key] names.
 ///
