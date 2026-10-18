@@ -83,9 +83,10 @@ result in a file beside its own settings.
   recently played first among equals. Until enough recent listening has been
   recorded, *Favourites lately* is the songs played in the last 30 days by
   their total plays, and says it is getting to know you. They fill themselves
-  as you listen, play, shuffle, export to `.m3u`, and copy into a playlist of
-  your own with *Add to playlist…*, but cannot be reordered or edited. *Show
-  auto playlists* in the preferences hides them; your plays are still counted.
+  as you listen. You can play, shuffle, export to `.m3u`, and copy them into a
+  playlist of your own with *Add to playlist…*, but not reorder or edit them.
+  *Show auto playlists* in the preferences hides them; your plays are still
+  counted.
 - **Searches** across titles, artists, albums and genres — all together, or
   one kind at a time with a selector — ranked so a match at the start of a
   title comes above one buried in the middle of something else.
@@ -545,7 +546,7 @@ not written, and on Windows the track playing may be refused as in use.
 ## Roadmap
 
 Nine milestones covering thirty-four issues: one foundation issue plus one
-issue per use case from UC-01 to UC-33. UC-34, UC-35, UC-36, UC-37, UC-38 and
+issue per use case from UC-01 to UC-33. UC-34, UC-35, UC-36, UC-37, UC-38,
 UC-39 and UC-40 came after the backlog was filed and have no milestone; they
 are listed after M-09.
 Milestones are dependency-ordered — no milestone depends on a later one, and

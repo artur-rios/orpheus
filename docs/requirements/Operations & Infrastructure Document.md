@@ -57,8 +57,11 @@ they are kept apart from each other so that either can be deleted on its own, by
 the owner, without this application's help.
 
 **IR-06** — Documents are versioned and written atomically: to a temporary file,
-then renamed over the real one. A document written by an incompatible version is
-discarded rather than partially read.
+then renamed over the real one. A catalog written by an incompatible version is
+discarded rather than partially read, as it can be built again. The play history
+and the playlists are the owner's own, and are never discarded: a document that
+cannot be understood is kept aside as a `.bad-<time>` file (a version-1 play
+history is migrated, not set aside).
 
 ## 3. Startup
 

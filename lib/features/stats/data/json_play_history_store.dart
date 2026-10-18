@@ -48,8 +48,9 @@ import '../domain/play_history.dart';
 /// next write. The first time one is read, its bytes are also copied to
 /// `play-history.json.v1`, once and never over an earlier copy: a release
 /// from before version 2 reads the version-2 file as one it does not know
-/// and starts over, and the copy is what lets the owner go back to one
-/// without losing their history. Any other version is set aside.
+/// and starts over, and no release reads the copy: if the owner installs
+/// one, they can restore their history by hand, by renaming the copy to
+/// `play-history.json`. Any other version is set aside.
 ///
 /// Within a document of a known version, a row that is not a play — no path,
 /// no plays, no date it was last played, or a path already read — is stepped

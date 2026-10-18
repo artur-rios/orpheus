@@ -975,7 +975,7 @@ graph LR
 | AF-08 | The play history is of the version before dates were kept | Every track, its count and its last play are kept and it is written as version 2 by this play; the first time it is read, the old document is also copied once to `play-history.json.v1` (FR-ST-17). |
 | AF-09 | The stored history cannot be understood — it is not UTF-8 or not JSON, is not a play history, or was written by a version this one does not read | It is kept aside as `play-history.json.bad-<time>` and never overwritten, and the history starts empty (FR-ST-18). |
 | AF-10 | The stored history is readable but holds a row that is not a play, or a date that is not one | That row or date is stepped over, and the document is first copied aside as `play-history.json.bad-<time>` so what is left out can be recovered by hand (FR-ST-18). |
-| AF-11 | The stored history can be neither read, nor set aside or copied aside | Nothing is recorded for the rest of the run, nothing is written and the document is never replaced; playback continues, the failure is logged, and the next start tries again (FR-ST-19). |
+| AF-11 | The stored history can be neither read, nor set aside or copied aside, nor — for one of the version before dates were kept — copied once to `play-history.json.v1` | Nothing is recorded for the rest of the run, nothing is written and the document is never replaced; playback continues, the failure is logged, and the next start tries again (FR-ST-19). |
 | AF-12 | A track has plays older than 90 days | Their dates are dropped when the history is read and written; the count and the last play stay (FR-ST-16). |
 
 ---
@@ -990,7 +990,7 @@ graph LR
 | **Description** | The owner sees totals and four rankings drawn from their own listening. |
 | **Preconditions** | None. |
 | **Postconditions** | None. |
-| **Requirements** | FR-ST-08 … FR-ST-15, FR-UX-03 |
+| **Requirements** | FR-ST-08 … FR-ST-15, FR-ST-20, FR-UX-03 |
 
 **Main Flow**
 
@@ -1615,8 +1615,8 @@ graph LR
 | UC-23 Step over a bad file | FR-PL-14, FR-PL-15 |
 | UC-24 Play in the background | FR-BG-01, FR-BG-02, FR-BG-05, FR-BG-09, FR-BG-10 |
 | UC-25 Control from outside | FR-BG-03, FR-BG-04, FR-BG-06, FR-BG-07, FR-BG-08 |
-| UC-26 Count a play | FR-ST-01 … FR-ST-07 |
-| UC-27 See what you listen to | FR-ST-08 … FR-ST-15, FR-UX-03 |
+| UC-26 Count a play | FR-ST-01 … FR-ST-07, FR-ST-16 … FR-ST-19 |
+| UC-27 See what you listen to | FR-ST-08 … FR-ST-15, FR-ST-20, FR-UX-03 |
 | UC-28 Navigate the shell | FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-07 |
 | UC-29 Manage preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21 |
 | UC-30 Read the words | FR-LY-01, FR-LY-02, FR-LY-03, FR-LY-07 … FR-LY-10, FR-LY-12 |

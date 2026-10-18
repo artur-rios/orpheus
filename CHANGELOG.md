@@ -86,7 +86,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   pixels, so the count keeps its room. The bar's other actions are icons at any width.
 - The play history, `play-history.json`, is now version 2, and an existing history is migrated: every song keeps its
   count and its last-played date, and it is never reset. The first time a version-1 history is read, a copy is kept
-  as `play-history.json.v1`, so going back to an earlier release does not lose it.
+  as `play-history.json.v1`. An earlier release does not read it, but if you install one you can restore it by hand,
+  by renaming it to `play-history.json`.
 - A play history Orpheus cannot read — not UTF-8 or not JSON, not a play history, or written by another version — is
   no longer started over and overwritten: it is kept aside as `play-history.json.bad-<time>`, and a history with a
   row or date that is not one has the original copied aside under that name before the rest is kept. If it cannot be
