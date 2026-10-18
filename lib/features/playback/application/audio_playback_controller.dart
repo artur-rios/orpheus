@@ -493,7 +493,8 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
   ///
   /// The library is still read when [within] is given: it is what says which
   /// record [file] belongs to, and whether it is a file the library holds at
-  /// all. Only the gathering is narrowed.
+  /// all. Only the gathering is narrowed — and only while [within] holds
+  /// [file]; see the comment where it is gathered.
   Future<void> _playGrouped(
     AudioFile file,
     _GroupKind kind, {
@@ -523,8 +524,6 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
       return;
     }
 
-    final entries = within ?? library.entries;
-
     // A file the library does not hold is a file with no record around it —
     // played from a queue whose tracks have since been re-scanned away, say.
     // It queues alone, and it is checked here rather than left to the grouping
@@ -533,12 +532,24 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
     // answers — the stranger is one file, and the group is the group.
     final entry = library.entryAt(file.path);
 
-    final gathered = entry == null
+    List<AudioFile> gatherFrom(List<MusicEntry> entries) => entry == null
         ? [file]
         : switch (kind) {
             _GroupKind.album => albumOf(entry, entries),
             _GroupKind.artist => artistOf(entry, entries),
           };
+
+    // A [within] that does not hold [file] is not the screen the owner pressed
+    // play on: a record that lost the genre's tag while it stayed open is still
+    // drawn, whole, from the library, and what they see is the whole record. So
+    // that case gathers from the library exactly as if [within] were null.
+    // Gathering from what [within] holds instead would queue nothing, or a
+    // queue without the track they picked, which would start a different one.
+    var gathered = gatherFrom(within ?? library.entries);
+    if (within != null &&
+        !gathered.any((candidate) => candidate.path == file.path)) {
+      gathered = gatherFrom(library.entries);
+    }
     final tracks = shuffled ? _shuffled(gathered) : gathered;
 
     // Never the file name: an absent tag is carried as `null` rather than

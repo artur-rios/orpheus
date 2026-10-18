@@ -285,6 +285,49 @@ void main() {
     );
 
     test(
+      'GivenAWithinWithNothingOfTheSeedsRecord_WhenTheRecordIsPlayed_ThenTheWholeRecordIsQueuedFromTheSeed',
+      () async {
+        // The record is still on screen, drawn from the library, after losing
+        // the genre's tag: what the owner sees is the whole record.
+        final harness = Harness(library: library);
+        final player = await playerOf(harness);
+
+        await player.playAlbum(okComputer[1].file, within: other);
+
+        final queue = stateOf(harness).queue;
+        expect(
+          [for (final file in queue.tracks) file.path],
+          [for (final e in okComputer) e.file.path],
+        );
+        expect(queue.index, 1);
+        expect(stateOf(harness).stage, AudioStage.playing);
+        expect(harness.player.opened, [okComputer[1].file.path]);
+      },
+    );
+
+    test(
+      'GivenAWithinWithOtherTracksOfTheSeedsRecordButNotTheSeed_WhenTheRecordIsPlayed_ThenTheWholeRecordIsQueuedFromTheSeed',
+      () async {
+        final harness = Harness(library: library);
+        final player = await playerOf(harness);
+
+        await player.playAlbum(
+          okComputer[1].file,
+          within: [okComputer[0], okComputer[2]],
+        );
+
+        final queue = stateOf(harness).queue;
+        expect(
+          [for (final file in queue.tracks) file.path],
+          [for (final e in okComputer) e.file.path],
+        );
+        expect(queue.index, 1);
+        expect(stateOf(harness).stage, AudioStage.playing);
+        expect(harness.player.opened, [okComputer[1].file.path]);
+      },
+    );
+
+    test(
       'GivenNoWithin_WhenAnArtistIsPlayed_ThenTheirWholeCatalogueIsQueuedAsBefore',
       () async {
         final harness = Harness(library: library);
