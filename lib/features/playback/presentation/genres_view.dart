@@ -62,7 +62,11 @@ class GenresView extends ConsumerWidget {
         // Only the tracks tagged with the genre, though its records are
         // browsed whole: Songs is a list of tracks, and a track that is not
         // Rock is not a Rock song because it shares a record with one.
-        songs: songsIn(tracks),
+        // Sorted only while Songs is showing, for the reason the Music tab
+        // gives.
+        songs: MusicBrowser.showsSongs(genre.music)
+            ? songsIn(tracks)
+            : const [],
         navigator: navigator,
         rootLabel: name,
         leadingCrumbs: [

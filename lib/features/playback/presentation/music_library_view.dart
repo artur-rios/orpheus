@@ -32,7 +32,10 @@ class MusicLibraryView extends ConsumerWidget {
     return MusicBrowser(
       state: browse,
       library: entries,
-      songs: songsIn(entries),
+      // Sorted only while Songs is showing, as it was before the browser was
+      // lifted out of this tab: every other view would sort the whole library
+      // on each rebuild for a list nobody sees.
+      songs: MusicBrowser.showsSongs(browse) ? songsIn(entries) : const [],
       navigator: ref.read(musicBrowseControllerProvider.notifier),
       rootLabel: l10n.musicBreadcrumbRoot,
       // The whole library in an order nobody chose. Beside the views rather

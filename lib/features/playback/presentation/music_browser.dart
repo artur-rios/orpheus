@@ -57,7 +57,20 @@ class MusicBrowser extends ConsumerWidget {
   /// Handed in rather than derived from [library]: under a genre, Songs lists
   /// only the tracks tagged with it, while [library] holds the genre's records
   /// whole.
+  ///
+  /// Read only where [showsSongs] says the Songs list is on screen, and a
+  /// caller passes `const []` everywhere else: putting a library in song
+  /// order is a sort of every track, and this browser is rebuilt on every
+  /// drill, view switch and change of layout.
   final List<MusicEntry> songs;
+
+  /// Whether [state] puts the Songs list on screen — the one place [songs]
+  /// is read.
+  ///
+  /// An open record shows its own tracks whichever view it was opened from;
+  /// every other state of the Songs view is the list.
+  static bool showsSongs(MusicBrowseState state) =>
+      !state.inAlbum && state.view == MusicView.songs;
 
   /// What the view switcher and the breadcrumb steer.
   final MusicNavigator navigator;

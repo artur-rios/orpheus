@@ -190,6 +190,32 @@ void main() {
       expect(find.text('Everything'), findsOneWidget);
     },
   );
+
+  test(
+    'GivenEachKindOfBrowseState_WhenAskedWhetherSongsShow_ThenOnlyTheSongsListSaysSo',
+    () {
+      // What decides whether a caller sorts its songs at all: the Songs list
+      // and nothing else, an open record included.
+      expect(
+        MusicBrowser.showsSongs(const MusicBrowseState(view: MusicView.songs)),
+        isTrue,
+      );
+      expect(
+        MusicBrowser.showsSongs(
+          const MusicBrowseState(
+            view: MusicView.songs,
+            album: 'OK Computer',
+            artist: 'Radiohead',
+            inAlbum: true,
+          ),
+        ),
+        isFalse,
+      );
+      for (final view in [MusicView.artists, MusicView.albums]) {
+        expect(MusicBrowser.showsSongs(MusicBrowseState(view: view)), isFalse);
+      }
+    },
+  );
 }
 
 /// A navigator that only writes down what it was asked to do.
