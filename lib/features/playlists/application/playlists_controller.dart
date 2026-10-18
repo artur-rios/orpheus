@@ -7,6 +7,7 @@ import 'package:logging/logging.dart';
 
 import '../../../core/di/providers.dart';
 import '../../library/domain/music_entry.dart';
+import '../domain/file_saver.dart';
 import '../domain/m3u.dart';
 import '../domain/playlist.dart';
 
@@ -167,7 +168,7 @@ class PlaylistsController extends AsyncNotifier<List<Playlist>> {
   /// file could not be saved. Not queued with the changes: it writes nothing
   /// of the playlists', and it would hold every change behind it for as long
   /// as the owner took to choose a place.
-  Future<String?> exportM3u(String playlistId) async {
+  Future<SavedFile?> exportM3u(String playlistId) async {
     final playlist = _find(await _loaded(), playlistId);
     final catalog =
         ref.read(musicLibraryControllerProvider).value?.byPath ?? const {};

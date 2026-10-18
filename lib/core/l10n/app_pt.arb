@@ -1308,6 +1308,10 @@
       }
     }
   },
+  "playlistExported": "Playlist exportada",
+  "@playlistExported": {
+    "description": "Shown once a playlist has been exported to a place the system gives no file path for, such as Android's document provider."
+  },
   "playlistExportFailed": "Não foi possível exportar {name}",
   "@playlistExportFailed": {
     "description": "Shown when a playlist could not be saved as an .m3u file.",

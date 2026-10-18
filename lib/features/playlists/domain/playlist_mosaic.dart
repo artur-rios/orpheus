@@ -8,12 +8,12 @@ const int mosaicSize = 4;
 ///
 /// The cover of each of the first four distinct albums among the playlist's
 /// songs, in playlist order. Only songs the catalog still has count, so a
-/// missing file cannot hold a place; an album is told apart the way the
-/// library tells records apart, by title *and* album artist; and a song whose
-/// record has no cover does not take a place that a later song of another
-/// record could fill. A song with no album at all is told apart by its
-/// cover instead. Empty when there is nothing to draw, which is when the playlist
-/// shows a placeholder.
+/// missing file cannot hold a place; an album is told apart the way the library
+/// tells records apart, by title *and* album artist; and a song whose record
+/// has no cover does not take a place that a later song of another record could
+/// fill. A song with no album at all is told apart by its cover instead. Empty
+/// when there is nothing to draw, which is when the playlist shows a
+/// placeholder.
 List<String> mosaicCoverIds(
   Playlist playlist,
   Map<String, MusicEntry> catalogByPath,

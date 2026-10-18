@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -93,9 +94,18 @@ void main() {
     at('d3', a),
   ]);
 
-  /// The Playlists tab with [open] open.
-  Future<Harness> show(WidgetTester tester, Playlist open) async {
-    final harness = Harness(library: [a, b, c], playlists: [open], now: now);
+  /// The Playlists tab with [open] open, shuffling with [shuffleSeed].
+  Future<Harness> show(
+    WidgetTester tester,
+    Playlist open, {
+    int shuffleSeed = 7,
+  }) async {
+    final harness = Harness(
+      library: [a, b, c],
+      playlists: [open],
+      now: now,
+      shuffleSeed: shuffleSeed,
+    );
     for (final song in [a, b, c]) {
       harness.tagWriter.files[song.file.path] = FileTags(
         writable: AutofillField.values.toSet(),
@@ -313,18 +323,18 @@ void main() {
     );
 
     testWidgets(
-      'GivenAPlaylist_WhenShuffleIsPressed_ThenEveryPresentSongIsQueued',
+      'GivenAPlaylist_WhenShuffleIsPressed_ThenEveryPresentSongIsQueuedShuffled',
       (tester) async {
-        final harness = await show(tester, roadTrip);
+        const seed = 3;
+        final harness = await show(tester, roadTrip, shuffleSeed: seed);
 
         await tap(tester, find.text('Shuffle'));
 
-        expect(queued(harness), hasLength(3));
-        expect(queued(harness).toSet(), {
-          a.file.path,
-          b.file.path,
-          c.file.path,
-        });
+        final inOrder = [a.file.path, b.file.path, c.file.path];
+        final shuffled = [...inOrder]..shuffle(Random(seed));
+        // A seed whose shuffle is the playlist's own order would prove nothing.
+        expect(shuffled, isNot(inOrder));
+        expect(queued(harness), shuffled);
         expect(
           harness.read(audioPlaybackControllerProvider).queue.label,
           'Road trip',

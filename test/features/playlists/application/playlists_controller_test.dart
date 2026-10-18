@@ -9,7 +9,6 @@ import 'package:orpheus/features/playlists/application/playlists_controller.dart
 import 'package:orpheus/features/playlists/domain/playlist.dart';
 
 import '../../../support/entries.dart';
-import '../../../support/fake_playlists.dart';
 import '../../../support/test_container.dart';
 
 /// Creating, changing and deleting playlists, and what is written each time.
@@ -593,9 +592,9 @@ void main() {
         final controller = await controllerOf(harness);
         await harness.library();
 
-        final path = await controller.exportM3u('p');
+        final exported = await controller.exportM3u('p');
 
-        expect(path, '/exports/saved');
+        expect(exported?.path, '/exports/saved');
         final saved = harness.fileSaver.saved.single;
         expect(saved.suggestedName, 'Road trip.m3u');
         expect(
@@ -624,52 +623,45 @@ void main() {
   });
 
   group('unreadable store', () {
-    test(
-      'GivenTheStoreCannotBeRead_WhenAPlaylistIsCreated_ThenNothingIsWritten',
-      () async {
-        final store = _UnreadableStore();
-        final container = ProviderContainer(
-          overrides: [
-            playlistStoreProvider.overrideWithValue(store),
-            playlistCoverStoreProvider.overrideWithValue(
-              FakePlaylistCoverStore(),
-            ),
-            idGeneratorProvider.overrideWithValue(() => 'x'),
-            clockProvider.overrideWithValue(() => now),
-          ],
-        );
-        addTearDown(container.dispose);
-        final subscription = container.listen(
-          playlistsControllerProvider,
-          (_, _) {},
-        );
-        addTearDown(subscription.close);
-        await expectLater(
-          container.read(playlistsControllerProvider.future),
-          throwsA(isA<_Unreadable>()),
-        );
-        final controller = container.read(playlistsControllerProvider.notifier);
-
-        expect(container.read(playlistsControllerProvider).hasError, isTrue);
-        await expectLater(controller.create('Road trip'), throwsStateError);
-        await expectLater(
+    // Every change, each against a playlist that would be there if the
+    // document could be read.
+    final mutations = <String, Future<Object?> Function(PlaylistsController)>{
+      'create': (controller) => controller.create('Road trip'),
+      'add': (controller) =>
           controller.add('p', [songA], skipDuplicates: false),
-          throwsStateError,
-        );
-        await expectLater(controller.delete('p'), throwsStateError);
+      'remove': (controller) => controller.remove('p', {'e0'}),
+      'move': (controller) => controller.move('p', 'e0'),
+      'rename': (controller) => controller.rename('p', 'Commute'),
+      'setCover': (controller) =>
+          controller.setCover('p', Uint8List.fromList([1])),
+      'removeCover': (controller) => controller.removeCover('p'),
+      'delete': (controller) => controller.delete('p'),
+      'exportM3u': (controller) => controller.exportM3u('p'),
+    };
 
-        expect(store.writes, 0);
-      },
-    );
+    for (final MapEntry(key: name, value: mutate) in mutations.entries) {
+      test(
+        'GivenTheStoreCannotBeRead_When${name}IsCalled_ThenItThrowsAndWritesNothing',
+        () async {
+          final harness = harnessOver();
+          harness.playlistStore.failRead = Exception('unreadable');
+          await expectLater(
+            harness.container.read(playlistsControllerProvider.future),
+            throwsException,
+          );
+          final controller = harness.container.read(
+            playlistsControllerProvider.notifier,
+          );
+          expect(harness.read(playlistsControllerProvider).hasError, isTrue);
+
+          await expectLater(mutate(controller), throwsStateError);
+
+          expect(harness.playlistStore.writes, 0);
+          expect(harness.playlistCovers.covers, isEmpty);
+          expect(harness.playlistCovers.deleted, isEmpty);
+          expect(harness.fileSaver.saved, isEmpty);
+        },
+      );
+    }
   });
-}
-
-/// What an unreadable document looks like to the controller.
-class _Unreadable implements Exception {}
-
-/// A store whose document cannot be read, and which counts what it is asked
-/// to write.
-class _UnreadableStore extends FakePlaylistStore {
-  @override
-  Future<List<Playlist>> read() async => throw _Unreadable();
 }

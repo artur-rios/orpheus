@@ -4,11 +4,21 @@ import 'dart:typed_data';
 abstract interface class FileSaver {
   /// Offers [suggestedName] to the owner and saves [bytes] where they say.
   ///
-  /// Returns where it went — a path, or the platform's name for the place when
-  /// it has no path to give — or `null` when the owner cancelled, which is not
+  /// Returns where it went, or `null` when the owner cancelled, which is not
   /// a failure. Throws when the file could not be saved.
-  Future<String?> save({
+  Future<SavedFile?> save({
     required String suggestedName,
     required Uint8List bytes,
   });
+}
+
+/// A file that was saved, and its path when there is one to tell the owner.
+class SavedFile {
+  /// Creates the result of a save; [path] `null` is a place with no path.
+  const SavedFile({this.path});
+
+  /// The file's path, or `null` when the platform put it somewhere it has no
+  /// path for — Android's document provider answers with a `content://`
+  /// address, which means nothing to the owner and is not worth showing.
+  final String? path;
 }

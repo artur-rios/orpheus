@@ -8,6 +8,7 @@ import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/playback/domain/music_layout.dart';
 import 'package:orpheus/features/playback/presentation/album_art.dart';
+import 'package:orpheus/features/playlists/domain/file_saver.dart';
 import 'package:orpheus/features/playlists/domain/playlist.dart';
 import 'package:orpheus/features/playlists/presentation/playlist_cover.dart';
 import 'package:orpheus/features/playlists/presentation/playlists_view.dart';
@@ -438,7 +439,9 @@ void main() {
       'GivenAPlaylist_WhenItIsExported_ThenTheFileIsOfferedAndWhereItWentIsSaid',
       (tester) async {
         final harness = await show(tester, playlists: [roadTrip]);
-        harness.fileSaver.next = '/exports/Road trip.m3u';
+        harness.fileSaver.next = const SavedFile(
+          path: '/exports/Road trip.m3u',
+        );
 
         await openMenuOf(tester, 'Road trip');
         await choose(tester, 'Export to .m3u…');
@@ -449,6 +452,22 @@ void main() {
           startsWith('#EXTM3U'),
         );
         expect(find.text('Saved to /exports/Road trip.m3u'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'GivenAPlaceWithNoPath_WhenAPlaylistIsExported_ThenThatItWasExportedIsSaid',
+      (tester) async {
+        final harness = await show(tester, playlists: [roadTrip]);
+        // Android's document provider: a content:// address, not a path.
+        harness.fileSaver.next = const SavedFile();
+
+        await openMenuOf(tester, 'Road trip');
+        await choose(tester, 'Export to .m3u…');
+
+        expect(harness.fileSaver.saved, hasLength(1));
+        expect(find.text('Playlist exported'), findsOneWidget);
+        expect(find.textContaining('Saved to'), findsNothing);
       },
     );
 

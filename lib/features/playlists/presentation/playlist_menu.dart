@@ -136,12 +136,21 @@ class PlaylistMenu extends ConsumerWidget {
     final playlists = ref.read(playlistsControllerProvider.notifier);
 
     try {
-      final path = await playlists.exportM3u(playlist.id);
+      final saved = await playlists.exportM3u(playlist.id);
       // A cancelled dialog is the owner's answer, not something to report.
-      if (path == null) return;
+      if (saved == null) return;
 
+      // Where it went when that is a path; on Android it is a document
+      // provider's address, and only that it was exported is worth saying.
+      final path = saved.path;
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.playlistExportSaved(path))),
+        SnackBar(
+          content: Text(
+            path == null
+                ? l10n.playlistExported
+                : l10n.playlistExportSaved(path),
+          ),
+        ),
       );
     } on Object catch (error) {
       _log.warning('Could not export ${playlist.id}: $error');

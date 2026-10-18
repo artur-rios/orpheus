@@ -1057,6 +1057,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get playlistExported => 'Playlist exported';
+
+  @override
   String playlistExportFailed(String name) {
     return 'Couldn\'t export $name';
   }

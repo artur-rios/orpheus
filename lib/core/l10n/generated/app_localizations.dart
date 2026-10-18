@@ -1736,6 +1736,12 @@ abstract class AppLocalizations {
   /// **'Saved to {path}'**
   String playlistExportSaved(String path);
 
+  /// Shown once a playlist has been exported to a place the system gives no file path for, such as Android's document provider.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlist exported'**
+  String get playlistExported;
+
   /// Shown when a playlist could not be saved as an .m3u file.
   ///
   /// In en, this message translates to:

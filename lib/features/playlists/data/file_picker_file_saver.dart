@@ -17,7 +17,7 @@ class FilePickerFileSaver implements FileSaver {
   const FilePickerFileSaver();
 
   @override
-  Future<String?> save({
+  Future<SavedFile?> save({
     required String suggestedName,
     required Uint8List bytes,
   }) async {
@@ -26,9 +26,8 @@ class FilePickerFileSaver implements FileSaver {
       bytes: bytes,
       mimeType: _mimeTypeOf(suggestedName),
     );
-    if (saved == null) return null;
 
-    return saved.scheme == 'file' ? saved.toFilePath() : saved.toString();
+    return saved == null ? null : savedFileAt(saved);
   }
 
   /// What the platform should be told the file is, where it asks: Android
@@ -40,6 +39,12 @@ class FilePickerFileSaver implements FileSaver {
         _ => 'application/octet-stream',
       };
 }
+
+/// What is said about a file the platform saved at [location]: its path
+/// when [location] is a file, and no path for anything else — such as the
+/// `content://` address Android's document provider answers with.
+SavedFile savedFileAt(Uri location) =>
+    SavedFile(path: location.scheme == 'file' ? location.toFilePath() : null);
 
 /// [name] with what a file name may not contain made harmless.
 ///

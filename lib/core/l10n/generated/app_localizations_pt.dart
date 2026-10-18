@@ -1062,6 +1062,9 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get playlistExported => 'Playlist exportada';
+
+  @override
   String playlistExportFailed(String name) {
     return 'Não foi possível exportar $name';
   }

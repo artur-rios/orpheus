@@ -1,8 +1,26 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/features/playlists/data/file_picker_file_saver.dart';
+import 'package:path/path.dart' as p;
 
-/// The names offered to the platform's save dialog.
+/// The names offered to the platform's save dialog, and what is said about
+/// where the file went.
 void main() {
+  test('GivenAFileLocation_WhenSaved_ThenItsPathIsKnown', () {
+    final path = p.join(Directory.systemTemp.path, 'Road trip.m3u');
+
+    expect(savedFileAt(Uri.file(path)).path, path);
+  });
+
+  test('GivenADocumentProviderLocation_WhenSaved_ThenNoPathIsGiven', () {
+    final location = Uri.parse(
+      'content://com.android.providers.downloads.documents/document/42',
+    );
+
+    expect(savedFileAt(location).path, isNull);
+  });
+
   test('GivenAPlainName_WhenMadeSafe_ThenItIsUnchanged', () {
     expect(safeFileName('Road trip.m3u'), 'Road trip.m3u');
   });

@@ -86,7 +86,7 @@ class FakePlaylistCoverStore implements PlaylistCoverStore {
 /// A [FileSaver] that records what it was asked to save.
 class FakeFileSaver implements FileSaver {
   /// Where the owner will say to put the file; `null` is a cancelled dialog.
-  String? next = '/exports/saved';
+  SavedFile? next = const SavedFile(path: '/exports/saved');
 
   /// When set, [save] throws it instead of answering.
   Exception? failure;
@@ -95,7 +95,7 @@ class FakeFileSaver implements FileSaver {
   final List<({String suggestedName, Uint8List bytes})> saved = [];
 
   @override
-  Future<String?> save({
+  Future<SavedFile?> save({
     required String suggestedName,
     required Uint8List bytes,
   }) async {
