@@ -29,7 +29,7 @@ interface on Windows, Linux and Android.
 | **Draws the music itself** | The bars on the player are the spectrum of the recording, measured from its own samples by the engine that plays it. |
 | **Keeps playing on Android** | From a notification and the lock screen — and stops for a phone call, and for headphones pulled out of the socket. |
 | **Shows the words, in time with the music** | Your own files first; a lookup for the tracks that have none. |
-| **Fixes tags, from MusicBrainz or by hand** | Autofill a record from MusicBrainz, or edit one track's tags and cover yourself — only what you confirm is written. |
+| **Fixes tags, from MusicBrainz or by hand** | Autofill a record from MusicBrainz, or edit one track's tags and cover yourself — or, from an album's or an artist's ⋮ menu, the shared tags of all its songs at once; fields they disagree on show as mixed and are left alone unless you type in them. Only what you confirm is written. |
 | **Says what you actually listen to** | Total plays, and the most played tracks, artists, records and genres — counted from your own listening and nobody else's. |
 | **Adapts to the window** | A rail down the side on a desktop, a bar across the bottom on a phone. |
 | **Light and dark, English and Brazilian Portuguese** | |

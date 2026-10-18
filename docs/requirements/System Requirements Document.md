@@ -219,7 +219,7 @@ Realises F-16.
 
 ### 2.10 Tag editing (TE)
 
-Realises F-18.
+Realises F-18 and F-19.
 
 | ID | Requirement |
 | --- | --- |
@@ -227,6 +227,10 @@ Realises F-18.
 | **FR-TE-02** | A field the file's format cannot hold must be shown as not editable, and a file Orpheus cannot write must say so and offer nothing to save. |
 | **FR-TE-03** | Only the fields the owner changed may be written, through the same writer and under the same rules as `FR-AF-05`, measured against the file as it was when the editor read it; a field cleared removes the tag. Track and disc numbers and totals must be whole numbers of one or more, a total must have its number (ID3 cannot hold one without the other), and the year from 1 to 9999. |
 | **FR-TE-04** | A saved edit must reach the library and every screen without the owner starting a scan. A file that could not be written must be named with the reason as in `FR-AF-07`, keeping the owner's edits, and one changed by another program since it was read must offer to be read again. |
+| **FR-TE-05** | The owner must be able to edit, from an album's or an artist's menu, the artist, album artist, album, track total, disc number and total, year, genre and front cover of all its tracks in one form. A field the tracks disagree on must be shown as mixed; title and track number are not offered for more than one track. |
+| **FR-TE-06** | Tracks Orpheus cannot write (`FR-TE-02`) must be named before the owner saves and left alone; a field none of the tracks can hold is not editable. |
+| **FR-TE-07** | Only the fields the owner changed may be written, to each track that can hold them, under the rules of `FR-TE-03`, each track measured against itself as it was read; a mixed field left alone is written to none, and a track that already holds the value is not written for it. |
+| **FR-TE-08** | Each track that could not be written must be named with its reason as in `FR-AF-07`, without undoing the tracks that were; those in use, failed or changed since read can be tried again. The library updates without the owner starting a scan. |
 
 ## 3. Non-functional requirements
 
@@ -234,7 +238,7 @@ Realises F-18.
 | --- | --- |
 | **NFR-01** | **One source, three targets.** Windows, Linux and Android must build from the same source with no per-platform implementation of any feature above the platform edges. |
 | **NFR-02** | **Three network calls, named.** The application must make no network request other than the lyrics lookup of `FR-LY-13`, the MusicBrainz and Cover Art Archive lookups an autofill makes when the owner starts one (`FR-AF-02`), and, on Windows and Linux, the release check of `BR-03` — the one request at startup for the newest release (the latest full release, or for a build that is itself a pre-release, the release list), and the download of an installer and its checksums the owner accepted. No telemetry, analytics, crash reporting, scrobbling or other lookup may be added. The Android package must declare exactly the permissions its manifest lists, and this must be verifiable from the built package. |
-| **NFR-03** | **Audio files are changed for confirmed tags only.** No audio file may be renamed, moved, deleted or re-encoded, and its tags may be written only for changes the owner confirmed (`FR-AF-05`, `FR-TE-03`). |
+| **NFR-03** | **Audio files are changed for confirmed tags only.** No audio file may be renamed, moved, deleted or re-encoded, and its tags may be written only for changes the owner confirmed (`FR-AF-05`, `FR-TE-03`, `FR-TE-07`). |
 | **NFR-04** | **Startup is not gated on a scan.** The library from the last scan must be on screen before a new scan is started. |
 | **NFR-05** | **Scanning is proportional to change.** Re-scanning an unchanged library must not re-parse it. |
 | **NFR-06** | **The cover cache is proportional to records, not files.** |
@@ -269,6 +273,7 @@ Realises F-18.
 | F-16 Sound bars | FR-VZ-01 … FR-VZ-11 |
 | F-17 Autofill tags | FR-AF-01 … FR-AF-08 |
 | F-18 Edit a track's tags | FR-TE-01 … FR-TE-04 |
+| F-19 Edit the tags of several tracks | FR-TE-05 … FR-TE-08 |
 
 ### 4.2 Requirements to use cases
 
@@ -283,7 +288,7 @@ Realises F-18.
 | LY | UC-30, UC-31, UC-33 |
 | VZ | UC-32 |
 | AF | UC-34 |
-| TE | UC-35 |
+| TE | UC-35, UC-37 |
 
 ## 5. Data model
 

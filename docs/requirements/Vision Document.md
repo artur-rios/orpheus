@@ -19,8 +19,8 @@ their tags, and plays them.
 
 It is not a library manager, not a streaming client, and not a synchronisation
 service. The one thing it changes in an audio file is its tags — a record at a
-time by autofill, or one track at a time by hand — and only when the owner
-confirms. It has no server and no account. It reaches a
+time by autofill, or by hand for one track or many at once — and only when the
+owner confirms. It has no server and no account. It reaches a
 network for exactly one thing — the words of a track that has none on the
 machine — and the owner can turn that off.
 
@@ -106,6 +106,7 @@ Requirements Document and demonstrated by use cases.
 | **F-16** | Sound bars | The player draws the spectrum of the recording being played, measured from its own samples with the engine that plays it, analysed once per track and kept. Until an analysis lands, and for a file that cannot be decoded, a deterministic stand-in is drawn in its place and named as one. |
 | **F-17** | Autofill tags | On a record, or on a single track, the owner chooses which tags to fill; Orpheus finds the release on MusicBrainz, shows every change file by file as the current value and the new one, and writes only the changes the owner leaves ticked — into the files and into the library. Only MP3 and FLAC can be written; every other format is read-only. The cover comes from the Cover Art Archive and is unticked until chosen. |
 | **F-18** | Edit a track's tags | From a track's menu, the owner edits its title, artist, album artist, album, track and disc numbers and totals, year, genre and front cover by hand, starting from what the file holds; only what they changed is written, into the file and into the library. Only MP3 and FLAC can be written. |
+| **F-19** | Edit the tags of several tracks | From an album's or an artist's menu, the owner edits the artist, album artist, album, track total, disc number and total, year, genre and front cover of all its tracks in one form. A field the tracks disagree on is shown as mixed and left alone unless typed in; title and track number are not offered. Only what they changed is written, to each track that can hold it, into the file and into the library; the tracks that cannot be written are named. Only MP3 and FLAC can be written. |
 
 ## 5. Constraints
 
@@ -121,8 +122,8 @@ Requirements Document and demonstrated by use cases.
 ## 6. Out of scope
 
 Stated so that their absence is a decision rather than an omission: tag
-editing beyond an autofill the owner confirms (`FR-AF`), file renaming, moving
-or deletion, transcoding, streaming, scrobbling, any lookup beyond the lyrics
-lookup, the update check and an autofill's MusicBrainz and Cover Art Archive
+editing beyond an autofill or a tag edit the owner confirms (`FR-AF`, `FR-TE`),
+file renaming, moving or deletion, transcoding, streaming, scrobbling, any
+lookup beyond the lyrics lookup, the update check and an autofill's MusicBrainz and Cover Art Archive
 lookups, writing or re-timing lyrics back into the owner's files, accounts, synchronisation, playlists that can be saved
 and named, a media session on Windows or Linux, and time-windowed statistics.

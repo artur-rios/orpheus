@@ -57,7 +57,9 @@ result in a file beside its own settings.
   *Edit tags…*: the form holds what the file says — title, artist, album
   artist, album, track and disc numbers and totals, year, genre and the cover,
   which you can replace with a JPEG or PNG or remove. Only what you change is
-  written, and the library updates by itself.
+  written, and the library updates by itself. Or, from an album's or an
+  artist's ⋮ menu, the shared tags of all its songs at once; fields they
+  disagree on show as mixed and are left alone unless you type in them.
 - **Searches** across titles, artists, albums and genres — all together, or
   one kind at a time with a selector — ranked so a match at the start of a
   title comes above one buried in the middle of something else.

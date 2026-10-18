@@ -18,7 +18,7 @@ done.
 | Actor | Description |
 | --- | --- |
 | **Owner** | The single human user, and the only actor with intent. Interacts with every use case below. |
-| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed (UC-34, UC-35). |
+| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed (UC-34, UC-35, UC-37). |
 | **Metadata service** | MusicBrainz, and the Cover Art Archive for covers. Asked only when the owner starts an autofill (UC-34), at most once a second, and sent nothing that identifies the owner. |
 | **Playback engine** | The libmpv-backed engine linked in process. Opens files, reports position and duration, and reports what it cannot decode. Never modifies a file. |
 | **Host platform** | Windows, Linux or Android. Grants or refuses read access, provides the folder picker, and — on Android alone — provides the media session and the foreground service. |
@@ -95,6 +95,7 @@ graph LR
 
     subgraph "Tag editing (TE)"
         UC35[UC-35: Edit a track's tags by hand]
+        UC37[UC-37: Edit the tags of several tracks at once]
     end
 
     OWNER --> UC01
@@ -107,6 +108,7 @@ graph LR
     OWNER --> UC32
     OWNER --> UC34
     OWNER --> UC35
+    OWNER --> UC37
 ```
 
 ---
@@ -1373,6 +1375,42 @@ graph LR
 | AF-10 | The owner searches while in the genres area | The same results as in the music area are shown, with the selector of UC-12. |
 | AF-11 | The system back gesture is used inside a genre | It clears a search first, then goes back one level — record, artist, genre — and from the genres list does whatever the platform does with it (`FR-CT-18`). |
 
+### UC-37: Edit the tags of several tracks at once
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-37 |
+| **Name** | Edit the tags of several tracks at once |
+| **Actors** | Owner, Local filesystem, Host platform |
+| **Description** | The owner opens one form over all of an album's or an artist's tracks, changes what they want, and only what they changed is written to each track. |
+| **Preconditions** | The library holds the album or artist, with more than one track. |
+| **Postconditions** | In each track Orpheus could write, exactly the fields the owner changed hold what they typed, and the library shows it. No other tag, and no track the owner was told is skipped, has changed. |
+| **Requirements** | FR-TE-05, FR-TE-06, FR-TE-07, FR-TE-08 |
+
+**Main Flow**
+
+1. The owner picks *Edit tags…* from an album's or an artist's menu — its ⋮ button, a right-click or a long press.
+2. The application reads each track's own tags and cover, and notes its size and time (`FR-TE-05`).
+3. The form shows artist, album artist, album, track total, disc number and total, year, genre and cover — what the
+   tracks share, and *mixed* where they differ — and names any track it will leave alone (`FR-TE-06`).
+4. The owner changes what they want; *Save* is offered once something changed and every number is valid.
+5. The owner presses *Save*. Each track is written with only the changed fields it can hold, against itself as read
+   (`FR-TE-07`), with a count of the progress.
+6. The form closes, the screen says how many songs were saved, and the library updates without a scan (`FR-TE-08`).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | Some tracks are not MP3 or FLAC, or cannot be changed safely | They are named before saving and left alone (`FR-TE-06`). |
+| AF-02 | No track can be changed | The form says why and offers nothing to save. |
+| AF-03 | The album or artist has one track | The one-track form opens (UC-35). |
+| AF-04 | The owner changes nothing, or a number is not valid | *Save* stays unavailable. |
+| AF-05 | A track has no track or disc number and the owner sets its total | That track keeps its total and is noted; its other changes are written. |
+| AF-06 | Some tracks cannot be written | The others stay written; each failed track is named with its reason, and those in use, failed or changed since read can be tried again (`FR-TE-08`). |
+| AF-07 | On Android, permission to change audio files is refused | As UC-34 AF-08; nothing is written. |
+| AF-08 | The owner cancels before saving | Nothing is written. |
+
 ---
 
 ## 3. Use case — requirements traceability
@@ -1414,6 +1452,7 @@ graph LR
 | UC-34 Autofill a record's tags | FR-AF-01 … FR-AF-08 |
 | UC-35 Edit a track's tags by hand | FR-TE-01 … FR-TE-04 |
 | UC-36 Browse and play by genre | FR-CT-05, FR-CT-06, FR-CT-12 … FR-CT-19, FR-UX-01 |
+| UC-37 Edit the tags of several tracks at once | FR-TE-05 … FR-TE-08 |
 
 ## 4. State diagrams
 
