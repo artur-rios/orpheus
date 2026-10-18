@@ -15,6 +15,7 @@ import '../../playback/presentation/music_display_name.dart';
 import '../../playback/presentation/music_rows.dart';
 import '../../tag_editor/presentation/edit_tags_launcher.dart';
 import '../domain/playlist.dart';
+import 'add_to_playlist.dart';
 
 final Logger _log = Logger('playlists');
 
@@ -234,6 +235,14 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
     if (written) _selection.clear();
   }
 
+  /// Asks which playlist the ticked songs go to: the library's, each once, in
+  /// this playlist's order. The selection is kept, as in [MusicTrackList].
+  Future<void> _addTicked() => startAddToPlaylist(
+    context,
+    ref,
+    _tickedSongs(ref.read(songSelectionProvider).paths),
+  );
+
   /// A row dropped by its handle at [to], the place it now holds: shown
   /// there at once, and stored.
   void _reorder(int from, int to) {
@@ -318,6 +327,14 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
         onPressed: () => unawaited(_removeTicked()),
         child: Text(l10n.playlistRemoveFrom),
       ),
+      // Only songs the library has can be added: a missing one has no tags
+      // to snapshot.
+      if (tickedSongs.isNotEmpty)
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.playlist_add),
+          onPressed: () => unawaited(_addTicked()),
+          child: Text(l10n.playlistAddTo),
+        ),
     ];
 
     return CallbackShortcuts(
@@ -347,8 +364,13 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
                     icon: const Icon(Icons.playlist_remove),
                     onPressed: () => unawaited(_removeTicked()),
                   ),
-                  // *Add to playlist…* goes here, over the ticked songs the
-                  // library has, each once, in this order (`_tickedSongs`).
+                  IconButton(
+                    tooltip: l10n.playlistAddTo,
+                    icon: const Icon(Icons.playlist_add),
+                    onPressed: tickedSongs.isEmpty
+                        ? null
+                        : () => unawaited(_addTicked()),
+                  ),
                 ],
               ),
             Expanded(

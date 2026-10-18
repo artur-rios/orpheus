@@ -11,6 +11,7 @@ import '../../autofill/application/autofill_controller.dart';
 import '../../autofill/presentation/autofill_launcher.dart';
 import '../../library/domain/music_entry.dart';
 import '../../library/domain/music_grouping.dart';
+import '../../playlists/presentation/add_to_playlist.dart';
 import '../../tag_editor/presentation/edit_tags_launcher.dart';
 import '../application/audio_playback_controller.dart';
 import '../application/song_selection_controller.dart';
@@ -325,8 +326,8 @@ class _GroupActions extends ConsumerWidget {
   }
 }
 
-/// An album's or an artist's own actions: autofill (albums only) and the tag
-/// editor.
+/// An album's or an artist's own actions: autofill (albums only), adding to a
+/// playlist and the tag editor.
 ///
 /// Opened by right-click, long press, or the ⋮ button on the row. A long press
 /// opens it here though it picks the song on a track's row: albums and artists
@@ -370,6 +371,13 @@ class MusicGroupMenu extends ConsumerWidget {
             ),
             child: Text(l10n.autofillAction),
           ),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.playlist_add),
+          onPressed: () => unawaited(
+            startAddToPlaylist(context, ref, _gathered(context, ref)),
+          ),
+          child: Text(l10n.playlistAddTo),
+        ),
         MenuItemButton(
           leadingIcon: const Icon(Icons.edit_outlined),
           onPressed: () => unawaited(
@@ -591,17 +599,30 @@ class _MusicTrackListState extends ConsumerState<MusicTrackList> {
     }
   }
 
+  /// The picked songs, in the list's order.
+  List<MusicEntry> _pickedEntries() {
+    final paths = ref.read(songSelectionProvider).paths;
+
+    return [
+      for (final entry in widget.entries)
+        if (paths.contains(entry.file.path)) entry,
+    ];
+  }
+
+  /// Asks which playlist the picked songs go to, in the list's order.
+  ///
+  /// The selection is kept: the owner may want the same songs in another
+  /// playlist too.
+  Future<void> _addSelected() =>
+      startAddToPlaylist(context, ref, _pickedEntries());
+
   /// Opens the tag form over the picked songs, in the list's order, and ends
   /// the selection if it wrote any of them.
   ///
   /// Not when it was cancelled, or wrote nothing: the owner may want to adjust
   /// what is picked and try again.
   Future<void> _editSelected() async {
-    final paths = ref.read(songSelectionProvider).paths;
-    final picked = [
-      for (final entry in widget.entries)
-        if (paths.contains(entry.file.path)) entry,
-    ];
+    final picked = _pickedEntries();
     if (picked.isEmpty) return;
 
     final label = AppLocalizations.of(context).musicSelectionLabel;
@@ -684,6 +705,13 @@ class _MusicTrackListState extends ConsumerState<MusicTrackList> {
                 onStop: controller.clear,
                 onSelectAll: () => controller.selectAll(scope, _order()),
                 onEditTags: () => unawaited(_editSelected()),
+                actions: [
+                  IconButton(
+                    tooltip: l10n.playlistAddTo,
+                    icon: const Icon(Icons.playlist_add),
+                    onPressed: () => unawaited(_addSelected()),
+                  ),
+                ],
               ),
             Expanded(
               // Keyed so the rows, and how far they are scrolled, survive the
@@ -708,6 +736,13 @@ class _MusicTrackListState extends ConsumerState<MusicTrackList> {
                             editTags: () => unawaited(_editSelected()),
                           )
                         : null,
+                    selectionItems: [
+                      MenuItemButton(
+                        leadingIcon: const Icon(Icons.playlist_add),
+                        onPressed: () => unawaited(_addSelected()),
+                        child: Text(l10n.playlistAddTo),
+                      ),
+                    ],
                     child: SongTile(
                       title: title,
                       subtitle: performer,
@@ -971,7 +1006,7 @@ class MusicRowMenu extends ConsumerWidget {
   final List<Widget> extraItems;
 
   /// What the list the row is in adds to the picked songs' menu, before
-  /// *Edit tags*.
+  /// *Edit tags* — *Add to playlist…* among it.
   final List<Widget> selectionItems;
 
   @override
@@ -1036,6 +1071,11 @@ class MusicRowMenu extends ConsumerWidget {
           leadingIcon: const Icon(Icons.edit_outlined),
           onPressed: () => unawaited(startTagEdit(context, entry)),
           child: Text(l10n.tagEditAction),
+        ),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.playlist_add),
+          onPressed: () => unawaited(startAddToPlaylist(context, ref, [entry])),
+          child: Text(l10n.playlistAddTo),
         ),
         ...extraItems,
       ],

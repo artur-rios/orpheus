@@ -1813,6 +1813,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drag to reorder'**
   String get playlistReorder;
+
+  /// The song, album and artist menu item, the selection menu item and the selection bar button that add the song, the tracks or the selected songs to a playlist the owner then chooses.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to playlist…'**
+  String get playlistAddTo;
+
+  /// The title of the dialog that lists the playlists to add songs to.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to playlist'**
+  String get playlistAddToTitle;
+
+  /// The first row of the dialog that lists the playlists to add songs to: it asks for a name, makes the playlist and adds the songs to it.
+  ///
+  /// In en, this message translates to:
+  /// **'New playlist…'**
+  String get playlistAddToNew;
+
+  /// Shown once songs have been added to a playlist, with how many were added and the playlist's name.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Added 1 song to {name}} other{Added {count} songs to {name}}}'**
+  String playlistAdded(int count, String name);
+
+  /// Shown when the owner chose to skip the songs already in a playlist and there were no others, so nothing was added.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing added'**
+  String get playlistNothingAdded;
+
+  /// The question asked when some of the songs about to be added to a playlist are already in it.
+  ///
+  /// In en, this message translates to:
+  /// **'Already in {name} — add again?'**
+  String playlistDuplicateTitle(String name);
+
+  /// The answer to the already-in-the-playlist question that adds every song, the ones already there a second time.
+  ///
+  /// In en, this message translates to:
+  /// **'Add anyway'**
+  String get playlistAddAnyway;
+
+  /// The answer to the already-in-the-playlist question that adds only the songs that are not there yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip those'**
+  String get playlistSkipThose;
 }
 
 class _AppLocalizationsDelegate

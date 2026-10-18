@@ -1102,4 +1102,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get playlistReorder => 'Drag to reorder';
+
+  @override
+  String get playlistAddTo => 'Add to playlist…';
+
+  @override
+  String get playlistAddToTitle => 'Add to playlist';
+
+  @override
+  String get playlistAddToNew => 'New playlist…';
+
+  @override
+  String playlistAdded(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Added $count songs to $name',
+      one: 'Added 1 song to $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get playlistNothingAdded => 'Nothing added';
+
+  @override
+  String playlistDuplicateTitle(String name) {
+    return 'Already in $name — add again?';
+  }
+
+  @override
+  String get playlistAddAnyway => 'Add anyway';
+
+  @override
+  String get playlistSkipThose => 'Skip those';
 }

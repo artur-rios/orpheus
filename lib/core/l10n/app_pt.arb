@@ -1382,5 +1382,50 @@
   "playlistReorder": "Arraste para reordenar",
   "@playlistReorder": {
     "description": "The accessibility label of the handle on each row of an open playlist, by which the row is dragged to another place."
+  },
+  "playlistAddTo": "Adicionar à playlist…",
+  "@playlistAddTo": {
+    "description": "The song, album and artist menu item, the selection menu item and the selection bar button that add the song, the tracks or the selected songs to a playlist the owner then chooses."
+  },
+  "playlistAddToTitle": "Adicionar à playlist",
+  "@playlistAddToTitle": {
+    "description": "The title of the dialog that lists the playlists to add songs to."
+  },
+  "playlistAddToNew": "Nova playlist…",
+  "@playlistAddToNew": {
+    "description": "The first row of the dialog that lists the playlists to add songs to: it asks for a name, makes the playlist and adds the songs to it."
+  },
+  "playlistAdded": "{count, plural, =1{1 faixa adicionada a {name}} other{{count} faixas adicionadas a {name}}}",
+  "@playlistAdded": {
+    "description": "Shown once songs have been added to a playlist, with how many were added and the playlist's name.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistNothingAdded": "Nada foi adicionado",
+  "@playlistNothingAdded": {
+    "description": "Shown when the owner chose to skip the songs already in a playlist and there were no others, so nothing was added."
+  },
+  "playlistDuplicateTitle": "Já está em {name} — adicionar de novo?",
+  "@playlistDuplicateTitle": {
+    "description": "The question asked when some of the songs about to be added to a playlist are already in it.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistAddAnyway": "Adicionar mesmo assim",
+  "@playlistAddAnyway": {
+    "description": "The answer to the already-in-the-playlist question that adds every song, the ones already there a second time."
+  },
+  "playlistSkipThose": "Pular essas",
+  "@playlistSkipThose": {
+    "description": "The answer to the already-in-the-playlist question that adds only the songs that are not there yet."
   }
 }
