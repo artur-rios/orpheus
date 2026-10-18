@@ -15,6 +15,7 @@ import '../application/audio_playback_controller.dart';
 import '../domain/music_layout.dart';
 import 'album_art.dart';
 import 'music_display_name.dart';
+import 'music_scope.dart';
 
 /// The artists, or the albums.
 ///
@@ -61,7 +62,7 @@ class _GroupRows extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final controller = ref.read(musicBrowseControllerProvider.notifier);
+    final controller = musicNavigatorOf(context, ref);
 
     return ListView.builder(
       itemCount: groups.length,
@@ -115,7 +116,7 @@ class _GroupGrid extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final controller = ref.read(musicBrowseControllerProvider.notifier);
+    final controller = musicNavigatorOf(context, ref);
 
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -254,6 +255,7 @@ class _GroupActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     if (group.entries.isEmpty) return const SizedBox.shrink();
+    final within = musicWithinOf(context);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -263,7 +265,7 @@ class _GroupActions extends ConsumerWidget {
               ? l10n.audioPlayAlbum
               : l10n.audioPlayArtist,
           icon: const Icon(Icons.play_arrow),
-          onPressed: () => _play(ref, shuffled: false),
+          onPressed: () => _play(ref, within, shuffled: false),
         ),
         IconButton(
           tooltip: kind == MusicGroupKind.album
@@ -273,7 +275,7 @@ class _GroupActions extends ConsumerWidget {
           // The same gathering "play album" does, in a different order: the
           // queue is the record (or the artist's whole catalogue), never the
           // one track this button happens to have in hand.
-          onPressed: () => _play(ref, shuffled: true),
+          onPressed: () => _play(ref, within, shuffled: true),
         ),
         if (kind == MusicGroupKind.album)
           IconButton(
@@ -287,14 +289,20 @@ class _GroupActions extends ConsumerWidget {
     );
   }
 
-  void _play(WidgetRef ref, {required bool shuffled}) {
+  /// Plays the group, gathered from [within] — the screen's part of the
+  /// library, or the whole of it where [within] is `null`.
+  void _play(
+    WidgetRef ref,
+    List<MusicEntry>? within, {
+    required bool shuffled,
+  }) {
     final player = ref.read(audioPlaybackControllerProvider.notifier);
     final first = group.entries.first.file;
 
     unawaited(
       kind == MusicGroupKind.album
-          ? player.playAlbum(first, shuffled: shuffled)
-          : player.playArtist(first, shuffled: shuffled),
+          ? player.playAlbum(first, shuffled: shuffled, within: within)
+          : player.playArtist(first, shuffled: shuffled, within: within),
     );
   }
 }
@@ -350,6 +358,7 @@ class MusicTrackList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final within = musicWithinOf(context);
 
     if (entries.isEmpty && emptyMessage != null) {
       return Center(
@@ -409,7 +418,7 @@ class MusicTrackList extends ConsumerWidget {
 
               unawaited(
                 numbered
-                    ? player.playAlbum(entry.file)
+                    ? player.playAlbum(entry.file, within: within)
                     : player.playTrack(entry.file),
               );
             },
@@ -439,6 +448,7 @@ class MusicRowMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final within = musicWithinOf(context);
 
     return MenuAnchor(
       menuChildren: [
@@ -449,13 +459,18 @@ class MusicRowMenu extends ConsumerWidget {
         ),
         MenuItemButton(
           leadingIcon: const Icon(Icons.album_outlined),
-          onPressed: () => _play(ref, (player) => player.playAlbum(entry.file)),
+          onPressed: () => _play(
+            ref,
+            (player) => player.playAlbum(entry.file, within: within),
+          ),
           child: Text(l10n.audioPlayAlbum),
         ),
         MenuItemButton(
           leadingIcon: const Icon(Icons.person_outline),
-          onPressed: () =>
-              _play(ref, (player) => player.playArtist(entry.file)),
+          onPressed: () => _play(
+            ref,
+            (player) => player.playArtist(entry.file, within: within),
+          ),
           child: Text(l10n.audioPlayArtist),
         ),
         // The same two queues in an order nobody chose. Under the plays they
@@ -465,7 +480,8 @@ class MusicRowMenu extends ConsumerWidget {
           leadingIcon: const Icon(Icons.shuffle),
           onPressed: () => _play(
             ref,
-            (player) => player.playAlbum(entry.file, shuffled: true),
+            (player) =>
+                player.playAlbum(entry.file, shuffled: true, within: within),
           ),
           child: Text(l10n.audioShuffleAlbum),
         ),
@@ -473,7 +489,8 @@ class MusicRowMenu extends ConsumerWidget {
           leadingIcon: const Icon(Icons.shuffle_on_outlined),
           onPressed: () => _play(
             ref,
-            (player) => player.playArtist(entry.file, shuffled: true),
+            (player) =>
+                player.playArtist(entry.file, shuffled: true, within: within),
           ),
           child: Text(l10n.audioShuffleArtist),
         ),
