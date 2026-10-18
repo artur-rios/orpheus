@@ -403,9 +403,11 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
                           selectionItems: selectionItems(),
                           child: tile,
                         )
-                      : _MissingRowMenu(
-                          own: [removeThis],
-                          selection: isPicked
+                      // A missing song has nothing to play or to tag: only
+                      // its place in the playlist, to remove.
+                      : SongRowMenu(
+                          ownItems: [removeThis],
+                          selectionItems: isPicked
                               ? [
                                   ...selectionItems(),
                                   if (tickedSongs.isNotEmpty)
@@ -469,70 +471,5 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
     return artist == null
         ? l10n.playlistMissing
         : l10n.playlistMissingBy(artist);
-  }
-}
-
-/// A missing song's menu: the song is not in the library, so there is
-/// nothing to play or to tag, and only its place in the playlist to remove.
-///
-/// Opened as [MusicRowMenu]'s is — right-click, or the ⋮ button — and, on a
-/// ticked row while songs are being picked, the right-click opens the picked
-/// songs' menu instead.
-class _MissingRowMenu extends StatelessWidget {
-  const _MissingRowMenu({
-    required this.own,
-    required this.selection,
-    required this.child,
-  });
-
-  /// The row's own items.
-  final List<Widget> own;
-
-  /// The picked songs' items when this row is one of them, or `null`.
-  final List<Widget>? selection;
-
-  /// The row itself.
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final picked = selection;
-
-    final ownMenu = MenuAnchor(
-      menuChildren: own,
-      builder: (context, controller, _) {
-        final row = Row(
-          children: [
-            Expanded(child: child),
-            IconButton(
-              tooltip: l10n.musicRowActions,
-              icon: const Icon(Icons.more_vert),
-              onPressed: () =>
-                  controller.isOpen ? controller.close() : controller.open(),
-            ),
-          ],
-        );
-
-        return picked != null
-            ? row
-            : GestureDetector(
-                onSecondaryTapDown: (details) =>
-                    controller.open(position: details.localPosition),
-                child: row,
-              );
-      },
-    );
-
-    if (picked == null) return ownMenu;
-
-    return MenuAnchor(
-      menuChildren: picked,
-      builder: (context, controller, _) => GestureDetector(
-        onSecondaryTapDown: (details) =>
-            controller.open(position: details.localPosition),
-        child: ownMenu,
-      ),
-    );
   }
 }

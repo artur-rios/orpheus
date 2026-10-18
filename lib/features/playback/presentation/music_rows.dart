@@ -980,8 +980,8 @@ class MusicRowMenu extends ConsumerWidget {
     final within = musicWithinOf(context);
     final picked = selection;
 
-    final own = MenuAnchor(
-      menuChildren: [
+    return SongRowMenu(
+      ownItems: [
         MenuItemButton(
           leadingIcon: const Icon(Icons.play_arrow),
           onPressed: () => _play(ref, (player) => player.playTrack(entry.file)),
@@ -1039,6 +1039,60 @@ class MusicRowMenu extends ConsumerWidget {
         ),
         ...extraItems,
       ],
+      selectionItems: picked == null
+          ? null
+          : [
+              ...selectionItems,
+              MenuItemButton(
+                leadingIcon: const Icon(Icons.edit_outlined),
+                onPressed: picked.editTags,
+                child: Text(l10n.musicSelectionEditTags(picked.count)),
+              ),
+            ],
+      child: child,
+    );
+  }
+
+  void _play(
+    WidgetRef ref,
+    Future<void> Function(AudioPlaybackController player) play,
+  ) => unawaited(play(ref.read(audioPlaybackControllerProvider.notifier)));
+}
+
+/// The menus of one song's row, whatever the row offers in them.
+///
+/// The one place step 3's rule for them lives. A right-click and the ⋮ button
+/// beside the row open the row's own menu ([ownItems]). While the row is one
+/// of the picked songs ([selectionItems] is not `null`), a right-click opens
+/// the picked songs' menu instead; the ⋮ button never does, so the row's own
+/// actions stay reachable. Touch and hold opens neither: on a song's row it
+/// picks the song.
+class SongRowMenu extends StatelessWidget {
+  /// Creates the wrapper.
+  const SongRowMenu({
+    required this.ownItems,
+    required this.child,
+    this.selectionItems,
+    super.key,
+  });
+
+  /// The row's own menu.
+  final List<Widget> ownItems;
+
+  /// The picked songs' menu when this row is one of them, or `null` for a
+  /// row that is not picked.
+  final List<Widget>? selectionItems;
+
+  /// The row itself.
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final picked = selectionItems;
+
+    final own = MenuAnchor(
+      menuChildren: ownItems,
       builder: (context, controller, _) {
         final row = Row(
           children: [
@@ -1067,14 +1121,7 @@ class MusicRowMenu extends ConsumerWidget {
     if (picked == null) return own;
 
     return MenuAnchor(
-      menuChildren: [
-        ...selectionItems,
-        MenuItemButton(
-          leadingIcon: const Icon(Icons.edit_outlined),
-          onPressed: picked.editTags,
-          child: Text(l10n.musicSelectionEditTags(picked.count)),
-        ),
-      ],
+      menuChildren: picked,
       builder: (context, controller, _) => GestureDetector(
         onSecondaryTapDown: (details) =>
             controller.open(position: details.localPosition),
@@ -1082,9 +1129,4 @@ class MusicRowMenu extends ConsumerWidget {
       ),
     );
   }
-
-  void _play(
-    WidgetRef ref,
-    Future<void> Function(AudioPlaybackController player) play,
-  ) => unawaited(play(ref.read(audioPlaybackControllerProvider.notifier)));
 }
