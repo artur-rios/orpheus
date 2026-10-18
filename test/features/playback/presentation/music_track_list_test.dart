@@ -232,6 +232,19 @@ void main() {
   );
 
   testWidgets(
+    'GivenNothingSelected_WhenARowIsShiftClicked_ThenItIsSelectedAndNothingPlays',
+    (tester) async {
+      final harness = await songs(tester);
+
+      await tapHolding(tester, LogicalKeyboardKey.shiftLeft, 'Charlie');
+
+      expect(selected(harness), {c.file.path});
+      expect(find.text('1 selected'), findsOneWidget);
+      expect(queued(harness), isEmpty);
+    },
+  );
+
+  testWidgets(
     'GivenBSelected_WhenDsTickBoxIsShiftClicked_ThenBThroughDAreSelected',
     (tester) async {
       final harness = await songs(tester);
@@ -633,5 +646,47 @@ void main() {
       expect(selected(harness), {a.file.path, b.file.path});
       expect(find.text('2 selected'), findsOneWidget);
     });
+
+    testWidgets(
+      'GivenOneSelected_WhenEditTagsSavesInTheOneTrackForm_ThenTheSelectionEnds',
+      (tester) async {
+        final harness = await songsToEdit(tester);
+        await hold(tester, 'Bravo');
+        await tester.tap(barButton('Edit tags…'));
+        await tester.pumpAndSettle();
+        expect(find.byType(EditTagsDialog), findsOneWidget);
+
+        await tester.enterText(
+          find.byKey(const ValueKey(AutofillField.genre)),
+          'Rock',
+        );
+        await tester.pump();
+        await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+        await tester.pumpAndSettle();
+
+        expect(harness.tagWriter.writes, hasLength(1));
+        expect(find.byType(EditTagsDialog), findsNothing);
+        expect(selected(harness), isEmpty);
+        expect(find.byType(Checkbox), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'GivenOneSelected_WhenTheOneTrackFormIsCancelled_ThenTheSelectionStays',
+      (tester) async {
+        final harness = await songsToEdit(tester);
+        await hold(tester, 'Bravo');
+        await tester.tap(barButton('Edit tags…'));
+        await tester.pumpAndSettle();
+        expect(find.byType(EditTagsDialog), findsOneWidget);
+
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(EditTagsDialog), findsNothing);
+        expect(selected(harness), {b.file.path});
+        expect(find.text('1 selected'), findsOneWidget);
+      },
+    );
   });
 }
