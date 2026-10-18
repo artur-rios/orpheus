@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_grouping.dart';
 import 'package:orpheus/features/playback/presentation/music_library_view.dart';
+import 'package:orpheus/features/shell/domain/shell_destination.dart';
 
 import '../../../support/entries.dart';
 import '../../../support/pump.dart';
@@ -277,6 +281,77 @@ void main() {
               scannedAt: DateTime.utc(2026),
             ),
           );
+      await tester.pumpAndSettle();
+
+      expect(selected(harness), {a.file.path});
+      expect(find.text('1 selected'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'GivenASelectionInSongs_WhenAlbumsIsShownAndSongsAgain_ThenNothingIsSelected',
+    (tester) async {
+      final harness = await songs(tester);
+      await hold(tester, 'Alpha');
+      expect(find.text('1 selected'), findsOneWidget);
+
+      await tester.tap(find.text('Albums'));
+      await tester.pumpAndSettle();
+      expect(harness.read(songSelectionProvider).isActive, isFalse);
+      await tester.tap(find.text('Songs'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 selected'), findsNothing);
+      expect(find.byType(Checkbox), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'GivenASelectionInSongs_WhenAnotherDestinationIsOpened_ThenTheSelectionEnds',
+    (tester) async {
+      final harness = Harness(library: [a, b, c, d]);
+      final shell = harness.read(shellControllerProvider.notifier)
+        ..go(ShellDestination.music);
+      // The shell's own choice of area, without the rest of the shell.
+      await tester.pumpHarness(
+        harness,
+        Scaffold(
+          body: Consumer(
+            builder: (context, ref, _) =>
+                ref.watch(shellControllerProvider) == ShellDestination.music
+                ? const MusicLibraryView()
+                : const SizedBox.shrink(),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Songs'));
+      await tester.pumpAndSettle();
+      await hold(tester, 'Alpha');
+      expect(harness.read(songSelectionProvider).isActive, isTrue);
+
+      shell.go(ShellDestination.queue);
+      await tester.pumpAndSettle();
+
+      expect(harness.read(songSelectionProvider).isActive, isFalse);
+    },
+  );
+
+  testWidgets(
+    'GivenASelection_WhenTheLibraryReloadsBehindTheSpinner_ThenTheSelectionIsKept',
+    (tester) async {
+      final harness = await songs(tester);
+      await hold(tester, 'Alpha');
+
+      final gate = harness.catalogs.readGate = Completer<void>();
+      // As a reload, so the list gives way to the spinner rather than staying
+      // on screen with the old songs while the new ones are read.
+      harness.container.invalidate(
+        musicLibraryControllerProvider,
+        asReload: true,
+      );
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      gate.complete();
       await tester.pumpAndSettle();
 
       expect(selected(harness), {a.file.path});

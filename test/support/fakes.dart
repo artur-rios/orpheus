@@ -50,8 +50,13 @@ class InMemoryCatalogStore implements CatalogStore {
   /// a different thing from "this is what a scan wrote".
   void seed(MusicCatalog catalog) => _catalog = catalog;
 
+  /// What a read waits on before it answers, or `null` to answer at once —
+  /// how a test holds the library in its loading state.
+  Completer<void>? readGate;
+
   @override
   Future<MusicCatalog> read() async {
+    await readGate?.future;
     if (failOnRead) throw StateError('the catalog could not be read');
 
     return _catalog;

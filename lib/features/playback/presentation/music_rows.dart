@@ -13,6 +13,7 @@ import '../../library/domain/music_entry.dart';
 import '../../library/domain/music_grouping.dart';
 import '../../tag_editor/presentation/edit_tags_launcher.dart';
 import '../application/audio_playback_controller.dart';
+import '../application/song_selection_controller.dart';
 import '../domain/music_layout.dart';
 import 'album_art.dart';
 import 'music_display_name.dart';
@@ -483,8 +484,40 @@ class _MusicTrackListState extends ConsumerState<MusicTrackList> {
   /// Whether a prune is already waiting for the end of the frame.
   bool _pruning = false;
 
+  /// The selection's holder, kept from the start: a disposed list has no
+  /// `ref` to reach it with, and leaving is when it is needed most.
+  late final SongSelectionController _selection;
+
+  @override
+  void initState() {
+    super.initState();
+    _selection = ref.read(songSelectionProvider.notifier)
+      ..attach(widget.selectionScope);
+  }
+
+  @override
+  void didUpdateWidget(MusicTrackList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectionScope == widget.selectionScope) return;
+
+    // Another list drawn in this one's place: its own prune ends what was
+    // picked in the last one.
+    _selection
+      ..detach(oldWidget.selectionScope)
+      ..attach(widget.selectionScope);
+  }
+
   @override
   void dispose() {
+    final selection = _selection;
+    final scope = widget.selectionScope;
+    selection.detach(scope);
+    // After the frame, when whatever replaces this list is on screen: the
+    // same list drawn again keeps what was picked in it.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => selection.endIfUnshown(scope),
+    );
+
     _focus.dispose();
     super.dispose();
   }

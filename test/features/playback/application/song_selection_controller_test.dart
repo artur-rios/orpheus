@@ -55,4 +55,41 @@ void main() {
 
     expect(stateOf().paths, {'b'});
   });
+
+  test('GivenASelectionWhoseListLeft_WhenEndIfUnshown_ThenItEnds', () async {
+    await harness.library();
+    harness.read(songSelectionProvider.notifier)
+      ..attach(scope)
+      ..toggle(scope, 'a')
+      ..detach(scope)
+      ..endIfUnshown(scope);
+
+    expect(stateOf(), SongSelection.none);
+  });
+
+  test(
+    'GivenTwoListsOfTheScope_WhenOneLeaves_ThenTheSelectionIsKept',
+    () async {
+      await harness.library();
+      harness.read(songSelectionProvider.notifier)
+        ..attach(scope)
+        ..attach(scope)
+        ..toggle(scope, 'a')
+        ..detach(scope)
+        ..endIfUnshown(scope);
+
+      expect(stateOf().paths, {'a'});
+    },
+  );
+
+  test('GivenTheLibraryLoading_WhenTheListLeaves_ThenTheSelectionIsKept', () {
+    // Not awaited: the library is still being read.
+    harness.read(songSelectionProvider.notifier)
+      ..attach(scope)
+      ..toggle(scope, 'a')
+      ..detach(scope)
+      ..endIfUnshown(scope);
+
+    expect(stateOf().paths, {'a'});
+  });
 }
