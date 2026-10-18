@@ -29,6 +29,7 @@ Section 4 is the traceability.
 | `VZ` | Visualisation |
 | `AF` | Autofill |
 | `TE` | Tag editing |
+| `PS` | Playlists |
 
 ### 1.3 Keywords
 
@@ -149,9 +150,9 @@ wherever a test can enforce it.
 
 | ID | Requirement |
 | --- | --- |
-| **FR-UX-01** | The shell must present four destinations — music, genres, queue, folders — and no more. |
+| **FR-UX-01** | The shell must present five destinations — music, genres, playlists, queue, folders — and no more. |
 | **FR-UX-02** | The destinations must be a rail where the window is wide enough and a bar across the bottom where it is not, decided by width at every size (`BR-28`). |
-| **FR-UX-03** | The statistics screen must be reachable from the shell without becoming a fifth destination. |
+| **FR-UX-03** | The statistics screen must be reachable from the shell without becoming a sixth destination. |
 | **FR-UX-04** | The owner must be able to choose light, dark, or the system's setting; the choice must persist. |
 | **FR-UX-05** | The owner must be able to choose English, Brazilian Portuguese, or the system's language; the choice must persist. |
 | **FR-UX-06** | A preference must apply immediately and be written behind; one that applied but could not be written must be reported (`BR-25`). |
@@ -161,6 +162,7 @@ wherever a test can enforce it.
 | **FR-UX-10** | The desktop window's size and position must be restored between runs, and a minimum size enforced. |
 | **FR-UX-11** | A list of songs — all songs, the songs of an album or of a genre, and search results — must let the owner select several of them. Touch and hold, Ctrl-click and Shift-click start a selection; while it lasts a tap toggles a song instead of playing it, the number selected and the actions that apply to them are shown, and Esc, Back, a control on screen, or leaving the list end it. |
 | **FR-UX-12** | Touch and hold on a song must start a selection rather than open its menu; a song's menu stays on its ⋮ button and a right-click, which on a selected song opens a menu for the selection. Touch and hold on an album or an artist still opens its menu. |
+| **FR-UX-13** | In a window narrower than 480 logical pixels, the actions in a selection's bar must be icons with tooltips, so that the count of what is selected keeps its room. |
 
 ### 2.7 Lyrics (LY)
 
@@ -235,13 +237,33 @@ Realises F-18, F-19 and F-20.
 | **FR-TE-08** | Each track that could not be written must be named with its reason as in `FR-AF-07`, without undoing the tracks that were; those in use, failed or changed since read can be tried again. The library updates without the owner starting a scan. |
 | **FR-TE-09** | The owner must be able to edit the tags of the songs selected under `FR-UX-11` in one form, as in `FR-TE-05` … `FR-TE-08`; one selected song opens the form of a single track (`FR-TE-01`). The selection must end once the form has written at least one song, and stay when it wrote none. |
 
+### 2.11 Playlists (PS)
+
+Realises F-21.
+
+| ID | Requirement |
+| --- | --- |
+| **FR-PS-01** | The owner must be able to create a playlist by giving it a name, rename it, and delete it. A name is trimmed and must not be blank; two playlists may share one, since the name is a label and each playlist has an identity of its own. Deleting asks first, and removes the playlist and its cover and nothing else: no song and no file is touched. |
+| **FR-PS-02** | The owner must be able to add to a playlist a song, the songs of a selection (`FR-UX-11`), a whole album, or a whole artist, from that item's menu, the selection's bar or right-click menu, or a playlist's own selection. They are chosen from a list of the playlists, most recently changed first, which offers *New playlist…* ahead of them. The songs go at the end, in the order given: a selection in the order of its list, an album in track order, an artist in the order the artist is listed. What was actually added is said afterwards. |
+| **FR-PS-03** | A playlist may hold the same song more than once. When some of the songs being added are already in the chosen playlist, the owner must be asked whether to add them anyway, to skip those songs, or to cancel, and nothing is added until they answer. |
+| **FR-PS-04** | Each place in a playlist is an entry of its own, carrying the song's file and what the song was called, who by, from which record and how long, as they were when it was added. An entry must be removable one at a time, from its song's menu or from a selection; removing never touches the song or its file. |
+| **FR-PS-05** | The owner must be able to reorder a playlist by dragging a song's handle; the new order is saved at once. Dragging is not offered while a selection is made in the playlist. |
+| **FR-PS-06** | A playlist's cover must be the JPEG or PNG picture the owner chose for it, kept in the application's own data as a file of its own, or, when they chose none, a mosaic of the covers of up to four of its distinct albums. The owner must be able to remove the picture they chose. |
+| **FR-PS-07** | The shell's Playlists destination must list the playlists, the most recently changed first, as rows or as tiles by the owner's layout choice, each with its cover, its name and its number of songs, with *New playlist* above them and each playlist's menu on its ⋮ button, a right-click and a touch and hold. Opening one shows its songs in the owner's order, and Back closes it before it leaves the destination. |
+| **FR-PS-08** | The owner must be able to play a playlist, or shuffle it, from its header, and to play it from a song by tapping that song. What plays is the playlist's songs the library holds, from the tapped song on, and the queue is named after the playlist. |
+| **FR-PS-09** | A song whose file the library no longer holds must stay in its playlist, shown greyed and labelled as missing with what was saved of it, must be skipped when the playlist plays, and may be selected and removed. Whether a song is missing must not be decided before the library has loaded, so that a library still being read does not show every song missing. |
+| **FR-PS-10** | A selection made inside a playlist must count each entry on its own, so that ticking one copy of a song does not tick another. Its actions are *Remove from playlist*, *Add to playlist…* and *Edit tags…* (`FR-TE-09`); the last two act on the songs the library holds, each once, in the playlist's order. |
+| **FR-PS-11** | The owner must be able to export a playlist to an extended M3U file, in UTF-8, saved where the owner chooses. Each entry is written, a missing one as well, with its length, `artist - title` and the file's absolute path, from the library when the song is in it and from what was saved when it is not. A name that is not safe as a file name on Windows is made safe. Cancelling the dialog is not a failure and writes nothing; a file that could not be written is reported. |
+| **FR-PS-12** | The playlists must be stored in the application's own data, in one versioned document, never in a music folder. Every change must be written whole and atomically, and shown only once it is stored; a change that could not be written must be reported and leave what was stored as it was. A scan, or a folder that cannot be reached, must never change a playlist. |
+| **FR-PS-13** | A stored document that cannot be understood, or that was written by another version, must be kept aside under a name of its own, with the time, and never overwritten; the application then starts with no playlists. When it can neither be read nor kept aside, the Playlists destination must show the error with a retry, and nothing may be written over the document. |
+
 ## 3. Non-functional requirements
 
 | ID | Requirement |
 | --- | --- |
 | **NFR-01** | **One source, three targets.** Windows, Linux and Android must build from the same source with no per-platform implementation of any feature above the platform edges. |
 | **NFR-02** | **Three network calls, named.** The application must make no network request other than the lyrics lookup of `FR-LY-13`, the MusicBrainz and Cover Art Archive lookups an autofill makes when the owner starts one (`FR-AF-02`), and, on Windows and Linux, the release check of `BR-03` — the one request at startup for the newest release (the latest full release, or for a build that is itself a pre-release, the release list), and the download of an installer and its checksums the owner accepted. No telemetry, analytics, crash reporting, scrobbling or other lookup may be added. The Android package must declare exactly the permissions its manifest lists, and this must be verifiable from the built package. |
-| **NFR-03** | **Audio files are changed for confirmed tags only.** No audio file may be renamed, moved, deleted or re-encoded, and its tags may be written only for changes the owner confirmed (`FR-AF-05`, `FR-TE-03`, `FR-TE-07`). |
+| **NFR-03** | **Audio files are changed for confirmed tags only.** No audio file may be renamed, moved, deleted or re-encoded, and its tags may be written only for changes the owner confirmed (`FR-AF-05`, `FR-TE-03`, `FR-TE-07`). Exporting a playlist writes only the file the owner chose (`FR-PS-11`). |
 | **NFR-04** | **Startup is not gated on a scan.** The library from the last scan must be on screen before a new scan is started. |
 | **NFR-05** | **Scanning is proportional to change.** Re-scanning an unchanged library must not re-parse it. |
 | **NFR-06** | **The cover cache is proportional to records, not files.** |
@@ -277,7 +299,8 @@ Realises F-18, F-19 and F-20.
 | F-17 Autofill tags | FR-AF-01 … FR-AF-08 |
 | F-18 Edit a track's tags | FR-TE-01 … FR-TE-04 |
 | F-19 Edit the tags of several tracks | FR-TE-05 … FR-TE-08 |
-| F-20 Select several songs | FR-UX-11, FR-UX-12, FR-TE-09 |
+| F-20 Select several songs | FR-UX-11, FR-UX-12, FR-UX-13, FR-TE-09 |
+| F-21 Playlists | FR-PS-01 … FR-PS-13, FR-UX-01 |
 
 ### 4.2 Requirements to use cases
 
@@ -288,11 +311,12 @@ Realises F-18, F-19 and F-20.
 | PL | UC-13 … UC-23 |
 | BG | UC-24, UC-25 |
 | ST | UC-26, UC-27 |
-| UX | UC-28, UC-29, UC-38 |
+| UX | UC-28, UC-29, UC-38, UC-39 |
 | LY | UC-30, UC-31, UC-33 |
 | VZ | UC-32 |
 | AF | UC-34 |
 | TE | UC-35, UC-37, UC-38 |
+| PS | UC-39 |
 
 ## 5. Data model
 
@@ -301,6 +325,8 @@ Everything the application persists, and where.
 | Document | Location | Contents |
 | --- | --- | --- |
 | **Catalog** | `catalog.json` in the application-support directory | One entry per audio file: path, size, modification time, and every tag read from it — every genre a file holds, not only the first — plus the id of its cover. Written atomically; versioned. |
+| **Playlists** | `playlists.json`, beside the catalog | The owner's playlists: for each, its id, name, the id of its cover picture if the owner chose one, when it was made and last changed, and its entries in order — each with its own id, the file's path, and the title, artist, album and length it had when it was added. Written whole and atomically; versioned. A document that cannot be read, or that has another version, is renamed `playlists.json.bad-<time>` and not overwritten. |
+| **Playlist covers** | a `playlist-covers` directory | The picture the owner chose for a playlist, one file per playlist, named by the playlist's id. |
 | **Play history** | `play-history.json`, beside the catalog | One entry per file ever played: path, play count, and when it last counted. Written atomically; versioned. |
 | **Cover cache** | a `covers` directory | One file per distinct picture, named by the hash of its bytes. |
 | **Analysis cache** | an `energy` directory | One file per analysed track — the measured spectrum, about a hundred kilobytes for a four-minute track — named by a key carrying the file's path, length and modification time. Disposable: deleting it costs a second per track and nothing else. |
