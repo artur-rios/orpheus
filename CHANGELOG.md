@@ -19,6 +19,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   against only that kind of tag — a search for *Rock* under *Songs* finds titles, not tracks tagged Rock. The choice is
   kept while Orpheus runs and is *All* again at the next launch; results stay a list of tracks. Genres are now
   searched too, ranked after records.
+- Edit the tags of a whole album or artist at once. From an album's or an artist's ⋮ menu — or a right-click or a long
+  press — choose *Edit tags…* to change the artist, album artist, album, track total, disc number and total, year and
+  genre of every song in it, and to replace its cover or remove it. A field the songs disagree on shows as mixed and is
+  left alone unless you type in it; title and track number are not offered for more than one song. Only the fields you
+  change are written, each song measured against its own file. MP3 and FLAC files are written; any other format is
+  listed before you save and skipped, and a song that cannot be written is named with its reason while the others stay
+  written, with *Try again* for those in use, failed, or changed since they were read. An album or artist with one song
+  opens the one-track editor.
 
 ### Changed
 
@@ -30,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   genre atoms still keeps only one.
 - A track with several genres now counts toward each of them in the statistics, and a genre's share on the story
   card is of all plays, so the shares can add up to more than 100%.
+- The album row's autofill button moved into its new ⋮ menu, beside *Edit tags…*.
 
 ## [1.4.0] - 2026-10-13
 

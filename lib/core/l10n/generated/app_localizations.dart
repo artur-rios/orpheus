@@ -1507,6 +1507,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tags saved'**
   String get tagEditSaved;
+
+  /// Under the title of the form that edits several songs' tags at once: the album or artist being edited, and how many songs it holds.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} · {count, plural, =1{1 song} other{{count} songs}}'**
+  String tagEditManySubtitle(String label, int count);
+
+  /// Shown on the form that edits several songs' tags while their files are being read.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading {done} of {total}…'**
+  String tagEditManyReading(int done, int total);
+
+  /// Shown on the form that edits several songs' tags while the changes are being written into their files.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving {done} of {total}…'**
+  String tagEditManySaving(int done, int total);
+
+  /// The hint in a field of the form that edits several songs' tags when the songs hold different values for it: left blank, each song keeps its own.
+  ///
+  /// In en, this message translates to:
+  /// **'Mixed — leave blank to keep each song\'s own'**
+  String get tagEditManyMixed;
+
+  /// Shown in place of the cover on the form that edits several songs' tags when the songs have different covers.
+  ///
+  /// In en, this message translates to:
+  /// **'Different covers'**
+  String get tagEditManyMixedCovers;
+
+  /// Shown under the form that edits several songs' tags, which leaves out the title and the track number.
+  ///
+  /// In en, this message translates to:
+  /// **'Title and track number are edited one song at a time.'**
+  String get tagEditManyOneAtATime;
+
+  /// Shown above the form that edits several songs' tags when some of the songs cannot be written; it expands to name each and why.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 song can\'t be changed and will be left alone} other{{count} songs can\'t be changed and will be left alone}}'**
+  String tagEditManySkipped(int count);
+
+  /// Why a song is left alone by the form that edits several songs' tags: Orpheus only writes MP3 and FLAC files.
+  ///
+  /// In en, this message translates to:
+  /// **'Not an MP3 or FLAC file'**
+  String get tagEditManySkippedFormat;
+
+  /// Why a song is left alone by the form that edits several songs' tags: its tags could not be read, or are of a shape Orpheus will not change safely.
+  ///
+  /// In en, this message translates to:
+  /// **'Its tags can\'t be changed safely'**
+  String get tagEditManySkippedUnsafe;
+
+  /// Shown on the form that edits several songs' tags after a save some songs could not take; the songs that failed are listed beneath it with why.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {written, plural, =0{no songs} =1{1 song} other{{written} songs}}. {failed, plural, =1{1 couldn\'t be changed:} other{{failed} couldn\'t be changed:}}'**
+  String tagEditManyPartly(int written, int failed);
+
+  /// The message shown once the form that edits several songs' tags wrote the changes into them.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Tags saved to 1 song} other{Tags saved to {count} songs}}'**
+  String tagEditManySaved(int count);
+
+  /// Shown beside a song after the form that edits several songs' tags set a track total: the song has no track number, so its total was not changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Its track total was left as it was: it has no track number'**
+  String get tagEditManyTrackTotalLeft;
+
+  /// Shown beside a song after the form that edits several songs' tags set a disc total: the song has no disc number, so its total was not changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Its disc total was left as it was: it has no disc number'**
+  String get tagEditManyDiscTotalLeft;
+
+  /// The tooltip of the button that opens the menu of actions for an album or an artist.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get musicGroupActions;
 }
 
 class _AppLocalizationsDelegate

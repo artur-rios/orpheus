@@ -1088,5 +1088,103 @@
   "tagEditSaved": "Tags salvas",
   "@tagEditSaved": {
     "description": "The message shown once the tag editor wrote the changed tags into the file."
+  },
+  "tagEditManySubtitle": "{label} · {count, plural, =1{1 faixa} other{{count} faixas}}",
+  "@tagEditManySubtitle": {
+    "description": "Under the title of the form that edits several songs' tags at once: the album or artist being edited, and how many songs it holds.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tagEditManyReading": "Lendo {done} de {total}…",
+  "@tagEditManyReading": {
+    "description": "Shown on the form that edits several songs' tags while their files are being read.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "tagEditManySaving": "Salvando {done} de {total}…",
+  "@tagEditManySaving": {
+    "description": "Shown on the form that edits several songs' tags while the changes are being written into their files.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "tagEditManyMixed": "Variado — deixe em branco para manter o de cada faixa",
+  "@tagEditManyMixed": {
+    "description": "The hint in a field of the form that edits several songs' tags when the songs hold different values for it: left blank, each song keeps its own."
+  },
+  "tagEditManyMixedCovers": "Capas diferentes",
+  "@tagEditManyMixedCovers": {
+    "description": "Shown in place of the cover on the form that edits several songs' tags when the songs have different covers."
+  },
+  "tagEditManyOneAtATime": "Título e número da faixa são editados uma faixa por vez.",
+  "@tagEditManyOneAtATime": {
+    "description": "Shown under the form that edits several songs' tags, which leaves out the title and the track number."
+  },
+  "tagEditManySkipped": "{count, plural, =1{1 faixa não pode ser alterada e ficará como está} other{{count} faixas não podem ser alteradas e ficarão como estão}}",
+  "@tagEditManySkipped": {
+    "description": "Shown above the form that edits several songs' tags when some of the songs cannot be written; it expands to name each and why.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tagEditManySkippedFormat": "Não é um arquivo MP3 ou FLAC",
+  "@tagEditManySkippedFormat": {
+    "description": "Why a song is left alone by the form that edits several songs' tags: Orpheus only writes MP3 and FLAC files."
+  },
+  "tagEditManySkippedUnsafe": "As tags dela não podem ser alteradas com segurança",
+  "@tagEditManySkippedUnsafe": {
+    "description": "Why a song is left alone by the form that edits several songs' tags: its tags could not be read, or are of a shape Orpheus will not change safely."
+  },
+  "tagEditManyPartly": "Salvo em {written, plural, =0{nenhuma faixa} =1{1 faixa} other{{written} faixas}}. {failed, plural, =1{1 não pôde ser alterada:} other{{failed} não puderam ser alteradas:}}",
+  "@tagEditManyPartly": {
+    "description": "Shown on the form that edits several songs' tags after a save some songs could not take; the songs that failed are listed beneath it with why.",
+    "placeholders": {
+      "written": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "tagEditManySaved": "{count, plural, =1{Tags salvas em 1 faixa} other{Tags salvas em {count} faixas}}",
+  "@tagEditManySaved": {
+    "description": "The message shown once the form that edits several songs' tags wrote the changes into them.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tagEditManyTrackTotalLeft": "O total de faixas dela ficou como estava: ela não tem número de faixa",
+  "@tagEditManyTrackTotalLeft": {
+    "description": "Shown beside a song after the form that edits several songs' tags set a track total: the song has no track number, so its total was not changed."
+  },
+  "tagEditManyDiscTotalLeft": "O total de discos dela ficou como estava: ela não tem número de disco",
+  "@tagEditManyDiscTotalLeft": {
+    "description": "Shown beside a song after the form that edits several songs' tags set a disc total: the song has no disc number, so its total was not changed."
+  },
+  "musicGroupActions": "Mais ações",
+  "@musicGroupActions": {
+    "description": "The tooltip of the button that opens the menu of actions for an album or an artist."
   }
 }

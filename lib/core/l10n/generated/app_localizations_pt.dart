@@ -868,4 +868,94 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tagEditSaved => 'Tags salvas';
+
+  @override
+  String tagEditManySubtitle(String label, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count faixas',
+      one: '1 faixa',
+    );
+    return '$label · $_temp0';
+  }
+
+  @override
+  String tagEditManyReading(int done, int total) {
+    return 'Lendo $done de $total…';
+  }
+
+  @override
+  String tagEditManySaving(int done, int total) {
+    return 'Salvando $done de $total…';
+  }
+
+  @override
+  String get tagEditManyMixed =>
+      'Variado — deixe em branco para manter o de cada faixa';
+
+  @override
+  String get tagEditManyMixedCovers => 'Capas diferentes';
+
+  @override
+  String get tagEditManyOneAtATime =>
+      'Título e número da faixa são editados uma faixa por vez.';
+
+  @override
+  String tagEditManySkipped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count faixas não podem ser alteradas e ficarão como estão',
+      one: '1 faixa não pode ser alterada e ficará como está',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagEditManySkippedFormat => 'Não é um arquivo MP3 ou FLAC';
+
+  @override
+  String get tagEditManySkippedUnsafe =>
+      'As tags dela não podem ser alteradas com segurança';
+
+  @override
+  String tagEditManyPartly(int written, int failed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      written,
+      locale: localeName,
+      other: '$written faixas',
+      one: '1 faixa',
+      zero: 'nenhuma faixa',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      failed,
+      locale: localeName,
+      other: '$failed não puderam ser alteradas:',
+      one: '1 não pôde ser alterada:',
+    );
+    return 'Salvo em $_temp0. $_temp1';
+  }
+
+  @override
+  String tagEditManySaved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tags salvas em $count faixas',
+      one: 'Tags salvas em 1 faixa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagEditManyTrackTotalLeft =>
+      'O total de faixas dela ficou como estava: ela não tem número de faixa';
+
+  @override
+  String get tagEditManyDiscTotalLeft =>
+      'O total de discos dela ficou como estava: ela não tem número de disco';
+
+  @override
+  String get musicGroupActions => 'Mais ações';
 }

@@ -6,6 +6,7 @@ import 'package:orpheus/features/playback/domain/music_layout.dart';
 import 'package:orpheus/features/playback/presentation/music_library_view.dart';
 import 'package:orpheus/features/playback/presentation/music_rows.dart';
 import 'package:orpheus/features/shell/domain/shell_destination.dart';
+import 'package:orpheus/features/tag_editor/presentation/edit_many_tags_dialog.dart';
 import 'package:orpheus/features/tag_editor/presentation/edit_tags_dialog.dart';
 
 import '../../../support/entries.dart';
@@ -237,6 +238,82 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Edit tags…'), findsOneWidget);
+    },
+  );
+
+  Finder groupMore() => find
+      .descendant(
+        of: find.byType(MusicGroupMenu),
+        matching: find.byIcon(Icons.more_vert),
+      )
+      .first;
+
+  testWidgets(
+    'GivenAnAlbumRow_WhenItsMoreButtonIsPressed_ThenEditTagsAndAutofillTagsAreOffered',
+    (tester) async {
+      final harness = Harness(library: library);
+      await tester.pumpHarness(harness, area());
+      await tester.tap(find.text('Albums'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(groupMore());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit tags…'), findsOneWidget);
+      expect(find.text('Autofill tags…'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'GivenAnArtistRow_WhenItIsRightClicked_ThenEditTagsIsOfferedAndAutofillIsNot',
+    (tester) async {
+      final harness = Harness(library: library);
+      await tester.pumpHarness(harness, area());
+
+      await tester.tap(
+        find.byType(MusicGroupMenu).first,
+        buttons: kSecondaryMouseButton,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit tags…'), findsOneWidget);
+      expect(find.text('Autofill tags…'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'GivenAnAlbumOfThreeTracks_WhenEditTagsIsPicked_ThenTheManyTrackFormOpensOverThree',
+    (tester) async {
+      final harness = Harness(
+        library: [
+          entry(id: 'a', title: 'One', artist: 'Band', album: 'Trio', track: 1),
+          entry(id: 'b', title: 'Two', artist: 'Band', album: 'Trio', track: 2),
+          entry(id: 'c', title: 'Three', artist: 'Band', album: 'Trio', track: 3),
+        ],
+      );
+      await tester.pumpHarness(harness, area());
+      await tester.tap(find.text('Albums'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(groupMore());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit tags…'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EditManyTagsDialog), findsOneWidget);
+      expect(find.textContaining('3 songs'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'GivenAnAlbumRow_WhenListed_ThenItHasNoSeparateAutofillButton',
+    (tester) async {
+      final harness = Harness(library: library);
+      await tester.pumpHarness(harness, area());
+      await tester.tap(find.text('Albums'));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.auto_fix_high_outlined), findsNothing);
     },
   );
 

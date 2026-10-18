@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/features/playback/presentation/genres_view.dart';
+import 'package:orpheus/features/playback/presentation/music_rows.dart';
+import 'package:orpheus/features/tag_editor/presentation/edit_many_tags_dialog.dart';
 
 import '../../../support/entries.dart';
 import '../../../support/pump.dart';
@@ -240,4 +242,126 @@ void main() {
       expect(find.text('Add a folder'), findsOneWidget);
     },
   );
+
+  group('Edit tags inside a genre', () {
+    // OK Computer has two Rock tracks and one that is not; Radiohead's loose
+    // tracks are two Rock and one Jazz; Kid A is not Rock at all.
+    final tagged = [
+      entry(
+        id: 'r1',
+        title: 'Airbag',
+        artist: 'Radiohead',
+        album: 'OK Computer',
+        genres: const ['Rock'],
+        track: 1,
+      ),
+      entry(
+        id: 'r2',
+        title: 'Karma Police',
+        artist: 'Radiohead',
+        album: 'OK Computer',
+        genres: const ['Alternative'],
+        track: 2,
+      ),
+      entry(
+        id: 'r3',
+        title: 'Lucky',
+        artist: 'Radiohead',
+        album: 'OK Computer',
+        genres: const ['Rock'],
+        track: 3,
+      ),
+      entry(
+        id: 'l1',
+        title: 'Demo One',
+        artist: 'Radiohead',
+        genres: const ['Rock'],
+      ),
+      entry(
+        id: 'l2',
+        title: 'Demo Two',
+        artist: 'Radiohead',
+        genres: const ['Rock'],
+      ),
+      entry(
+        id: 'l3',
+        title: 'Demo Three',
+        artist: 'Radiohead',
+        genres: const ['Jazz'],
+      ),
+      entry(
+        id: 'k1',
+        title: 'Everything',
+        artist: 'Radiohead',
+        album: 'Kid A',
+        genres: const ['Electronic'],
+        track: 1,
+      ),
+    ];
+
+    Future<void> openRockIn(WidgetTester tester, {required bool albums}) async {
+      await tester.pumpHarness(Harness(library: tagged), area());
+      await tester.tap(find.text('Rock'));
+      await tester.pumpAndSettle();
+      if (albums) {
+        await tester.tap(find.text('Albums'));
+        await tester.pumpAndSettle();
+      }
+    }
+
+    Future<void> editTagsOf(WidgetTester tester, String row) async {
+      await tester.tap(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text(row),
+            matching: find.byType(MusicGroupMenu),
+          ),
+          matching: find.byIcon(Icons.more_vert),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit tags…'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'GivenANamedAlbumShownInsideAGenre_WhenEditTagsIsPicked_ThenTheFormOpensOverTheWholeAlbum',
+      (tester) async {
+        await openRockIn(tester, albums: true);
+
+        await editTagsOf(tester, 'OK Computer');
+
+        // Karma Police is not Rock, and is on the record all the same.
+        expect(find.byType(EditManyTagsDialog), findsOneWidget);
+        expect(find.text('OK Computer · 3 songs'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'GivenAnUntitledAlbumShownInsideAGenre_WhenEditTagsIsPicked_ThenTheFormOpensOverTheGenresTracksOnly',
+      (tester) async {
+        await openRockIn(tester, albums: true);
+
+        await editTagsOf(tester, 'Unknown album');
+
+        // A nameless group is not a record: Demo Three is Jazz, and not in it.
+        expect(find.byType(EditManyTagsDialog), findsOneWidget);
+        expect(find.text('Unknown album · 2 songs'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'GivenAnArtistShownInsideAGenre_WhenEditTagsIsPicked_ThenTheFormOpensOverAllTheirTracks',
+      (tester) async {
+        await openRockIn(tester, albums: false);
+        // Under Rock the row holds OK Computer whole and the two Rock demos.
+        expect(find.text('5 tracks'), findsOneWidget);
+
+        await editTagsOf(tester, 'Radiohead');
+
+        expect(find.byType(EditManyTagsDialog), findsOneWidget);
+        expect(find.text('Radiohead · 7 songs'), findsOneWidget);
+      },
+    );
+  });
 }

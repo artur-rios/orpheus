@@ -72,6 +72,7 @@ import '../../features/stats/data/platform_story_share.dart';
 import '../../features/stats/domain/music_stats.dart';
 import '../../features/stats/domain/play_history.dart';
 import '../../features/stats/domain/story_share.dart';
+import '../../features/tag_editor/application/many_tag_edit_controller.dart';
 import '../../features/tag_editor/application/tag_edit_controller.dart';
 import '../../features/tag_editor/data/file_picker_cover_picker.dart';
 import '../../features/tag_editor/data/io_file_stamps.dart';
@@ -194,6 +195,17 @@ final autofillControllerProvider =
 final tagEditControllerProvider =
     NotifierProvider<TagEditController, TagEditState>(
       TagEditController.new,
+      isAutoDispose: true,
+    );
+
+/// Reads several tracks' tags, and writes what the owner changed in all of
+/// them.
+///
+/// Auto-disposed, as [tagEditControllerProvider] is: a closed dialog is a
+/// forgotten edit, but a save already confirmed is finished.
+final manyTagEditControllerProvider =
+    NotifierProvider<ManyTagEditController, ManyTagEditState>(
+      ManyTagEditController.new,
       isAutoDispose: true,
     );
 

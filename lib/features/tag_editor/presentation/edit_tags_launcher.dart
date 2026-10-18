@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../library/domain/music_entry.dart';
+import 'edit_many_tags_dialog.dart';
 import 'edit_tags_dialog.dart';
 
 /// Opens the tag editor for [entry], and says so once its edit is written.
@@ -18,5 +19,33 @@ Future<void> startTagEdit(BuildContext context, MusicEntry entry) async {
 
   if (written ?? false) {
     messenger?.showSnackBar(SnackBar(content: Text(saved)));
+  }
+}
+
+/// Opens the form over [entries] — an album's or an artist's tracks, named
+/// [label] — and says how many were written once it closes.
+///
+/// One track is the one-track form, title and track number included.
+Future<void> startManyTagEdit(
+  BuildContext context,
+  List<MusicEntry> entries, {
+  required String label,
+}) async {
+  if (entries.isEmpty) return;
+  if (entries.length == 1) return startTagEdit(context, entries.single);
+
+  // Both taken now, as for one track.
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  final saved = AppLocalizations.of(context).tagEditManySaved;
+
+  final written = await showDialog<int>(
+    context: context,
+    // A tap beside the form while it writes must not close it.
+    barrierDismissible: false,
+    builder: (_) => EditManyTagsDialog(entries: entries, label: label),
+  );
+
+  if (written != null && written > 0) {
+    messenger?.showSnackBar(SnackBar(content: Text(saved(written))));
   }
 }
