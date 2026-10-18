@@ -447,6 +447,42 @@ void main() {
     expect(scanner.requests, isEmpty);
   });
 
+  test('GivenWriteAccessThatThrows_WhenSaved_ThenNothingIsWrittenAndItIsEditingAgain', () async {
+    final access = FakeLibraryAccess()..writeError = StateError('platform');
+    final (:harness, :scanner) = harnessFor(access: access);
+    final controller = controllerOf(harness);
+    await controller.load(tracks);
+
+    await controller.save(genre('Rock'));
+    await pumpEventQueue();
+
+    expect(harness.tagWriter.writes, isEmpty);
+    expect(stateOf(harness).stage, ManyTagEditStage.editing);
+    expect(scanner.requests, isEmpty);
+
+    // Not stuck: a later save goes through.
+    access.writeError = null;
+    await controller.save(genre('Rock'));
+    expect(harness.tagWriter.writes, hasLength(3));
+  });
+
+  test('GivenWriteAccessThatThrows_WhenTryAgain_ThenNothingIsWrittenAndTheResultsStay', () async {
+    final access = FakeLibraryAccess();
+    final (:harness, scanner: _) = harnessFor(access: access);
+    harness.tagWriter.refusals[second.file.path] = WriteOutcome.inUse;
+    final controller = controllerOf(harness);
+    await controller.load(tracks);
+    await controller.save(genre('Rock'));
+    harness.tagWriter.refusals.remove(second.file.path);
+
+    access.writeError = StateError('platform');
+    await controller.retry();
+
+    expect(harness.tagWriter.writes, hasLength(2));
+    expect(stateOf(harness).stage, ManyTagEditStage.results);
+    expect(stateOf(harness).failed.single.outcome, WriteOutcome.inUse);
+  });
+
   test('GivenNoChanges_WhenSaved_ThenNothingIsWritten', () async {
     final (:harness, :scanner) = harnessFor();
     final controller = controllerOf(harness);

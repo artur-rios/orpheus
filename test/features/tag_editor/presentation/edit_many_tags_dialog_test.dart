@@ -300,6 +300,25 @@ void main() {
   });
 
   testWidgets(
+    'GivenACoverPickedForSongsWithNone_WhenRemoveIsPressed_ThenNothingIsLeftToSave',
+    (tester) async {
+      final harness = harnessFor();
+      harness.coverPicker.next = png;
+      await open(tester, harness);
+
+      await tester.tap(find.text('Choose image…'));
+      await tester.pump();
+      expect(saveOf(tester), isNotNull);
+
+      await tester.tap(find.widgetWithText(TextButton, 'Remove'));
+      await tester.pump();
+
+      expect(saveOf(tester), isNull);
+      expect(find.bySemanticsLabel('No cover'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'GivenOneFileInUse_WhenSaved_ThenTheResultListsItAndOffersTryAgain',
     (tester) async {
       final harness = harnessFor();

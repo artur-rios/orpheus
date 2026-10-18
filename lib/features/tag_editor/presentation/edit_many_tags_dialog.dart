@@ -396,11 +396,17 @@ class _EditManyTagsDialogState extends ConsumerState<EditManyTagsDialog> {
                         ? () => unawaited(_chooseCover())
                         : null,
                   ),
+                  // Also once a picture is picked, so the pick can be undone:
+                  // over songs with no cover, removing it is keeping theirs.
                   TextButton(
                     onPressed:
-                        writable && shared.anyCover && _cover is! RemoveCover
+                        writable &&
+                            (shared.anyCover && _cover is! RemoveCover ||
+                                _cover is ReplaceCover)
                         ? () => setState(() {
-                            _cover = const RemoveCover();
+                            _cover = shared.anyCover
+                                ? const RemoveCover()
+                                : const KeepCover();
                             _coverNotImage = false;
                           })
                         : null,

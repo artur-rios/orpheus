@@ -233,9 +233,14 @@ class FakeLibraryAccess implements LibraryAccess {
   /// How many times writing was asked for.
   int writeRequests = 0;
 
+  /// What a request to write throws instead of answering, where a test wants
+  /// the platform to fail.
+  Error? writeError;
+
   @override
   Future<LibraryAccessDecision> requestWrite() async {
     writeRequests++;
+    if (writeError case final error?) throw error;
 
     return writeDecision;
   }

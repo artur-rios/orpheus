@@ -1406,7 +1406,7 @@ graph LR
 | AF-02 | No track can be changed | The form says why and offers nothing to save. |
 | AF-03 | The album or artist has one track | The one-track form opens (UC-35). |
 | AF-04 | The owner changes nothing, or a number is not valid | *Save* stays unavailable. |
-| AF-05 | A track has no track or disc number and the owner sets its total | That track keeps its total and is noted; its other changes are written. |
+| AF-05 | A track has no track or disc number and the owner sets its total | That track keeps its total and is noted; its other changes are written. The form stays open and lists those songs. |
 | AF-06 | Some tracks cannot be written | The others stay written; each failed track is named with its reason, and those in use, failed or changed since read can be tried again (`FR-TE-08`). |
 | AF-07 | On Android, permission to change audio files is refused | As UC-34 AF-08; nothing is written. |
 | AF-08 | The owner cancels before saving | Nothing is written. |

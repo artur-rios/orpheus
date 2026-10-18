@@ -25,8 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   left alone unless you type in it; title and track number are not offered for more than one song. Only the fields you
   change are written, each song measured against its own file. MP3 and FLAC files are written; any other format is
   listed before you save and skipped, and a song that cannot be written is named with its reason while the others stay
-  written, with *Try again* for those in use or changed since they were read. An album or artist with one song opens
-  the one-track editor.
+  written, with *Try again* for those in use, failed, or changed since they were read. An album or artist with one song
+  opens the one-track editor.
 
 ### Changed
 

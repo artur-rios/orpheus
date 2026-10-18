@@ -331,7 +331,22 @@ class ManyTagEditController extends Notifier<ManyTagEditState> {
         savedForm: form,
       );
 
-      final decision = await access.ensureWritable();
+      final LibraryAccessDecision decision;
+      try {
+        decision = await access.ensureWritable();
+      } on Object catch (error) {
+        // Nothing written, and the form must not be left saving with no way
+        // to close it.
+        _log.warning('write access could not be asked for', error);
+        if (ref.mounted) {
+          state = state.copyWith(
+            stage: retrying
+                ? ManyTagEditStage.results
+                : ManyTagEditStage.editing,
+          );
+        }
+        return;
+      }
       if (!ref.mounted) return;
       if (!decision.isGranted) {
         state = state.copyWith(
