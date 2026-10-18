@@ -194,17 +194,55 @@ void main() {
   });
 
   testWidgets(
+    'GivenTwelveSelectedOnA360WidePhoneInPortuguese_WhenTheBarShows_ThenNothingOverflowsAndTheCountIsShown',
+    (tester) async {
+      final many = [
+        for (var i = 1; i <= 12; i++)
+          entry(
+            id: 'song$i',
+            title: 'Canção $i',
+            artist: 'Band',
+            album: 'First',
+            track: i,
+          ),
+      ];
+      final harness = Harness(library: many);
+      await tester.pumpHarness(
+        harness,
+        area(),
+        window: const Size(360, 800),
+        locale: const Locale('pt'),
+      );
+      await tester.tap(find.text('Faixas'));
+      await tester.pumpAndSettle();
+      await tester.longPress(row('Canção 1'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Selecionar tudo'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(selected(harness), hasLength(12));
+      expect(find.text('12 selecionadas'), findsOneWidget);
+      expect(
+        find.widgetWithText(FilledButton, 'Editar tags…'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
     'GivenSomeSelected_WhenSelectAllIsPressed_ThenAllFourAreSelectedAndSelectAllIsGone',
     (tester) async {
       final harness = await songs(tester);
       await hold(tester, 'Bravo');
 
-      await tester.tap(find.text('Select all'));
+      await tester.tap(find.byTooltip('Select all'));
       await tester.pumpAndSettle();
 
       expect(selected(harness), hasLength(4));
       expect(find.text('4 selected'), findsOneWidget);
-      expect(find.text('Select all'), findsNothing);
+      expect(find.byTooltip('Select all'), findsNothing);
     },
   );
 
@@ -375,7 +413,9 @@ void main() {
 
       await hold(tester, 'Bravo');
 
-      expect(find.text('Edit tags…'), findsNothing);
+      // The bar's button says the same, so it is the menu's item that is
+      // looked for.
+      expect(find.widgetWithText(MenuItemButton, 'Edit tags…'), findsNothing);
       expect(find.text('Play the album'), findsNothing);
     },
   );
@@ -447,7 +487,7 @@ void main() {
         await hold(tester, 'Delta');
         await tap(tester, 'Bravo');
 
-        await tester.tap(barButton('Edit tags of 2 songs…'));
+        await tester.tap(barButton('Edit tags…'));
         await tester.pumpAndSettle();
 
         expect(find.byType(EditManyTagsDialog), findsOneWidget);
@@ -465,7 +505,7 @@ void main() {
         await songsToEdit(tester);
         await hold(tester, 'Bravo');
 
-        await tester.tap(barButton('Edit tags of 1 song…'));
+        await tester.tap(barButton('Edit tags…'));
         await tester.pumpAndSettle();
 
         expect(find.byType(EditTagsDialog), findsOneWidget);
@@ -541,7 +581,7 @@ void main() {
       final harness = await songsToEdit(tester);
       await hold(tester, 'Alpha');
       await tap(tester, 'Bravo');
-      await tester.tap(barButton('Edit tags of 2 songs…'));
+      await tester.tap(barButton('Edit tags…'));
       await tester.pumpAndSettle();
 
       await tester.enterText(
@@ -565,7 +605,7 @@ void main() {
       final harness = await songsToEdit(tester);
       await hold(tester, 'Alpha');
       await tap(tester, 'Bravo');
-      await tester.tap(barButton('Edit tags of 2 songs…'));
+      await tester.tap(barButton('Edit tags…'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Cancel'));

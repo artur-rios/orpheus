@@ -815,16 +815,19 @@ class _SelectionBar extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          // An icon, and the action without the count: the count is already
+          // in the row, and a phone has no width to spend on saying it twice.
           if (!allSelected)
-            TextButton(
+            IconButton(
+              tooltip: l10n.musicSelectionAll,
+              icon: const Icon(Icons.select_all),
               onPressed: onSelectAll,
-              child: Text(l10n.musicSelectionAll),
             ),
           const SizedBox(width: AppSpacing.xs),
           // What is done with the picked songs goes here, last in the row.
           FilledButton.tonal(
             onPressed: onEditTags,
-            child: Text(l10n.musicSelectionEditTags(count)),
+            child: Text(l10n.tagEditAction),
           ),
           const SizedBox(width: AppSpacing.sm),
         ],
