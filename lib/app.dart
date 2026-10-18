@@ -74,7 +74,12 @@ class _ShellWithBack extends ConsumerWidget {
     // spent itself clearing an invisible term would look like it did nothing.
     final searching = isSearchable(ref.watch(searchTermProvider));
 
+    // A selection only lives while its list is on screen, so an active one is
+    // a visible one — and the first thing back ends.
+    final selecting = ref.watch(songSelectionProvider).isActive;
+
     final canGoUp =
+        selecting ||
         searching ||
         (destination == ShellDestination.music &&
             (browse.inAlbum || browse.inArtist)) ||
@@ -87,6 +92,14 @@ class _ShellWithBack extends ConsumerWidget {
       canPop: !canGoUp,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
+
+        // Ending the selection leaves the list where it is: the album is
+        // still open and the results are still showing.
+        if (selecting) {
+          ref.read(songSelectionProvider.notifier).clear();
+
+          return;
+        }
 
         // A search covers whatever area is behind it, so clearing it is the
         // first thing back does — the owner is looking at results, and what
