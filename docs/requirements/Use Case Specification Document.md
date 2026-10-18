@@ -101,6 +101,7 @@ graph LR
 
     subgraph "Playlists (PS)"
         UC39[UC-39: Keep playlists]
+        UC40[UC-40: Play the auto playlists]
     end
 
     OWNER --> UC01
@@ -116,6 +117,7 @@ graph LR
     OWNER --> UC37
     OWNER --> UC38
     OWNER --> UC39
+    OWNER --> UC40
 ```
 
 ---
@@ -948,8 +950,8 @@ graph LR
 | **Actors** | Owner, Playback engine |
 | **Description** | The application decides that a track has been listened to, and records it. |
 | **Preconditions** | A track is open and its length is known. |
-| **Postconditions** | The play history holds one more play of that file. |
-| **Requirements** | FR-ST-01 … FR-ST-07 |
+| **Postconditions** | The play history holds one more play of that file, with the date it was counted. |
+| **Requirements** | FR-ST-01 … FR-ST-07, FR-ST-16 … FR-ST-19 |
 
 **Main Flow**
 
@@ -970,6 +972,11 @@ graph LR
 | AF-05 | The same track is opened again — repeat *one*, or played again from the start | The flag is cleared when the track *opens*, so the new playthrough counts again (`BR-21`). |
 | AF-06 | The history cannot be written | It is logged and dropped. Playback is unaffected (`BR-22`). |
 | AF-07 | Two plays are recorded at nearly the same moment | Writes are serialized, so neither is lost (FR-ST-05). |
+| AF-08 | The play history is of the version before dates were kept | Every track, its count and its last play are kept and it is written as version 2 by this play; the first time it is read, the old document is also copied once to `play-history.json.v1` (FR-ST-17). |
+| AF-09 | The stored history cannot be understood — it is not UTF-8 or not JSON, is not a play history, or was written by a version this one does not read | It is kept aside as `play-history.json.bad-<time>` and never overwritten, and the history starts empty (FR-ST-18). |
+| AF-10 | The stored history is readable but holds a row that is not a play, or a date that is not one | That row or date is stepped over, and the document is first copied aside as `play-history.json.bad-<time>` so what is left out can be recovered by hand (FR-ST-18). |
+| AF-11 | The stored history can be neither read, nor set aside or copied aside | Nothing is recorded for the rest of the run, nothing is written and the document is never replaced; playback continues, the failure is logged, and the next start tries again (FR-ST-19). |
+| AF-12 | A track has plays older than 90 days | Their dates are dropped when the history is read and written; the count and the last play stay (FR-ST-16). |
 
 ---
 
@@ -1010,6 +1017,7 @@ graph LR
 | AF-05 | A played file is no longer in the catalog | It still counts and is named by its file; there are no tags left to rank it by. |
 | AF-06 | The library cannot be read | The totals and the track ranking are still shown, named by file. Statistics do not fail because the library did. |
 | AF-07 | A play lands while the screen is open | The screen does not move. A chart reordering itself under the reader is harder to read than one a minute old, and *read again* is one press away. |
+| AF-08 | The history was migrated from the version before dates were kept | The totals and the rankings are the numbers they were: only counts and last plays are read (FR-ST-20). |
 
 > **All time, and no windows.** "This month" is a control, a parameter and a
 > second set of numbers to explain, and none of it is worth adding before anyone
@@ -1065,14 +1073,16 @@ graph LR
 | **Description** | The owner changes the theme, the language, and how the application behaves. |
 | **Preconditions** | None. |
 | **Postconditions** | The choices apply and are remembered. |
-| **Requirements** | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18 |
+| **Requirements** | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21 |
 
 **Main Flow**
 
 1. The owner opens the preferences.
 2. They choose light, dark or the system's setting; English, Brazilian
    Portuguese or the system's language; whether the full player opens itself
-   when a track starts; and whether the library is re-scanned at launch.
+   when a track starts; whether the library is re-scanned at launch; and
+   whether the auto playlists are shown (*Show auto playlists*, on by default;
+   UC-40).
 3. Each choice applies immediately and is written behind.
 
 **Alternative Flows**
@@ -1524,6 +1534,56 @@ graph LR
 | AF-19 | The selection's bar is narrower than 480 logical pixels, as on a phone held upright | *Edit tags…* in it is an icon with a tooltip (`FR-UX-13`). |
 | AF-20 | A scan runs, or a music folder cannot be reached | No playlist changes; songs whose files the scan no longer finds are shown as missing (AF-06). |
 
+### UC-40: Play the auto playlists
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-40 |
+| **Name** | Play the auto playlists |
+| **Actors** | Owner, Local filesystem |
+| **Description** | Orpheus keeps two playlists from what the owner listens to, *Favourites lately* and *All-time favourites*, at the top of the Playlists tab; the owner plays, shuffles, copies and exports them, and can hide them. |
+| **Preconditions** | None. They fill as songs are played (UC-26). |
+| **Postconditions** | Nothing is stored for them: they are worked out again each time. A copy the owner made is an ordinary playlist (UC-39), and an export has written the one file the owner chose. No audio file, and nothing in a music folder, has been created, changed or removed. |
+| **Requirements** | FR-PS-14 … FR-PS-21, FR-ST-16 … FR-ST-20, FR-UX-06 |
+
+**Main Flow**
+
+1. The owner opens the Playlists destination. With the preference on (UC-29), it starts with an *Auto playlists*
+   section holding *Favourites lately* and *All-time favourites*, as rows or tiles by the owner's layout choice, each
+   with its mosaic cover, its name and its number of songs; *Your playlists* follow (`FR-PS-14`, `FR-PS-20`).
+2. The owner opens *Favourites lately*. It holds up to 50 songs played in the last 30 days, the most plays in that time
+   first, the more recently played first among equals (`FR-PS-15`).
+3. The owner opens *All-time favourites*. It holds up to 50 songs, the most plays in all first, the more recently
+   played first among equals (`FR-PS-16`).
+4. Either opens as a playlist does, with *Play* and *Shuffle*, and the owner taps a song to play from it (UC-39,
+   `FR-PS-08`); the queue is named after the auto playlist. A song's own menu is on its ⋮ button, but there is no drag
+   handle and no *Remove from playlist*, and nothing to rename, to give a cover or to delete (`FR-PS-19`).
+5. From the playlist's menu — its ⋮ button, a right-click or a touch and hold, in the tab or in its own header — the
+   owner picks *Add to playlist…*, which puts all its songs at the end of a playlist the owner picks or of a new one
+   exactly as in UC-39 (AF-01 to AF-03 there apply), or *Export to .m3u…*, which asks where to save `<name>.m3u`, named
+   after the auto playlist, and writes it as UC-39 does (`FR-PS-11`).
+6. The owner starts a selection in it. Each song is picked by its file, and the bar offers *Add to playlist…* and
+   *Edit tags…* over the songs picked, as in a playlist (`FR-PS-19`).
+7. As the owner listens, both are worked out again by themselves when a play is recorded (`FR-PS-18`).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | Fewer than 10 songs have a play dated in the last 30 days — a new history, or one carried over from before plays were dated | *Favourites lately* holds the songs last played in the last 30 days, the most played in all first, and says *Getting to know your recent listening* under its header until there are enough (`FR-PS-15`). |
+| AF-02 | No song qualifies for *Favourites lately* | It says *Play some music and your recent favourites will show here*, with no note, and *Play* and *Shuffle* are disabled. |
+| AF-03 | No song has been played | *All-time favourites* says *Play some music and your favourites will show here* (`FR-PS-16`). |
+| AF-04 | A played song is no longer in the library — its file is gone or its drive is not there | It is left out of both, and is back when the library holds it again; the play history is not changed (`FR-PS-17`). |
+| AF-05 | The library is still loading, or could not be read | The section shows a line of loading in the first case and is not shown in the second, and no song is left out for want of an answer; the owner's playlists below are not held up by it (`FR-PS-17`, `FR-PS-20`). |
+| AF-06 | The owner has no playlists, or they cannot be read | The section is still shown. *Your playlists* says so in a line with *New playlist*, or shows the error with its retry under the section (`FR-PS-20`). |
+| AF-07 | The owner turns off *Show auto playlists* in the preferences | The section is not shown, and an auto playlist that is open closes to the list. The plays are still recorded, so turning it back on finds the lists as the listening has made them (`FR-PS-21`). |
+| AF-08 | A play is recorded while an auto playlist is open | It may change order or songs under the owner; a selection made in it keeps the songs it holds that are still in the list (`FR-PS-18`). |
+| AF-09 | The owner cancels the playlist dialog, the name dialog or the save dialog | As in UC-39 (AF-03, AF-13): nothing is created, added or written. |
+| AF-10 | The export could not be written | A message says that the playlist could not be exported; nothing else is written (`NFR-03`). |
+| AF-11 | The play history could not be read, or was set aside | There is nothing to rank, so both say they are empty; when it could not even be set aside, plays are not recorded for the rest of the run and the document is left as it was (UC-26 AF-09 to AF-11, `FR-ST-18`, `FR-ST-19`). |
+| AF-12 | The selection's bar is narrower than 480 logical pixels | *Edit tags…* in it is an icon with a tooltip (`FR-UX-13`). |
+| AF-13 | The owner picks *Back* in an auto playlist | It ends a selection if there is one, and otherwise closes the playlist and shows the list, as in UC-39 (AF-10). |
+
 ---
 
 ## 3. Use case — requirements traceability
@@ -1558,7 +1618,7 @@ graph LR
 | UC-26 Count a play | FR-ST-01 … FR-ST-07 |
 | UC-27 See what you listen to | FR-ST-08 … FR-ST-15, FR-UX-03 |
 | UC-28 Navigate the shell | FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-07 |
-| UC-29 Manage preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18 |
+| UC-29 Manage preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21 |
 | UC-30 Read the words | FR-LY-01, FR-LY-02, FR-LY-03, FR-LY-07 … FR-LY-10, FR-LY-12 |
 | UC-31 Follow and jump | FR-LY-04, FR-LY-05, FR-LY-06, FR-LY-11 |
 | UC-32 See the music move | FR-VZ-01 … FR-VZ-11 |
@@ -1568,6 +1628,7 @@ graph LR
 | UC-37 Edit the tags of several tracks at once | FR-TE-05 … FR-TE-08 |
 | UC-38 Select several songs and edit their tags | FR-UX-11, FR-UX-12, FR-UX-13, FR-TE-09 |
 | UC-39 Keep playlists | FR-PS-01 … FR-PS-13, FR-UX-01, FR-UX-13 |
+| UC-40 Play the auto playlists | FR-PS-14 … FR-PS-21, FR-ST-16 … FR-ST-20, FR-UX-06 |
 
 ## 4. State diagrams
 

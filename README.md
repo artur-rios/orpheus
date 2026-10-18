@@ -13,7 +13,7 @@ result in a file beside its own settings.
 
 > **Status:** complete and tested — the unit and widget suite green and
 > `flutter analyze` clean. Every use case in the [specifications](#specifications),
-> UC-01 to UC-39, is implemented — see the [roadmap](#roadmap). All three
+> UC-01 to UC-40, is implemented — see the [roadmap](#roadmap). All three
 > release builds and the Windows installer are produced and verified by CI on
 > every pull request. It runs on Linux, Windows and Android: the fixes released
 > since 1.0.0 came from running it on a Windows machine and an Android phone.
@@ -77,6 +77,15 @@ result in a file beside its own settings.
   exported to `.m3u`, and deleted — the songs stay. A song whose file has gone
   stays in the playlist, greyed out and skipped, so an unplugged drive empties
   nothing. Playlists live in Orpheus's own data, never in your music folders.
+- **Keeps two playlists for you.** At the top of the Playlists tab, *Favourites
+  lately* holds what you have played most in the last 30 days and *All-time
+  favourites* what you have played most ever, up to 50 songs each, the more
+  recently played first among equals. Until enough recent listening has been
+  recorded, *Favourites lately* is the songs played in the last 30 days by
+  their total plays, and says it is getting to know you. They fill themselves
+  as you listen, play, shuffle, export to `.m3u`, and copy into a playlist of
+  your own with *Add to playlist…*, but cannot be reordered or edited. *Show
+  auto playlists* in the preferences hides them; your plays are still counted.
 - **Searches** across titles, artists, albums and genres — all together, or
   one kind at a time with a selector — ranked so a match at the start of a
   title comes above one buried in the middle of something else.
@@ -505,13 +514,15 @@ not written, and on Windows the track playing may be refused as in use.
   frame rate of the audio behind them, and this reads headers, not streams.
 - **Playlists are made by hand and cannot be imported.** A playlist holds the
   songs you added, in the order you left them; it can be exported to `.m3u`, but
-  an `.m3u` cannot be read back in, and none fills itself.
+  an `.m3u` cannot be read back in. The two auto playlists fill themselves and
+  are the only ones that do: there is no other kind, and no setting for their
+  size or window.
 - **The statistics are all-time, with no windows.** "This month" is a control, a
   parameter, and a second set of numbers to explain, and none of it is worth
   adding before anyone has read the first set. The history stores a count per
-  file rather than a row per play, which is what keeps it proportional to the
-  number of tracks ever played — and which is what a time window would have to
-  undo.
+  file, and the dates of its plays only for the last 90 days — just enough for
+  *Favourites lately* — which is what keeps it proportional to the number of
+  tracks ever played rather than the number of plays.
 - **The rankings are only as good as the tags.** A library where the same artist
   is spelled two ways ranks as two artists, and nothing here can tell that from
   two artists who really exist.
@@ -535,8 +546,8 @@ not written, and on Windows the track playing may be refused as in use.
 
 Nine milestones covering thirty-four issues: one foundation issue plus one
 issue per use case from UC-01 to UC-33. UC-34, UC-35, UC-36, UC-37, UC-38 and
-UC-39 came after the backlog was filed and have no milestone; they are listed
-after M-09.
+UC-39 and UC-40 came after the backlog was filed and have no milestone; they
+are listed after M-09.
 Milestones are dependency-ordered — no milestone depends on a later one, and
 every milestone after `M-01` depends on it.
 
@@ -641,7 +652,7 @@ Built, tested and specified, and merged.
 
 ### After the backlog — Tags and genres
 
-Built, tested and specified, and merged. UC-34, UC-36, UC-37, UC-38 and UC-39 have no issue, so the use case itself is linked.
+Built, tested and specified, and merged. UC-34, UC-36, UC-37, UC-38, UC-39 and UC-40 have no issue, so the use case itself is linked.
 
 | Issue | Work | Spec |
 | --- | --- | --- |
@@ -651,6 +662,7 @@ Built, tested and specified, and merged. UC-34, UC-36, UC-37, UC-38 and UC-39 ha
 | [UC-37](docs/requirements/Use%20Case%20Specification%20Document.md#uc-37-edit-the-tags-of-several-tracks-at-once) | UC-37 — Edit the tags of several tracks at once — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [UC-38](docs/requirements/Use%20Case%20Specification%20Document.md#uc-38-select-several-songs-and-edit-their-tags) | UC-38 — Select several songs and edit their tags — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [UC-39](docs/requirements/Use%20Case%20Specification%20Document.md#uc-39-keep-playlists) | UC-39 — Keep playlists — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-40](docs/requirements/Use%20Case%20Specification%20Document.md#uc-40-play-the-auto-playlists) | UC-40 — Play the auto playlists — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
 ## Changelog
 

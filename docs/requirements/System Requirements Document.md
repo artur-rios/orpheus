@@ -136,7 +136,7 @@ wherever a test can enforce it.
 | **FR-ST-04** | Recording a play must never interrupt playback, and a failure to record must be logged and dropped (`BR-22`). |
 | **FR-ST-05** | Concurrent recordings must not lose plays. |
 | **FR-ST-06** | The play history must persist between runs, written atomically. |
-| **FR-ST-07** | A play history that cannot be read must start over rather than prevent the application from running. |
+| **FR-ST-07** | A play history that cannot be read must not prevent the application from running: it starts empty for that run, and the document that could not be read is kept aside rather than written over (`FR-ST-18`, `FR-ST-19`). |
 | **FR-ST-08** | The application must present the total number of plays and the number of distinct tracks they came from. |
 | **FR-ST-09** | The application must present four rankings — most played tracks, artists, records and genres — read from the play history against the catalog (`BR-23`). A track with several genres must credit each of them with its plays, and a genre's share of the plays must be of all plays, so shares may add up to more than 100%. |
 | **FR-ST-10** | Every ranking must be drawn even when it is empty. |
@@ -145,6 +145,11 @@ wherever a test can enforce it.
 | **FR-ST-13** | The statistics must be read once per opening and must not reorder themselves while being read; reading them again must be one action away. |
 | **FR-ST-14** | The statistics screen must not fail because the library could not be read. |
 | **FR-ST-15** | Before anything has been played, the screen must state what makes a track count. |
+| **FR-ST-16** | Each play must be recorded with the date it was counted, beside the count and the last-played date. A track keeps the dates of its plays from the last 90 days only: every write, and every read, drops the dates older than that, so that they never accumulate. The count and the last-played date are not changed by it. |
+| **FR-ST-17** | The play history must be a versioned document, now version 2, holding each track's dates. A version-1 document, as every earlier release wrote it, must be read with every track, its count and its last-played date kept and no dates, and be written as version 2 by the next play recorded. The first time one is read, its bytes must also be copied to `play-history.json.v1`, once and never over an earlier copy, so that going back to an earlier release does not lose the history. A history is migrated and never reset. |
+| **FR-ST-18** | A document that cannot be understood — text that is not UTF-8 or not JSON, not a play history, or of a version this release does not read — must be kept aside under a name of its own, `play-history.json.bad-<time>`, and never overwritten; the application then starts with an empty history. A readable document holding a row that is not a play, or a date that is not one, must have that row or date stepped over, and the original document copied aside under the same kind of name before anything is written over it. |
+| **FR-ST-19** | When the document can neither be read, nor kept aside or copied aside as `FR-ST-18` says, nothing may be recorded in that run: the history is held empty, nothing is written, and the document is never replaced. Playback is unaffected, the failure is logged, and the next start tries again (`FR-ST-04`). |
+| **FR-ST-20** | The statistics (`FR-ST-08` … `FR-ST-15`) must read only the counts and last-played dates, so that a migrated history shows the same numbers as before for the same plays. |
 
 ### 2.6 Shell, preferences and presentation (UX)
 
@@ -239,7 +244,7 @@ Realises F-18, F-19 and F-20.
 
 ### 2.11 Playlists (PS)
 
-Realises F-21.
+Realises F-21 and F-22.
 
 | ID | Requirement |
 | --- | --- |
@@ -256,6 +261,14 @@ Realises F-21.
 | **FR-PS-11** | The owner must be able to export a playlist to an extended M3U file, in UTF-8, saved where the owner chooses. Each entry is written, a missing one as well, with its length, `artist - title` and the file's absolute path, from the library when the song is in it and from what was saved when it is not. A name that is not safe as a file name on Windows is made safe. Cancelling the dialog is not a failure and writes nothing; a file that could not be written is reported. |
 | **FR-PS-12** | The playlists must be stored in the application's own data, in one versioned document, never in a music folder. Every change must be written whole and atomically, and shown only once it is stored; a change that could not be written must be reported and leave what was stored as it was. A scan, or a folder that cannot be reached, must never change a playlist. |
 | **FR-PS-13** | A stored document that cannot be understood, or that was written by another version, must be kept aside under a name of its own, with the time, and never overwritten; the application then starts with no playlists. When it can neither be read nor kept aside, the Playlists destination must show the error with a retry, and nothing may be written over the document. |
+| **FR-PS-14** | The Playlists destination must offer two playlists that Orpheus keeps by itself from the play history, *Favourites lately* and *All-time favourites*, each with its cover, its name and its number of songs, in an *Auto playlists* section above the owner's own, which follow under *Your playlists*. The cover is the mosaic of up to four of its albums' covers. They are worked out from the play history, the library and the clock, and are never stored: nothing of them is written to the playlists document, and they do not appear among the owner's playlists. |
+| **FR-PS-15** | *Favourites lately* must hold the songs the owner has played most in the last 30 days, the most plays first and, among equal counts, the more recently played first, up to 50. It counts the dated plays of `FR-ST-16`. Until at least 10 songs have a dated play in the last 30 days, it must instead hold the songs last played in the last 30 days, the song with the most plays in all first and, among equal counts, the more recently played first, up to 50, and say *Getting to know your recent listening* under its header while it does. With no song to show it says *Play some music and your recent favourites will show here* and no such note. |
+| **FR-PS-16** | *All-time favourites* must hold the songs the owner has played most in all, the most plays first and, among equal counts, the more recently played first, up to 50. With no song played it says *Play some music and your favourites will show here*. |
+| **FR-PS-17** | A song the library does not hold must be left out of both, as must every song while the library has not loaded. A song already in the history comes back into them when the library holds it again. |
+| **FR-PS-18** | Both must follow the owner's listening by themselves, with no action to refresh them: they are worked out again when a play is recorded and when the library changes. An auto playlist that is open may therefore change order or songs under the owner; a selection made in it follows the songs it holds. |
+| **FR-PS-19** | An auto playlist must open as a playlist does, with *Play* and *Shuffle*, a song to play from, and the song's own menu, but must be read-only: no drag handle, no *Remove from playlist*, no rename, cover or delete. Its menu — its ⋮ button, a right-click or a touch and hold — must offer *Add to playlist…*, which copies all its songs into a playlist of the owner's (`FR-PS-02`, `FR-PS-03`), and *Export to .m3u…*, which writes the file as `FR-PS-11` says, named after the auto playlist. A selection made in it must offer *Add to playlist…* and *Edit tags…* (`FR-TE-09`) over the songs selected, and nothing else. |
+| **FR-PS-20** | The *Auto playlists* section must stand on its own: it must show when the owner has no playlists, which then says so in a line under *Your playlists* with *New playlist*, and when the owner's playlists could not be read, above that error. A line of loading stands in for it while the library is read, and it is not shown when the library could not be. |
+| **FR-PS-21** | The owner must be able to turn the auto playlists off and on with *Show auto playlists* in the preferences, on by default; the choice applies at once and is kept (`FR-UX-06`). Off, the section is not shown and an auto playlist that is open closes; the plays keep being recorded, so that turning it on finds the lists as the listening has made them. |
 
 ## 3. Non-functional requirements
 
@@ -290,9 +303,9 @@ Realises F-21.
 | F-08 Now playing | FR-PL-16, FR-PL-17, FR-PL-18, FR-PL-19 |
 | F-09 Resilient playback | FR-PL-14, FR-PL-15 |
 | F-10 Background playback | FR-BG-01 … FR-BG-10 |
-| F-11 Listening statistics | FR-ST-01 … FR-ST-15 |
+| F-11 Listening statistics | FR-ST-01 … FR-ST-15, FR-ST-20 |
 | F-12 Adaptive shell | FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-10 |
-| F-13 Preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18 |
+| F-13 Preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21 |
 | F-14 Localization | FR-UX-09, FR-CT-06 |
 | F-15 Lyrics | FR-LY-01 … FR-LY-17 |
 | F-16 Sound bars | FR-VZ-01 … FR-VZ-11 |
@@ -301,6 +314,7 @@ Realises F-21.
 | F-19 Edit the tags of several tracks | FR-TE-05 … FR-TE-08 |
 | F-20 Select several songs | FR-UX-11, FR-UX-12, FR-UX-13, FR-TE-09 |
 | F-21 Playlists | FR-PS-01 … FR-PS-13, FR-UX-01 |
+| F-22 Auto playlists | FR-PS-14 … FR-PS-21, FR-ST-16 … FR-ST-20, FR-UX-06 |
 
 ### 4.2 Requirements to use cases
 
@@ -310,13 +324,13 @@ Realises F-21.
 | CT | UC-07, UC-08, UC-09, UC-10, UC-11, UC-12, UC-36 |
 | PL | UC-13 … UC-23 |
 | BG | UC-24, UC-25 |
-| ST | UC-26, UC-27 |
+| ST | UC-26, UC-27, UC-40 |
 | UX | UC-28, UC-29, UC-38, UC-39 |
 | LY | UC-30, UC-31, UC-33 |
 | VZ | UC-32 |
 | AF | UC-34 |
 | TE | UC-35, UC-37, UC-38 |
-| PS | UC-39 |
+| PS | UC-39, UC-40 |
 
 ## 5. Data model
 
@@ -327,7 +341,7 @@ Everything the application persists, and where.
 | **Catalog** | `catalog.json` in the application-support directory | One entry per audio file: path, size, modification time, and every tag read from it — every genre a file holds, not only the first — plus the id of its cover. Written atomically; versioned. |
 | **Playlists** | `playlists.json`, beside the catalog | The owner's playlists: for each, its id, name, the id of its cover picture if the owner chose one, when it was made and last changed, and its entries in order — each with its own id, the file's path, and the title, artist, album and length it had when it was added or last saved while the library had the song. Written whole and atomically; versioned. A document that cannot be read, or that has another version, is renamed `playlists.json.bad-<time>` and not overwritten. |
 | **Playlist covers** | a `playlist-covers` directory | The picture the owner chose for a playlist, one file per playlist, named by the playlist's id. |
-| **Play history** | `play-history.json`, beside the catalog | One entry per file ever played: path, play count, and when it last counted. Written atomically; versioned. |
+| **Play history** | `play-history.json`, beside the catalog | One entry per file ever played: path, play count, when it last counted, and the dates of its plays from the last 90 days. Written atomically; versioned, now 2. A version-1 document is read as it stands, copied once to `play-history.json.v1`, and written as version 2 by the next play. A document that cannot be read is renamed `play-history.json.bad-<time>`, and one with rows stepped over is copied to that name; neither is overwritten. |
 | **Cover cache** | a `covers` directory | One file per distinct picture, named by the hash of its bytes. |
 | **Analysis cache** | an `energy` directory | One file per analysed track — the measured spectrum, about a hundred kilobytes for a four-minute track — named by a key carrying the file's path, length and modification time. Disposable: deleting it costs a second per track and nothing else. |
 | **Preferences** | the platform's own preference store | Library folders, theme, language, layout, volume, repeat mode, resume points, and the two behaviour switches. |

@@ -40,12 +40,16 @@ the only things written into the owner's music folders are a `.lrc` beside a tra
 | What | Where |
 | --- | --- |
 | Catalog | `catalog.json` |
-| Play history | `play-history.json` |
+| Play history | `play-history.json` (version 2: each play dated for 90 days), a `play-history.json.v1` copy of a version-1 document made once when it is first read, and a `play-history.json.bad-<time>` for a document that could not be read, or a copy of one that was partly read |
 | Playlists | `playlists.json`, and a `playlists.json.bad-<time>` for one that could not be read |
 | Playlist covers | `playlist-covers/` |
 | Cover cache | `covers/` |
 | Analysed spectra | `energy/` |
 | Preferences | the platform's own preference store |
+
+The two auto playlists have no row: they are worked out from the play history and the catalog each time and are never
+written (`FR-PS-14`). The `.v1` and `.bad-` files are the owner's to keep or delete; Orpheus never reads
+them again, and the `.v1` copy is made once, never over an earlier one.
 
 Both caches are disposable: deleting `covers/` or `energy/` costs the work of
 building them again and nothing else. They are directories of plain files, and
