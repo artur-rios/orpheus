@@ -230,4 +230,72 @@ void main() {
       expect(harness.read(musicBrowseControllerProvider).inArtist, isFalse);
     },
   );
+
+  /// The whole application, so that its back handler is the one under test.
+  Future<Harness> app(WidgetTester tester) async {
+    final harness = Harness(library: library);
+    tester.view.physicalSize = desktopWindow;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: harness.container,
+        child: const OrpheusApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    return harness;
+  }
+
+  testWidgets(
+    'GivenASelectionInsideAnAlbum_WhenBackIsPressed_ThenTheSelectionEndsAndTheAlbumStaysOpen',
+    (tester) async {
+      final harness = await app(tester);
+      harness
+          .read(musicBrowseControllerProvider.notifier)
+          .openAlbum('OK Computer', 'Radiohead');
+      await tester.pumpAndSettle();
+      await tester.longPress(find.widgetWithText(ListTile, 'Airbag'));
+      await tester.pumpAndSettle();
+      expect(harness.read(songSelectionProvider).isActive, isTrue);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(harness.read(songSelectionProvider).isActive, isFalse);
+      expect(harness.read(musicBrowseControllerProvider).inAlbum, isTrue);
+
+      // With nothing selected, the same press goes up a level again.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(harness.read(musicBrowseControllerProvider).inAlbum, isFalse);
+    },
+  );
+
+  testWidgets(
+    'GivenASelectionInSearchResults_WhenBackIsPressed_ThenTheSelectionEndsAndTheSearchStays',
+    (tester) async {
+      final harness = await app(tester);
+      await tester.enterText(find.byType(TextField), 'airbag');
+      await tester.pumpAndSettle();
+      await tester.longPress(find.widgetWithText(ListTile, 'Airbag'));
+      await tester.pumpAndSettle();
+      expect(harness.read(songSelectionProvider).isActive, isTrue);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(harness.read(songSelectionProvider).isActive, isFalse);
+      expect(harness.read(searchTermProvider), 'airbag');
+      expect(find.byType(SearchResultsView), findsOneWidget);
+
+      // With nothing selected, the same press clears the search.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(harness.read(searchTermProvider), isEmpty);
+    },
+  );
 }

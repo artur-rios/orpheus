@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
@@ -12,6 +13,7 @@ import '../../library/domain/music_entry.dart';
 import '../../library/domain/music_grouping.dart';
 import '../../tag_editor/presentation/edit_tags_launcher.dart';
 import '../application/audio_playback_controller.dart';
+import '../application/song_selection_controller.dart';
 import '../domain/music_layout.dart';
 import 'album_art.dart';
 import 'music_display_name.dart';
@@ -326,8 +328,9 @@ class _GroupActions extends ConsumerWidget {
 /// An album's or an artist's own actions: autofill (albums only) and the tag
 /// editor.
 ///
-/// Opened as a track's menu is — right-click, long press, or the ⋮ button on
-/// the row — so the same gestures work on every kind of row. The row is built
+/// Opened by right-click, long press, or the ⋮ button on the row. A long press
+/// opens it here though it picks the song on a track's row: albums and artists
+/// are not picked, so the gesture is free for their menu. The row is built
 /// by [builder] and handed the [MenuController], so the button sits wherever
 /// the row wants it.
 class MusicGroupMenu extends ConsumerWidget {
@@ -423,11 +426,20 @@ class MusicGroupMenu extends ConsumerWidget {
 }
 
 /// The tracks.
-class MusicTrackList extends ConsumerWidget {
+///
+/// Also where several of them are picked: touch and hold a row, or Ctrl- or
+/// Shift-click it, and the list is selecting — every row leads with a tick
+/// box, a tap toggles a song rather than playing it, and a bar above the rows
+/// says how many are picked. The selection itself lives in
+/// [songSelectionProvider] rather than here, so that what Back does can ask
+/// about it, and so that it outlasts the spinner a reload puts in the list's
+/// place.
+class MusicTrackList extends ConsumerStatefulWidget {
   /// Creates the list.
   const MusicTrackList({
     required this.entries,
     required this.numbered,
+    required this.selectionScope,
     this.emptyMessage,
     super.key,
   });
@@ -442,8 +454,78 @@ class MusicTrackList extends ConsumerWidget {
   /// other record would say nothing.
   final bool numbered;
 
+  /// Which list this is, compared with `==`: Songs, one record, a genre's
+  /// songs, one search.
+  ///
+  /// A selection is made in, and shown by, the list of one identity alone.
+  /// Named by the host rather than inferred from this widget: going from
+  /// Songs into a record, or from one record to the next, redraws this same
+  /// list with other tracks, and only the name says it is another list.
+  final Object selectionScope;
+
   /// What to say when there is nothing to show, or `null` to show nothing.
   final String? emptyMessage;
+
+  @override
+  ConsumerState<MusicTrackList> createState() => _MusicTrackListState();
+}
+
+class _MusicTrackListState extends ConsumerState<MusicTrackList> {
+  /// What Esc is heard through, and what is focused when a selection starts,
+  /// so that Esc ends it without the owner first having to click somewhere.
+  ///
+  /// Out of the Tab order: it is focused for the keys it hears, and a Tab
+  /// stop that shows nothing would only be one more press to get past.
+  final FocusNode _focus = FocusNode(
+    debugLabel: 'MusicTrackList',
+    skipTraversal: true,
+  );
+
+  /// Whether a prune is already waiting for the end of the frame.
+  bool _pruning = false;
+
+  /// The selection's holder, kept from the start: a disposed list has no
+  /// `ref` to reach it with, and leaving is when it is needed most.
+  late final SongSelectionController _selection;
+
+  @override
+  void initState() {
+    super.initState();
+    _selection = ref.read(songSelectionProvider.notifier)
+      ..attach(widget.selectionScope);
+  }
+
+  @override
+  void didUpdateWidget(MusicTrackList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectionScope == widget.selectionScope) return;
+
+    // Another list drawn in this one's place: its own prune ends what was
+    // picked in the last one.
+    _selection
+      ..detach(oldWidget.selectionScope)
+      ..attach(widget.selectionScope);
+  }
+
+  @override
+  void dispose() {
+    final selection = _selection;
+    final scope = widget.selectionScope;
+    selection.detach(scope);
+    // After the frame, when whatever replaces this list is on screen: the
+    // same list drawn again keeps what was picked in it.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => selection.endIfUnshown(scope),
+    );
+
+    _focus.dispose();
+    super.dispose();
+  }
+
+  /// The tracks' paths, in the list's order.
+  List<String> _order() => [
+    for (final entry in widget.entries) entry.file.path,
+  ];
 
   /// The performer to put under a row's title, or `null` for a row that names
   /// none.
@@ -460,7 +542,7 @@ class MusicTrackList extends ConsumerWidget {
   /// paths into a record, so leaving it off a row does not take it off the
   /// screen.
   String? _performerOf(MusicEntry entry, AppLocalizations l10n) {
-    if (!numbered) return musicArtistOf(entry, l10n);
+    if (!widget.numbered) return musicArtistOf(entry, l10n);
 
     final performer = entry.artist;
 
@@ -469,16 +551,104 @@ class MusicTrackList extends ConsumerWidget {
         : performer;
   }
 
+  /// Keeps the selection to the songs this list shows, once the frame is
+  /// drawn — a provider is not changed while widgets are being built.
+  ///
+  /// A selection made in another list ends here: this is what makes opening
+  /// another record, or searching for something else, leave nothing picked.
+  /// Within this list, the songs a rescan took away drop out of it, and a
+  /// selection left with none ends.
+  void _schedulePrune() {
+    if (_pruning) return;
+    _pruning = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _pruning = false;
+      if (!mounted || !ref.read(songSelectionProvider).isActive) return;
+
+      ref
+          .read(songSelectionProvider.notifier)
+          .retainIn(widget.selectionScope, _order());
+    });
+  }
+
+  /// A tap or click on [entry]'s row.
+  ///
+  /// The keyboard is read now rather than tracked: what matters is whether
+  /// Shift or Ctrl is down as the owner clicks.
+  void _tap(MusicEntry entry, {required bool selecting}) {
+    final keyboard = HardwareKeyboard.instance;
+    final selection = ref.read(songSelectionProvider.notifier);
+    final scope = widget.selectionScope;
+    final path = entry.file.path;
+
+    if (keyboard.isShiftPressed) {
+      selection.rangeTo(scope, path, _order());
+    } else if (keyboard.isControlPressed || selecting) {
+      selection.toggle(scope, path);
+    } else {
+      _play(entry);
+    }
+  }
+
+  /// Opens the tag form over the picked songs, in the list's order, and ends
+  /// the selection if it wrote any of them.
+  ///
+  /// Not when it was cancelled, or wrote nothing: the owner may want to adjust
+  /// what is picked and try again.
+  Future<void> _editSelected() async {
+    final paths = ref.read(songSelectionProvider).paths;
+    final picked = [
+      for (final entry in widget.entries)
+        if (paths.contains(entry.file.path)) entry,
+    ];
+    if (picked.isEmpty) return;
+
+    final label = AppLocalizations.of(context).musicSelectionLabel;
+    final written = await startManyTagEdit(context, picked, label: label);
+
+    // Through the holder kept from the start rather than `ref`: the save
+    // reloads the library, and the list may have been through the spinner and
+    // be gone from the tree by the time the form has closed.
+    if (written) _selection.clear();
+  }
+
+  /// Inside a record, a track plays the record from there; in Songs it plays
+  /// alone, because there is no record around it to continue.
+  void _play(MusicEntry entry) {
+    final player = ref.read(audioPlaybackControllerProvider.notifier);
+
+    unawaited(
+      widget.numbered
+          ? player.playAlbum(entry.file, within: musicWithinOf(context))
+          : player.playTrack(entry.file),
+    );
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final within = musicWithinOf(context);
+    final scope = widget.selectionScope;
+    final entries = widget.entries;
+    final selection = ref.watch(songSelectionProvider);
+    final selecting = selection.isActiveIn(scope);
 
-    if (entries.isEmpty && emptyMessage != null) {
+    // Taken from the search field, or wherever it was, when a selection
+    // starts here: the owner has just clicked a row, and Esc should end what
+    // they started.
+    ref.listen(songSelectionProvider, (previous, next) {
+      final started =
+          next.isActiveIn(scope) && !(previous?.isActiveIn(scope) ?? false);
+      if (started) _focus.requestFocus();
+    });
+
+    if (selection.isActive) _schedulePrune();
+
+    if (entries.isEmpty && widget.emptyMessage != null) {
       return Center(
         child: Text(
-          emptyMessage!,
+          widget.emptyMessage!,
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
@@ -487,75 +657,218 @@ class MusicTrackList extends ConsumerWidget {
       );
     }
 
-    return ListView.builder(
-      itemCount: entries.length,
-      itemBuilder: (context, index) {
-        final entry = entries[index];
-        final performer = _performerOf(entry, l10n);
-        final duration = entry.duration;
+    final controller = ref.read(songSelectionProvider.notifier);
+    // Counted against the rows rather than read off the selection: for the
+    // one frame between a rescan and the prune, a song that has left the list
+    // must not be counted in it.
+    final picked = selecting
+        ? entries
+              .where((entry) => selection.paths.contains(entry.file.path))
+              .length
+        : 0;
 
-        return MusicRowMenu(
-          entry: entry,
-          child: ListTile(
-            leading: numbered
-                ? SizedBox(
-                    width: AppSpacing.xl,
-                    child: Text(
-                      entry.metadata.track?.toString() ?? '',
-                      textAlign: TextAlign.end,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+    return CallbackShortcuts(
+      bindings: {
+        if (selecting)
+          const SingleActivator(LogicalKeyboardKey.escape): controller.clear,
+      },
+      child: Focus(
+        focusNode: _focus,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (selecting)
+              _SelectionBar(
+                count: picked,
+                allSelected: picked == entries.length,
+                onStop: controller.clear,
+                onSelectAll: () => controller.selectAll(scope, _order()),
+                onEditTags: () => unawaited(_editSelected()),
+              ),
+            Expanded(
+              // Keyed so the rows, and how far they are scrolled, survive the
+              // bar arriving above them.
+              key: const ValueKey('rows'),
+              child: ListView.builder(
+                itemCount: entries.length,
+                itemBuilder: (context, index) {
+                  final entry = entries[index];
+                  final path = entry.file.path;
+                  final performer = _performerOf(entry, l10n);
+                  final duration = entry.duration;
+                  final title = musicTitleOf(entry, l10n);
+                  final isPicked = selecting && selection.paths.contains(path);
+
+                  return MusicRowMenu(
+                    entry: entry,
+                    // A right-click on a picked song is about the picked
+                    // songs; on any other it is about that song alone.
+                    selection: isPicked
+                        ? (
+                            count: picked,
+                            editTags: () => unawaited(_editSelected()),
+                          )
+                        : null,
+                    child: ListTile(
+                      selected: isPicked,
+                      // In place of the number or the cover rather than beside
+                      // it, so a phone's row does not lose title width.
+                      leading: selecting
+                          ? Checkbox(
+                              value: isPicked,
+                              semanticLabel: l10n.musicSelectionSelect(title),
+                              // Through the row's own logic, so Shift draws a
+                              // range from a tick box as it does from a row.
+                              onChanged: (_) =>
+                                  _tap(entry, selecting: selecting),
+                            )
+                          : widget.numbered
+                          ? SizedBox(
+                              width: AppSpacing.xl,
+                              child: Text(
+                                entry.metadata.track?.toString() ?? '',
+                                textAlign: TextAlign.end,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            )
+                          : AlbumArt(coverId: entry.metadata.coverId, side: 44),
+                      title: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                      subtitle: performer == null
+                          ? null
+                          : Text(
+                              performer,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                      trailing: duration == null
+                          ? null
+                          : Text(
+                              formatPlaybackPosition(duration),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                      onTap: () => _tap(entry, selecting: selecting),
+                      // Touch and hold picks songs; the song's own menu is on
+                      // its ⋮ button and a right-click.
+                      onLongPress: () => controller.toggle(scope, path),
                     ),
-                  )
-                : AlbumArt(coverId: entry.metadata.coverId, side: 44),
-            title: Text(
-              musicTitleOf(entry, l10n),
-              maxLines: 1,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// What is picked, and what can be done with it.
+///
+/// Above the rows, in the list's own area rather than in a host's header, so
+/// it works in every place a song list is drawn.
+class _SelectionBar extends StatelessWidget {
+  const _SelectionBar({
+    required this.count,
+    required this.allSelected,
+    required this.onStop,
+    required this.onSelectAll,
+    required this.onEditTags,
+  });
+
+  /// How many of the list's songs are picked.
+  final int count;
+
+  /// Whether every song in the list is picked, when *Select all* would do
+  /// nothing.
+  final bool allSelected;
+
+  /// Ends the selection.
+  final VoidCallback onStop;
+
+  /// Picks every song in the list.
+  final VoidCallback onSelectAll;
+
+  /// Opens the tag form over the picked songs.
+  final VoidCallback onEditTags;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: l10n.musicSelectionStop,
+            icon: const Icon(Icons.close),
+            onPressed: onStop,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              l10n.musicSelectionCount(count),
+              style: theme.textTheme.titleSmall,
               overflow: TextOverflow.ellipsis,
             ),
-            subtitle: performer == null
-                ? null
-                : Text(performer, maxLines: 1, overflow: TextOverflow.ellipsis),
-            trailing: duration == null
-                ? null
-                : Text(
-                    formatPlaybackPosition(duration),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-            // Inside a record, a track plays the record from there; in Songs
-            // it plays alone, because there is no record around it to
-            // continue.
-            onTap: () {
-              final player = ref.read(audioPlaybackControllerProvider.notifier);
-
-              unawaited(
-                numbered
-                    ? player.playAlbum(entry.file, within: within)
-                    : player.playTrack(entry.file),
-              );
-            },
           ),
-        );
-      },
+          // An icon, and the action without the count: the count is already
+          // in the row, and a phone has no width to spend on saying it twice.
+          if (!allSelected)
+            IconButton(
+              tooltip: l10n.musicSelectionAll,
+              icon: const Icon(Icons.select_all),
+              onPressed: onSelectAll,
+            ),
+          const SizedBox(width: AppSpacing.xs),
+          // What is done with the picked songs goes here, last in the row.
+          FilledButton.tonal(
+            onPressed: onEditTags,
+            child: Text(l10n.tagEditAction),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+        ],
+      ),
     );
   }
 }
 
 /// A track's own actions.
 ///
-/// Right-click is what a desktop owner reaches for; a long press is the same
-/// gesture on a phone; and the button beside the row is what makes the same
-/// actions reachable from the keyboard. All three open the one menu, so there
-/// is no second list of actions to keep in step.
+/// Right-click is what a desktop owner reaches for, and the button beside the
+/// row is what makes the same actions reachable on a phone and from the
+/// keyboard. Both open the one menu, so there is no second list of actions to
+/// keep in step. Touch and hold is not one of them: on a song's row it picks
+/// the song (see [MusicTrackList]).
+///
+/// The one exception is a right-click on a picked song while songs are being
+/// picked: that opens a menu for the picked songs instead (see [selection]).
+/// The ⋮ button never does, so a picked song's own actions stay reachable.
 class MusicRowMenu extends ConsumerWidget {
   /// Creates the wrapper.
-  const MusicRowMenu({required this.entry, required this.child, super.key});
+  const MusicRowMenu({
+    required this.entry,
+    required this.child,
+    this.selection,
+    super.key,
+  });
 
   /// The track the menu acts on.
   final MusicEntry entry;
+
+  /// What a right-click offers when [entry] is one of the picked songs: how
+  /// many are picked, and what pressing *Edit tags* does. `null` for a song
+  /// that is not picked, whose right-click opens its own menu.
+  final ({int count, VoidCallback editTags})? selection;
 
   /// The row itself.
   final Widget child;
@@ -564,8 +877,9 @@ class MusicRowMenu extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final within = musicWithinOf(context);
+    final picked = selection;
 
-    return MenuAnchor(
+    final own = MenuAnchor(
       menuChildren: [
         MenuItemButton(
           leadingIcon: const Icon(Icons.play_arrow),
@@ -623,12 +937,8 @@ class MusicRowMenu extends ConsumerWidget {
           child: Text(l10n.tagEditAction),
         ),
       ],
-      builder: (context, controller, _) => GestureDetector(
-        onSecondaryTapDown: (details) =>
-            controller.open(position: details.localPosition),
-        onLongPressStart: (details) =>
-            controller.open(position: details.localPosition),
-        child: Row(
+      builder: (context, controller, _) {
+        final row = Row(
           children: [
             Expanded(child: child),
             IconButton(
@@ -638,7 +948,34 @@ class MusicRowMenu extends ConsumerWidget {
                   controller.isOpen ? controller.close() : controller.open(),
             ),
           ],
+        );
+
+        // The picked songs' menu answers the right-click instead, so this one
+        // listens for none.
+        return picked != null
+            ? row
+            : GestureDetector(
+                onSecondaryTapDown: (details) =>
+                    controller.open(position: details.localPosition),
+                child: row,
+              );
+      },
+    );
+
+    if (picked == null) return own;
+
+    return MenuAnchor(
+      menuChildren: [
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.edit_outlined),
+          onPressed: picked.editTags,
+          child: Text(l10n.musicSelectionEditTags(picked.count)),
         ),
+      ],
+      builder: (context, controller, _) => GestureDetector(
+        onSecondaryTapDown: (details) =>
+            controller.open(position: details.localPosition),
+        child: own,
       ),
     );
   }

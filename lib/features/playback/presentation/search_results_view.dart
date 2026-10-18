@@ -58,6 +58,9 @@ class SearchResultsView extends ConsumerWidget {
             builder: (context, catalog) => MusicTrackList(
               entries: matchesIn(catalog.entries, term, field: field),
               numbered: false,
+              // Another term or another field is another list: a selection
+              // made among one search's results ends with it.
+              selectionScope: ('search', term.trim(), field),
               emptyMessage: l10n.searchEmpty(term.trim()),
             ),
           ),

@@ -1186,5 +1186,44 @@
   "musicGroupActions": "More actions",
   "@musicGroupActions": {
     "description": "The tooltip of the button that opens the menu of actions for an album or an artist."
+  },
+  "musicSelectionCount": "{count, plural, =1{1 selected} other{{count} selected}}",
+  "@musicSelectionCount": {
+    "description": "How many songs are selected, shown in the bar above a song list while the owner is selecting songs in it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicSelectionAll": "Select all",
+  "@musicSelectionAll": {
+    "description": "The button in the selection bar above a song list that selects every song in the list."
+  },
+  "musicSelectionStop": "Stop selecting",
+  "@musicSelectionStop": {
+    "description": "The tooltip of the button in the selection bar above a song list that ends the selection."
+  },
+  "musicSelectionSelect": "Select {title}",
+  "@musicSelectionSelect": {
+    "description": "The accessibility label of the tick box that selects or deselects a song in a song list.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "musicSelectionEditTags": "{count, plural, =1{Edit tags of 1 song…} other{Edit tags of {count} songs…}}",
+  "@musicSelectionEditTags": {
+    "description": "The button and menu item that open the tag editor over the songs selected in a song list.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicSelectionLabel": "Selected songs",
+  "@musicSelectionLabel": {
+    "description": "What the tag editor calls the songs selected in a song list, in its subtitle."
   }
 }

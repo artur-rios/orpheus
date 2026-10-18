@@ -48,6 +48,7 @@ class MusicLibraryView extends ConsumerWidget {
             .playEverythingShuffled(label: l10n.audioShuffleAllLabel),
       ),
       shuffleTooltip: l10n.audioShuffleAll,
+      selectionPlace: 'music',
       // Only the list waits on the library: the controls and the breadcrumb
       // stay above its loading, failure and empty states.
       listFrame: (context, list) => AsyncStateView<MusicCatalog>(

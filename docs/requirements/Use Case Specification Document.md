@@ -18,7 +18,7 @@ done.
 | Actor | Description |
 | --- | --- |
 | **Owner** | The single human user, and the only actor with intent. Interacts with every use case below. |
-| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed (UC-34, UC-35, UC-37). |
+| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed (UC-34, UC-35, UC-37, UC-38). |
 | **Metadata service** | MusicBrainz, and the Cover Art Archive for covers. Asked only when the owner starts an autofill (UC-34), at most once a second, and sent nothing that identifies the owner. |
 | **Playback engine** | The libmpv-backed engine linked in process. Opens files, reports position and duration, and reports what it cannot decode. Never modifies a file. |
 | **Host platform** | Windows, Linux or Android. Grants or refuses read access, provides the folder picker, and — on Android alone — provides the media session and the foreground service. |
@@ -96,6 +96,7 @@ graph LR
     subgraph "Tag editing (TE)"
         UC35[UC-35: Edit a track's tags by hand]
         UC37[UC-37: Edit the tags of several tracks at once]
+        UC38[UC-38: Select several songs and edit their tags]
     end
 
     OWNER --> UC01
@@ -109,6 +110,7 @@ graph LR
     OWNER --> UC34
     OWNER --> UC35
     OWNER --> UC37
+    OWNER --> UC38
 ```
 
 ---
@@ -1297,7 +1299,7 @@ graph LR
 
 **Main Flow**
 
-1. The owner picks *Edit tags…* from a track's menu — its button, a right-click, or a long press.
+1. The owner picks *Edit tags…* from a track's menu — its ⋮ button or a right-click.
 2. The application reads the file's own tags and cover, and notes its size and time (`FR-TE-01`).
 3. The form shows title, artist, album artist, album, track number and total, disc number and total, year and genre as
    the file holds them, and its front cover with *Choose image…* and *Remove*.
@@ -1411,6 +1413,47 @@ graph LR
 | AF-07 | On Android, permission to change audio files is refused | As UC-34 AF-08; nothing is written. |
 | AF-08 | The owner cancels before saving | Nothing is written. |
 
+### UC-38: Select several songs and edit their tags
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-38 |
+| **Name** | Select several songs and edit their tags |
+| **Actors** | Owner, Local filesystem, Host platform |
+| **Description** | In a list of songs the owner picks several, and edits their tags in the one form of UC-37, however the songs are spread over albums and artists. |
+| **Preconditions** | A list of songs is on screen: all songs, the songs of an album or of a genre, or search results. |
+| **Postconditions** | Where the owner saved, the songs Orpheus could write hold exactly the fields the owner changed, as in UC-37, and the selection has ended. Where the owner stopped, cancelled or saved nothing, no tag has changed. Nothing has been played by the selecting. |
+| **Requirements** | FR-UX-11, FR-UX-12, FR-TE-09 |
+
+**Main Flow**
+
+1. The owner starts a selection on a song: touch and hold, Ctrl-click or Shift-click (`FR-UX-11`). The song is selected,
+   tick boxes take the place of the track numbers and covers, and a bar above the list shows *1 selected*, a way to
+   stop, and *Edit tags…*, with *Select all* while some songs are not picked.
+2. The owner adds songs: a tap, a click or a touch and hold on a song toggles it instead of playing it; Ctrl-click
+   toggles; Shift-click selects every song from the last one toggled to the one clicked. The bar shows the count.
+3. The owner picks *Edit tags…* in the bar, or right-clicks a selected song and picks *Edit tags of N songs…* in the
+   menu that opens (`FR-TE-09`).
+4. The form of UC-37 opens over exactly the selected songs, in the order of the list, and the owner goes on as there
+   (`FR-TE-05` … `FR-TE-08`). The selection stays while the form is open.
+5. The form closes with songs written; the selection ends, the list shows the new tags, and the library updates without
+   a scan.
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | One song is selected when the owner picks *Edit tags…* | The one-track form opens (UC-35). |
+| AF-02 | The owner presses Esc, or the ✕ in the bar, or the system Back on Android | The selection ends and nothing else changes; Back does this before it clears a search or goes up a level (`FR-UX-11`). |
+| AF-03 | The owner deselects the last selected song | The selection ends. |
+| AF-04 | The owner leaves the list — another destination, another album or genre, another search term or field | The selection ends; a selection belongs to one list only. |
+| AF-05 | A rescan after a save removes selected songs from the list | They drop out of the selection; if none remain, it ends. |
+| AF-06 | The owner right-clicks a song outside the selection | That song's own menu opens, as when nothing is selected. |
+| AF-07 | The owner presses a song's ⋮ button | That song's own menu opens, whether or not it is selected. |
+| AF-08 | The owner touches and holds an album or an artist | Its menu opens, as before (`FR-UX-12`). |
+| AF-09 | The owner cancels the form, or it writes no song | The selection stays, so the owner can adjust it. |
+| AF-10 | The owner taps a song when nothing is selected | It plays, as before. |
+
 ---
 
 ## 3. Use case — requirements traceability
@@ -1453,6 +1496,7 @@ graph LR
 | UC-35 Edit a track's tags by hand | FR-TE-01 … FR-TE-04 |
 | UC-36 Browse and play by genre | FR-CT-05, FR-CT-06, FR-CT-12 … FR-CT-19, FR-UX-01 |
 | UC-37 Edit the tags of several tracks at once | FR-TE-05 … FR-TE-08 |
+| UC-38 Select several songs and edit their tags | FR-UX-11, FR-UX-12, FR-TE-09 |
 
 ## 4. State diagrams
 

@@ -1591,6 +1591,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More actions'**
   String get musicGroupActions;
+
+  /// How many songs are selected, shown in the bar above a song list while the owner is selecting songs in it.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 selected} other{{count} selected}}'**
+  String musicSelectionCount(int count);
+
+  /// The button in the selection bar above a song list that selects every song in the list.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get musicSelectionAll;
+
+  /// The tooltip of the button in the selection bar above a song list that ends the selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop selecting'**
+  String get musicSelectionStop;
+
+  /// The accessibility label of the tick box that selects or deselects a song in a song list.
+  ///
+  /// In en, this message translates to:
+  /// **'Select {title}'**
+  String musicSelectionSelect(String title);
+
+  /// The button and menu item that open the tag editor over the songs selected in a song list.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Edit tags of 1 song…} other{Edit tags of {count} songs…}}'**
+  String musicSelectionEditTags(int count);
+
+  /// What the tag editor calls the songs selected in a song list, in its subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected songs'**
+  String get musicSelectionLabel;
 }
 
 class _AppLocalizationsDelegate
