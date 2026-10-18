@@ -7,6 +7,7 @@ import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 import 'package:orpheus/features/autofill/domain/autofill_field.dart';
 import 'package:orpheus/features/autofill/domain/tag_writer.dart';
 import 'package:orpheus/features/library/domain/audio_file.dart';
+import 'package:orpheus/features/library/domain/library_access.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
@@ -330,6 +331,33 @@ void main() {
 
       expect(find.byType(EditManyTagsDialog), findsNothing);
       expect(find.text('Tags saved to 2 songs'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'GivenWriteAccessRefusedForGood_WhenSaved_ThenTheFormSaysSoAndOffersTheSettings',
+    (tester) async {
+      final harness = harnessFor();
+      harness.access.writeDecision = LibraryAccessDecision.deniedPermanently;
+      await open(tester, harness);
+
+      await typeAGenreAndSave(tester);
+      await tester.pumpAndSettle();
+
+      expect(harness.tagWriter.writes, isEmpty);
+      expect(
+        find.text(
+          'Orpheus needs permission to change your music files. '
+          'Nothing was written.',
+        ),
+        findsOneWidget,
+      );
+      expect(saveOf(tester), isNotNull);
+
+      await tester.tap(find.text('Open settings'));
+      await tester.pump();
+
+      expect(harness.access.openedSettings, isTrue);
     },
   );
 

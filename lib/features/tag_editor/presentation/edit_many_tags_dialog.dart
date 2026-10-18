@@ -9,15 +9,14 @@ import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/breakpoints.dart';
 import '../../autofill/domain/autofill_field.dart';
-import '../../autofill/domain/tag_writer.dart';
 import '../../autofill/presentation/autofill_field_names.dart';
-import '../../library/domain/library_access.dart';
 import '../../library/domain/music_entry.dart';
 import '../../playback/presentation/music_display_name.dart';
 import '../application/many_tag_edit_controller.dart';
 import '../application/tag_edit_controller.dart' show UnwritableReason;
 import '../domain/shared_tags.dart';
 import '../domain/tag_edits.dart';
+import 'tag_edit_messages.dart';
 
 /// The form the tags several tracks share are edited in at once — an album's,
 /// or an artist's.
@@ -318,7 +317,7 @@ class _EditManyTagsDialogState extends ConsumerState<EditManyTagsDialog> {
           for (final failure in state.failed)
             song(
               failure.entry,
-              _outcomeMessage(l10n, failure.outcome),
+              writeOutcomeMessage(l10n, failure.outcome),
               style: error,
             ),
           for (final left in state.totalsLeft) ...[
@@ -330,19 +329,7 @@ class _EditManyTagsDialogState extends ConsumerState<EditManyTagsDialog> {
         ],
         if (state.refusal case final refusal?) ...[
           gap,
-          Text(l10n.autofillAccessRefused, style: error),
-          if (refusal == LibraryAccessDecision.deniedPermanently)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: () => unawaited(
-                  ref
-                      .read(libraryAccessControllerProvider.notifier)
-                      .openSettings(),
-                ),
-                child: Text(l10n.autofillOpenSettings),
-              ),
-            ),
+          TagEditAccessRefusal(refusal: refusal),
         ],
       ],
     );
@@ -487,14 +474,4 @@ class _EditManyTagsDialogState extends ConsumerState<EditManyTagsDialog> {
         ];
     }
   }
-
-  String _outcomeMessage(AppLocalizations l10n, WriteOutcome outcome) =>
-      switch (outcome) {
-        WriteOutcome.changedSinceRead => l10n.autofillOutcomeChanged,
-        WriteOutcome.inUse => l10n.autofillOutcomeInUse,
-        WriteOutcome.denied => l10n.autofillOutcomeDenied,
-        // A kind of file Orpheus writes, whose tag the editor refused.
-        WriteOutcome.unsupported => l10n.autofillUnsafeTags,
-        _ => l10n.autofillOutcomeFailed,
-      };
 }
