@@ -78,6 +78,26 @@
       }
     }
   },
+  "searchFieldAll": "Tudo",
+  "@searchFieldAll": {
+    "description": "Search selector: match the term against everything."
+  },
+  "searchFieldSongs": "Faixas",
+  "@searchFieldSongs": {
+    "description": "Search selector: match the term against song titles only."
+  },
+  "searchFieldArtists": "Artistas",
+  "@searchFieldArtists": {
+    "description": "Search selector: match the term against artists only."
+  },
+  "searchFieldAlbums": "Álbuns",
+  "@searchFieldAlbums": {
+    "description": "Search selector: match the term against albums only."
+  },
+  "searchFieldGenres": "Gêneros",
+  "@searchFieldGenres": {
+    "description": "Search selector: match the term against genres only."
+  },
   "settingsTitle": "Preferências",
   "@settingsTitle": {
     "description": "The title of the preferences dialog."

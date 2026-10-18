@@ -65,6 +65,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get searchFieldAll => 'All';
+
+  @override
+  String get searchFieldSongs => 'Songs';
+
+  @override
+  String get searchFieldArtists => 'Artists';
+
+  @override
+  String get searchFieldAlbums => 'Albums';
+
+  @override
+  String get searchFieldGenres => 'Genres';
+
+  @override
   String get settingsTitle => 'Preferences';
 
   @override

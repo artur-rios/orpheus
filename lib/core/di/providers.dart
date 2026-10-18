@@ -425,6 +425,12 @@ final searchTermProvider = NotifierProvider<SearchTermController, String>(
   SearchTermController.new,
 );
 
+/// What the search term is matched against.
+final searchFieldProvider =
+    NotifierProvider<SearchFieldController, SearchField>(
+      SearchFieldController.new,
+    );
+
 /// The preferences.
 final preferencesControllerProvider =
     NotifierProvider<PreferencesController, PreferencesState>(

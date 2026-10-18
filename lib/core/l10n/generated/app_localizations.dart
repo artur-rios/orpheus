@@ -200,6 +200,36 @@ abstract class AppLocalizations {
   /// **'Nothing in the library matches “{term}”.'**
   String searchEmpty(String term);
 
+  /// Search selector: match the term against everything.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get searchFieldAll;
+
+  /// Search selector: match the term against song titles only.
+  ///
+  /// In en, this message translates to:
+  /// **'Songs'**
+  String get searchFieldSongs;
+
+  /// Search selector: match the term against artists only.
+  ///
+  /// In en, this message translates to:
+  /// **'Artists'**
+  String get searchFieldArtists;
+
+  /// Search selector: match the term against albums only.
+  ///
+  /// In en, this message translates to:
+  /// **'Albums'**
+  String get searchFieldAlbums;
+
+  /// Search selector: match the term against genres only.
+  ///
+  /// In en, this message translates to:
+  /// **'Genres'**
+  String get searchFieldGenres;
+
   /// The title of the preferences dialog.
   ///
   /// In en, this message translates to:

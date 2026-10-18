@@ -65,6 +65,21 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get searchFieldAll => 'Tudo';
+
+  @override
+  String get searchFieldSongs => 'Faixas';
+
+  @override
+  String get searchFieldArtists => 'Artistas';
+
+  @override
+  String get searchFieldAlbums => 'Álbuns';
+
+  @override
+  String get searchFieldGenres => 'Gêneros';
+
+  @override
   String get settingsTitle => 'Preferências';
 
   @override

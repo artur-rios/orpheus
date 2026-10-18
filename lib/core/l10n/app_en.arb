@@ -78,6 +78,26 @@
       }
     }
   },
+  "searchFieldAll": "All",
+  "@searchFieldAll": {
+    "description": "Search selector: match the term against everything."
+  },
+  "searchFieldSongs": "Songs",
+  "@searchFieldSongs": {
+    "description": "Search selector: match the term against song titles only."
+  },
+  "searchFieldArtists": "Artists",
+  "@searchFieldArtists": {
+    "description": "Search selector: match the term against artists only."
+  },
+  "searchFieldAlbums": "Albums",
+  "@searchFieldAlbums": {
+    "description": "Search selector: match the term against albums only."
+  },
+  "searchFieldGenres": "Genres",
+  "@searchFieldGenres": {
+    "description": "Search selector: match the term against genres only."
+  },
   "settingsTitle": "Preferences",
   "@settingsTitle": {
     "description": "The title of the preferences dialog."
