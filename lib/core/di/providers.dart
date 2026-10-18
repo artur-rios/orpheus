@@ -43,6 +43,7 @@ import '../../features/lyrics/domain/lyrics_source.dart';
 import '../../features/lyrics/domain/remote_lyrics_source.dart';
 import '../../features/playback/application/album_art_controller.dart';
 import '../../features/playback/application/audio_playback_controller.dart';
+import '../../features/playback/application/genre_browse_controller.dart';
 import '../../features/playback/application/media_session_controller.dart';
 import '../../features/playback/application/music_browse_controller.dart';
 import '../../features/playback/application/music_layout_controller.dart';
@@ -342,6 +343,12 @@ final musicBrowseControllerProvider =
       MusicBrowseController.new,
     );
 
+/// Where in Genres the owner is, apart from where they are in Music.
+final genreBrowseControllerProvider =
+    NotifierProvider<GenreBrowseController, GenreBrowseState>(
+      GenreBrowseController.new,
+    );
+
 /// Rows or tiles.
 final musicLayoutControllerProvider =
     NotifierProvider<MusicLayoutController, MusicLayout>(
@@ -417,6 +424,12 @@ final shellControllerProvider =
 final searchTermProvider = NotifierProvider<SearchTermController, String>(
   SearchTermController.new,
 );
+
+/// What the search term is matched against.
+final searchFieldProvider =
+    NotifierProvider<SearchFieldController, SearchField>(
+      SearchFieldController.new,
+    );
 
 /// The preferences.
 final preferencesControllerProvider =

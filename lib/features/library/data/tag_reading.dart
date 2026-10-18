@@ -3,7 +3,10 @@ import 'dart:typed_data';
 
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 
+import '../domain/genres.dart';
 import '../domain/track_metadata.dart';
+import 'id3_genres.dart';
+import 'id3v2_frames.dart';
 
 /// What one file's tags said, and the picture they carried.
 class ReadTags {
@@ -35,7 +38,7 @@ ReadTags readTags(File file, {bool withPicture = true}) {
   final tags = readAllMetadata(file, getImage: withPicture);
 
   return switch (tags) {
-    Mp3Metadata() => _fromMp3(tags),
+    Mp3Metadata() => _fromMp3(tags, file),
     Mp4Metadata() => _fromMp4(tags),
     VorbisMetadata() => _fromVorbis(tags),
     RiffMetadata() => _fromRiff(tags),
@@ -43,7 +46,7 @@ ReadTags readTags(File file, {bool withPicture = true}) {
   };
 }
 
-ReadTags _fromMp3(Mp3Metadata tags) => ReadTags(
+ReadTags _fromMp3(Mp3Metadata tags, File file) => ReadTags(
   metadata: TrackMetadata(
     title: tags.songName,
     artist: tags.leadPerformer,
@@ -52,7 +55,7 @@ ReadTags _fromMp3(Mp3Metadata tags) => ReadTags(
     // record.
     albumArtist: tags.bandOrOrchestra,
     album: tags.album,
-    genre: tags.genres.firstOrNull,
+    genres: splitGenres(_mp3Genres(tags, file)),
     track: tags.trackNumber,
     trackTotal: tags.trackTotal,
     disc: tags.discNumber ?? _discOfPartOfSet(tags.partOfSet),
@@ -61,6 +64,27 @@ ReadTags _fromMp3(Mp3Metadata tags) => ReadTags(
   ),
   picture: _frontCover(tags.pictures),
 );
+
+/// The genre values of an MP3, before they are split.
+///
+/// Read from the ID3v2 tag's own genre frame where there is one, because the
+/// package keeps only the first value of a v2.4 frame and cuts *Hip-Hop/Rap* in
+/// two at its slash. A file with no ID3v2 genre frame — an ID3v1-only file, for
+/// one — has the package's answer instead; a frame that exists and resolves to
+/// nothing is an answer too, and is not second-guessed.
+Iterable<String?> _mp3Genres(Mp3Metadata tags, File file) {
+  try {
+    final tag = readId3v2Tag(file);
+    final values = tag == null ? null : id3GenreValues(tag);
+    if (values != null) return values;
+  } on Object {
+    // Broad by intent: a tag head that cannot be read again is not worth
+    // losing the whole file's tags over, and the package has already read
+    // everything else from it.
+  }
+
+  return tags.genres;
+}
 
 /// MP4 carries a record's own artist in `aART`, and this reader folds it into
 /// the same `artist` field as `©ART` rather than surfacing it separately —
@@ -71,7 +95,7 @@ ReadTags _fromMp4(Mp4Metadata tags) => ReadTags(
     title: tags.title,
     artist: tags.artist,
     album: tags.album,
-    genre: tags.genre,
+    genres: splitGenres([tags.genre]),
     track: tags.trackNumber,
     trackTotal: tags.totalTracks,
     disc: tags.discNumber,
@@ -96,7 +120,7 @@ ReadTags _fromVorbis(VorbisMetadata tags) => ReadTags(
     // and a blank album artist is no album artist at all.
     albumArtist: _firstNonBlank(tags.albumArtist),
     album: tags.album.firstOrNull,
-    genre: tags.genres.firstOrNull,
+    genres: splitGenres(tags.genres),
     track: tags.trackNumber.firstOrNull,
     trackTotal: tags.trackTotal,
     disc: tags.discNumber,
@@ -111,7 +135,7 @@ ReadTags _fromRiff(RiffMetadata tags) => ReadTags(
     title: tags.title,
     artist: tags.artist,
     album: tags.album,
-    genre: tags.genre,
+    genres: splitGenres([tags.genre]),
     track: tags.trackNumber,
     year: tags.year?.year,
     duration: tags.duration,
@@ -125,7 +149,7 @@ ReadTags _fromApe(ApeMetadata tags) => ReadTags(
     artist: tags.artist,
     albumArtist: tags.albumArtist,
     album: tags.album,
-    genre: tags.genres.firstOrNull,
+    genres: splitGenres(tags.genres),
     track: tags.trackNumber,
     trackTotal: tags.trackTotal,
     disc: tags.discNumber,

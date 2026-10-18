@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:orpheus/app.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 import 'package:orpheus/features/library/presentation/library_folders_view.dart';
+import 'package:orpheus/features/playback/presentation/genres_view.dart';
 import 'package:orpheus/features/playback/presentation/music_library_view.dart';
 import 'package:orpheus/features/playback/presentation/queue_view.dart';
 import 'package:orpheus/features/playback/presentation/search_results_view.dart';
@@ -146,6 +149,85 @@ void main() {
 
       expect(find.byType(LibraryFoldersView), findsOneWidget);
       expect(find.byType(SearchResultsView), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'GivenTheShell_WhenItIsDrawn_ThenGenresIsInTheRailAndInThePhoneBar',
+    (tester) async {
+      final harness = Harness(library: library);
+
+      await tester.pumpHarness(harness, const ShellScreen());
+      final inRail = find.descendant(
+        of: find.byType(ShellNavigationRail),
+        matching: find.byIcon(Icons.category_outlined),
+      );
+      expect(inRail, findsOneWidget);
+      // Between Music and Queue: the library's second way in, beside the
+      // first.
+      expect(ShellDestination.values.indexOf(ShellDestination.genres), 1);
+
+      await tester.tap(inRail);
+      await tester.pumpAndSettle();
+      expect(find.byType(GenresView), findsOneWidget);
+
+      await tester.pumpHarness(
+        harness,
+        const ShellScreen(),
+        window: phoneWindow,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(ShellNavigationBar),
+          matching: find.text('Genres'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'GivenARecordInsideAGenre_WhenTheSystemBackIsUsed_ThenItStepsOutOneLevel',
+    (tester) async {
+      final harness = Harness(
+        library: [
+          entry(
+            id: '1',
+            title: 'Airbag',
+            artist: 'Radiohead',
+            album: 'OK Computer',
+            genres: const ['Rock'],
+          ),
+        ],
+      );
+      tester.view.physicalSize = desktopWindow;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: harness.container,
+          child: const OrpheusApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      harness
+          .read(shellControllerProvider.notifier)
+          .go(ShellDestination.genres);
+      harness.read(genreBrowseControllerProvider.notifier)
+        ..openGenre('rock')
+        ..openArtist('Radiohead')
+        ..openAlbum('OK Computer', 'Radiohead');
+      await tester.pumpAndSettle();
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      final genre = harness.read(genreBrowseControllerProvider);
+      expect(genre.inGenre, isTrue);
+      expect(genre.music.inAlbum, isFalse);
+      expect(genre.music.inArtist, isTrue);
+      // The Music tab was never moved, and back did not try to move it.
+      expect(harness.read(musicBrowseControllerProvider).inArtist, isFalse);
     },
   );
 }

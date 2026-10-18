@@ -372,6 +372,396 @@ void main() {
     );
   });
 
+  group('genres', () {
+    test(
+      'GivenGenresInMixedCase_WhenGenresAreListed_ThenTheyAreOneGenreNamedByTheMostCommonSpelling',
+      () {
+        final library = [
+          entry(id: '1', genres: ['rock']),
+          entry(id: '2', genres: ['Rock']),
+          entry(id: '3', genres: ['Rock']),
+        ];
+
+        final groups = genresIn(library);
+
+        expect(groups.map((g) => (g.key, g.name)), [('rock', 'Rock')]);
+        expect(groups.single.tracks.length, 3);
+      },
+    );
+
+    test(
+      'GivenATieBetweenSpellings_WhenGenresAreListed_ThenTheAlphabeticallyFirstNamesIt',
+      () {
+        // byName ignores case, so the tie falls through to plain compareTo,
+        // which puts capitals first — in either order the files were read.
+        final library = [
+          entry(id: '1', genres: ['rock']),
+          entry(id: '2', genres: ['Rock']),
+        ];
+
+        expect(genreNamesIn(library), {'rock': 'Rock'});
+        expect(genreNamesIn(library.reversed.toList()), {'rock': 'Rock'});
+        expect(
+          genreNamesIn([
+            entry(id: '1', genres: ['Rock']),
+            entry(id: '2', genres: ['ROCK']),
+          ]),
+          {'rock': 'ROCK'},
+        );
+      },
+    );
+
+    test(
+      'GivenSpellingsWithSurroundingSpaces_WhenGenresAreNamed_ThenTheNameIsTrimmed',
+      () {
+        expect(
+          genreNamesIn([
+            entry(id: '1', genres: [' Rock ']),
+          ]),
+          {'rock': 'Rock'},
+        );
+      },
+    );
+
+    test(
+      'GivenATrackHoldingTwoSpellings_WhenGenresAreNamed_ThenItVotesOnceForTheGenre',
+      () {
+        // Counted per spelling, 'rock' would win three to two; each track
+        // votes once, with the spelling it lists first: Rock, rock, Rock.
+        final library = [
+          entry(id: '1', genres: ['Rock', 'rock']),
+          entry(id: '2', genres: ['rock']),
+          entry(id: '3', genres: ['Rock', 'rock']),
+        ];
+
+        expect(genreNamesIn(library), {'rock': 'Rock'});
+      },
+    );
+
+    test(
+      'GivenGenresAndUntaggedTracks_WhenGenresAreListed_ThenTheyAreAlphabeticalWithNoGenreLast',
+      () {
+        final library = [
+          entry(id: '1', genres: ['Rock']),
+          entry(id: '2'),
+          entry(id: '3', genres: ['jazz']),
+        ];
+
+        final groups = genresIn(library);
+
+        expect(groups.map((g) => g.name), ['jazz', 'Rock', null]);
+        expect(groups.last.key, isNull);
+        expect(groups.last.tracks.map((e) => e.file.path), [
+          '/library/zzz-2.flac',
+        ]);
+      },
+    );
+
+    test(
+      'GivenEveryTrackHasAGenre_WhenGenresAreListed_ThenThereIsNoNoGenreGroup',
+      () {
+        final library = [
+          entry(id: '1', genres: ['Rock']),
+          entry(id: '2', genres: ['Pop']),
+        ];
+
+        expect(genresIn(library).map((g) => g.name), ['Pop', 'Rock']);
+      },
+    );
+
+    test('GivenAnEmptyLibrary_WhenGenresAreListed_ThenThereAreNone', () {
+      expect(genresIn(const []), isEmpty);
+    });
+
+    test(
+      'GivenATrackTaggedRockAndPop_WhenGenresAreListed_ThenItIsUnderBoth',
+      () {
+        final both = entry(id: '1', genres: ['Rock', 'Pop']);
+
+        final groups = genresIn([both]);
+
+        expect(groups.map((g) => g.name), ['Pop', 'Rock']);
+        expect(groups[0].tracks, [both]);
+        expect(groups[1].tracks, [both]);
+      },
+    );
+
+    test(
+      'GivenAMixedLibrary_WhenGenresAreListed_ThenEachGroupHoldsExactlyWhatTracksOfGenreGives',
+      () {
+        // genresIn buckets the library in one pass rather than asking
+        // tracksOfGenre once per genre; this is what keeps the two the same
+        // answer — the same groups, each with the same tracks in the same
+        // order.
+        final library = [
+          entry(
+            id: '01',
+            artist: 'Radiohead',
+            album: 'OK Computer',
+            track: 2,
+            genres: ['Rock', 'Alternative'],
+          ),
+          entry(
+            id: '02',
+            artist: 'Radiohead',
+            album: 'OK Computer',
+            track: 1,
+            genres: ['rock'],
+          ),
+          entry(id: '03', artist: 'Björk', album: 'Post', genres: ['Pop']),
+          entry(
+            id: '04',
+            artist: 'radiohead',
+            album: 'Kid A',
+            track: 1,
+            genres: ['Rock', 'ROCK', 'Electronic'],
+          ),
+          entry(
+            id: '05',
+            artist: 'Air',
+            title: 'Loose',
+            genres: ['electronic'],
+          ),
+          entry(id: '06', artist: 'Air', album: 'Moon Safari'),
+          entry(id: '07', title: 'Untagged'),
+          entry(
+            id: '08',
+            artist: 'Massive Attack',
+            album: 'Mezzanine',
+            disc: 2,
+            track: 1,
+            genres: ['Trip-Hop', 'Electronic'],
+          ),
+          entry(
+            id: '09',
+            artist: 'Massive Attack',
+            album: 'Mezzanine',
+            disc: 1,
+            track: 3,
+            genres: [' Trip-Hop '],
+          ),
+          entry(id: '10', artist: 'Blank', album: 'Nothing', genres: ['']),
+          entry(
+            id: '11',
+            artist: 'Air',
+            album: 'Talkie Walkie',
+            genres: ['Pop'],
+          ),
+        ];
+        final grouped = albumArtistsAcross(library);
+
+        final groups = genresIn(grouped);
+
+        expect(groups.map((g) => g.key), [
+          'alternative',
+          'electronic',
+          'pop',
+          'rock',
+          'trip-hop',
+          null,
+        ]);
+        for (final group in groups) {
+          expect(
+            group.tracks,
+            orderedEquals(tracksOfGenre(group.key, grouped)),
+            reason: 'genre ${group.key}',
+          );
+        }
+      },
+    );
+
+    test('GivenAKey_WhenATrackIsMatched_ThenItIsComparedByGenreKey', () {
+      final track = entry(id: '1', genres: [' Rock ']);
+
+      expect(hasGenre(track, 'rock'), isTrue);
+      expect(hasGenre(track, 'pop'), isFalse);
+      expect(hasGenre(track, null), isFalse);
+      expect(hasGenre(entry(id: '2'), null), isTrue);
+    });
+
+    test(
+      'GivenTracksWithAndWithoutLengths_WhenAGenreIsMeasured_ThenItFollowsTheGroupRule',
+      () {
+        final measured = genresIn([
+          entry(
+            id: '1',
+            genres: ['Rock'],
+            duration: const Duration(minutes: 3),
+          ),
+          entry(
+            id: '2',
+            genres: ['Rock'],
+            duration: const Duration(minutes: 4),
+          ),
+        ]);
+        final unmeasured = genresIn([
+          entry(
+            id: '1',
+            genres: ['Rock'],
+            duration: const Duration(minutes: 3),
+          ),
+          entry(id: '2', genres: ['Rock']),
+        ]);
+
+        expect(measured.single.duration, const Duration(minutes: 7));
+        expect(unmeasured.single.duration, isNull);
+      },
+    );
+
+    group('a record with one rock track of ten', () {
+      final record = [
+        for (var i = 1; i <= 10; i++)
+          entry(
+            id: 'r$i',
+            title: 'Track $i',
+            albumArtist: 'Band',
+            album: 'LP',
+            track: i,
+            genres: [if (i == 4) 'Rock' else 'Folk'],
+          ),
+      ];
+      final other = entry(
+        id: 'o',
+        albumArtist: 'Other',
+        album: 'Else',
+        track: 1,
+        genres: ['Folk'],
+      );
+      final library = [other, ...record];
+
+      test(
+        'GivenARecordWithOneRockTrackOfTen_WhenRocksLibraryIsBuilt_ThenTheWholeRecordIsInIt',
+        () {
+          final built = genreLibrary('rock', library);
+
+          expect(built.length, 10);
+          expect(built, record);
+        },
+      );
+
+      test(
+        'GivenARecordWithOneRockTrackOfTen_WhenRocksTracksAreTaken_ThenOnlyThatTrackIsAmongThem',
+        () {
+          expect(tracksOfGenre('rock', library), [record[3]]);
+        },
+      );
+    });
+
+    test(
+      'GivenTracksOfThreeRecords_WhenAGenresTracksAreTaken_ThenTheyComeByArtistThenRecordThenTrack',
+      () {
+        final zebra = entry(
+          id: 'z',
+          albumArtist: 'Zebra',
+          album: 'A',
+          track: 1,
+          genres: ['Rock'],
+        );
+        final bandTwo = entry(
+          id: 'b2',
+          albumArtist: 'Band',
+          album: 'Zed',
+          track: 2,
+          genres: ['Rock'],
+        );
+        final bandOne = entry(
+          id: 'b1',
+          albumArtist: 'Band',
+          album: 'Zed',
+          track: 1,
+          genres: ['Rock'],
+        );
+        final bandFirst = entry(
+          id: 'a',
+          albumArtist: 'Band',
+          album: 'aaa',
+          track: 9,
+          genres: ['Rock'],
+        );
+
+        expect(tracksOfGenre('rock', [zebra, bandTwo, bandOne, bandFirst]), [
+          bandFirst,
+          bandOne,
+          bandTwo,
+          zebra,
+        ]);
+      },
+    );
+
+    test(
+      'GivenAnArtistsLooseTracks_WhenPopsLibraryIsBuilt_ThenOnlyTheirPopTracksAreInIt',
+      () {
+        final pop = entry(id: '2', albumArtist: 'Solo', genres: ['Pop']);
+        final library = [
+          entry(id: '1', albumArtist: 'Solo', genres: ['Folk']),
+          pop,
+          entry(id: '3', albumArtist: 'Solo'),
+        ];
+
+        expect(genreLibrary('pop', library), [pop]);
+      },
+    );
+
+    test(
+      'GivenARecordHalfUntagged_WhenNoGenresLibraryIsBuilt_ThenTheWholeRecordIsInIt',
+      () {
+        final record = [
+          entry(id: '1', albumArtist: 'Band', album: 'LP', track: 1),
+          entry(
+            id: '2',
+            albumArtist: 'Band',
+            album: 'LP',
+            track: 2,
+            genres: ['Rock'],
+          ),
+        ];
+
+        expect(genreLibrary(null, record), record);
+      },
+    );
+
+    test(
+      'GivenTwoArtistsWhoNamedARecordTheSameThing_WhenOneIsRock_ThenTheOtherIsNotPulledIn',
+      () {
+        final rock = entry(
+          id: '1',
+          albumArtist: 'A',
+          album: 'Hits',
+          track: 1,
+          genres: ['Rock'],
+        );
+        final folk = entry(
+          id: '2',
+          albumArtist: 'B',
+          album: 'Hits',
+          track: 1,
+          genres: ['Folk'],
+        );
+
+        expect(genreLibrary('rock', [folk, rock]), [rock]);
+      },
+    );
+
+    test(
+      'GivenNoGenre_WhenItsTracksAreTaken_ThenOnlyTracksWithNoGenreComeBack',
+      () {
+        final bare = entry(id: '1', albumArtist: 'Band', album: 'LP', track: 1);
+        final library = [
+          bare,
+          entry(
+            id: '2',
+            albumArtist: 'Band',
+            album: 'LP',
+            track: 2,
+            genres: ['Rock'],
+          ),
+        ];
+
+        expect(tracksOfGenre(null, library), [bare]);
+      },
+    );
+  });
+
   group('trimmedOrNull', () {
     test('GivenATagOfSpaces_WhenItIsTrimmed_ThenItNamesNothing', () {
       expect(trimmedOrNull('   '), isNull);

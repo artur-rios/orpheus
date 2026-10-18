@@ -178,5 +178,31 @@ void main() {
         expect(stateOf(harness).inArtist, isFalse);
       },
     );
+
+    test(
+      'GivenAnOpenRecordRenamedByARetag_WhenTheLibraryIsFollowed_ThenTheStateFollowsItsFiles',
+      () {
+        // The rules on their own, with no controller around them: a screen
+        // that keeps its own place — under a genre, say — follows a re-tag by
+        // the same rules the Music tab does.
+        const openRecordState = MusicBrowseState(
+          artist: 'Radiohed',
+          album: 'OK',
+          inArtist: true,
+          inAlbum: true,
+        );
+
+        final next = followLibrary(
+          openRecordState,
+          before: albumArtistsAcross(okComputer),
+          after: retagged('Radiohead', 'New Name').entries,
+        );
+
+        expect(next.album, 'New Name');
+        expect(next.artist, 'Radiohead');
+        expect(next.inAlbum, isTrue);
+        expect(next.inArtist, isTrue);
+      },
+    );
   });
 }

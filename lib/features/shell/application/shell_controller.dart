@@ -27,6 +27,43 @@ class SearchTermController extends Notifier<String> {
   void clear() => state = '';
 }
 
+/// What a search term is matched against.
+///
+/// A name alone is ambiguous in a library: *Heaven* is a song, an album and a
+/// genre's worth of bands, and the owner who wants one of them should not have
+/// to wade through the others. [all] is the default because it is what a search
+/// without a choice has always meant.
+enum SearchField {
+  /// Every field below.
+  all,
+
+  /// The title.
+  songs,
+
+  /// The artist and the album artist.
+  artists,
+
+  /// The album.
+  albums,
+
+  /// Each genre a track carries.
+  genres,
+}
+
+/// Which [SearchField] the search matches against.
+///
+/// Held beside the term rather than in the results view because the view is
+/// replaced whenever the term is cleared: a choice kept in it would be forgotten
+/// between one search and the next. It is not persisted — every launch starts
+/// back on *All*, the widest net.
+class SearchFieldController extends Notifier<SearchField> {
+  @override
+  SearchField build() => SearchField.all;
+
+  /// Narrows the search to [field].
+  void choose(SearchField field) => state = field;
+}
+
 /// Whether [term] is worth searching for.
 ///
 /// A single character matches most of a library, which is a screenful of

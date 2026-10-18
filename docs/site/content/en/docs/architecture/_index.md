@@ -60,6 +60,7 @@ classDiagram
     class MusicCatalog {
         +List~MusicEntry~ entries
         +DateTime? scannedAt
+        +bool isStale
         +Map~String, MusicEntry~ byPath
         +bool isEmpty
         +entryFor(AudioFile) MusicEntry
@@ -86,7 +87,7 @@ classDiagram
         +String? artist
         +String? albumArtist
         +String? album
-        +String? genre
+        +List~String~ genres
         +int? track
         +int? disc
         +int? year
@@ -99,12 +100,17 @@ classDiagram
     MusicEntry "1" *-- "1" TrackMetadata
 ```
 
-Two things in that model are worth explaining, because both exist to fix a
+Three things in that model are worth explaining, because each exists to fix a
 real bug rather than to be tidy.
 
 `byPath` is built once and lazily. The player asks "what is this file?" for
 every track it opens and every frame the bar draws, and a linear search of the
 whole library per frame is what that becomes without an index.
+
+`isStale` marks a catalog read back from a document another version wrote. It
+is refused rather than half-read, so it holds nothing, and startup scans it
+whether or not the owner asked for a scan at every launch — otherwise an upgrade
+that changed the document would leave that owner with an empty library.
 
 `albumArtistOfRecord` is how a compilation stays one record. Half-tagged
 libraries are the norm, so where a file carries no album-artist tag the answer

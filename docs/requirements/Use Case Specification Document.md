@@ -47,6 +47,7 @@ graph LR
         UC10[UC-10: Browse every song]
         UC11[UC-11: Switch the layout]
         UC12[UC-12: Search the library]
+        UC36[UC-36: Browse and play by genre]
     end
 
     subgraph "Playback (PL)"
@@ -460,7 +461,7 @@ graph LR
 | **ID** | UC-12 |
 | **Name** | Search the library |
 | **Actors** | Owner |
-| **Description** | The owner finds tracks, artists and records by typing part of a name. |
+| **Description** | The owner finds tracks by typing part of a title, an artist, a record or a genre, and can narrow the search to one of those. |
 | **Preconditions** | The catalog holds at least one entry. |
 | **Postconditions** | None. |
 | **Requirements** | FR-CT-07, FR-CT-08, FR-CT-09 |
@@ -470,10 +471,21 @@ graph LR
 1. The owner types into the search field — present in the bar on a desktop, and
    behind a button on a phone, where a field beside a title would be too small
    to read.
-2. The application matches titles, artists and records together.
-3. Results are ranked so that a match at the start of a name outranks one within
-   it, and are grouped by what they are.
-4. The owner selects a result and plays it, or drills into it.
+2. Under the results heading a selector offers *All*, *Songs*, *Artists*,
+   *Albums* and *Genres*; *All* is chosen at first (`FR-CT-07`).
+3. The application matches the term against what the choice names: the title
+   for *Songs*; the artist and the album artist for *Artists*; the record for
+   *Albums*; any of a track's genres for *Genres*; and all of them for *All*,
+   where a genre match ranks after a record match.
+4. Results are ranked so that a match at the start of a name outranks one within
+   it (`FR-CT-08`), and are listed as tracks, whichever choice was made. A track
+   matches a choice only through the fields that choice names: under *Songs*, a
+   track tagged *Rock* is not a match for *Rock* unless its title is.
+5. The owner selects a result and plays it, or drills into it.
+6. The owner may change the choice at any time; the results are matched again,
+   and the choice is kept across searches, clearing and the destinations of the
+   shell for as long as the application runs, and is *All* again at the next
+   launch.
 
 **Alternative Flows**
 
@@ -483,6 +495,7 @@ graph LR
 | AF-02 | Nothing matches | The application says so, quoting what was typed. |
 | AF-03 | The owner clears the term | The results are dismissed and the listing behind returns, at the level they left it. |
 | AF-04 | The system back gesture is used while results are showing | It clears the search first, before it goes back a level, because the results are what is covering the screen. |
+| AF-05 | A narrowed search matches nothing | The application says so, quoting what was typed, and the selector stays where it was so the owner can widen the search to *All*. |
 
 ---
 
@@ -971,7 +984,10 @@ graph LR
 3. The screen shows the total number of plays and the number of distinct tracks
    they came from.
 4. Under them it shows four rankings — most played tracks, artists, records and
-   genres — most played first, ties ordered by name so the list is stable.
+   genres — most played first, ties ordered by name so the list is stable. A
+   track with several genres counts toward each of them, so a genre's share of
+   the plays is taken of all plays and the shares may add up to more than 100%
+   (`FR-ST-09`).
 5. The owner presses *read again* to read it afresh.
 
 **Alternative Flows**
@@ -980,7 +996,7 @@ graph LR
 | --- | --- | --- |
 | AF-01 | Nothing has been played | The screen states what makes a track count, rather than only that there is nothing (FR-ST-15). |
 | AF-02 | A ranking has no rows | Its heading is drawn with a line saying it is empty. Dropping the heading would say the application forgot about genres. |
-| AF-03 | A played track carries no artist, record or genre tag | It counts in the totals, ranks in none of those three, and a note explains the difference (`BR-24`). |
+| AF-03 | A played track carries no artist, record or genre tag | It counts in the totals, ranks in none of those three, and a note explains the difference (`BR-24`). A track has no genre only when it has none at all. |
 | AF-04 | A played track carries no title | It is named by its file, which is the second documented exception to `BR-05`. |
 | AF-05 | A played file is no longer in the catalog | It still counts and is named by its file; there are no tags left to rank it by. |
 | AF-06 | The library cannot be read | The totals and the track ranking are still shown, named by file. Statistics do not fail because the library did. |
@@ -999,14 +1015,14 @@ graph LR
 | **ID** | UC-28 |
 | **Name** | Navigate the application shell |
 | **Actors** | Owner |
-| **Description** | The owner moves between the three areas of the application. |
+| **Description** | The owner moves between the four areas of the application. |
 | **Preconditions** | None. |
 | **Postconditions** | None. |
 | **Requirements** | FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-07 |
 
 **Main Flow**
 
-1. The shell presents three destinations — music, queue, folders.
+1. The shell presents four destinations — music, genres, queue, folders.
 2. Where the window is wide enough they are a rail down the side; where it is
    not they are a bar across the bottom.
 3. The owner selects one and the content area changes.
@@ -1017,13 +1033,15 @@ graph LR
 | ID | Condition | Outcome |
 | --- | --- | --- |
 | AF-01 | The window is resized across the breakpoint | The arrangement changes with it, without losing where the owner was. |
-| AF-02 | The system back gesture is used with somewhere to go back to | It goes back a level in the music area, or clears a search, rather than closing the application. |
+| AF-02 | The system back gesture is used with somewhere to go back to | It goes back a level in the music area or in the genres area, or clears a search, rather than closing the application. |
 | AF-03 | The system back gesture is used with nowhere to go | It does whatever the platform does with it. |
 
-> **Three destinations, deliberately.** This application does one thing, and a
+> **Four destinations, deliberately.** This application does one thing, and a
 > navigation panel listing six ways into it would be six ways of asking the
-> owner where they want to be before they have heard anything. The statistics
-> screen is reached from the bar rather than becoming a fourth (FR-UX-03).
+> owner where they want to be before they have heard anything. Genres earned
+> its place beside Music because the owner listens by mood as often as by
+> artist. The statistics screen is reached from the bar rather than becoming a
+> fifth (FR-UX-03).
 
 ---
 
@@ -1299,6 +1317,62 @@ graph LR
 | AF-06 | On Android, permission to change audio files is refused | As UC-34 AF-08; nothing is written. |
 | AF-07 | The owner cancels | Nothing is written. |
 
+### UC-36: Browse and play by genre
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-36 |
+| **Name** | Browse and play by genre |
+| **Actors** | Owner |
+| **Description** | The owner opens a genre from a tab of its own, browses the artists, records and songs that carry it, and plays it — a record listed under every genre any of its tracks carries and opened whole, a genre played as only the tracks tagged with it. |
+| **Preconditions** | The catalog holds at least one entry. |
+| **Postconditions** | None. Where the owner left the genres area is remembered for as long as the application runs, apart from where they left the music area. |
+| **Requirements** | FR-CT-05, FR-CT-06, FR-CT-12, FR-CT-13, FR-CT-14, FR-CT-15, FR-CT-16, FR-CT-17, FR-CT-18, FR-CT-19, FR-UX-01 |
+
+**Main Flow**
+
+1. The owner selects *Genres* in the shell, between *Music* and *Queue*.
+2. The application derives the genres from the catalog (`BR-39`) and lists them
+   as rows, alphabetically and ignoring case, with *No genre* last. Each row
+   gives the genre's name, how many tracks are tagged with it and, where every
+   one of their lengths is known, how long they run, and carries a play and a
+   shuffle button (`FR-CT-12`).
+3. The owner selects a genre. A breadcrumb *Genres › Rock* appears, with the
+   same controls as the music area: a switch between *Artists*, *Albums* and
+   *Songs*, a shuffle button, and the rows or sleeves layout, which is the one
+   setting the music area uses (UC-11).
+4. In *Artists* the album artists with a record listed under the genre are
+   shown; the owner selects one and sees that artist's records under the genre,
+   and selects a record and sees all of its tracks in track order, including
+   those tagged with other genres (`BR-37`, `FR-CT-13`). Each crumb of
+   *Genres › Rock › Artist › Record* goes back to its level.
+5. In *Albums* the records listed under the genre are shown, each opened whole.
+   In *Songs* the tracks tagged with the genre are listed by title, as in the
+   music area.
+6. The owner plays. Play or shuffle on a genre row, and the shuffle button
+   inside a genre, queue only the tracks tagged with it, in a queue named after
+   the genre and, unshuffled, ordered by album artist, then record, then track
+   order. Play on an artist queues that artist's records listed under the
+   genre, whole, in the order shown. Play on a record plays the whole record,
+   and a track selected inside a record plays the record from there. A track
+   selected in *Songs* plays alone (`BR-38`, `FR-CT-14`, UC-13, UC-15).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | A track carries several genres | It is listed under each of them, and counted once in a genre it names twice. A value is split at `;`, `\|` and `,`, never at `/`, so *Hip-Hop/Rap* is one genre (`FR-CT-15`, `BR-39`). |
+| AF-02 | Two spellings differ in case or in surrounding spaces | They are one genre, shown in the spelling most tracks use (`FR-CT-16`). |
+| AF-03 | The owner opens *No genre* | The records with any untagged track are listed, each opened whole, and playing it plays only the untagged tracks (`FR-CT-17`, `BR-40`). |
+| AF-04 | An artist has tracks with no album name | Under a genre they are an untitled group that is not a record, holding only the tracks tagged with the genre — under *No genre*, only the untagged ones — and playing it plays those (`FR-CT-13`, `BR-40`). |
+| AF-05 | The library carries no genre tags at all | Only *No genre* is listed (`FR-CT-17`). |
+| AF-06 | The library is empty | The empty state of the music area says so, and points at the folders screen (UC-07 AF-01). |
+| AF-07 | A scan leaves a genre with nothing in it, or a level the owner is in empty | The owner is taken out to the nearest level that still has content, to the genres list where the genre no longer exists. A record or artist renamed by a changed tag is followed (`FR-CT-19`). |
+| AF-08 | An edit or a scan takes the open genre's last tag off the record the owner is in | The owner stays in the record, which is still in the library and is drawn whole from it, and playing it plays it whole. Going back up shows the genre without it (`FR-CT-19`). If the record carried the genre's last tag anywhere in the library, the genre no longer exists and the owner is returned to the genres list instead. |
+| AF-09 | The owner switches to another destination and back | The genre, view, artist and record are as they were left, and independent of the music area's (`FR-CT-12`). |
+| AF-10 | The owner searches while in the genres area | The same results as in the music area are shown, with the selector of UC-12. |
+| AF-11 | The system back gesture is used inside a genre | It clears a search first, then goes back one level — record, artist, genre — and from the genres list does whatever the platform does with it (`FR-CT-18`). |
+
 ---
 
 ## 3. Use case — requirements traceability
@@ -1339,6 +1413,7 @@ graph LR
 | UC-32 See the music move | FR-VZ-01 … FR-VZ-11 |
 | UC-34 Autofill a record's tags | FR-AF-01 … FR-AF-08 |
 | UC-35 Edit a track's tags by hand | FR-TE-01 … FR-TE-04 |
+| UC-36 Browse and play by genre | FR-CT-05, FR-CT-06, FR-CT-12 … FR-CT-19, FR-UX-01 |
 
 ## 4. State diagrams
 

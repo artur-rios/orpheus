@@ -312,4 +312,119 @@ void main() {
       expect(stats.genres, isEmpty);
     },
   );
+
+  test(
+    'GivenATrackTaggedRockAndPop_WhenItIsPlayed_ThenBothGenresAreCreditedItsPlays',
+    () {
+      final both = entry(id: 'both', title: 'T', genres: ['Rock', 'Pop']);
+
+      final stats = musicStatsFrom(
+        history: historyOf({both.file.path: 4}),
+        catalog: catalogOf([both]),
+      );
+
+      expect(
+        [for (final line in stats.genres) (line.name, line.plays)],
+        [('Pop', 4), ('Rock', 4)],
+      );
+    },
+  );
+
+  test(
+    'GivenATrackTaggedRockAndRock_WhenItIsPlayed_ThenRockIsCreditedOnce',
+    () {
+      // `splitGenres` never yields this, but a stored catalog could hold it.
+      final twice = entry(id: 'twice', title: 'T', genres: ['Rock', 'rock']);
+
+      final stats = musicStatsFrom(
+        history: historyOf({twice.file.path: 3}),
+        catalog: catalogOf([twice]),
+      );
+
+      expect(
+        [for (final line in stats.genres) (line.name, line.plays)],
+        [('Rock', 3)],
+      );
+    },
+  );
+
+  test(
+    'GivenRockSpelledTwoWaysAcrossTheLibrary_WhenRanked_ThenOneLineNamedByTheCommonSpelling',
+    () {
+      final a = entry(id: 'a', title: 'A', genres: ['rock']);
+      final b = entry(id: 'b', title: 'B', genres: ['Rock']);
+      final c = entry(id: 'c', title: 'C', genres: ['Rock']);
+
+      final stats = musicStatsFrom(
+        history: historyOf({
+          a.file.path: 1,
+          b.file.path: 2,
+          c.file.path: 3,
+        }),
+        catalog: catalogOf([a, b, c]),
+      );
+
+      expect(
+        [for (final line in stats.genres) (line.name, line.plays)],
+        [('Rock', 6)],
+      );
+    },
+  );
+
+  test(
+    'GivenTenPlaysOfARockAndPopTrack_WhenRanked_ThenEachGenresShareIsOfAllPlays',
+    () {
+      // Ten plays of a Rock;Pop track and ten of one with no genre: every
+      // genre is half of what was played, so shares add up past the share of
+      // any one line rather than being squeezed to fill 100% between them.
+      final tagged = entry(id: 'tagged', title: 'T', genres: ['Rock', 'Pop']);
+      final bare = entry(id: 'bare', title: 'B');
+
+      final stats = musicStatsFrom(
+        history: historyOf({tagged.file.path: 10, bare.file.path: 10}),
+        catalog: catalogOf([tagged, bare]),
+      );
+
+      expect(
+        [for (final line in stats.genres) (line.name, line.share)],
+        [('Pop', 0.5), ('Rock', 0.5)],
+      );
+    },
+  );
+
+  test(
+    'GivenTracksSharingAGenre_WhenRanked_ThenSharesMaySumPastAWholeBecauseATrackCountsTwice',
+    () {
+      // Pop is on every play there was, Rock on half of them. Divided by the
+      // sum of the genres' own counts they would be a third and two thirds.
+      final both = entry(id: 'both', title: 'T', genres: ['Rock', 'Pop']);
+      final popOnly = entry(id: 'pop', title: 'P', genres: ['Pop']);
+
+      final stats = musicStatsFrom(
+        history: historyOf({both.file.path: 10, popOnly.file.path: 10}),
+        catalog: catalogOf([both, popOnly]),
+      );
+
+      expect(
+        [for (final line in stats.genres) (line.name, line.share)],
+        [('Pop', 1.0), ('Rock', 0.5)],
+      );
+    },
+  );
+
+  test(
+    'GivenATrackWithNoGenres_WhenPlayedWithNoArtistOrRecord_ThenItCountsAsUntagged',
+    () {
+      final bare = entry(id: 'bare', title: 'B');
+      final tagged = entry(id: 'tagged', title: 'T', genres: ['Rock']);
+
+      final stats = musicStatsFrom(
+        history: historyOf({bare.file.path: 1, tagged.file.path: 1}),
+        catalog: catalogOf([bare, tagged]),
+      );
+
+      // Only the file with nothing at all is untagged; a genre alone is a tag.
+      expect(stats.untaggedTracks, 1);
+    },
+  );
 }

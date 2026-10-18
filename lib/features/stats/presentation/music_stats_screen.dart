@@ -11,10 +11,10 @@ import 'stats_story_screen.dart';
 
 /// What the owner listens to: a summary, and four rankings under it.
 ///
-/// A screen of its own rather than a fourth destination in the shell. The
-/// navigation panel lists the three places music is *found*; what has already
-/// been played is a thing to go and look at, not a place to be, and a fourth
-/// entry would be a fourth answer to "where do you want to be before you have
+/// A screen of its own rather than a fifth destination in the shell. The
+/// navigation panel lists the four places music is *found*; what has already
+/// been played is a thing to go and look at, not a place to be, and a fifth
+/// entry would be a fifth answer to "where do you want to be before you have
 /// heard anything".
 class MusicStatsScreen extends ConsumerWidget {
   /// Creates the screen.

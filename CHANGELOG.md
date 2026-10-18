@@ -7,6 +7,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Browse and play by genre. A new *Genres* tab, between Music and Queue, lists every genre in the library with its
+  number of tracks and their length, and a *No genre* group last. Open one to browse the artists, records and songs
+  that carry it, as rows or sleeves, with a breadcrumb back out. A record is listed under every genre any of its
+  tracks carries and opens whole; playing a genre, or shuffling it, plays only the tracks tagged with it, and playing
+  an artist inside a genre plays that artist's records listed under it. A track with several genres (`Rock; Pop`) is
+  under each, genres are matched ignoring case and spaces, and the tab remembers where you were apart from Music.
+- A search selector. Under the results, choose *All*, *Songs*, *Artists*, *Albums* or *Genres* to match the term
+  against only that kind of tag — a search for *Rock* under *Songs* finds titles, not tracks tagged Rock. The choice is
+  kept while Orpheus runs and is *All* again at the next launch; results stay a list of tracks. Genres are now
+  searched too, ranked after records.
+
+### Changed
+
+- The first launch of this version scans the library once more, even with *Re-scan the library at every launch*
+  turned off, because the catalog now keeps every genre a file holds and not only the first.
+- A genre containing a `/` is now one genre in MP3 files, as in every other format: *Hip-Hop/Rap* is no longer read
+  as *Hip-Hop* and *Rap*. An MP3's ID3v2.4 genre frame now keeps every value it holds, and numeric references such
+  as `(17)` are still read as the genre they name. Genres are split at `;`, `|` and `,`. An MP4 file with several
+  genre atoms still keeps only one.
+- A track with several genres now counts toward each of them in the statistics, and a genre's share on the story
+  card is of all plays, so the shares can add up to more than 100%.
+
 ## [1.4.0] - 2026-10-13
 
 ### Added

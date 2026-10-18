@@ -1,4 +1,5 @@
 import 'audio_file.dart';
+import 'genres.dart';
 import 'music_entry.dart';
 
 /// One artist, or one album, and the tracks under it.
@@ -20,16 +21,48 @@ class MusicGroup {
   /// How long the whole group runs, or `null` where any track's length is
   /// unknown — a total that quietly omitted the tracks it could not measure
   /// would be a number the owner has no way to read.
-  Duration? get duration {
-    var total = Duration.zero;
-    for (final entry in entries) {
-      final length = entry.duration;
-      if (length == null) return null;
-      total += length;
-    }
+  Duration? get duration => _totalDuration(entries);
+}
 
-    return total;
+/// One genre, and the tracks that carry it.
+///
+/// [key] and [name] are `null` for the group of tracks that carry no genre, for
+/// the reason [MusicGroup.name] is: the domain knows the tag is absent, and what
+/// to call that is the presentation's decision. [key] is what matches
+/// ([genreKey]); [name] is what is shown, the spelling the library uses most.
+class GenreGroup {
+  /// Creates a group.
+  const GenreGroup({
+    required this.key,
+    required this.name,
+    required this.tracks,
+  });
+
+  /// What tracks are matched to the genre by, or `null` for *No genre*.
+  final String? key;
+
+  /// What the genre is called, or `null` for *No genre*.
+  final String? name;
+
+  /// The tracks that carry it, as [tracksOfGenre] orders them.
+  final List<MusicEntry> tracks;
+
+  /// How long the whole genre runs, by the rule [MusicGroup.duration] states.
+  Duration? get duration => _totalDuration(tracks);
+}
+
+/// The total of [entries]' lengths, or `null` where any one is unknown — a total
+/// that quietly omitted the tracks it could not measure would be a number the
+/// owner has no way to read.
+Duration? _totalDuration(Iterable<MusicEntry> entries) {
+  var total = Duration.zero;
+  for (final entry in entries) {
+    final length = entry.duration;
+    if (length == null) return null;
+    total += length;
   }
+
+  return total;
 }
 
 /// Every artist in [library], alphabetically, with the untagged files last.
@@ -162,14 +195,167 @@ List<AudioFile> artistOf(MusicEntry entry, List<MusicEntry> library) {
 /// after `Zooropa` and the loose tracks the screen lists last ahead of
 /// everything.
 List<AudioFile> inArtistOrder(List<MusicEntry> entries) {
-  final ordered = [...entries]..sort((a, b) {
-    final byAlbum = _albumOrder(a, b);
-    if (byAlbum != 0) return byAlbum;
-
-    return _trackComparison(a, b);
-  });
+  final ordered = [...entries]..sort(_recordThenTrackOrder);
 
   return [for (final entry in ordered) entry.file];
+}
+
+/// Whether [entry] carries the genre [key] names.
+///
+/// `null` is *No genre*, which is the tracks that carry none, exactly as a
+/// `null` artist selects the untagged artist. Otherwise a track matches when any
+/// of its genres has that [genreKey], so a track tagged `Rock` and `Pop` is
+/// under both.
+bool hasGenre(MusicEntry entry, String? key) => key == null
+    ? entry.genres.isEmpty
+    : entry.genres.any((genre) => genreKey(genre) == key);
+
+/// What each genre in [library] is called, by [genreKey].
+///
+/// The spelling most tracks use, trimmed: a library that tags `Rock` on two
+/// tracks and `rock` on one shows *Rock*, not whichever the scan met first. A
+/// track counts once for a genre however many spellings it holds, since a
+/// hand-built entry can hold `Rock` and `rock` together. A tie goes to the
+/// spelling that sorts first by [byName], then by plain `compareTo`, so the name
+/// never depends on the order the files happened to be read in.
+Map<String, String> genreNamesIn(List<MusicEntry> library) =>
+    _genresAcross(library).names;
+
+/// What each genre in [library] is called, and the tracks that carry it, in one
+/// pass over the library.
+///
+/// One pass because the Genres list is built from it on every rebuild, over the
+/// whole library: asking each genre for its tracks in turn walked every track
+/// once per genre, which at forty thousand tracks and four hundred genres was
+/// most of a second on the interface's isolate. Each track's genre keys are
+/// worked out once here, and it is appended to the bucket of each — once per
+/// genre, however many spellings of it the track holds, as [hasGenre] matches.
+///
+/// The buckets are in the library's own order, unsorted; [genresIn] orders
+/// them. A track whose only genres are blank is in none, and `null` holds the
+/// tracks with no genres at all — both exactly as [hasGenre] decides.
+({Map<String, String> names, Map<String?, List<MusicEntry>> tracks})
+_genresAcross(List<MusicEntry> library) {
+  final spellings = <String, Map<String, int>>{};
+  final tracks = <String?, List<MusicEntry>>{};
+  for (final entry in library) {
+    if (entry.genres.isEmpty) {
+      (tracks[null] ??= []).add(entry);
+      continue;
+    }
+
+    final seen = <String>{};
+    for (final genre in entry.genres) {
+      final name = genre.trim();
+      final key = genreKey(name);
+      if (key.isEmpty || !seen.add(key)) continue;
+
+      _count(spellings, key, name);
+      (tracks[key] ??= []).add(entry);
+    }
+  }
+
+  return (
+    names: {
+      for (final MapEntry(:key, value: counts) in spellings.entries)
+        key: _commonSpelling(counts),
+    },
+    tracks: tracks,
+  );
+}
+
+/// The spelling in [counts] that most tracks use, ties broken as
+/// [genreNamesIn] states.
+String _commonSpelling(Map<String, int> counts) {
+  final ranked = counts.entries.toList()
+    ..sort((a, b) {
+      final byCount = b.value.compareTo(a.value);
+      if (byCount != 0) return byCount;
+
+      final alphabetical = byName(a.key, b.key);
+      return alphabetical != 0 ? alphabetical : a.key.compareTo(b.key);
+    });
+
+  return ranked.first.key;
+}
+
+/// Every genre in [library], alphabetically, with *No genre* last.
+///
+/// *No genre* is there only when some track carries none, so a fully tagged
+/// library does not list a group with nothing in it. A track with several
+/// genres is in the group of each.
+List<GenreGroup> genresIn(List<MusicEntry> library) {
+  final (:names, :tracks) = _genresAcross(library);
+  final named = names.entries.toList()
+    ..sort((a, b) => byName(a.value, b.value));
+
+  return [
+    for (final MapEntry(:key, :value) in named)
+      GenreGroup(
+        key: key,
+        name: value,
+        tracks: tracks[key]!..sort(_genreTrackOrder),
+      ),
+    if (tracks[null] case final untagged?)
+      GenreGroup(
+        key: null,
+        name: null,
+        tracks: untagged..sort(_genreTrackOrder),
+      ),
+  ];
+}
+
+/// The tracks in [library] that carry the genre [key] names, by artist, then
+/// record, then track.
+///
+/// Playing a genre is by track — only what is tagged with it — in the order an
+/// artist's queue plays ([inArtistOrder] shares the record-then-track rule), one
+/// artist after another by their name. Browsing is another question; see
+/// [genreLibrary].
+List<MusicEntry> tracksOfGenre(String? key, List<MusicEntry> library) => [
+  for (final entry in library)
+    if (hasGenre(entry, key)) entry,
+]..sort(_genreTrackOrder);
+
+/// The order [tracksOfGenre] gives, and [genresIn] gives each of its groups:
+/// by artist, then record, then track.
+int _genreTrackOrder(MusicEntry a, MusicEntry b) {
+  final byArtist = byName(a.albumArtist, b.albumArtist);
+  if (byArtist != 0) return byArtist;
+
+  // Two artists whose names differ only in case are two artists; without this
+  // their records would interleave.
+  final exactArtist = (a.albumArtist ?? '').compareTo(b.albumArtist ?? '');
+  if (exactArtist != 0) return exactArtist;
+
+  return _recordThenTrackOrder(a, b);
+}
+
+/// The entries of [library] that browsing the genre [key] names shows, in the
+/// library's own order.
+///
+/// Browsing is by record: a record with one track of the genre is listed under
+/// it and opened whole, every track on it, because the owner is looking for the
+/// record. A record is `(album, albumArtist)`, as [albumsIn] keys it.
+///
+/// A record with no name of its own is not a record: the artist's loose tracks
+/// are not one album, and opening all of them because one is tagged would show
+/// the owner tracks that have nothing to do with the genre. Only its tracks that
+/// carry the genre are in.
+List<MusicEntry> genreLibrary(String? key, List<MusicEntry> library) {
+  final records = <(String?, String?)>{
+    for (final entry in library)
+      if (entry.album != null && hasGenre(entry, key))
+        (entry.album, entry.albumArtist),
+  };
+
+  return [
+    for (final entry in library)
+      if (entry.album == null
+          ? hasGenre(entry, key)
+          : records.contains((entry.album, entry.albumArtist)))
+        entry,
+  ];
 }
 
 /// [entries] in the order the record is listened to: disc, then track number,
@@ -354,6 +540,15 @@ List<MusicGroup> _groupedBy(
 /// [groups], sorted by name.
 List<MusicGroup> _sortedByName(List<MusicGroup> groups) =>
     [...groups]..sort((a, b) => byName(a.name, b.name));
+
+/// Where [a] sits relative to [b] within one artist: by record in the order the
+/// artist's screen lists them, then by track.
+int _recordThenTrackOrder(MusicEntry a, MusicEntry b) {
+  final byAlbum = _albumOrder(a, b);
+  if (byAlbum != 0) return byAlbum;
+
+  return _trackComparison(a, b);
+}
 
 /// Where [a]'s record sits relative to [b]'s: by title as [byName] orders it,
 /// then by album artist, then by the exact title.

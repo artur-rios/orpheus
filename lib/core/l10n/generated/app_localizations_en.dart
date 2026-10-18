@@ -40,6 +40,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get destinationMusic => 'Music';
 
   @override
+  String get destinationGenres => 'Genres';
+
+  @override
   String get destinationQueue => 'Queue';
 
   @override
@@ -60,6 +63,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String searchEmpty(String term) {
     return 'Nothing in the library matches “$term”.';
   }
+
+  @override
+  String get searchFieldAll => 'All';
+
+  @override
+  String get searchFieldSongs => 'Songs';
+
+  @override
+  String get searchFieldArtists => 'Artists';
+
+  @override
+  String get searchFieldAlbums => 'Albums';
+
+  @override
+  String get searchFieldGenres => 'Genres';
 
   @override
   String get settingsTitle => 'Preferences';
@@ -164,6 +182,20 @@ class AppLocalizationsEn extends AppLocalizations {
       zero: 'No tracks',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get genreUnknown => 'No genre';
+
+  @override
+  String get genrePlay => 'Play the genre';
+
+  @override
+  String get genreShuffle => 'Shuffle the genre';
+
+  @override
+  String genreRowSummary(String tracks, String length) {
+    return '$tracks · $length';
   }
 
   @override

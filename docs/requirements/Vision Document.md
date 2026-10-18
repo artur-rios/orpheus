@@ -91,14 +91,14 @@ Requirements Document and demonstrated by use cases.
 | **F-01** | Library sources | The owner registers folders on disk as sources, is offered the platform's conventional music folder, and can unregister them. Nothing outside them is ever read. |
 | **F-02** | Scanning and tag reading | Registered folders are walked, tags are read, cover art is extracted, and the result is kept as a catalog. Scans are incremental and report progress without blocking the interface. |
 | **F-03** | Library derivation | Records and artists are derived from tags, with the album artist worked out across a record rather than per file, so half-tagged libraries browse sensibly. |
-| **F-04** | Browsing | The library is browsed by artist, by record and by song, as rows or as a wall of sleeves, with a way back out of any level. |
-| **F-05** | Search | Titles, artists and records are searched together, ranked so that a match at the start of a name outranks one in the middle. |
+| **F-04** | Browsing | The library is browsed by artist, by record and by song, and by genre in a tab of its own — a record listed under every genre its tracks carry, and a genre played as only the tracks tagged with it — as rows or as a wall of sleeves, with a way back out of any level. |
+| **F-05** | Search | Titles, artists, records and genres are searched together or one kind at a time, as a selector chooses — all, songs, artists, albums or genres — ranked so that a match at the start of a name outranks one in the middle. |
 | **F-06** | Playback | A track, a record, an artist or the whole library shuffled can be played, with pause, seek, volume, and a queue that can be seen and jumped around in. |
 | **F-07** | Repeat and resume | A queue or a single track can be repeated; a track interrupted part-way is offered again at the point it stopped. |
 | **F-08** | Now playing | A persistent bar shows what is playing from anywhere in the application, and a full player shows the record's sleeve at the size of the window. |
 | **F-09** | Resilient playback | A file that is missing or will not decode is named, stepped over, and the queue carries on; when nothing in a selection can be played, the application says so. |
 | **F-10** | Background playback | On Android, playback continues once the application is no longer on screen, from a foreground service whose notification and lock screen carry the transport controls, and it yields correctly to phone calls and to headphones being unplugged. |
-| **F-11** | Listening statistics | Plays are counted from the owner's own listening and presented as totals and four rankings — tracks, artists, records and genres. |
+| **F-11** | Listening statistics | Plays are counted from the owner's own listening and presented as totals and four rankings — tracks, artists, records and genres; a track counts toward each of its genres. |
 | **F-12** | Adaptive shell | The application arranges itself by window width: a rail on a desktop, a bar across the bottom on a phone, and the same rules between. |
 | **F-13** | Preferences | Theme, language, volume, whether the player opens on play, and whether the library is re-scanned at launch — applied immediately and remembered. |
 | **F-14** | Localization | English and Brazilian Portuguese, both catalogs complete. |

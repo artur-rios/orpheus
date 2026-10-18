@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
-import '../../library/domain/music_catalog.dart';
 import '../../library/domain/music_entry.dart';
 import '../../library/domain/music_grouping.dart';
+import 'music_navigator.dart';
 
 /// Which of the music area's three views is shown.
 enum MusicView {
@@ -55,7 +55,8 @@ class MusicBrowseState {
 }
 
 /// The music area's navigation.
-class MusicBrowseController extends Notifier<MusicBrowseState> {
+class MusicBrowseController extends Notifier<MusicBrowseState>
+    implements MusicNavigator {
   @override
   MusicBrowseState build() {
     // Where the owner has drilled to is named by tags, and a re-scan that
@@ -65,7 +66,13 @@ class MusicBrowseController extends Notifier<MusicBrowseState> {
     ref.listen(musicLibraryControllerProvider, (previous, next) {
       final before = previous?.value;
       final after = next.value;
-      if (before != null && after != null) _follow(before, after);
+      if (before != null && after != null) {
+        state = followLibrary(
+          state,
+          before: before.entries,
+          after: after.entries,
+        );
+      }
     });
 
     return const MusicBrowseState();
@@ -76,9 +83,11 @@ class MusicBrowseController extends Notifier<MusicBrowseState> {
   /// The drill is dropped rather than carried across: an owner switching to
   /// Albums asked for the albums list, not for whatever record happened to be
   /// open in the view they left.
+  @override
   void show(MusicView view) => state = MusicBrowseState(view: view);
 
   /// Opens [artist]'s albums.
+  @override
   void openArtist(String? artist) => state = MusicBrowseState(
     view: state.view,
     artist: artist,
@@ -87,6 +96,7 @@ class MusicBrowseController extends Notifier<MusicBrowseState> {
 
   /// Opens [album]'s tracks. [artist] is the album's, which is what tells two
   /// records that share a title apart.
+  @override
   void openAlbum(String? album, String? artist) => state = MusicBrowseState(
     view: state.view,
     artist: artist,
@@ -96,24 +106,14 @@ class MusicBrowseController extends Notifier<MusicBrowseState> {
   );
 
   /// Goes back to the top of the current view.
+  @override
   void upToArtists() => state = MusicBrowseState(view: state.view);
 
   /// Goes back to the open artist's albums, or to the top of the view if no
   /// artist was open — which is the case for an album opened straight off the
   /// Albums view, where there is no artist to go back to.
-  void upToArtist() {
-    if (!state.inArtist) {
-      upToArtists();
-
-      return;
-    }
-
-    state = MusicBrowseState(
-      view: state.view,
-      artist: state.artist,
-      inArtist: true,
-    );
-  }
+  @override
+  void upToArtist() => state = _upToArtistOf(state);
 
   /// Steps one level out, and answers whether there was one to step out of.
   ///
@@ -135,62 +135,89 @@ class MusicBrowseController extends Notifier<MusicBrowseState> {
 
     return false;
   }
+}
 
-  /// Keeps the owner where they were across a library that changed under
-  /// them.
-  ///
-  /// A record or artist renamed by a re-tag is followed to its new name —
-  /// found through a file it held, which keeps its path whatever its tags now
-  /// say. One whose files are all gone is left, a level at a time, for the
-  /// nearest level that still has something in it.
-  void _follow(MusicCatalog before, MusicCatalog after) {
-    if (state.inAlbum) {
-      if (tracksOfAlbum(state.album, state.artist, after.entries).isNotEmpty) {
-        return;
-      }
+/// Where the owner is kept in [state] across a library that changed under
+/// them, from [before] to [after].
+///
+/// A record or artist renamed by a re-tag is followed to its new name — found
+/// through a file it held, which keeps its path whatever its tags now say. One
+/// whose files are all gone is left, a level at a time, for the nearest level
+/// that still has something in it.
+///
+/// A function of the state rather than a method of the Music tab's controller,
+/// because the Music tab is not the only place that keeps one: a genre open in
+/// Genres follows a re-tag by these same rules, over that genre's part of the
+/// library. [state] itself comes back where nothing needed to change, so a
+/// caller that assigns the result notifies no one.
+MusicBrowseState followLibrary(
+  MusicBrowseState state, {
+  required List<MusicEntry> before,
+  required List<MusicEntry> after,
+}) {
+  // Built only when something has to be followed, which most re-scans never
+  // ask for: the owner's record is usually still there under its own name.
+  Map<String, MusicEntry>? afterByPath;
 
-      final moved = _survivor(
-        tracksOfAlbum(state.album, state.artist, before.entries),
-        after,
-      );
-      if (moved != null) {
-        state = MusicBrowseState(
-          view: state.view,
-          artist: moved.albumArtist,
-          album: moved.album,
-          inArtist: state.inArtist,
-          inAlbum: true,
-        );
-
-        return;
-      }
-
-      upToArtist();
-    }
-
-    if (state.inArtist) {
-      if (albumsOfArtist(state.artist, after.entries).isNotEmpty) return;
-
-      final moved = _survivor([
-        for (final entry in before.entries)
-          if (entry.albumArtist == state.artist) entry,
-      ], after);
-      if (moved != null) {
-        openArtist(moved.albumArtist);
-
-        return;
-      }
-
-      upToArtists();
-    }
-  }
-
-  /// The first of [entries] [after] still holds, as [after] now has it.
-  static MusicEntry? _survivor(List<MusicEntry> entries, MusicCatalog after) {
+  // The first of [entries] [after] still holds, as [after] now has it.
+  MusicEntry? survivor(Iterable<MusicEntry> entries) {
+    final byPath = afterByPath ??= {
+      for (final entry in after) entry.file.path: entry,
+    };
     for (final entry in entries) {
-      if (after.entryAt(entry.file.path) case final found?) return found;
+      if (byPath[entry.file.path] case final found?) return found;
     }
 
     return null;
   }
+
+  var followed = state;
+
+  if (followed.inAlbum) {
+    if (tracksOfAlbum(followed.album, followed.artist, after).isNotEmpty) {
+      return followed;
+    }
+
+    final moved = survivor(
+      tracksOfAlbum(followed.album, followed.artist, before),
+    );
+    if (moved != null) {
+      return MusicBrowseState(
+        view: followed.view,
+        artist: moved.albumArtist,
+        album: moved.album,
+        inArtist: followed.inArtist,
+        inAlbum: true,
+      );
+    }
+
+    followed = _upToArtistOf(followed);
+  }
+
+  if (followed.inArtist) {
+    if (albumsOfArtist(followed.artist, after).isNotEmpty) return followed;
+
+    final artist = followed.artist;
+    final moved = survivor([
+      for (final entry in before)
+        if (entry.albumArtist == artist) entry,
+    ]);
+    if (moved != null) {
+      return MusicBrowseState(
+        view: followed.view,
+        artist: moved.albumArtist,
+        inArtist: true,
+      );
+    }
+
+    followed = MusicBrowseState(view: followed.view);
+  }
+
+  return followed;
 }
+
+/// [state] one level out of a record: the open artist's albums, or the top of
+/// the view where no artist was opened on the way in.
+MusicBrowseState _upToArtistOf(MusicBrowseState state) => state.inArtist
+    ? MusicBrowseState(view: state.view, artist: state.artist, inArtist: true)
+    : MusicBrowseState(view: state.view);
