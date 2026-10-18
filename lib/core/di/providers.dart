@@ -43,6 +43,7 @@ import '../../features/lyrics/domain/lyrics_source.dart';
 import '../../features/lyrics/domain/remote_lyrics_source.dart';
 import '../../features/playback/application/album_art_controller.dart';
 import '../../features/playback/application/audio_playback_controller.dart';
+import '../../features/playback/application/genre_browse_controller.dart';
 import '../../features/playback/application/media_session_controller.dart';
 import '../../features/playback/application/music_browse_controller.dart';
 import '../../features/playback/application/music_layout_controller.dart';
@@ -340,6 +341,12 @@ final musicStatsControllerProvider =
 final musicBrowseControllerProvider =
     NotifierProvider<MusicBrowseController, MusicBrowseState>(
       MusicBrowseController.new,
+    );
+
+/// Where in Genres the owner is, apart from where they are in Music.
+final genreBrowseControllerProvider =
+    NotifierProvider<GenreBrowseController, GenreBrowseState>(
+      GenreBrowseController.new,
     );
 
 /// Rows or tiles.
