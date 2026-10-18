@@ -19,18 +19,20 @@ class PlayHistoryController extends AsyncNotifier<PlayHistory> {
   Future<PlayHistory> build() async {
     final recorder = ref.watch(playRecorderProvider);
 
-    // Listened to before the stored history is asked for, so a play recorded
-    // while it is being read is not missed: each change is the whole history,
-    // so the latest one heard is newer than whatever the read returns.
-    PlayHistory? changed;
-    final subscription = recorder.changes.listen((history) {
-      changed = history;
-      state = AsyncData(history);
-    });
+    // Listened to before the stored history is asked for, so no play recorded
+    // from here on is missed.
+    final subscription = recorder.changes.listen(
+      (history) => state = AsyncData(history),
+    );
     ref.onDispose(subscription.cancel);
 
-    final held = await recorder.current();
+    // Asked twice: the first waits for the read, and plays recorded while it
+    // was under way have replaced what the recorder holds since. The recorder
+    // holds each new history before it announces it, so the second answer is
+    // never older than a change already heard — which the first one, or the
+    // last change heard, could be.
+    await recorder.current();
 
-    return changed ?? held;
+    return recorder.current();
   }
 }

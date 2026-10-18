@@ -242,6 +242,29 @@ void main() {
         expect((await recorder.current()).isEmpty, isTrue);
       },
     );
+
+    test(
+      'GivenAMalformedRowThatCannotBeCopiedAside_WhenPlaysAreRecorded_ThenTheFileIsNeverWritten',
+      () async {
+        // Writing the good rows alone would lose the bad row's count with no
+        // copy of it anywhere.
+        final bytes = utf8.encode(
+          '{"version":2,"tracks":['
+          '{"path":"/library/a.flac","plays":2,"lastPlayedAt":"2026-09-01T00:00:00.000Z","recent":[]},'
+          '{"path":"/library/b.flac","plays":7,"lastPlayedAt":"not a date","recent":[]}'
+          ']}',
+        );
+        await File(store.path).writeAsBytes(bytes);
+        final blocker = Directory('${store.path}.bad-20260903T120000');
+        await blocker.create();
+        await File('${blocker.path}/keep').writeAsString('x');
+        final recorder = PlayRecorder(store: store, clock: () => now);
+
+        await expectLater(recorder.record('/library/a.flac'), completes);
+
+        expect(File(store.path).readAsBytesSync(), bytes);
+      },
+    );
   });
 
   test(

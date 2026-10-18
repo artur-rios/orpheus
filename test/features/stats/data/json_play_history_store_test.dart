@@ -216,7 +216,67 @@ void main() {
       for (final track in read.tracks.values) {
         expect(track.recent, isEmpty);
       }
-      expect(Directory(store.directory).listSync(), hasLength(1));
+      // Nothing in it was skipped, so nothing is set aside.
+      expect(File('${store.path}.bad-$stamp').existsSync(), isFalse);
+    },
+  );
+
+  test(
+    'GivenAVersionOneDocument_WhenItIsFirstRead_ThenACopyOfItsBytesIsLeftBesideIt',
+    () async {
+      // An older release reading the version-2 file would start over; the
+      // copy is what lets the owner go back without losing their history.
+      final v1 = utf8.encode(_v1Document);
+      await seed(v1);
+
+      await store.read();
+
+      expect(File('${store.path}.v1').readAsBytesSync(), v1);
+      expect(File(store.path).readAsBytesSync(), v1);
+    },
+  );
+
+  test(
+    'GivenAVersionOneCopyAlreadyExists_WhenAVersionOneDocumentIsReadAgain_ThenTheCopyIsNotOverwritten',
+    () async {
+      final first = utf8.encode(_v1Document);
+      await seed(first);
+      await store.read();
+      await seed(
+        utf8.encode(
+          '{"version":1,"tracks":[{"path":"/library/x.flac","plays":1,'
+          '"lastPlayedAt":"2026-09-03T12:00:00.000Z"}]}',
+        ),
+      );
+
+      await store.read();
+
+      expect(File('${store.path}.v1').readAsBytesSync(), first);
+    },
+  );
+
+  test(
+    'GivenAVersionTwoDocument_WhenItIsRead_ThenNoVersionOneCopyIsMade',
+    () async {
+      await store.write(historyOf({'/library/a.flac': 1}));
+
+      await store.read();
+
+      expect(File('${store.path}.v1').existsSync(), isFalse);
+    },
+  );
+
+  test(
+    'GivenAVersionOneDocumentWhoseCopyCannotBeMade_WhenItIsRead_ThenItThrowsAndTheDocumentStays',
+    () async {
+      final v1 = utf8.encode(_v1Document);
+      await seed(v1);
+      // A folder where the copy would go: no file can be written there.
+      await Directory('${store.path}.v1').create();
+
+      await expectLater(store.read(), throwsA(isA<FileSystemException>()));
+
+      expect(File(store.path).readAsBytesSync(), v1);
     },
   );
 
@@ -399,6 +459,68 @@ void main() {
       expect(read.tracks['/library/a.flac']!.recent, [DateTime.utc(2026, 10, 10)]);
       expect(read.tracks['/library/b.flac']!.plays, 2);
       expect(read.tracks['/library/b.flac']!.recent, isEmpty);
+    },
+  );
+
+  test(
+    'GivenAVersionTwoRowWithAMalformedDate_WhenTheHistoryIsRead_ThenTheOriginalIsCopiedAside',
+    () async {
+      final bytes = utf8.encode(
+        '{"version":2,"tracks":['
+        '{"path":"/library/a.flac","plays":4,"lastPlayedAt":"2026-10-10T00:00:00.000Z",'
+        '"recent":["not a date","2026-10-10T00:00:00.000Z"]}'
+        ']}',
+      );
+      await seed(bytes);
+
+      await store.read();
+
+      expect(File('${store.path}.bad-$stamp').readAsBytesSync(), bytes);
+    },
+  );
+
+  test(
+    'GivenADocumentWithAMalformedRow_WhenTheHistoryIsReadAndAPlayWritten_ThenACopyOfTheOriginalStaysAside',
+    () async {
+      // The good rows are read, and the next write leaves the bad one out:
+      // the copy is what keeps its count recoverable.
+      final bytes = utf8.encode(
+        '{"version":2,"tracks":['
+        '{"path":"/library/a.flac","plays":2,"lastPlayedAt":"2026-10-10T00:00:00.000Z","recent":[]},'
+        '{"path":"/library/b.flac","plays":7,"lastPlayedAt":"not a date","recent":[]}'
+        ']}',
+      );
+      await seed(bytes);
+
+      final read = await store.read();
+      expect(read.tracks.keys, ['/library/a.flac']);
+      // Copied, not moved: the document is still where it was.
+      expect(File(store.path).readAsBytesSync(), bytes);
+
+      await store.write(read.recording('/library/a.flac', now));
+
+      expect(File('${store.path}.bad-$stamp').readAsBytesSync(), bytes);
+      expect(onDisk()['tracks'], hasLength(1));
+    },
+  );
+
+  test(
+    'GivenADocumentWithAMalformedRowThatCannotBeCopiedAside_WhenTheHistoryIsRead_ThenItThrowsAndTheDocumentStays',
+    () async {
+      final bytes = utf8.encode(
+        '{"version":2,"tracks":['
+        '{"path":"/library/a.flac","plays":2,"lastPlayedAt":"2026-10-10T00:00:00.000Z","recent":[]},'
+        '{"path":"/library/b.flac","plays":7,"lastPlayedAt":"not a date","recent":[]}'
+        ']}',
+      );
+      await seed(bytes);
+      final blocker = Directory('${store.path}.bad-$stamp');
+      await blocker.create();
+      await File('${blocker.path}/keep').writeAsString('x');
+
+      await expectLater(store.read(), throwsA(isA<FileSystemException>()));
+
+      expect(File(store.path).readAsBytesSync(), bytes);
     },
   );
 

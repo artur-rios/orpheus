@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 
+import '../../autofill/data/atomic_write.dart';
 import '../domain/play_history.dart';
 
 /// [PlayHistoryStore] as one JSON document, beside the catalog.
@@ -43,12 +45,24 @@ import '../domain/play_history.dart';
 /// Version 1 is the same document without `recent`, as every release before
 /// plays were dated wrote it. It is read as it stands — every track, its
 /// count and its last play — with no dates, and written as version 2 by the
-/// next write. Any other version is set aside.
+/// next write. The first time one is read, its bytes are also copied to
+/// `play-history.json.v1`, once and never over an earlier copy: a release
+/// from before version 2 reads the version-2 file as one it does not know
+/// and starts over, and the copy is what lets the owner go back to one
+/// without losing their history. Any other version is set aside.
 ///
 /// Within a document of a known version, a row that is not a play — no path,
-/// no plays, no date it was last played — is stepped over, and so is a date
-/// in `recent` that is not one: the rest of the history is not given up for
-/// it.
+/// no plays, no date it was last played, or a path already read — is stepped
+/// over, and so is a date in `recent` that is not one: the rest of the
+/// history is not given up for it. But the next write would leave what was
+/// stepped over out for good, so the document is first *copied* to
+/// `play-history.json.bad-<yyyyMMddTHHmmss>`, where it can still be recovered
+/// by hand.
+///
+/// Every copy is made before the history is returned, and a copy that cannot
+/// be made is an error, as a document that cannot be set aside is: returning
+/// the history anyway would let the next write replace the only copy of what
+/// it leaves out.
 class JsonPlayHistoryStore implements PlayHistoryStore {
   /// Creates a store writing into [directory].
   ///
@@ -89,8 +103,9 @@ class JsonPlayHistoryStore implements PlayHistoryStore {
     // `readAsString` reports bytes that are not UTF-8 as a
     // [FileSystemException], the same as a file that could not be opened.
     final bytes = await file.readAsBytes();
+    final _Reading reading;
     try {
-      return _historyIn(jsonDecode(utf8.decode(bytes))).trimmedTo(_clock());
+      reading = _historyIn(jsonDecode(utf8.decode(bytes)));
     } on FormatException catch (error) {
       // Text that is not UTF-8, not JSON, or not a document of a version
       // this one reads.
@@ -98,6 +113,11 @@ class JsonPlayHistoryStore implements PlayHistoryStore {
 
       return PlayHistory.empty;
     }
+
+    if (reading.version == _undatedVersion) _keepVersionOneCopy(bytes);
+    if (reading.skipped > 0) _copyAside(bytes, reading.skipped);
+
+    return reading.history.trimmedTo(_clock());
   }
 
   @override
@@ -156,6 +176,59 @@ class JsonPlayHistoryStore implements PlayHistoryStore {
     );
   }
 
+  /// Copies a version-1 document to `play-history.json.v1`, unless a copy is
+  /// already there.
+  ///
+  /// Throws when it cannot be copied: see the class's notes.
+  void _keepVersionOneCopy(Uint8List bytes) {
+    final copy = '$path.v1';
+    if (File(copy).existsSync()) return;
+
+    _copy(bytes, to: copy, what: 'the version-1 play history');
+    _log.info('the version-1 play history is kept as ${p.basename(copy)}');
+  }
+
+  /// Copies a document some of which was stepped over to a name that keeps
+  /// it, leaving the document where it is.
+  ///
+  /// Throws when it cannot be copied. Never copies over anything already
+  /// there, which would be a document set aside before in the same second.
+  void _copyAside(Uint8List bytes, int skipped) {
+    final aside = '$path.bad-${_stamp(_clock())}';
+    if (FileSystemEntity.typeSync(aside) != FileSystemEntityType.notFound) {
+      _log.severe(
+        'the play history had $skipped unreadable entries, and could not be '
+        'copied aside: ${p.basename(aside)} is already there',
+      );
+      throw FileSystemException(
+        'Could not copy the partly unreadable play history aside: '
+        'the name is taken',
+        aside,
+      );
+    }
+
+    _copy(bytes, to: aside, what: 'the partly unreadable play history');
+    _log.severe(
+      'the play history had $skipped unreadable entries, which the next write '
+      'leaves out; the whole document is kept as ${p.basename(aside)}',
+    );
+  }
+
+  /// Writes [bytes] to [to] whole or not at all, throwing a
+  /// [FileSystemException] that names [what] when it cannot.
+  void _copy(Uint8List bytes, {required String to, required String what}) {
+    try {
+      replaceFileAtomically(to, bytes);
+    } on FileSystemException catch (error) {
+      _log.severe('$what could not be copied to ${p.basename(to)}', error);
+      throw FileSystemException(
+        'Could not copy $what aside: ${error.message}',
+        to,
+        error.osError,
+      );
+    }
+  }
+
   static String _stamp(DateTime at) {
     String two(int value) => value.toString().padLeft(2, '0');
 
@@ -163,14 +236,15 @@ class JsonPlayHistoryStore implements PlayHistoryStore {
         '${two(at.day)}T${two(at.hour)}${two(at.minute)}${two(at.second)}';
   }
 
-  /// The history in a decoded document; throws a [FormatException] when it
-  /// is not one this version reads.
-  static PlayHistory _historyIn(Object? decoded) {
+  /// The history in a decoded document, and how much of it was stepped over;
+  /// throws a [FormatException] when it is not one this version reads.
+  static _Reading _historyIn(Object? decoded) {
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('the document is not an object');
     }
     final version = decoded['version'];
-    if (version != documentVersion && version != _undatedVersion) {
+    if (version is! int ||
+        (version != documentVersion && version != _undatedVersion)) {
       throw FormatException('unknown version $version');
     }
     final tracks = decoded['tracks'];
@@ -178,24 +252,38 @@ class JsonPlayHistoryStore implements PlayHistoryStore {
       throw const FormatException('"tracks" is not a list');
     }
 
+    var skipped = 0;
+    void skip() => skipped++;
+
     final played = <String, TrackPlays>{};
     for (final track in tracks) {
-      if (track is! Map<String, dynamic>) continue;
-
-      final record = _trackFrom(track, dated: version == documentVersion);
-      if (record != null) played[record.path] = record;
+      final record = track is Map<String, dynamic>
+          ? _trackFrom(track, dated: version == documentVersion, skip: skip)
+          : null;
+      // A second row for a path already read is stepped over too: keeping
+      // either one alone would lose the other's count.
+      if (record == null || played.containsKey(record.path)) {
+        skip();
+        continue;
+      }
+      played[record.path] = record;
     }
 
-    return PlayHistory(tracks: played);
+    return _Reading(
+      history: PlayHistory(tracks: played),
+      version: version,
+      skipped: skipped,
+    );
   }
 
   /// One recorded track, or `null` where the entry is not one.
   ///
   /// [dated] is whether the document is one that kept dates: a version-1 row
-  /// has none, whatever it holds.
+  /// has none, whatever it holds. [skip] is told of each date stepped over.
   static TrackPlays? _trackFrom(
     Map<String, dynamic> track, {
     required bool dated,
+    required void Function() skip,
   }) {
     final path = track['path'];
     final plays = track['plays'];
@@ -209,21 +297,51 @@ class JsonPlayHistoryStore implements PlayHistoryStore {
       path: path,
       plays: plays,
       lastPlayedAt: lastPlayedAt,
-      recent: dated ? _datesIn(track['recent']) : const [],
+      recent: dated ? _datesIn(track['recent'], skip: skip) : const [],
     );
   }
 
-  /// The dates in a row's `recent`, in UTC and oldest first; those that are
-  /// not dates are left out.
-  static List<DateTime> _datesIn(Object? recent) {
-    if (recent is! List) return const [];
+  /// The dates in a row's `recent`, in UTC and oldest first. Those that are
+  /// not dates are left out, and [skip] is told of each.
+  static List<DateTime> _datesIn(
+    Object? recent, {
+    required void Function() skip,
+  }) {
+    if (recent == null) return const [];
+    if (recent is! List) {
+      skip();
 
-    final dates = [
-      for (final at in recent)
-        if (at is String)
-          if (DateTime.tryParse(at) case final parsed?) parsed.toUtc(),
-    ]..sort();
+      return const [];
+    }
 
-    return List.unmodifiable(dates);
+    final dates = <DateTime>[];
+    for (final at in recent) {
+      final parsed = at is String ? DateTime.tryParse(at) : null;
+      if (parsed == null) {
+        skip();
+      } else {
+        dates.add(parsed.toUtc());
+      }
+    }
+
+    return List.unmodifiable(dates..sort());
   }
+}
+
+/// What reading a document found.
+class _Reading {
+  const _Reading({
+    required this.history,
+    required this.version,
+    required this.skipped,
+  });
+
+  /// The history in it.
+  final PlayHistory history;
+
+  /// The version it was written as.
+  final int version;
+
+  /// How many rows and dates in it were stepped over.
+  final int skipped;
 }
