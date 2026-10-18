@@ -591,6 +591,28 @@ class _MusicTrackListState extends ConsumerState<MusicTrackList> {
     }
   }
 
+  /// Opens the tag form over the picked songs, in the list's order, and ends
+  /// the selection if it wrote any of them.
+  ///
+  /// Not when it was cancelled, or wrote nothing: the owner may want to adjust
+  /// what is picked and try again.
+  Future<void> _editSelected() async {
+    final paths = ref.read(songSelectionProvider).paths;
+    final picked = [
+      for (final entry in widget.entries)
+        if (paths.contains(entry.file.path)) entry,
+    ];
+    if (picked.isEmpty) return;
+
+    final label = AppLocalizations.of(context).musicSelectionLabel;
+    final written = await startManyTagEdit(context, picked, label: label);
+
+    // Through the holder kept from the start rather than `ref`: the save
+    // reloads the library, and the list may have been through the spinner and
+    // be gone from the tree by the time the form has closed.
+    if (written) _selection.clear();
+  }
+
   /// Inside a record, a track plays the record from there; in Songs it plays
   /// alone, because there is no record around it to continue.
   void _play(MusicEntry entry) {
@@ -661,6 +683,7 @@ class _MusicTrackListState extends ConsumerState<MusicTrackList> {
                 allSelected: picked == entries.length,
                 onStop: controller.clear,
                 onSelectAll: () => controller.selectAll(scope, _order()),
+                onEditTags: () => unawaited(_editSelected()),
               ),
             Expanded(
               // Keyed so the rows, and how far they are scrolled, survive the
@@ -678,6 +701,11 @@ class _MusicTrackListState extends ConsumerState<MusicTrackList> {
 
                   return MusicRowMenu(
                     entry: entry,
+                    // A right-click on a picked song is about the picked
+                    // songs; on any other it is about that song alone.
+                    selection: isPicked
+                        ? (count: picked, editTags: _editSelected)
+                        : null,
                     child: ListTile(
                       selected: isPicked,
                       // In place of the number or the cover rather than beside
@@ -746,6 +774,7 @@ class _SelectionBar extends StatelessWidget {
     required this.allSelected,
     required this.onStop,
     required this.onSelectAll,
+    required this.onEditTags,
   });
 
   /// How many of the list's songs are picked.
@@ -760,6 +789,9 @@ class _SelectionBar extends StatelessWidget {
 
   /// Picks every song in the list.
   final VoidCallback onSelectAll;
+
+  /// Opens the tag form over the picked songs.
+  final VoidCallback onEditTags;
 
   @override
   Widget build(BuildContext context) {
@@ -788,7 +820,13 @@ class _SelectionBar extends StatelessWidget {
               onPressed: onSelectAll,
               child: Text(l10n.musicSelectionAll),
             ),
+          const SizedBox(width: AppSpacing.xs),
           // What is done with the picked songs goes here, last in the row.
+          FilledButton.tonal(
+            onPressed: onEditTags,
+            child: Text(l10n.musicSelectionEditTags(count)),
+          ),
+          const SizedBox(width: AppSpacing.sm),
         ],
       ),
     );
@@ -802,12 +840,26 @@ class _SelectionBar extends StatelessWidget {
 /// keyboard. Both open the one menu, so there is no second list of actions to
 /// keep in step. Touch and hold is not one of them: on a song's row it picks
 /// the song (see [MusicTrackList]).
+///
+/// The one exception is a right-click on a picked song while songs are being
+/// picked: that opens a menu for the picked songs instead (see [selection]).
+/// The ⋮ button never does, so a picked song's own actions stay reachable.
 class MusicRowMenu extends ConsumerWidget {
   /// Creates the wrapper.
-  const MusicRowMenu({required this.entry, required this.child, super.key});
+  const MusicRowMenu({
+    required this.entry,
+    required this.child,
+    this.selection,
+    super.key,
+  });
 
   /// The track the menu acts on.
   final MusicEntry entry;
+
+  /// What a right-click offers when [entry] is one of the picked songs: how
+  /// many are picked, and what pressing *Edit tags* does. `null` for a song
+  /// that is not picked, whose right-click opens its own menu.
+  final ({int count, VoidCallback editTags})? selection;
 
   /// The row itself.
   final Widget child;
@@ -816,8 +868,9 @@ class MusicRowMenu extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final within = musicWithinOf(context);
+    final picked = selection;
 
-    return MenuAnchor(
+    final own = MenuAnchor(
       menuChildren: [
         MenuItemButton(
           leadingIcon: const Icon(Icons.play_arrow),
@@ -875,10 +928,8 @@ class MusicRowMenu extends ConsumerWidget {
           child: Text(l10n.tagEditAction),
         ),
       ],
-      builder: (context, controller, _) => GestureDetector(
-        onSecondaryTapDown: (details) =>
-            controller.open(position: details.localPosition),
-        child: Row(
+      builder: (context, controller, _) {
+        final row = Row(
           children: [
             Expanded(child: child),
             IconButton(
@@ -888,7 +939,34 @@ class MusicRowMenu extends ConsumerWidget {
                   controller.isOpen ? controller.close() : controller.open(),
             ),
           ],
+        );
+
+        // The picked songs' menu answers the right-click instead, so this one
+        // listens for none.
+        return picked != null
+            ? row
+            : GestureDetector(
+                onSecondaryTapDown: (details) =>
+                    controller.open(position: details.localPosition),
+                child: row,
+              );
+      },
+    );
+
+    if (picked == null) return own;
+
+    return MenuAnchor(
+      menuChildren: [
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.edit_outlined),
+          onPressed: picked.editTags,
+          child: Text(l10n.musicSelectionEditTags(picked.count)),
         ),
+      ],
+      builder: (context, controller, _) => GestureDetector(
+        onSecondaryTapDown: (details) =>
+            controller.open(position: details.localPosition),
+        child: own,
       ),
     );
   }
