@@ -242,6 +242,64 @@ void main() {
     );
 
     test(
+      'GivenAnArtistWithTwoRecords_WhenPlayedWithinOneOfThem_ThenOnlyThatRecordIsQueued',
+      () async {
+        // A genre lists one of the artist's records, and "play this artist"
+        // from inside it plays what the genre showed, not the catalogue.
+        final harness = Harness(library: library);
+        final player = await playerOf(harness);
+
+        await player.playArtist(okComputer.first.file, within: okComputer);
+
+        final queue = stateOf(harness).queue;
+        expect(
+          [for (final file in queue.tracks) file.path],
+          [for (final e in okComputer) e.file.path],
+        );
+        expect(queue.kind, QueueKind.artist);
+        expect(queue.label, 'Radiohead');
+      },
+    );
+
+    test(
+      'GivenAnUntitledGroupOfThree_WhenPlayedWithinOneOfIt_ThenOnlyThatTrackIsQueued',
+      () async {
+        final loose = [
+          entry(id: 'u1', title: 'One'),
+          entry(id: 'u2', title: 'Two'),
+          entry(id: 'u3', title: 'Three'),
+        ];
+        final harness = Harness(library: loose);
+        final player = await playerOf(harness);
+
+        await player.playAlbum(loose[1].file, within: [loose[1]]);
+
+        expect(stateOf(harness).queue.tracks, [loose[1].file]);
+        expect(stateOf(harness).queue.kind, QueueKind.album);
+
+        await player.playArtist(loose[1].file, within: [loose[1]]);
+
+        expect(stateOf(harness).queue.tracks, [loose[1].file]);
+        expect(stateOf(harness).queue.kind, QueueKind.artist);
+      },
+    );
+
+    test(
+      'GivenNoWithin_WhenAnArtistIsPlayed_ThenTheirWholeCatalogueIsQueuedAsBefore',
+      () async {
+        final harness = Harness(library: library);
+        final player = await playerOf(harness);
+
+        await player.playArtist(okComputer.first.file);
+
+        expect(
+          {for (final file in stateOf(harness).queue.tracks) file.path},
+          {for (final e in [...okComputer, ...kidA]) e.file.path},
+        );
+      },
+    );
+
+    test(
       'GivenAWholeLibrary_WhenEverythingIsShuffled_ThenEveryTrackIsQueuedUnderTheGivenName',
       () async {
         final harness = Harness(library: library);
