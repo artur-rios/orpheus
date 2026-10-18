@@ -588,8 +588,12 @@ void main() {
         );
         final controller = await controllerOf(harness);
         await harness.library();
+        final playlist = harness
+            .read(playlistsControllerProvider)
+            .value!
+            .single;
 
-        final exported = await controller.exportM3u('p');
+        final exported = await controller.exportM3u(playlist);
 
         expect(exported?.path, '/exports/saved');
         final saved = harness.fileSaver.saved.single;
@@ -606,7 +610,7 @@ void main() {
       harness.fileSaver.next = null;
       final controller = await controllerOf(harness);
 
-      expect(await controller.exportM3u('p'), isNull);
+      expect(await controller.exportM3u(stored('p')), isNull);
       expect(harness.fileSaver.saved, isEmpty);
     });
 
@@ -615,8 +619,38 @@ void main() {
       harness.fileSaver.failure = Exception('no space');
       final controller = await controllerOf(harness);
 
-      await expectLater(controller.exportM3u('p'), throwsException);
+      await expectLater(controller.exportM3u(stored('p')), throwsException);
     });
+
+    test(
+      'GivenAPlaylistThatIsNotStored_WhenExported_ThenItIsSavedUnderItsNameAndNothingIsWritten',
+      () async {
+        // An auto playlist: shown, never stored, and exported all the same —
+        // also while the owner's own playlists cannot be read.
+        final harness = harnessOver();
+        harness.playlistStore.failRead = Exception('unreadable');
+        await harness.library();
+        final controller = harness.container.read(
+          playlistsControllerProvider.notifier,
+        );
+        final favourites = Playlist(
+          id: 'auto:all-time',
+          name: 'All-time favourites',
+          entries: [
+            PlaylistEntry(id: songA.file.path, path: songA.file.path),
+          ],
+          createdAt: earlier,
+          modifiedAt: earlier,
+        );
+
+        await controller.exportM3u(favourites);
+
+        final saved = harness.fileSaver.saved.single;
+        expect(saved.suggestedName, 'All-time favourites.m3u');
+        expect(utf8.decode(saved.bytes), contains(songA.file.path));
+        expect(harness.playlistStore.writes, 0);
+      },
+    );
   });
 
   group('unreadable store', () {
@@ -633,7 +667,6 @@ void main() {
           controller.setCover('p', Uint8List.fromList([1])),
       'removeCover': (controller) => controller.removeCover('p'),
       'delete': (controller) => controller.delete('p'),
-      'exportM3u': (controller) => controller.exportM3u('p'),
     };
 
     for (final MapEntry(key: name, value: mutate) in mutations.entries) {

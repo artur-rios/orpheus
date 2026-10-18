@@ -104,6 +104,23 @@ class PreferencesDialog extends ConsumerWidget {
                 onChanged: (value) =>
                     unawaited(controller.setRescansAtStartup(value)),
               ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: preferences.showsAutoPlaylists,
+                title: Text(l10n.autoPlaylistShow),
+                // A subtitle for what the switch does not do: hidden, the
+                // auto playlists are still being kept, so turning them back on
+                // finds them where the owner's listening has taken them.
+                subtitle: Text(
+                  l10n.autoPlaylistShowDetail,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                isThreeLine: true,
+                onChanged: (value) =>
+                    unawaited(controller.setShowsAutoPlaylists(value)),
+              ),
 
               const SizedBox(height: AppSpacing.lg),
               _Heading(text: l10n.settingsLyrics),

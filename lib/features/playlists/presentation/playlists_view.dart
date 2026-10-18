@@ -12,6 +12,7 @@ import '../../shell/presentation/async_state_view.dart';
 import '../domain/playlist.dart';
 import 'playlist_cover.dart';
 import 'playlist_menu.dart';
+import 'playlist_names.dart';
 import 'playlist_view.dart';
 
 /// The Playlists area.
@@ -19,30 +20,47 @@ import 'playlist_view.dart';
 /// The owner's playlists, the most recently changed first, as rows or tiles —
 /// the same choice the albums follow — and, once one is opened, that playlist.
 ///
+/// Above them, while the preference shows them, the *Auto playlists* section:
+/// *Favourites lately* and *All-time favourites*, then *Your playlists*. The
+/// section stands on its own: it is there when the owner has no playlists
+/// (theirs then say so in a line, not the whole page) and when their
+/// playlists could not be read (above that failure). A small loading row
+/// stands in for it while the library is read, and it is not shown at all
+/// when the library could not be.
+///
 /// Which one is open is [openPlaylistProvider]'s, not this widget's, so that
 /// Back can close it from the shell. An id that names no playlist — one
-/// deleted while it was open — reads as none open: the list.
+/// deleted while it was open, or an auto playlist since hidden — reads as
+/// none open: the list.
 class PlaylistsView extends ConsumerWidget {
   /// Creates the area.
   const PlaylistsView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Before the owner's playlists' state: an auto playlist opens whatever
+    // became of theirs, and one of theirs is only open once they are read.
+    if (ref.watch(openPlaylistProvider) != null) return const PlaylistView();
+
     final playlists = ref.watch(playlistsControllerProvider);
-    final open = ref.watch(openPlaylistProvider);
+    final autos = ref.watch(autoPlaylistsProvider);
+    // None while the preference hides them, and none from a library that
+    // could not be read; the loading row while it is being read.
+    final showsAutos = switch (autos) {
+      AsyncData(:final value) => value.isNotEmpty,
+      AsyncError() => false,
+      _ => true,
+    };
+    if (showsAutos) return _Sections(autos: autos, playlists: playlists);
 
     // The failure, and nothing else: while the stored playlists could not be
     // read every change is refused, so there is no *New playlist* to offer.
     return AsyncStateView<List<Playlist>>(
       value: playlists,
       onRetry: () => ref.invalidate(playlistsControllerProvider),
-      builder: (context, all) {
-        if (open != null) return const PlaylistView();
-
-        return all.isEmpty
-            ? const _NoPlaylists()
-            : _PlaylistList(playlists: mostRecentFirst(all));
-      },
+      builder: (context, all) => all.isEmpty
+          ? const _NoPlaylists()
+          : _PlaylistList(playlists: mostRecentFirst(all)),
     );
   }
 }
@@ -74,14 +92,137 @@ class _PlaylistList extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         Expanded(
-          child: switch (layout) {
-            MusicLayout.list => _Rows(playlists: playlists),
-            MusicLayout.grid => _Tiles(playlists: playlists),
-          },
+          child: CustomScrollView(
+            slivers: [_Playlists(playlists: playlists, layout: layout)],
+          ),
         ),
       ],
     );
   }
+}
+
+/// *Auto playlists*, then *Your playlists*: the tab while the auto playlists
+/// are shown, in one scroll.
+class _Sections extends ConsumerWidget {
+  const _Sections({required this.autos, required this.playlists});
+
+  /// The auto playlists, or their loading.
+  final AsyncValue<List<Playlist>> autos;
+
+  /// The owner's playlists, however reading them went.
+  final AsyncValue<List<Playlist>> playlists;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final layout = ref.watch(musicLayoutControllerProvider);
+
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Row(
+            children: [
+              Expanded(child: _Heading(text: l10n.autoPlaylistSection)),
+              MusicLayoutSwitcher(selected: layout),
+            ],
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
+        switch (autos) {
+          AsyncData(:final value) => _Playlists(
+            playlists: [for (final playlist in value) shownAs(playlist, l10n)],
+            layout: layout,
+          ),
+          _ => const SliverToBoxAdapter(child: _LoadingRow()),
+        },
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+        SliverToBoxAdapter(
+          child: Row(
+            children: [
+              Expanded(child: _Heading(text: l10n.autoPlaylistYours)),
+              // Beside playlists there are: with none, the line that says so
+              // offers it, and with them unreadable nothing can be made.
+              if (playlists case AsyncData(:final value) when value.isNotEmpty)
+                FilledButton.tonalIcon(
+                  onPressed: () => unawaited(startNewPlaylist(context, ref)),
+                  icon: const Icon(Icons.add),
+                  label: Text(l10n.playlistNew),
+                ),
+            ],
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
+        switch (playlists) {
+          AsyncData(:final value) when value.isNotEmpty => _Playlists(
+            playlists: mostRecentFirst(value),
+            layout: layout,
+          ),
+          AsyncData() => const SliverToBoxAdapter(
+            child: _NoPlaylists(inline: true),
+          ),
+          // Loading, or the failure with its retry — below the section,
+          // which does not depend on them.
+          _ => SliverToBoxAdapter(
+            child: AsyncStateView<List<Playlist>>(
+              value: playlists,
+              onRetry: () => ref.invalidate(playlistsControllerProvider),
+              builder: (context, _) => const SizedBox.shrink(),
+            ),
+          ),
+        },
+      ],
+    );
+  }
+}
+
+/// A section's heading in the tab.
+class _Heading extends StatelessWidget {
+  const _Heading({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Semantics(
+      header: true,
+      child: Text(
+        text,
+        style: theme.textTheme.titleSmall?.copyWith(
+          color: theme.colorScheme.primary,
+        ),
+      ),
+    );
+  }
+}
+
+/// What stands in for the auto playlists while the library is read.
+class _LoadingRow extends StatelessWidget {
+  const _LoadingRow();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+    child: Semantics(
+      label: AppLocalizations.of(context).loading,
+      child: const LinearProgressIndicator(),
+    ),
+  );
+}
+
+/// [playlists] as rows or tiles, as [layout] says, to go in a scroll.
+class _Playlists extends StatelessWidget {
+  const _Playlists({required this.playlists, required this.layout});
+
+  final List<Playlist> playlists;
+  final MusicLayout layout;
+
+  @override
+  Widget build(BuildContext context) => switch (layout) {
+    MusicLayout.list => _Rows(playlists: playlists),
+    MusicLayout.grid => _Tiles(playlists: playlists),
+  };
 }
 
 /// One row per playlist.
@@ -94,7 +235,7 @@ class _Rows extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
 
-    return ListView.builder(
+    return SliverList.builder(
       itemCount: playlists.length,
       itemBuilder: (context, index) {
         final playlist = playlists[index];
@@ -132,7 +273,7 @@ class _Tiles extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
-    return GridView.builder(
+    return SliverGrid.builder(
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: _extent,
         childAspectRatio: 3 / 4,
@@ -220,13 +361,42 @@ void _open(WidgetRef ref, Playlist playlist) =>
     ref.read(playlistBrowseProvider.notifier).open(playlist.id);
 
 /// No playlists yet, and the way to make the first.
+///
+/// The whole page when it is all the tab has; [inline], a line and the
+/// button under *Your playlists*, below the auto playlists.
 class _NoPlaylists extends ConsumerWidget {
-  const _NoPlaylists();
+  const _NoPlaylists({this.inline = false});
+
+  final bool inline;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+
+    if (inline) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.playlistEmpty,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            FilledButton.icon(
+              onPressed: () => unawaited(startNewPlaylist(context, ref)),
+              icon: const Icon(Icons.add),
+              label: Text(l10n.playlistNew),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Center(
       child: ConstrainedBox(

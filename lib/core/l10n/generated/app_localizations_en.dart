@@ -1139,4 +1139,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get playlistSkipThose => 'Skip those';
+
+  @override
+  String get autoPlaylistSection => 'Auto playlists';
+
+  @override
+  String get autoPlaylistYours => 'Your playlists';
+
+  @override
+  String get autoPlaylistLately => 'Favourites lately';
+
+  @override
+  String get autoPlaylistAllTime => 'All-time favourites';
+
+  @override
+  String get autoPlaylistFallbackNote =>
+      'Getting to know your recent listening';
+
+  @override
+  String get autoPlaylistLatelyEmpty =>
+      'Play some music and your recent favourites will show here';
+
+  @override
+  String get autoPlaylistAllTimeEmpty =>
+      'Play some music and your favourites will show here';
+
+  @override
+  String get autoPlaylistShow => 'Show auto playlists';
+
+  @override
+  String get autoPlaylistShowDetail =>
+      'Favourites lately and All-time favourites, at the top of Playlists. Your plays are still counted while they are hidden.';
 }

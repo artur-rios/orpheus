@@ -1431,5 +1431,41 @@
   "playlistSkipThose": "Skip those",
   "@playlistSkipThose": {
     "description": "The answer to the already-in-the-playlist question that adds only the songs that are not there yet."
+  },
+  "autoPlaylistSection": "Auto playlists",
+  "@autoPlaylistSection": {
+    "description": "The heading over the auto playlists at the top of the Playlists tab: the ones Orpheus keeps by itself from what the owner listens to."
+  },
+  "autoPlaylistYours": "Your playlists",
+  "@autoPlaylistYours": {
+    "description": "The heading over the owner's own playlists in the Playlists tab, below the auto playlists."
+  },
+  "autoPlaylistLately": "Favourites lately",
+  "@autoPlaylistLately": {
+    "description": "The name of the auto playlist of the songs the owner has played most in the last 30 days."
+  },
+  "autoPlaylistAllTime": "All-time favourites",
+  "@autoPlaylistAllTime": {
+    "description": "The name of the auto playlist of the songs the owner has played most, whenever they were played."
+  },
+  "autoPlaylistFallbackNote": "Getting to know your recent listening",
+  "@autoPlaylistFallbackNote": {
+    "description": "Shown under the header of Favourites lately while there are too few recent plays recorded to rank by them, so it is ranked by the songs last played instead."
+  },
+  "autoPlaylistLatelyEmpty": "Play some music and your recent favourites will show here",
+  "@autoPlaylistLatelyEmpty": {
+    "description": "What Favourites lately shows when no song has been played in the last 30 days."
+  },
+  "autoPlaylistAllTimeEmpty": "Play some music and your favourites will show here",
+  "@autoPlaylistAllTimeEmpty": {
+    "description": "What All-time favourites shows when no song in the library has been played yet."
+  },
+  "autoPlaylistShow": "Show auto playlists",
+  "@autoPlaylistShow": {
+    "description": "The preference that shows or hides the auto playlists in the Playlists tab."
+  },
+  "autoPlaylistShowDetail": "Favourites lately and All-time favourites, at the top of Playlists. Your plays are still counted while they are hidden.",
+  "@autoPlaylistShowDetail": {
+    "description": "The line under the Show auto playlists preference: what it shows, and that turning it off does not stop plays being recorded."
   }
 }

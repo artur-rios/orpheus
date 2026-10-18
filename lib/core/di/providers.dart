@@ -70,6 +70,7 @@ import '../../features/playlists/application/playlists_controller.dart';
 import '../../features/playlists/data/file_picker_file_saver.dart';
 import '../../features/playlists/data/file_playlist_cover_store.dart';
 import '../../features/playlists/data/json_playlist_store.dart';
+import '../../features/playlists/domain/auto_playlists.dart';
 import '../../features/playlists/domain/file_saver.dart';
 import '../../features/playlists/domain/playlist.dart';
 import '../../features/playlists/domain/playlist_cover_store.dart';
@@ -78,6 +79,7 @@ import '../../features/shell/application/preferences_controller.dart';
 import '../../features/shell/application/shell_controller.dart';
 import '../../features/shell/domain/shell_destination.dart';
 import '../../features/stats/application/music_stats_controller.dart';
+import '../../features/stats/application/play_history_controller.dart';
 import '../../features/stats/application/play_recorder.dart';
 import '../../features/stats/data/json_play_history_store.dart';
 import '../../features/stats/data/platform_story_share.dart';
@@ -302,8 +304,13 @@ final playbackPositionsProvider = Provider<PlaybackPositionStore>(
 );
 
 /// Where the play history is kept.
+///
+/// On the application's clock, which is what its dates are trimmed against.
 final playHistoryStoreProvider = Provider<PlayHistoryStore>(
-  (ref) => JsonPlayHistoryStore(ref.watch(appDirectoriesProvider).support),
+  (ref) => JsonPlayHistoryStore(
+    ref.watch(appDirectoriesProvider).support,
+    clock: ref.watch(clockProvider),
+  ),
 );
 
 /// Where the playlists are kept.
@@ -344,16 +351,87 @@ final playlistBrowseProvider =
 /// playlist was deleted while it was open — is none open, and so is any id
 /// while the playlists are still being read. The one answer to "is a playlist
 /// open", for the tab that shows it and the Back that closes it alike.
+///
+/// An auto playlist's id is read against [autoPlaylistsProvider] instead, and
+/// only that: it opens whatever became of the owner's playlists, and it reads
+/// as none open while the auto playlists are hidden — turning them off closes
+/// the one that was open.
 final openPlaylistProvider = Provider<Playlist?>((ref) {
   final open = ref.watch(playlistBrowseProvider);
   if (open == null) return null;
 
-  final playlists = ref.watch(playlistsControllerProvider).value ?? const [];
+  final playlists = isAutoPlaylistId(open)
+      ? ref.watch(autoPlaylistsProvider).value ?? const <Playlist>[]
+      : ref.watch(playlistsControllerProvider).value ?? const <Playlist>[];
   for (final playlist in playlists) {
     if (playlist.id == open) return playlist;
   }
 
   return null;
+});
+
+/// The auto playlists — *Favourites lately* and *All-time favourites* — as
+/// playlists to show, computed from the play history, the library and the
+/// clock.
+///
+/// Empty while the *Show auto playlists* preference is off (and then neither
+/// the history nor the library is waited for), loading until both the history
+/// and the library have loaded — a song is present only in a catalog that has
+/// loaded — and an error where the library could not be read. Recomputed
+/// whenever a play is recorded, the library changes or the preference does;
+/// there is no timer, so the 30-day window moves on at the next of those.
+///
+/// The playlists carry ids ([autoLatelyId], [autoAllTimeId]) and **no names**:
+/// a provider has no `BuildContext` to localise one with, so the views map the
+/// id to the name. See [autoPlaylists].
+final autoPlaylistsProvider = Provider<AsyncValue<List<Playlist>>>((ref) {
+  final shown = ref.watch(
+    preferencesControllerProvider.select((state) => state.showsAutoPlaylists),
+  );
+  if (!shown) return const AsyncData(<Playlist>[]);
+
+  final history = ref.watch(playHistoryProvider);
+  final catalog = ref.watch(musicLibraryControllerProvider);
+  if (catalog.hasError) {
+    return AsyncError(catalog.error!, catalog.stackTrace ?? StackTrace.empty);
+  }
+  if (history.hasError) {
+    return AsyncError(history.error!, history.stackTrace ?? StackTrace.empty);
+  }
+  if (!history.hasValue || !catalog.hasValue) return const AsyncLoading();
+
+  return AsyncData(
+    autoPlaylists(
+      history.requireValue,
+      catalog.requireValue.byPath,
+      ref.read(clockProvider)(),
+    ),
+  );
+});
+
+/// Whether *Favourites lately* is ranked on the weaker evidence of when songs
+/// were last played, because too few have dated plays — when it says so under
+/// its header (see [AutoList.isFallback]).
+///
+/// Worked out beside [autoPlaylistsProvider], from the same history, library
+/// and clock, rather than carried on its playlists: a [Playlist] has nowhere to
+/// hold it. `false` whenever that provider has no playlists to show.
+final autoLatelyIsFallbackProvider = Provider<bool>((ref) {
+  final shown = ref.watch(
+    preferencesControllerProvider.select((state) => state.showsAutoPlaylists),
+  );
+  if (!shown) return false;
+
+  final history = ref.watch(playHistoryProvider);
+  final catalog = ref.watch(musicLibraryControllerProvider);
+  if (history.hasError || catalog.hasError) return false;
+  if (!history.hasValue || !catalog.hasValue) return false;
+
+  return favouritesLately(
+    history.requireValue,
+    catalog.requireValue.byPath,
+    ref.read(clockProvider)(),
+  ).isFallback;
 });
 
 /// The picture the owner chose as a playlist's cover, or `null` for none.
@@ -374,12 +452,27 @@ final playlistCoverProvider =
 /// One for the application: the player writes to it and the statistics screen
 /// reads from it, and a second one would be a screen showing a total the last
 /// play is missing from.
-final playRecorderProvider = Provider<PlayRecorder>(
-  (ref) => PlayRecorder(
+final playRecorderProvider = Provider<PlayRecorder>((ref) {
+  final recorder = PlayRecorder(
     store: ref.watch(playHistoryStoreProvider),
     clock: ref.watch(clockProvider),
-  ),
-);
+  );
+  ref.onDispose(recorder.dispose);
+
+  return recorder;
+});
+
+/// The play history as it is now, updated after each play is recorded.
+///
+/// An [AsyncNotifier] over [playRecorderProvider] (see
+/// [PlayHistoryController]), for what follows the owner's listening — the
+/// auto playlists. Not auto-disposed: it is the recorder's history, which
+/// outlives every screen. The statistics screen does not watch it; it reads
+/// the recorder once per opening, as it always has.
+final playHistoryProvider =
+    AsyncNotifierProvider<PlayHistoryController, PlayHistory>(
+      PlayHistoryController.new,
+    );
 
 /// The folders the library is built from.
 final libraryFoldersControllerProvider =

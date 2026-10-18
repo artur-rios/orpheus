@@ -5,6 +5,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
+import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/playback/domain/music_layout.dart';
 import 'package:orpheus/features/playback/presentation/album_art.dart';
@@ -55,8 +56,15 @@ void main() {
 
   final roadTrip = stored('p1', 'Road trip', entries: songs.take(2).toList());
 
-  Harness harnessOver(List<Playlist> playlists) =>
-      Harness(library: songs, playlists: playlists, now: now);
+  Harness harnessOver(
+    List<Playlist> playlists, {
+    bool showsAutoPlaylists = true,
+  }) => Harness(
+    library: songs,
+    playlists: playlists,
+    now: now,
+    settings: InMemorySettingsStore(showsAutoPlaylists: showsAutoPlaylists),
+  );
 
   Future<Harness> show(
     WidgetTester tester, {
@@ -123,7 +131,13 @@ void main() {
           find.descendant(of: row, matching: find.byType(PlaylistCover)),
           findsOneWidget,
         );
-        expect(find.text('No songs'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.widgetWithText(ListTile, 'Empty one'),
+            matching: find.text('No songs'),
+          ),
+          findsOneWidget,
+        );
       },
     );
 
@@ -177,6 +191,39 @@ void main() {
         double top(String name) => tester.getTopLeft(find.text(name)).dy;
         expect(top('Newest'), lessThan(top('Middle')));
         expect(top('Middle'), lessThan(top('Oldest')));
+      },
+    );
+
+    testWidgets(
+      'GivenAutoPlaylistsOffAndNoPlaylists_WhenTheTabIsShown_ThenItSaysSoAndOffersNewPlaylist',
+      (tester) async {
+        await show(
+          tester,
+          harness: harnessOver(const [], showsAutoPlaylists: false),
+        );
+
+        expect(find.text('No playlists yet'), findsOneWidget);
+        expect(
+          find.widgetWithText(FilledButton, 'New playlist'),
+          findsOneWidget,
+        );
+        expect(find.text('Auto playlists'), findsNothing);
+        expect(find.text('Your playlists'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'GivenAutoPlaylistsOffAndAStoreThatCouldNotBeRead_WhenTheTabIsShown_ThenItShowsTheFailureAndNoNewPlaylist',
+      (tester) async {
+        final harness = harnessOver(const [], showsAutoPlaylists: false);
+        harness.playlistStore.failRead = Exception('unreadable');
+
+        await show(tester, harness: harness);
+
+        expect(find.text('Try again'), findsOneWidget);
+        expect(find.text('New playlist'), findsNothing);
+        expect(find.text('No playlists yet'), findsNothing);
+        expect(find.text('Auto playlists'), findsNothing);
       },
     );
 

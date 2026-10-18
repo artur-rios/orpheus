@@ -55,6 +55,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   atomically. A document Orpheus cannot read, or that another version wrote, is kept aside as
   `playlists.json.bad-<time>` and never overwritten; if it cannot be set aside, the Playlists tab shows an error and
   nothing is saved over it.
+- Auto playlists. An *Auto playlists* section at the top of the Playlists tab, above *Your playlists*, holds two
+  playlists Orpheus keeps from what you listen to: *Favourites lately*, the songs you have played most in the last 30
+  days, and *All-time favourites*, the songs you have played most ever. Each holds up to 50 songs, most plays first and
+  the more recently played first among equals, and a song the library does not hold is left out. Until at least 10
+  songs have a play recorded with its date in the last 30 days, *Favourites lately* is the songs played in the last 30
+  days by their total plays and says *Getting to know your recent listening*. They fill themselves as you listen. Open
+  one to *Play* or *Shuffle* it, tap a song to play from there, or select songs to *Add to playlist…* or
+  *Edit tags…*; its menu has *Add to playlist…*, which copies every song into a playlist of your own, and
+  *Export to .m3u…*. They cannot be reordered, edited, renamed or deleted, and are never written to `playlists.json`.
+- *Show auto playlists* in the preferences, on by default. Off, the section is hidden and an open auto playlist closes;
+  your plays are still recorded, so turning it back on finds the lists as your listening has made them.
+- Each play is now recorded with its date, and a song keeps the dates of its plays from the last 90 days. That is what
+  *Favourites lately* is worked out from; the statistics screen shows the same numbers as before.
 
 ### Changed
 
@@ -71,6 +84,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   Touch and hold on an album or an artist still opens its menu.
 - On a phone, *Edit tags…* in a selection's bar is an icon with a tooltip, where the bar is narrower than 480 logical
   pixels, so the count keeps its room. The bar's other actions are icons at any width.
+- The play history, `play-history.json`, is now version 2, and an existing history is migrated: every song keeps its
+  count and its last-played date, and it is never reset. The first time a version-1 history is read, a copy is kept
+  as `play-history.json.v1`. An earlier release does not read it, but if you install one you can restore it by hand,
+  by renaming it to `play-history.json`.
+- A play history Orpheus cannot read — not UTF-8 or not JSON, not a play history, or written by another version — is
+  no longer started over and overwritten: it is kept aside as `play-history.json.bad-<time>`, and a history with a
+  row or date that is not one has the original copied aside under that name before the rest is kept. If it cannot be
+  kept aside, no plays are recorded until the next start, so that nothing is written over it; playback is not
+  affected.
 
 ## [1.4.0] - 2026-10-13
 

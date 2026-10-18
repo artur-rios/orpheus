@@ -1144,4 +1144,34 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get playlistSkipThose => 'Pular essas';
+
+  @override
+  String get autoPlaylistSection => 'Playlists automáticas';
+
+  @override
+  String get autoPlaylistYours => 'Suas playlists';
+
+  @override
+  String get autoPlaylistLately => 'Favoritas do momento';
+
+  @override
+  String get autoPlaylistAllTime => 'Favoritas de todos os tempos';
+
+  @override
+  String get autoPlaylistFallbackNote => 'Conhecendo o que você tem ouvido';
+
+  @override
+  String get autoPlaylistLatelyEmpty =>
+      'Ouça algumas músicas e suas favoritas do momento vão aparecer aqui';
+
+  @override
+  String get autoPlaylistAllTimeEmpty =>
+      'Ouça algumas músicas e suas favoritas vão aparecer aqui';
+
+  @override
+  String get autoPlaylistShow => 'Mostrar playlists automáticas';
+
+  @override
+  String get autoPlaylistShowDetail =>
+      'Favoritas do momento e Favoritas de todos os tempos, no topo de Playlists. O que você ouve continua sendo contado enquanto elas estão ocultas.';
 }

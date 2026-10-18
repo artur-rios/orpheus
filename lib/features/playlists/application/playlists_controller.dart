@@ -158,15 +158,18 @@ class PlaylistsController extends AsyncNotifier<List<Playlist>> {
     await _deleteCover(playlistId);
   });
 
-  /// Offers the playlist [playlistId] to the owner as `<name>.m3u` and saves
-  /// it where they say.
+  /// Offers [playlist] to the owner as `<name>.m3u` and saves it where they
+  /// say.
+  ///
+  /// Given the playlist rather than its id, so that one that is not stored —
+  /// an auto playlist, named by the view that shows it — exports the same
+  /// way, and does so while the stored ones cannot be read.
   ///
   /// Returns where it went, or `null` when they cancelled. Throws when the
   /// file could not be saved. Not queued with the changes: it writes nothing
   /// of the playlists', and it would hold every change behind it for as long
   /// as the owner took to choose a place.
-  Future<SavedFile?> exportM3u(String playlistId) async {
-    final playlist = _find(await _loaded(), playlistId);
+  Future<SavedFile?> exportM3u(Playlist playlist) async {
     final catalog =
         ref.read(musicLibraryControllerProvider).value?.byPath ?? const {};
     final text = playlistToM3u(playlist, catalog);

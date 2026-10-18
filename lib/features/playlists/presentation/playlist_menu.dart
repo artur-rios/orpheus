@@ -8,12 +8,19 @@ import '../../../core/di/providers.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../shell/presentation/confirmation_dialog.dart';
 import '../../tag_editor/domain/tag_edits.dart';
+import '../domain/auto_playlists.dart';
 import '../domain/playlist.dart';
+import 'add_to_playlist.dart';
 import 'playlist_name_dialog.dart';
 
 final Logger _log = Logger('playlists');
 
 /// A playlist's own actions: rename, its cover, export and delete.
+///
+/// An auto playlist's are only *Add to playlist…* — every song of it, into
+/// one of the owner's — and export: it is Orpheus's to keep, not the owner's
+/// to rename, re-cover or delete. Given the playlist as it is shown, named
+/// (see `shownAs`), since that name is what an export is called.
 ///
 /// Opened by right-click, touch and hold, or the ⋮ button, as an album's menu
 /// is: a playlist is a row like an album, not a song in a list, so touch and
@@ -37,38 +44,23 @@ class PlaylistMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final export = MenuItemButton(
+      leadingIcon: const Icon(Icons.file_download_outlined),
+      onPressed: () => unawaited(_export(context, ref)),
+      child: Text(l10n.playlistExport),
+    );
 
     return MenuAnchor(
-      menuChildren: [
-        MenuItemButton(
-          leadingIcon: const Icon(Icons.drive_file_rename_outline),
-          onPressed: () => unawaited(_rename(context, ref)),
-          child: Text(l10n.playlistRename),
-        ),
-        MenuItemButton(
-          leadingIcon: const Icon(Icons.image_outlined),
-          onPressed: () => unawaited(_chooseCover(context, ref)),
-          child: Text(l10n.playlistChooseCover),
-        ),
-        // Only where there is a cover of the owner's own to take off: the
-        // mosaic is what a playlist has when it has none.
-        if (playlist.coverId != null)
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.hide_image_outlined),
-            onPressed: () => unawaited(_removeCover(context, ref)),
-            child: Text(l10n.playlistRemoveCover),
-          ),
-        MenuItemButton(
-          leadingIcon: const Icon(Icons.file_download_outlined),
-          onPressed: () => unawaited(_export(context, ref)),
-          child: Text(l10n.playlistExport),
-        ),
-        MenuItemButton(
-          leadingIcon: const Icon(Icons.delete_outline),
-          onPressed: () => unawaited(_delete(context, ref)),
-          child: Text(l10n.playlistDelete),
-        ),
-      ],
+      menuChildren: isAutoPlaylistId(playlist.id)
+          ? [
+              MenuItemButton(
+                leadingIcon: const Icon(Icons.playlist_add),
+                onPressed: () => unawaited(_addAll(context, ref)),
+                child: Text(l10n.playlistAddTo),
+              ),
+              export,
+            ]
+          : _ownersItems(context, ref, l10n, export),
       builder: (context, controller, _) => GestureDetector(
         onSecondaryTapDown: (details) =>
             controller.open(position: details.localPosition),
@@ -78,6 +70,39 @@ class PlaylistMenu extends ConsumerWidget {
       ),
     );
   }
+
+  /// What one of the owner's own playlists offers.
+  List<Widget> _ownersItems(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    Widget export,
+  ) => [
+    MenuItemButton(
+      leadingIcon: const Icon(Icons.drive_file_rename_outline),
+      onPressed: () => unawaited(_rename(context, ref)),
+      child: Text(l10n.playlistRename),
+    ),
+    MenuItemButton(
+      leadingIcon: const Icon(Icons.image_outlined),
+      onPressed: () => unawaited(_chooseCover(context, ref)),
+      child: Text(l10n.playlistChooseCover),
+    ),
+    // Only where there is a cover of the owner's own to take off: the
+    // mosaic is what a playlist has when it has none.
+    if (playlist.coverId != null)
+      MenuItemButton(
+        leadingIcon: const Icon(Icons.hide_image_outlined),
+        onPressed: () => unawaited(_removeCover(context, ref)),
+        child: Text(l10n.playlistRemoveCover),
+      ),
+    export,
+    MenuItemButton(
+      leadingIcon: const Icon(Icons.delete_outline),
+      onPressed: () => unawaited(_delete(context, ref)),
+      child: Text(l10n.playlistDelete),
+    ),
+  ];
 
   // Each action takes what it needs from the tree before its first wait: the
   // row it was opened from may be gone by the time the owner answers — moved
@@ -130,13 +155,24 @@ class PlaylistMenu extends ConsumerWidget {
         ref.read(playlistsControllerProvider.notifier).removeCover(playlist.id),
   );
 
+  /// Every song of the playlist the library has, into a playlist the owner
+  /// chooses — an auto playlist copied into one of their own.
+  Future<void> _addAll(BuildContext context, WidgetRef ref) {
+    final songs =
+        ref.read(musicLibraryControllerProvider).value?.byPath ?? const {};
+
+    return startAddToPlaylist(context, ref, [
+      for (final entry in playlist.entries) ?songs[entry.path],
+    ]);
+  }
+
   Future<void> _export(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final playlists = ref.read(playlistsControllerProvider.notifier);
 
     try {
-      final saved = await playlists.exportM3u(playlist.id);
+      final saved = await playlists.exportM3u(playlist);
       // A cancelled dialog is the owner's answer, not something to report.
       if (saved == null) return;
 
