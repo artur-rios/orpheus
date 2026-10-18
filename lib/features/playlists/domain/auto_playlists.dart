@@ -53,21 +53,25 @@ class AutoList {
 /// [AutoList.isFallback] says so.
 ///
 /// A time exactly [latelyWindow] before [now] is within it, as for the
-/// history's own trimming. Times are compared as instants, so a local time
-/// and the same moment in UTC are the same.
+/// history's own trimming, and [now] itself is too; a dated play after [now]
+/// — recorded while the clock was ahead — is not counted. Times are compared
+/// as instants, so a local time and the same moment in UTC are the same.
 AutoList favouritesLately(
   PlayHistory history,
   Map<String, MusicEntry> catalogByPath,
   DateTime now,
 ) {
-  final since = now.toUtc().subtract(latelyWindow);
+  final until = now.toUtc();
+  final since = until.subtract(latelyWindow);
 
   final recentCounts = <TrackPlays, int>{};
   for (final track in history.tracks.values) {
     if (!catalogByPath.containsKey(track.path)) continue;
-    final count = track.recent
-        .where((at) => !at.toUtc().isBefore(since))
-        .length;
+    final count = track.recent.where((at) {
+      final instant = at.toUtc();
+
+      return !instant.isBefore(since) && !instant.isAfter(until);
+    }).length;
     if (count > 0) recentCounts[track] = count;
   }
 
