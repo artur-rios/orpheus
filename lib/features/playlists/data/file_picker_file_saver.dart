@@ -22,7 +22,7 @@ class FilePickerFileSaver implements FileSaver {
     required Uint8List bytes,
   }) async {
     final saved = await FilePicker.saveFile(
-      fileName: suggestedName,
+      fileName: safeFileName(suggestedName),
       bytes: bytes,
       mimeType: _mimeTypeOf(suggestedName),
     );
@@ -39,4 +39,22 @@ class FilePickerFileSaver implements FileSaver {
         '.m3u' || '.m3u8' => 'audio/x-mpegurl',
         _ => 'application/octet-stream',
       };
+}
+
+/// [name] with what a file name may not contain made harmless.
+///
+/// A playlist is called whatever its owner likes — "AC/DC", "Rock: 70s" — and
+/// the file it is exported to is named after it. Windows refuses names with
+/// `< > : " / \ | ? *` or control characters, and the Windows save dialog
+/// does not report that: it throws inside an isolate nobody listens to, and
+/// the dialog never returns. So each of those becomes `_`, and the dots and
+/// spaces Windows also refuses at the end of a name are trimmed, before the
+/// name goes anywhere near it. A name with nothing left is `_`.
+String safeFileName(String name) {
+  final replaced = name.replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1f]'), '_');
+  final trimmed = replaced
+      .replaceAll(RegExp(r'^\s+'), '')
+      .replaceAll(RegExp(r'[. ]+$'), '');
+
+  return trimmed.isEmpty ? '_' : trimmed;
 }
