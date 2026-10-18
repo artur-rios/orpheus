@@ -159,6 +159,8 @@ wherever a test can enforce it.
 | **FR-UX-08** | Every colour must come from the theme's single seed, and no colour literal may exist outside the theme (`BR-26`). |
 | **FR-UX-09** | Both language catalogs must stay complete, every message must carry a description, and a translation must use the same placeholders as its original (`BR-27`). |
 | **FR-UX-10** | The desktop window's size and position must be restored between runs, and a minimum size enforced. |
+| **FR-UX-11** | A list of songs — all songs, the songs of an album or of a genre, and search results — must let the owner select several of them. Touch and hold, Ctrl-click and Shift-click start a selection; while it lasts a tap toggles a song instead of playing it, the number selected and the actions that apply to them are shown, and Esc, Back, a control on screen, or leaving the list end it. |
+| **FR-UX-12** | Touch and hold on a song must start a selection rather than open its menu; a song's menu stays on its ⋮ button and a right-click, which on a selected song opens a menu for the selection. Touch and hold on an album, an artist or a genre still opens its menu. |
 
 ### 2.7 Lyrics (LY)
 
@@ -219,7 +221,7 @@ Realises F-16.
 
 ### 2.10 Tag editing (TE)
 
-Realises F-18 and F-19.
+Realises F-18, F-19 and F-20.
 
 | ID | Requirement |
 | --- | --- |
@@ -231,6 +233,7 @@ Realises F-18 and F-19.
 | **FR-TE-06** | Tracks Orpheus cannot write (`FR-TE-02`) must be named before the owner saves and left alone; a field none of the tracks can hold is not editable. |
 | **FR-TE-07** | Only the fields the owner changed may be written, to each track that can hold them, under the rules of `FR-TE-03`, each track measured against itself as it was read; a mixed field left alone is written to none, and a track that already holds the value is not written for it. |
 | **FR-TE-08** | Each track that could not be written must be named with its reason as in `FR-AF-07`, without undoing the tracks that were; those in use, failed or changed since read can be tried again. The library updates without the owner starting a scan. |
+| **FR-TE-09** | The owner must be able to edit the tags of the songs selected under `FR-UX-11` in one form, as in `FR-TE-05` … `FR-TE-08`; one selected song opens the form of a single track (`FR-TE-01`). The selection must end once the form has written at least one song, and stay when it wrote none. |
 
 ## 3. Non-functional requirements
 
@@ -274,6 +277,7 @@ Realises F-18 and F-19.
 | F-17 Autofill tags | FR-AF-01 … FR-AF-08 |
 | F-18 Edit a track's tags | FR-TE-01 … FR-TE-04 |
 | F-19 Edit the tags of several tracks | FR-TE-05 … FR-TE-08 |
+| F-20 Select several songs | FR-UX-11, FR-UX-12, FR-TE-09 |
 
 ### 4.2 Requirements to use cases
 
@@ -284,11 +288,11 @@ Realises F-18 and F-19.
 | PL | UC-13 … UC-23 |
 | BG | UC-24, UC-25 |
 | ST | UC-26, UC-27 |
-| UX | UC-28, UC-29 |
+| UX | UC-28, UC-29, UC-38 |
 | LY | UC-30, UC-31, UC-33 |
 | VZ | UC-32 |
 | AF | UC-34 |
-| TE | UC-35, UC-37 |
+| TE | UC-35, UC-37, UC-38 |
 
 ## 5. Data model
 

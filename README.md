@@ -13,7 +13,7 @@ result in a file beside its own settings.
 
 > **Status:** complete and tested — the unit and widget suite green and
 > `flutter analyze` clean. Every use case in the [specifications](#specifications),
-> UC-01 to UC-37, is implemented — see the [roadmap](#roadmap). All three
+> UC-01 to UC-38, is implemented — see the [roadmap](#roadmap). All three
 > release builds and the Windows installer are produced and verified by CI on
 > every pull request. It runs on Linux, Windows and Android: the fixes released
 > since 1.0.0 came from running it on a Windows machine and an Android phone.
@@ -60,6 +60,14 @@ result in a file beside its own settings.
   written, and the library updates by itself. Or, from an album's or an
   artist's ⋮ menu, the shared tags of all its songs at once; fields they
   disagree on show as mixed and are left alone unless you type in them.
+- **Selects several songs.** In any list of songs — all of them, inside an
+  album or a genre, or search results — touch and hold one, or Ctrl-click or
+  Shift-click it, and tick boxes appear: tap to add or remove songs instead of
+  playing them, Shift-click to take a stretch, *Select all* for the lot. A bar
+  shows how many are picked, and *Edit tags of N songs…* — in it, or on a
+  right-click — opens the same form for exactly those songs, wherever they
+  come from. Esc, ✕, Back or leaving the list ends it. A song's own menu is on
+  its ⋮ button.
 - **Searches** across titles, artists, albums and genres — all together, or
   one kind at a time with a selector — ranked so a match at the start of a
   title comes above one buried in the middle of something else.
@@ -516,7 +524,7 @@ not written, and on Windows the track playing may be refused as in use.
 ## Roadmap
 
 Nine milestones covering thirty-four issues: one foundation issue plus one
-issue per use case from UC-01 to UC-33. UC-34, UC-35, UC-36 and UC-37 came after
+issue per use case from UC-01 to UC-33. UC-34, UC-35, UC-36, UC-37 and UC-38 came after
 the backlog was filed and have no milestone; they are listed after M-09.
 Milestones are dependency-ordered — no milestone depends on a later one, and
 every milestone after `M-01` depends on it.
@@ -622,7 +630,7 @@ Built, tested and specified, and merged.
 
 ### After the backlog — Tags and genres
 
-Built, tested and specified, and merged. UC-34, UC-36 and UC-37 have no issue, so the use case itself is linked.
+Built, tested and specified, and merged. UC-34, UC-36, UC-37 and UC-38 have no issue, so the use case itself is linked.
 
 | Issue | Work | Spec |
 | --- | --- | --- |
@@ -630,6 +638,7 @@ Built, tested and specified, and merged. UC-34, UC-36 and UC-37 have no issue, s
 | [#53](https://github.com/artur-rios/orpheus/issues/53) | UC-35 — Edit a track's tags by hand — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [UC-36](docs/requirements/Use%20Case%20Specification%20Document.md#uc-36-browse-and-play-by-genre) | UC-36 — Browse and play by genre — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [UC-37](docs/requirements/Use%20Case%20Specification%20Document.md#uc-37-edit-the-tags-of-several-tracks-at-once) | UC-37 — Edit the tags of several tracks at once — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-38](docs/requirements/Use%20Case%20Specification%20Document.md#uc-38-select-several-songs-and-edit-their-tags) | UC-38 — Select several songs and edit their tags — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
 ## Changelog
 
