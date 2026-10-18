@@ -64,6 +64,12 @@ import '../../features/playback/domain/song_selection.dart';
 import '../../features/playback/domain/track_analysis.dart';
 import '../../features/playback/domain/track_energy.dart';
 import '../../features/playback/domain/track_probe.dart';
+import '../../features/playlists/data/file_picker_file_saver.dart';
+import '../../features/playlists/data/file_playlist_cover_store.dart';
+import '../../features/playlists/data/json_playlist_store.dart';
+import '../../features/playlists/domain/file_saver.dart';
+import '../../features/playlists/domain/playlist_cover_store.dart';
+import '../../features/playlists/domain/playlist_store.dart';
 import '../../features/shell/application/preferences_controller.dart';
 import '../../features/shell/application/shell_controller.dart';
 import '../../features/shell/domain/shell_destination.dart';
@@ -281,6 +287,21 @@ final playbackPositionsProvider = Provider<PlaybackPositionStore>(
 /// Where the play history is kept.
 final playHistoryStoreProvider = Provider<PlayHistoryStore>(
   (ref) => JsonPlayHistoryStore(ref.watch(appDirectoriesProvider).support),
+);
+
+/// Where the playlists are kept.
+final playlistStoreProvider = Provider<PlaylistStore>(
+  (ref) => JsonPlaylistStore(ref.watch(appDirectoriesProvider).support),
+);
+
+/// Where the pictures chosen as playlist covers are kept.
+final playlistCoverStoreProvider = Provider<PlaylistCoverStore>(
+  (ref) => FilePlaylistCoverStore(ref.watch(appDirectoriesProvider).support),
+);
+
+/// The platform's save dialog, for a playlist exported to a file.
+final fileSaverProvider = Provider<FileSaver>(
+  (ref) => const FilePickerFileSaver(),
 );
 
 /// What counts a play, and what has been counted.
