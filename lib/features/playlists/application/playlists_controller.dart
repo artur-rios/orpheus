@@ -109,11 +109,8 @@ class PlaylistsController extends AsyncNotifier<List<Playlist>> {
     String? beforeEntryId,
   }) => _edit(
     playlistId,
-    (playlist) => playlist.movingEntry(
-      entryId,
-      beforeEntryId,
-      ref.read(clockProvider)(),
-    ),
+    (playlist) =>
+        playlist.movingEntry(entryId, beforeEntryId, ref.read(clockProvider)()),
   );
 
   /// Calls the playlist [playlistId] [name].

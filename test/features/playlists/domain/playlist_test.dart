@@ -112,23 +112,17 @@ void main() {
       expect(ids(playlist.movingEntry('a', null, t1)), ['b', 'c', 'a']);
     });
 
-    test(
-      'GivenTheEntryToGoBeforeIsGone_WhenAnEntryIsMoved_ThenItIsLast',
-      () {
-        final playlist = playlistOf([song('a'), song('b'), song('c')]);
+    test('GivenTheEntryToGoBeforeIsGone_WhenAnEntryIsMoved_ThenItIsLast', () {
+      final playlist = playlistOf([song('a'), song('b'), song('c')]);
 
-        expect(ids(playlist.movingEntry('a', 'gone', t1)), ['b', 'c', 'a']);
-      },
-    );
+      expect(ids(playlist.movingEntry('a', 'gone', t1)), ['b', 'c', 'a']);
+    });
 
-    test(
-      'GivenTheEntryIsGone_WhenItIsMoved_ThenThePlaylistIsUnchanged',
-      () {
-        final playlist = playlistOf([song('a'), song('b')]);
+    test('GivenTheEntryIsGone_WhenItIsMoved_ThenThePlaylistIsUnchanged', () {
+      final playlist = playlistOf([song('a'), song('b')]);
 
-        expect(playlist.movingEntry('gone', 'a', t1), same(playlist));
-      },
-    );
+      expect(playlist.movingEntry('gone', 'a', t1), same(playlist));
+    });
 
     test(
       'GivenAnEntryAlreadyWhereItIsPut_WhenMoved_ThenThePlaylistIsUnchanged',
@@ -142,10 +136,7 @@ void main() {
     );
 
     test('GivenAMove_WhenItIsMade_ThenModifiedAtMoves', () {
-      final next = playlistOf([
-        song('a'),
-        song('b'),
-      ]).movingEntry('b', 'a', t1);
+      final next = playlistOf([song('a'), song('b')]).movingEntry('b', 'a', t1);
 
       expect(next.modifiedAt, t1);
       expect(next.createdAt, t0);

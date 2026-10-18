@@ -119,10 +119,7 @@ void main() {
     expect(await store.read(), isEmpty);
 
     expect(File(store.path).existsSync(), isFalse);
-    expect(
-      File(p.join(store.directory, asideName())).readAsBytesSync(),
-      bytes,
-    );
+    expect(File(p.join(store.directory, asideName())).readAsBytesSync(), bytes);
   });
 
   test('GivenAWrongShape_WhenRead_ThenItIsKeptAside', () async {

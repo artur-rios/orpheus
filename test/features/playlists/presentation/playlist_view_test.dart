@@ -356,17 +356,16 @@ void main() {
       },
     );
 
-    testWidgets(
-      'GivenAPlaylist_WhenARowIsDraggedDown_ThenItMovesAndIsSaved',
-      (tester) async {
-        final harness = await show(tester, roadTrip);
+    testWidgets('GivenAPlaylist_WhenARowIsDraggedDown_ThenItMovesAndIsSaved', (
+      tester,
+    ) async {
+      final harness = await show(tester, roadTrip);
 
-        await dragOnto(tester, 'Alpha', 'Charlie');
+      await dragOnto(tester, 'Alpha', 'Charlie');
 
-        expect(storedIds(harness), ['e2', 'e3', 'e1', 'e4']);
-        expect(titlesInOrder(tester), ['Ghost', 'Bravo', 'Alpha', 'Charlie']);
-      },
-    );
+      expect(storedIds(harness), ['e2', 'e3', 'e1', 'e4']);
+      expect(titlesInOrder(tester), ['Ghost', 'Bravo', 'Alpha', 'Charlie']);
+    });
 
     testWidgets(
       'GivenAMoveThatCannotBeSaved_WhenARowIsDragged_ThenTheStoredOrderIsBack',

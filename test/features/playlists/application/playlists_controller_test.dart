@@ -312,17 +312,14 @@ void main() {
       expect(harness.playlistStore.playlists.single.modifiedAt, now);
     });
 
-    test(
-      'GivenEntries_WhenOneIsMovedBeforeAnother_ThenItLandsThere',
-      () async {
-        final harness = harnessOver(playlists: [stored('p', entries: three())]);
-        final controller = await controllerOf(harness);
+    test('GivenEntries_WhenOneIsMovedBeforeAnother_ThenItLandsThere', () async {
+      final harness = harnessOver(playlists: [stored('p', entries: three())]);
+      final controller = await controllerOf(harness);
 
-        await controller.move('p', 'e2', beforeEntryId: 'e1');
+      await controller.move('p', 'e2', beforeEntryId: 'e1');
 
-        expect(entryIdsOf(harness), ['e0', 'e2', 'e1']);
-      },
-    );
+      expect(entryIdsOf(harness), ['e0', 'e2', 'e1']);
+    });
 
     test(
       'GivenAnEntryThatIsNotThere_WhenItIsMoved_ThenNothingIsWritten',
