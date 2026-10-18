@@ -85,6 +85,7 @@ class GenresView extends ConsumerWidget {
               ),
         ),
         shuffleTooltip: l10n.genreShuffle,
+        selectionPlace: ('genre', key),
       ),
     );
   }

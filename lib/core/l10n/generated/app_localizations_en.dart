@@ -953,4 +953,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get musicGroupActions => 'More actions';
+
+  @override
+  String musicSelectionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count selected',
+      one: '1 selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get musicSelectionAll => 'Select all';
+
+  @override
+  String get musicSelectionStop => 'Stop selecting';
+
+  @override
+  String musicSelectionSelect(String title) {
+    return 'Select $title';
+  }
+
+  @override
+  String musicSelectionEditTags(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Edit tags of $count songs…',
+      one: 'Edit tags of 1 song…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get musicSelectionLabel => 'Selected songs';
 }

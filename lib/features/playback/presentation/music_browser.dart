@@ -40,6 +40,7 @@ class MusicBrowser extends ConsumerWidget {
     required this.rootLabel,
     required this.onShuffle,
     required this.shuffleTooltip,
+    required this.selectionPlace,
     this.leadingCrumbs = const [],
     this.fallbackLibrary,
     this.listFrame,
@@ -101,6 +102,14 @@ class MusicBrowser extends ConsumerWidget {
   /// What the controls bar's shuffle button says it does.
   final String shuffleTooltip;
 
+  /// Which browser this is, as the start of every song list's identity —
+  /// `'music'` for the Music tab, the genre for one opened in Genres.
+  ///
+  /// Songs under Music and Songs under Rock are two lists, and a selection
+  /// made in one is not the other's; the rest of the identity is where the
+  /// owner has drilled to.
+  final Object selectionPlace;
+
   /// What the list is drawn inside, or `null` for the list alone.
   ///
   /// The Music tab's: its loading, failure and empty states take the list's
@@ -118,6 +127,7 @@ class MusicBrowser extends ConsumerWidget {
       songs: songs,
       fallbackLibrary: fallbackLibrary,
       layout: layout,
+      selectionPlace: selectionPlace,
     );
 
     return Column(
@@ -216,12 +226,14 @@ class _List extends StatelessWidget {
     required this.songs,
     required this.fallbackLibrary,
     required this.layout,
+    required this.selectionPlace,
   });
 
   final MusicBrowseState state;
   final List<MusicEntry> library;
   final List<MusicEntry> songs;
   final List<MusicEntry>? fallbackLibrary;
+  final Object selectionPlace;
 
   /// Rows or tiles, the same choice wherever the owner has drilled to: a
   /// layout that changed under them as they went into a record would be a
@@ -239,11 +251,18 @@ class _List extends StatelessWidget {
         : tracks;
   }
 
+  /// Which song list is on screen: this browser, and where in it the owner
+  /// is. Opening another record, or switching views, names another list, and
+  /// a selection made in the last one ends.
+  Object get _selectionScope =>
+      (selectionPlace, state.view, state.artist, state.album, state.inAlbum);
+
   @override
   Widget build(BuildContext context) => switch (state) {
     MusicBrowseState(inAlbum: true) => MusicTrackList(
       entries: _recordTracks(),
       numbered: true,
+      selectionScope: _selectionScope,
     ),
     MusicBrowseState(view: MusicView.artists, inArtist: true) => MusicGroupList(
       groups: albumsOfArtist(state.artist, library),
@@ -263,6 +282,7 @@ class _List extends StatelessWidget {
     MusicBrowseState(view: MusicView.songs) => MusicTrackList(
       entries: songs,
       numbered: false,
+      selectionScope: _selectionScope,
     ),
   };
 }

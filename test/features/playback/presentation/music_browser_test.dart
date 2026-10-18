@@ -73,6 +73,7 @@ void main() {
             fallbackLibrary: fallbackLibrary,
             onShuffle: onShuffle ?? () {},
             shuffleTooltip: 'Shuffle the genre',
+            selectionPlace: ('genre', 'rock'),
           ),
         ),
       ),
