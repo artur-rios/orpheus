@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import '../../library/data/id3v2_frames.dart';
@@ -159,55 +158,10 @@ _ReadString? _readString(Uint8List data, int start, int encoding) {
     if (wide && data[end + 1] != 0) continue;
 
     return (
-      value: _decode(Uint8List.sublistView(data, start, end), encoding),
+      value: id3DecodeText(Uint8List.sublistView(data, start, end), encoding),
       next: end + step,
     );
   }
 
   return null;
-}
-
-/// [bytes] as text, in the encoding the frame declared.
-String _decode(Uint8List bytes, int encoding) => switch (encoding) {
-  // ISO-8859-1, which is what a tag written before the century says.
-  0 => latin1.decode(bytes, allowInvalid: true),
-  1 => _utf16(bytes, bigEndian: _isBigEndianBom(bytes)),
-  2 => _utf16(bytes, bigEndian: true),
-  3 => utf8.decode(bytes, allowMalformed: true),
-  // A frame declaring an encoding the format does not define is read as
-  // Latin-1, which is the reading that at least cannot throw.
-  _ => latin1.decode(bytes, allowInvalid: true),
-};
-
-/// Whether [bytes] opens with a big-endian byte-order mark.
-///
-/// The format requires UTF-16 here to carry one. Where a writer left it out,
-/// little-endian is the assumption, because that is what the writers that
-/// leave it out produce.
-bool _isBigEndianBom(Uint8List bytes) =>
-    bytes.length >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF;
-
-/// [bytes] as UTF-16 text, with a byte-order mark taken off where there is
-/// one.
-String _utf16(Uint8List bytes, {required bool bigEndian}) {
-  var start = 0;
-  if (bytes.length >= 2 &&
-      ((bytes[0] == 0xFF && bytes[1] == 0xFE) ||
-          (bytes[0] == 0xFE && bytes[1] == 0xFF))) {
-    start = 2;
-  }
-
-  final units = <int>[];
-  for (var index = start; index + 1 < bytes.length; index += 2) {
-    units.add(
-      bigEndian
-          ? (bytes[index] << 8) | bytes[index + 1]
-          : (bytes[index + 1] << 8) | bytes[index],
-    );
-  }
-
-  // Dart strings are UTF-16 themselves, so a surrogate pair needs no handling
-  // of its own: the two units it is written as are the two units it is stored
-  // as.
-  return String.fromCharCodes(units);
 }

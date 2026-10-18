@@ -172,6 +172,26 @@ void main() {
       expect(readId3v2Tag(File('${directory.path}/missing.mp3')), isNull);
     });
 
+    test('GivenAHeaderClaimingAnEnormousSize_WhenItsTagIsRead_ThenOnlyTheFileComesBack', () {
+      // A synchsafe size of 0x7F7F7F7F is about 268 MB: read as stated, it
+      // would allocate that for a file of a few bytes.
+      final bytes = [
+        ...'ID3'.codeUnits,
+        4,
+        0,
+        0,
+        0x7F,
+        0x7F,
+        0x7F,
+        0x7F,
+        1,
+        2,
+        3,
+      ];
+
+      expect(readId3v2Tag(write('bogus.mp3', bytes)), bytes);
+    });
+
     test('GivenATagLongerThanItsFile_WhenItsTagIsRead_ThenOnlyWhatIsThereComesBack', () {
       final tag = id3Tag(frames: [textFrame('TCON', 'Rock', 3)]);
       final truncated = tag.sublist(0, tag.length - 3);

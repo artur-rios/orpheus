@@ -209,7 +209,7 @@ List<String> id3TextValues(Uint8List data) {
   var start = 1;
 
   void take(int end) {
-    final value = _decodeText(
+    final value = id3DecodeText(
       Uint8List.sublistView(data, start, end),
       encoding,
     );
@@ -248,14 +248,27 @@ Uint8List? readId3v2Tag(File file) {
     if (length == null) return null;
 
     handle.setPositionSync(0);
-    return handle.readSync(length);
+
+    // Never past the end of the file: the length is whatever the header says,
+    // and a damaged one can say hundreds of megabytes. Reading what is there
+    // also lets the frames before a truncation still be read.
+    final fileLength = handle.lengthSync();
+
+    return handle.readSync(length < fileLength ? length : fileLength);
   } finally {
     handle.closeSync();
   }
 }
 
-/// [bytes] as text, in the encoding a text frame declared.
-String _decodeText(Uint8List bytes, int encoding) => switch (encoding) {
+/// [bytes] as text, in the encoding a frame declared: 0 is Latin-1, 1 is UTF-16
+/// with a byte-order mark, 2 is UTF-16 big-endian and 3 is UTF-8.
+///
+/// Lenient: an encoding the format does not define is read as Latin-1, which is
+/// the reading that at least cannot throw, and malformed bytes are replaced.
+/// Shared by every reader that walks a tag's own frames, so that they agree on
+/// what a frame says.
+String id3DecodeText(Uint8List bytes, int encoding) => switch (encoding) {
+  0 => latin1.decode(bytes, allowInvalid: true),
   1 => _utf16(bytes, bigEndian: _isBigEndianBom(bytes)),
   2 => _utf16(bytes, bigEndian: true),
   3 => utf8.decode(bytes, allowMalformed: true),
