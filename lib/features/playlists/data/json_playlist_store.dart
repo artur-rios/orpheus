@@ -15,7 +15,7 @@ import '../domain/playlist_store.dart';
 /// cannot be built again, so it is handled with more care than they are:
 /// - a write is atomic ([replaceFileAtomically]), so a crash or a full disk
 ///   leaves the previous document and never half of one;
-/// - a document that cannot be read is renamed to
+/// - a document that cannot be understood is renamed to
 ///   `playlists.json.bad-<yyyyMMddTHHmmss>` rather than overwritten by the
 ///   next write, so what could not be understood — by this version, or
 ///   because it was damaged — is still there to be recovered by hand.
@@ -79,9 +79,15 @@ class JsonPlaylistStore implements PlaylistStore {
     final file = File(path);
     if (!file.existsSync()) return const [];
 
+    // Only a document that was read and then not understood is set aside. A
+    // file that cannot be opened — locked for a moment by an antivirus scan or
+    // a sync client, say — is not a damaged one: its error goes up to the
+    // caller, who can say so, rather than the playlists being set aside as if
+    // they were lost.
     try {
       return _playlistsIn(jsonDecode(await file.readAsString()));
-    } on Object catch (error) {
+    } on FormatException catch (error) {
+      // Text that is not UTF-8, not JSON, or not the document's shape.
       await _setAside(file, error);
 
       return const [];
@@ -100,22 +106,32 @@ class JsonPlaylistStore implements PlaylistStore {
     replaceFileAtomically(path, Uint8List.fromList(utf8.encode(document)));
   }
 
-  /// Renames the document that could not be read to a name that keeps it.
+  /// Renames the document that could not be understood to a name that keeps
+  /// it.
+  ///
+  /// Throws when it cannot be renamed. Carrying on would return no playlists
+  /// with the document still in place, and the next write would replace it:
+  /// the one thing setting it aside is for preventing.
   Future<void> _setAside(File file, Object error) async {
     final aside = '$path.bad-${_stamp(_clock())}';
     try {
       await file.rename(aside);
-      _log.severe(
-        'the playlists could not be read; kept as ${p.basename(aside)}',
-        error,
-      );
     } on FileSystemException catch (renameError) {
       _log.severe(
-        'the playlists could not be read, and could not be set aside '
-        '($renameError)',
+        'the playlists could not be read, and could not be set aside',
         error,
       );
+      throw FileSystemException(
+        'Could not set the unreadable playlists aside: ${renameError.message}',
+        path,
+        renameError.osError,
+      );
     }
+
+    _log.severe(
+      'the playlists could not be read; kept as ${p.basename(aside)}',
+      error,
+    );
   }
 
   static String _stamp(DateTime at) {

@@ -9,8 +9,12 @@ abstract interface class PlaylistStore {
   /// Every stored playlist, in the order they were written.
   ///
   /// Empty when none were stored, and also when what was stored could not be
-  /// read: that is set aside rather than overwritten, so the next write does
-  /// not destroy it.
+  /// understood: that is set aside rather than overwritten, so the next write
+  /// does not destroy it.
+  ///
+  /// Throws when what was stored could neither be read nor set aside: an
+  /// answer of "none" there would be followed by a write over the owner's
+  /// playlists.
   Future<List<Playlist>> read();
 
   /// Stores [all], replacing whatever was stored.

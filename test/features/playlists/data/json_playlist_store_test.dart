@@ -150,6 +150,21 @@ void main() {
     expect(namesIn(store.directory), ['playlists.json', asideName()]);
   });
 
+  test('GivenAnUnreadableDocumentThatCannotBeSetAside_WhenRead_ThenItThrowsAndTheDocumentStays', () async {
+    await Directory(store.directory).create(recursive: true);
+    await File(store.path).writeAsString('garbage');
+    // A non-empty directory where the copy would go: the rename refuses.
+    final taken = Directory(p.join(store.directory, asideName()));
+    await taken.create();
+    await File(p.join(taken.path, 'inside')).writeAsBytes([1]);
+
+    await expectLater(store.read(), throwsA(isA<FileSystemException>()));
+
+    // Neither empty-handed nor overwritten: the document is still there for
+    // the next try, and a write is not the way past it.
+    expect(File(store.path).readAsStringSync(), 'garbage');
+  });
+
   test('GivenAWriteThatFails_WhenWritten_ThenTheOldDocumentIsIntact', () async {
     await store.write([roadTrip()]);
 
