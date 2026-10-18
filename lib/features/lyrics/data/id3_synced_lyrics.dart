@@ -1,7 +1,11 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../../library/data/id3v2_frames.dart';
 import '../domain/lyrics.dart';
+
+export '../../library/data/id3v2_frames.dart'
+    show id3HeaderLength, id3TagLengthOf;
 
 /// Reads the synchronised lyrics out of the ID3v2 tag at the start of [bytes],
 /// or answers `null` where there are none to read.
@@ -23,7 +27,7 @@ import '../domain/lyrics.dart';
 /// into a position — and a `SYLT` carrying something other than words, which
 /// the format also allows it to carry.
 Lyrics? parseId3SyncedLyrics(Uint8List bytes) {
-  final tag = _Id3Tag.of(bytes);
+  final tag = Id3v2Tag.of(bytes);
   if (tag == null) return null;
 
   for (final frame in tag.frames()) {
@@ -38,184 +42,6 @@ Lyrics? parseId3SyncedLyrics(Uint8List bytes) {
 
 /// `SYLT` in ID3v2.3 and v2.4, and `SLT` in the three-letter ids of v2.2.
 bool _isSyncedLyricsFrame(String id) => id == 'SYLT' || id == 'SLT';
-
-/// One frame's identifier and its contents, with the frame header taken off.
-class _Frame {
-  const _Frame(this.id, this.data);
-
-  final String id;
-  final Uint8List data;
-}
-
-/// An ID3v2 tag, far enough parsed to walk its frames.
-class _Id3Tag {
-  const _Id3Tag._({required this.major, required this.body});
-
-  /// The version's major number: 2, 3 or 4.
-  final int major;
-
-  /// The frames, with the tag header taken off and whole-tag
-  /// unsynchronisation undone.
-  final Uint8List body;
-
-  /// The tag at the start of [bytes], or `null` where there is not one.
-  static _Id3Tag? of(Uint8List bytes) {
-    if (bytes.length < id3HeaderLength) return null;
-    if (bytes[0] != 0x49 || bytes[1] != 0x44 || bytes[2] != 0x33) return null;
-
-    final major = bytes[3];
-    if (major < 2 || major > 4) return null;
-
-    final flags = bytes[5];
-    final size = _syncSafe(bytes, 6);
-    final end = id3HeaderLength + size;
-    var body = Uint8List.sublistView(
-      bytes,
-      id3HeaderLength,
-      end > bytes.length ? bytes.length : end,
-    );
-
-    // Unsynchronisation is a whole-tag transformation before v2.4 and a
-    // per-frame one from v2.4 on, and the header flag says which files are
-    // written the old way.
-    if (flags & 0x80 != 0 && major < 4) body = _deUnsynchronise(body);
-
-    // The extended header carries a CRC and, in v2.4, restrictions. Nothing
-    // here reads either; both are stepped over.
-    if (flags & 0x40 != 0) body = _withoutExtendedHeader(body, major);
-
-    return _Id3Tag._(major: major, body: body);
-  }
-
-  /// The tag's frames, in the order they are written, stopping at the padding.
-  Iterable<_Frame> frames() sync* {
-    final idLength = major == 2 ? 3 : 4;
-    final headerLength = major == 2 ? 6 : 10;
-    var offset = 0;
-
-    while (offset + headerLength <= body.length) {
-      final id = String.fromCharCodes(body, offset, offset + idLength);
-
-      // A tag is padded with zeroes to whatever length its writer left room
-      // for, and the first zero byte where an identifier belongs is the end of
-      // the frames.
-      if (id.codeUnits.first == 0) return;
-
-      final size = major == 2
-          ? _bigEndian(body, offset + 3, 3)
-          : major == 3
-          ? _bigEndian(body, offset + 4, 4)
-          : _syncSafe(body, offset + 4);
-
-      var start = offset + headerLength;
-      final end = start + size;
-      if (size <= 0 || end > body.length) return;
-
-      offset = end;
-
-      final flags = major == 2 ? 0 : body[start - 1];
-      // Compressed and encrypted frames are stepped over rather than
-      // half-read: undoing either needs a decompressor or a key this
-      // application does not have, and a caller that gets nothing here falls
-      // back to the text frame.
-      if (major == 3 && flags & 0xC0 != 0) continue;
-      if (major == 4 && flags & 0x0C != 0) continue;
-
-      if (major == 3 && flags & 0x20 != 0) start++;
-      if (major == 4 && flags & 0x40 != 0) start++;
-
-      // The data-length indicator: four synchsafe bytes stating what the frame
-      // would be once undone. Not needed to read it, and taken off so that the
-      // frame's own contents start where they are expected to.
-      if (major == 4 && flags & 0x01 != 0) start += 4;
-
-      if (start > end) continue;
-
-      var data = Uint8List.sublistView(body, start, end);
-      if (major == 4 && flags & 0x02 != 0) data = _deUnsynchronise(data);
-
-      yield _Frame(id, data);
-    }
-  }
-}
-
-/// How long an ID3v2 tag header is, before the frames start.
-///
-/// What a caller reads first: those ten bytes say whether there is a tag at
-/// all and, through [id3TagLengthOf], how much of the file is it.
-const int id3HeaderLength = 10;
-
-/// How many bytes from the start of a file its ID3v2 tag occupies, given its
-/// first [id3HeaderLength] bytes, or `null` where the file opens with no tag.
-///
-/// This is what keeps [parseId3SyncedLyrics] off the audio: a caller reads ten
-/// bytes, is told the tag is (say) forty kilobytes, and reads exactly those —
-/// rather than a fixed guess that would be too small for a tag carrying a
-/// sleeve and far too large for one that is not.
-int? id3TagLengthOf(Uint8List header) {
-  if (header.length < id3HeaderLength) return null;
-  if (header[0] != 0x49 || header[1] != 0x44 || header[2] != 0x33) return null;
-  if (header[3] < 2 || header[3] > 4) return null;
-
-  // The footer, where a v2.4 writer added one, is a second copy of the header
-  // after the frames and is counted in as well.
-  final footer = header[5] & 0x10 != 0 ? id3HeaderLength : 0;
-
-  return id3HeaderLength + _syncSafe(header, 6) + footer;
-}
-
-/// The [length]-byte big-endian number at [offset].
-int _bigEndian(Uint8List bytes, int offset, int length) {
-  var value = 0;
-  for (var index = 0; index < length; index++) {
-    value = (value << 8) | bytes[offset + index];
-  }
-
-  return value;
-}
-
-/// The four-byte synchsafe number at [offset] — seven bits of each byte, so
-/// that a size can never itself look like the start of an audio frame.
-int _syncSafe(Uint8List bytes, int offset) {
-  var value = 0;
-  for (var index = 0; index < 4; index++) {
-    value = (value << 7) | (bytes[offset + index] & 0x7F);
-  }
-
-  return value;
-}
-
-/// [bytes] with the unsynchronisation undone: every `$FF $00` written to keep
-/// a tag from looking like audio becomes the `$FF` it stands for.
-Uint8List _deUnsynchronise(Uint8List bytes) {
-  final out = BytesBuilder(copy: false);
-
-  for (var index = 0; index < bytes.length; index++) {
-    out.addByte(bytes[index]);
-    if (bytes[index] == 0xFF &&
-        index + 1 < bytes.length &&
-        bytes[index + 1] == 0x00) {
-      index++;
-    }
-  }
-
-  return out.takeBytes();
-}
-
-/// [body] with its extended header taken off.
-Uint8List _withoutExtendedHeader(Uint8List body, int major) {
-  if (body.length < 4) return body;
-
-  // v2.4 states a synchsafe size that counts the whole extended header; v2.3
-  // states a plain one that counts everything after the four size bytes.
-  final size = major == 4
-      ? _syncSafe(body, 0)
-      : _bigEndian(body, 0, 4) + 4;
-
-  return size <= 0 || size > body.length
-      ? body
-      : Uint8List.sublistView(body, size);
-}
 
 /// The words in one `SYLT` frame's [data], or `null` where it holds none this
 /// application can use.
@@ -250,7 +76,13 @@ Lyrics? _lyricsOfSyltFrame(Uint8List data) {
     if (offset + 4 > data.length) break;
 
     entries.add((
-      at: Duration(milliseconds: _bigEndian(data, offset, 4)),
+      at: Duration(
+        milliseconds: ByteData.sublistView(
+          data,
+          offset,
+          offset + 4,
+        ).getUint32(0),
+      ),
       text: text.value,
     ));
     offset += 4;
