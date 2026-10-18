@@ -189,6 +189,14 @@ class ManyTagEditController extends Notifier<ManyTagEditState> {
 
   /// The files being edited, by path, in library order.
   final Map<String, _Target> _targets = {};
+
+  /// The files to stamp and inspect again before the next write: those that
+  /// changed since they were read, and stay so until a read of them lands.
+  ///
+  /// Apart from what [ManyTagEditState.failed] reports, because a file whose
+  /// read again threw is reported as failed and must still be read again on
+  /// the next try, not written against the stamp it was refused for.
+  final Set<String> _stale = {};
   bool _saving = false;
 
   @override
@@ -203,6 +211,7 @@ class ManyTagEditController extends Notifier<ManyTagEditState> {
   /// Reads [entries]' tags to edit, one after another.
   Future<void> load(List<MusicEntry> entries) async {
     _targets.clear();
+    _stale.clear();
     final skipped = <SkippedTrack>[];
     final stamps = ref.read(fileStampsProvider);
     final writer = ref.read(tagWriterProvider);
@@ -284,19 +293,13 @@ class ManyTagEditController extends Notifier<ManyTagEditState> {
     ];
     if (targets.isEmpty) return;
 
-    final stale = {
-      for (final failure in state.failed)
-        if (failure.outcome == WriteOutcome.changedSinceRead)
-          failure.entry.file.path,
-    };
-    await _pass(form, targets, retrying: true, stale: stale);
+    await _pass(form, targets, retrying: true);
   }
 
   Future<void> _pass(
     TagForm form,
     List<_Target> targets, {
     required bool retrying,
-    Set<String> stale = const {},
   }) async {
     final shared = state.shared;
     if (shared == null) return;
@@ -341,12 +344,16 @@ class ManyTagEditController extends Notifier<ManyTagEditState> {
       for (final (index, target) in targets.indexed) {
         final path = target.entry.file.path;
 
-        if (stale.contains(path)) {
+        if (_stale.contains(path)) {
           try {
             final stamp = await stamps.stamp(path);
             final tags = await writer.inspect(path);
+            // Read: whatever the write does next, it is against this.
+            _stale.remove(path);
             if (tags.writable.isEmpty) {
-              failed.add(FailedTrack(target.entry, WriteOutcome.failed));
+              // Changed into a tag the writer will not touch: no try again
+              // can help, so it is listed as the form lists such a file.
+              failed.add(FailedTrack(target.entry, WriteOutcome.unsupported));
               if (ref.mounted) state = state.copyWith(done: index + 1);
               continue;
             }
@@ -385,6 +392,7 @@ class ManyTagEditController extends Notifier<ManyTagEditState> {
             totalsLeft.add(TotalLeft(target.entry, edits.leftForMissingNumber));
           }
         } else {
+          if (outcome == WriteOutcome.changedSinceRead) _stale.add(path);
           failed.add(FailedTrack(target.entry, outcome));
         }
 

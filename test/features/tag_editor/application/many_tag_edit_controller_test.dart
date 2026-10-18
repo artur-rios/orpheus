@@ -292,7 +292,7 @@ void main() {
     },
   );
 
-  test('GivenAFileChangedSinceRead_WhenTryAgain_ThenItIsReadAgainAndWrittenAgainstTheNewStamp', () async {
+  test('GivenAFileChangedSinceRead_WhenTryAgain_ThenItIsReadAgainAndNotWrittenWhereItHoldsTheEditAlready', () async {
     final (:harness, scanner: _) = harnessFor();
     harness.tagWriter.refusals[second.file.path] =
         WriteOutcome.changedSinceRead;
@@ -303,24 +303,43 @@ void main() {
       stateOf(harness).failed.single.outcome,
       WriteOutcome.changedSinceRead,
     );
+    expect(harness.tagWriter.writes, hasLength(2));
 
-    // Another program retagged it meanwhile.
+    // Another program retagged it meanwhile, with the genre the owner typed.
     harness.tagWriter.refusals.remove(second.file.path);
     harness.tagWriter.files[second.file.path] = tagsOf(
-      values: {AutofillField.artist: 'Someone'},
-    );
-    harness.stamps.stamps[second.file.path] = AudioFile(
-      path: second.file.path,
-      sizeInBytes: 4096,
-      modifiedAt: DateTime.utc(2026, 10, 14),
+      values: {AutofillField.genre: 'Rock'},
     );
     await controller.retry();
     await pumpEventQueue();
 
-    expect(harness.tagWriter.writes.last.$1, second.file.path);
-    expect(harness.tagWriter.writes.last.$2, {AutofillField.genre: 'Rock'});
-    expect(harness.tagWriter.expectations.last.sizeInBytes, 4096);
+    // Measured against what it holds now, there is nothing to write.
+    expect(harness.tagWriter.writes, hasLength(2));
+    expect(stateOf(harness).failed, isEmpty);
     expect(stateOf(harness).stage, ManyTagEditStage.saved);
+  });
+
+  test('GivenAChangedFileNowUnsafe_WhenTryAgain_ThenItIsListedAsUnsupportedAndNotRetryable', () async {
+    final (:harness, scanner: _) = harnessFor();
+    harness.tagWriter.refusals[second.file.path] =
+        WriteOutcome.changedSinceRead;
+    final controller = controllerOf(harness);
+    await controller.load(tracks);
+    await controller.save(genre('Rock'));
+
+    // Rewritten meanwhile into a tag the writer will not change safely.
+    harness.tagWriter.refusals.remove(second.file.path);
+    harness.tagWriter.files[second.file.path] = FileTags.unwritable;
+    await controller.retry();
+
+    final failure = stateOf(harness).failed.single;
+    expect(failure.entry, second);
+    expect(failure.outcome, WriteOutcome.unsupported);
+    expect(failure.retryable, isFalse);
+    expect(stateOf(harness).stage, ManyTagEditStage.results);
+
+    await controller.retry();
+    expect(harness.tagWriter.writes, hasLength(2));
   });
 
   test('GivenAFileChangedSinceReadThatCannotBeReadAgain_WhenTryAgain_ThenItStaysFailed', () async {
@@ -338,6 +357,35 @@ void main() {
     expect(stateOf(harness).failed.single.entry, second);
     expect(stateOf(harness).failed.single.outcome, WriteOutcome.failed);
     expect(harness.tagWriter.writes, hasLength(2));
+  });
+
+  test('GivenAChangedFileWhoseReadAgainThrew_WhenTriedAgainOnceMore_ThenItIsReadAgainAndWrittenAgainstTheNewStamp', () async {
+    final (:harness, scanner: _) = harnessFor();
+    harness.tagWriter.refusals[second.file.path] =
+        WriteOutcome.changedSinceRead;
+    final controller = controllerOf(harness);
+    await controller.load(tracks);
+    await controller.save(genre('Rock'));
+    harness.tagWriter.refusals.remove(second.file.path);
+    harness.tagWriter.unreadable.add(second.file.path);
+    await controller.retry();
+    expect(stateOf(harness).failed.single.outcome, WriteOutcome.failed);
+
+    // Readable again, and changed once more since the stamp it was refused
+    // against.
+    harness.tagWriter.unreadable.remove(second.file.path);
+    harness.stamps.stamps[second.file.path] = AudioFile(
+      path: second.file.path,
+      sizeInBytes: 4096,
+      modifiedAt: DateTime.utc(2026, 10, 14),
+    );
+    await controller.retry();
+    await pumpEventQueue();
+
+    expect(harness.tagWriter.writes.last.$1, second.file.path);
+    expect(harness.tagWriter.writes.last.$2, {AutofillField.genre: 'Rock'});
+    expect(harness.tagWriter.expectations.last.sizeInBytes, 4096);
+    expect(stateOf(harness).stage, ManyTagEditStage.saved);
   });
 
   test('GivenADeniedFile_WhenSaved_ThenItIsListedAndNotRetryable', () async {
