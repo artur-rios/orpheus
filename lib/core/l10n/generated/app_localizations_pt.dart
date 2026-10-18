@@ -994,4 +994,92 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get musicSelectionLabel => 'Faixas selecionadas';
+
+  @override
+  String get playlistTab => 'Playlists';
+
+  @override
+  String get playlistNew => 'Nova playlist';
+
+  @override
+  String get playlistNameLabel => 'Nome';
+
+  @override
+  String get playlistNameRequired => 'Dê um nome à playlist';
+
+  @override
+  String get playlistCreate => 'Criar';
+
+  @override
+  String playlistSongCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count faixas',
+      one: '1 faixa',
+      zero: 'Nenhuma faixa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get playlistEmpty => 'Nenhuma playlist ainda';
+
+  @override
+  String get playlistActions => 'Ações da playlist';
+
+  @override
+  String get playlistBackToList => 'Todas as playlists';
+
+  @override
+  String get playlistCoverLabel => 'Capa da playlist';
+
+  @override
+  String get playlistRename => 'Renomear…';
+
+  @override
+  String get playlistRenameTitle => 'Renomear playlist';
+
+  @override
+  String get playlistRenameConfirm => 'Renomear';
+
+  @override
+  String get playlistChooseCover => 'Escolher capa…';
+
+  @override
+  String get playlistRemoveCover => 'Remover capa';
+
+  @override
+  String get playlistCoverNotImage =>
+      'Escolha uma imagem JPEG ou PNG para a capa';
+
+  @override
+  String get playlistExport => 'Exportar para .m3u…';
+
+  @override
+  String playlistExportSaved(String path) {
+    return 'Salvo em $path';
+  }
+
+  @override
+  String playlistExportFailed(String name) {
+    return 'Não foi possível exportar $name';
+  }
+
+  @override
+  String get playlistDelete => 'Excluir…';
+
+  @override
+  String playlistDeleteTitle(String name) {
+    return 'Excluir $name?';
+  }
+
+  @override
+  String get playlistDeleteBody => 'As faixas continuam na sua biblioteca.';
+
+  @override
+  String get playlistDeleteConfirm => 'Excluir';
+
+  @override
+  String get playlistSaveFailed => 'Não foi possível salvar as playlists';
 }

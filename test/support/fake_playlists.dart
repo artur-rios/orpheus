@@ -20,8 +20,17 @@ class FakePlaylistStore implements PlaylistStore {
   /// When set, the next [write] throws it instead of storing anything, once.
   Exception? failNextWrite;
 
+  /// When set, [read] throws it: a document that could neither be read nor
+  /// set aside.
+  Exception? failRead;
+
   @override
-  Future<List<Playlist>> read() async => [...playlists];
+  Future<List<Playlist>> read() async {
+    final failure = failRead;
+    if (failure != null) throw failure;
+
+    return [...playlists];
+  }
 
   @override
   Future<void> write(List<Playlist> all) async {
@@ -86,3 +95,8 @@ class FakeFileSaver implements FileSaver {
     return destination;
   }
 }
+
+/// A one-pixel PNG, base64-encoded: a cover the picker can hand over that
+/// passes the JPEG/PNG check and decodes.
+const String onePixelPng =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';

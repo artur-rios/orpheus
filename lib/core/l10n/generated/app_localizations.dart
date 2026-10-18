@@ -1627,6 +1627,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Selected songs'**
   String get musicSelectionLabel;
+
+  /// The Playlists destination in the navigation panel, and the content area's heading while it shows.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlists'**
+  String get playlistTab;
+
+  /// The button on the Playlists tab that makes a playlist, and the title of the dialog it opens.
+  ///
+  /// In en, this message translates to:
+  /// **'New playlist'**
+  String get playlistNew;
+
+  /// The label of the field in which a playlist's name is typed, when making or renaming one.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get playlistNameLabel;
+
+  /// Shown under the name field when the owner submits a blank name for a playlist.
+  ///
+  /// In en, this message translates to:
+  /// **'Give the playlist a name'**
+  String get playlistNameRequired;
+
+  /// The button that makes the playlist named in the New playlist dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get playlistCreate;
+
+  /// How many songs a playlist holds, under its name on the Playlists tab.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No songs} =1{1 song} other{{count} songs}}'**
+  String playlistSongCount(int count);
+
+  /// What the Playlists tab says when the owner has made none.
+  ///
+  /// In en, this message translates to:
+  /// **'No playlists yet'**
+  String get playlistEmpty;
+
+  /// The tooltip of the ⋮ button on a playlist's row or tile, which opens its menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlist actions'**
+  String get playlistActions;
+
+  /// The tooltip of the button that goes from an open playlist back to the list of them.
+  ///
+  /// In en, this message translates to:
+  /// **'All playlists'**
+  String get playlistBackToList;
+
+  /// The accessibility label of a playlist's picture: the owner's own cover, or the mosaic of its records.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlist cover'**
+  String get playlistCoverLabel;
+
+  /// The playlist menu item that asks for a new name.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename…'**
+  String get playlistRename;
+
+  /// The title of the dialog that asks for a playlist's new name.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename playlist'**
+  String get playlistRenameTitle;
+
+  /// The button that gives the playlist the name typed in the rename dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get playlistRenameConfirm;
+
+  /// The playlist menu item that opens the image chooser to give the playlist a picture of the owner's own.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose cover…'**
+  String get playlistChooseCover;
+
+  /// The playlist menu item, shown only when the playlist has a picture of the owner's own, that takes it off so the mosaic of its records shows again.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove cover'**
+  String get playlistRemoveCover;
+
+  /// Shown when the file chosen as a playlist's cover is not a JPEG or PNG image; nothing is changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a JPEG or PNG image for the cover'**
+  String get playlistCoverNotImage;
+
+  /// The playlist menu item that saves the playlist as an .m3u file where the owner chooses.
+  ///
+  /// In en, this message translates to:
+  /// **'Export to .m3u…'**
+  String get playlistExport;
+
+  /// Shown once a playlist has been exported, naming the file it was saved as.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {path}'**
+  String playlistExportSaved(String path);
+
+  /// Shown when a playlist could not be saved as an .m3u file.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t export {name}'**
+  String playlistExportFailed(String name);
+
+  /// The playlist menu item that asks before deleting the playlist.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete…'**
+  String get playlistDelete;
+
+  /// The question asked before a playlist is deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String playlistDeleteTitle(String name);
+
+  /// Under the question asked before a playlist is deleted: only the playlist goes, never a song or a file.
+  ///
+  /// In en, this message translates to:
+  /// **'The songs stay in your library.'**
+  String get playlistDeleteBody;
+
+  /// The button that deletes the playlist, in the question asked first.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get playlistDeleteConfirm;
+
+  /// Shown when making, renaming, giving a cover to or deleting a playlist could not be saved; nothing was changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the playlists'**
+  String get playlistSaveFailed;
 }
 
 class _AppLocalizationsDelegate

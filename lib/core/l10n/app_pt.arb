@@ -1225,5 +1225,121 @@
   "musicSelectionLabel": "Faixas selecionadas",
   "@musicSelectionLabel": {
     "description": "What the tag editor calls the songs selected in a song list, in its subtitle."
+  },
+  "playlistTab": "Playlists",
+  "@playlistTab": {
+    "description": "The Playlists destination in the navigation panel, and the content area's heading while it shows."
+  },
+  "playlistNew": "Nova playlist",
+  "@playlistNew": {
+    "description": "The button on the Playlists tab that makes a playlist, and the title of the dialog it opens."
+  },
+  "playlistNameLabel": "Nome",
+  "@playlistNameLabel": {
+    "description": "The label of the field in which a playlist's name is typed, when making or renaming one."
+  },
+  "playlistNameRequired": "Dê um nome à playlist",
+  "@playlistNameRequired": {
+    "description": "Shown under the name field when the owner submits a blank name for a playlist."
+  },
+  "playlistCreate": "Criar",
+  "@playlistCreate": {
+    "description": "The button that makes the playlist named in the New playlist dialog."
+  },
+  "playlistSongCount": "{count, plural, =0{Nenhuma faixa} =1{1 faixa} other{{count} faixas}}",
+  "@playlistSongCount": {
+    "description": "How many songs a playlist holds, under its name on the Playlists tab.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "playlistEmpty": "Nenhuma playlist ainda",
+  "@playlistEmpty": {
+    "description": "What the Playlists tab says when the owner has made none."
+  },
+  "playlistActions": "Ações da playlist",
+  "@playlistActions": {
+    "description": "The tooltip of the ⋮ button on a playlist's row or tile, which opens its menu."
+  },
+  "playlistBackToList": "Todas as playlists",
+  "@playlistBackToList": {
+    "description": "The tooltip of the button that goes from an open playlist back to the list of them."
+  },
+  "playlistCoverLabel": "Capa da playlist",
+  "@playlistCoverLabel": {
+    "description": "The accessibility label of a playlist's picture: the owner's own cover, or the mosaic of its records."
+  },
+  "playlistRename": "Renomear…",
+  "@playlistRename": {
+    "description": "The playlist menu item that asks for a new name."
+  },
+  "playlistRenameTitle": "Renomear playlist",
+  "@playlistRenameTitle": {
+    "description": "The title of the dialog that asks for a playlist's new name."
+  },
+  "playlistRenameConfirm": "Renomear",
+  "@playlistRenameConfirm": {
+    "description": "The button that gives the playlist the name typed in the rename dialog."
+  },
+  "playlistChooseCover": "Escolher capa…",
+  "@playlistChooseCover": {
+    "description": "The playlist menu item that opens the image chooser to give the playlist a picture of the owner's own."
+  },
+  "playlistRemoveCover": "Remover capa",
+  "@playlistRemoveCover": {
+    "description": "The playlist menu item, shown only when the playlist has a picture of the owner's own, that takes it off so the mosaic of its records shows again."
+  },
+  "playlistCoverNotImage": "Escolha uma imagem JPEG ou PNG para a capa",
+  "@playlistCoverNotImage": {
+    "description": "Shown when the file chosen as a playlist's cover is not a JPEG or PNG image; nothing is changed."
+  },
+  "playlistExport": "Exportar para .m3u…",
+  "@playlistExport": {
+    "description": "The playlist menu item that saves the playlist as an .m3u file where the owner chooses."
+  },
+  "playlistExportSaved": "Salvo em {path}",
+  "@playlistExportSaved": {
+    "description": "Shown once a playlist has been exported, naming the file it was saved as.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistExportFailed": "Não foi possível exportar {name}",
+  "@playlistExportFailed": {
+    "description": "Shown when a playlist could not be saved as an .m3u file.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistDelete": "Excluir…",
+  "@playlistDelete": {
+    "description": "The playlist menu item that asks before deleting the playlist."
+  },
+  "playlistDeleteTitle": "Excluir {name}?",
+  "@playlistDeleteTitle": {
+    "description": "The question asked before a playlist is deleted.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistDeleteBody": "As faixas continuam na sua biblioteca.",
+  "@playlistDeleteBody": {
+    "description": "Under the question asked before a playlist is deleted: only the playlist goes, never a song or a file."
+  },
+  "playlistDeleteConfirm": "Excluir",
+  "@playlistDeleteConfirm": {
+    "description": "The button that deletes the playlist, in the question asked first."
+  },
+  "playlistSaveFailed": "Não foi possível salvar as playlists",
+  "@playlistSaveFailed": {
+    "description": "Shown when making, renaming, giving a cover to or deleting a playlist could not be saved; nothing was changed."
   }
 }

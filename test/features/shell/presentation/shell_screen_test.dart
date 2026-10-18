@@ -9,6 +9,8 @@ import 'package:orpheus/features/playback/presentation/genres_view.dart';
 import 'package:orpheus/features/playback/presentation/music_library_view.dart';
 import 'package:orpheus/features/playback/presentation/queue_view.dart';
 import 'package:orpheus/features/playback/presentation/search_results_view.dart';
+import 'package:orpheus/features/playlists/domain/playlist.dart';
+import 'package:orpheus/features/playlists/presentation/playlists_view.dart';
 import 'package:orpheus/features/shell/domain/shell_destination.dart';
 import 'package:orpheus/features/shell/presentation/playback_bar.dart';
 import 'package:orpheus/features/shell/presentation/shell_navigation.dart';
@@ -183,6 +185,124 @@ void main() {
         ),
         findsOneWidget,
       );
+    },
+  );
+
+  testWidgets(
+    'GivenTheShell_WhenItIsDrawn_ThenThereAreFiveDestinationsWithPlaylistsAfterGenres',
+    (tester) async {
+      final harness = Harness(library: library);
+
+      await tester.pumpHarness(harness, const ShellScreen());
+      expect(
+        tester.widget<NavigationRail>(find.byType(NavigationRail)).destinations,
+        hasLength(5),
+      );
+      expect(ShellDestination.values, [
+        ShellDestination.music,
+        ShellDestination.genres,
+        ShellDestination.playlists,
+        ShellDestination.queue,
+        ShellDestination.folders,
+      ]);
+      final inRail = find.descendant(
+        of: find.byType(ShellNavigationRail),
+        matching: find.byIcon(Icons.playlist_play_outlined),
+      );
+
+      await tester.tap(inRail);
+      await tester.pumpAndSettle();
+      expect(find.byType(PlaylistsView), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Playlists'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.pumpHarness(
+        harness,
+        const ShellScreen(),
+        window: phoneWindow,
+      );
+      expect(
+        tester.widget<NavigationBar>(find.byType(NavigationBar)).destinations,
+        hasLength(5),
+      );
+    },
+  );
+
+  testWidgets(
+    'GivenAnOpenPlaylist_WhenTheSystemBackIsUsed_ThenTheListOfPlaylistsIsShown',
+    (tester) async {
+      final made = DateTime.utc(2026);
+      final harness = Harness(
+        library: library,
+        playlists: [
+          Playlist(
+            id: 'p1',
+            name: 'Road trip',
+            createdAt: made,
+            modifiedAt: made,
+          ),
+        ],
+      );
+      tester.view.physicalSize = desktopWindow;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: harness.container,
+          child: const OrpheusApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      harness
+          .read(shellControllerProvider.notifier)
+          .go(ShellDestination.playlists);
+      harness.read(playlistBrowseProvider.notifier).open('p1');
+      await tester.pumpAndSettle();
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(harness.read(playlistBrowseProvider), isNull);
+      expect(find.widgetWithText(ListTile, 'Road trip'), findsOneWidget);
+      // The Music tab was never moved, and back did not try to move it.
+      expect(harness.read(musicBrowseControllerProvider).inArtist, isFalse);
+    },
+  );
+
+  testWidgets(
+    'GivenTheOpenPlaylistWasDeleted_WhenTheShellIsShown_ThenBackHasNoLevelToClimb',
+    (tester) async {
+      final harness = Harness(library: library);
+      tester.view.physicalSize = desktopWindow;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: harness.container,
+          child: const OrpheusApp(),
+        ),
+      );
+      harness
+          .read(shellControllerProvider.notifier)
+          .go(ShellDestination.playlists);
+      harness.read(playlistBrowseProvider.notifier).open('gone');
+      await tester.pumpAndSettle();
+
+      final scope = tester.widget<PopScope>(
+        find
+            .ancestor(
+              of: find.byType(ShellScreen),
+              matching: find.byWidgetPredicate((widget) => widget is PopScope),
+            )
+            .first,
+      );
+      // The tab shows the list, so a back press is the platform's to use.
+      expect(scope.canPop, isTrue);
     },
   );
 

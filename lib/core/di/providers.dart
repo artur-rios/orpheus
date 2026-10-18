@@ -9,6 +9,7 @@
 library;
 
 import 'dart:math';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -335,6 +336,19 @@ final playlistsControllerProvider =
 final playlistBrowseProvider =
     NotifierProvider<PlaylistBrowseController, String?>(
       PlaylistBrowseController.new,
+    );
+
+/// The picture the owner chose as a playlist's cover, or `null` for none.
+///
+/// Keyed by the playlist's id *and* the time it last changed. The file is
+/// named by the id alone, so a second picture chosen for the same playlist
+/// would come under a key already read and never be read again; choosing one
+/// changes the playlist, which moves the time. Auto-disposed, as the album
+/// sleeves are.
+final playlistCoverProvider =
+    FutureProvider.family<Uint8List?, ({String id, DateTime modifiedAt})>(
+      (ref, key) => ref.read(playlistCoverStoreProvider).read(key.id),
+      isAutoDispose: true,
     );
 
 /// What counts a play, and what has been counted.

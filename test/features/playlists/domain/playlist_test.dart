@@ -238,4 +238,48 @@ void main() {
       expect(validPlaylistName(''), isNull);
     });
   });
+
+  group('mostRecentFirst', () {
+    Playlist made(String id, {required DateTime created, DateTime? changed}) =>
+        Playlist(
+          id: id,
+          name: id,
+          createdAt: created,
+          modifiedAt: changed ?? created,
+        );
+
+    List<String> order(List<Playlist> playlists) => [
+      for (final playlist in playlists) playlist.id,
+    ];
+
+    test('GivenPlaylists_WhenOrdered_ThenTheLastChangedComesFirst', () {
+      final ordered = mostRecentFirst([
+        made('old', created: t0),
+        made('newest', created: t0, changed: t2),
+        made('newer', created: t1),
+      ]);
+
+      expect(order(ordered), ['newest', 'newer', 'old']);
+    });
+
+    test(
+      'GivenTwoChangedAtTheSameTime_WhenOrdered_ThenTheLaterMadeComesFirst',
+      () {
+        final ordered = mostRecentFirst([
+          made('first made', created: t0, changed: t2),
+          made('second made', created: t1, changed: t2),
+        ]);
+
+        expect(order(ordered), ['second made', 'first made']);
+      },
+    );
+
+    test('GivenPlaylists_WhenOrdered_ThenTheListGivenIsNotChanged', () {
+      final given = [made('a', created: t0), made('b', created: t1)];
+
+      mostRecentFirst(given);
+
+      expect(order(given), ['a', 'b']);
+    });
+  });
 }

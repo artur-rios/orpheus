@@ -6,6 +6,21 @@ import '../../library/domain/music_entry.dart';
 /// the two cannot disagree.
 String? validPlaylistName(String text) => trimmedOrNull(text);
 
+/// [playlists] in the order every list of them shows: the most recently
+/// changed first.
+///
+/// Two changed in the same instant go the more recently made first, and then
+/// by id, so the order never depends on how they happened to be stored. A new
+/// list: [playlists] is left as it was.
+List<Playlist> mostRecentFirst(Iterable<Playlist> playlists) =>
+    [...playlists]..sort((a, b) {
+      final changed = b.modifiedAt.compareTo(a.modifiedAt);
+      if (changed != 0) return changed;
+      final made = b.createdAt.compareTo(a.createdAt);
+      if (made != 0) return made;
+      return a.id.compareTo(b.id);
+    });
+
 /// One place in a playlist: a song's file, and what it was called when added.
 ///
 /// It has an id of its own because the same song may be in a playlist twice,
