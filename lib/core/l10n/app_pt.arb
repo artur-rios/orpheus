@@ -40,6 +40,10 @@
   "@destinationMusic": {
     "description": "The library area, in the navigation panel."
   },
+  "destinationGenres": "Gêneros",
+  "@destinationGenres": {
+    "description": "The area that browses the library by genre, in the navigation panel."
+  },
   "destinationQueue": "Fila",
   "@destinationQueue": {
     "description": "The play queue area, in the navigation panel."
@@ -200,6 +204,30 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "genreUnknown": "Sem gênero",
+  "@genreUnknown": {
+    "description": "The group of tracks whose tags name no genre."
+  },
+  "genrePlay": "Reproduzir o gênero",
+  "@genrePlay": {
+    "description": "Plays every track tagged with a genre."
+  },
+  "genreShuffle": "Embaralhar o gênero",
+  "@genreShuffle": {
+    "description": "Plays every track tagged with a genre, in an order nobody chose."
+  },
+  "genreRowSummary": "{tracks} · {length}",
+  "@genreRowSummary": {
+    "description": "Under a genre's name: how many tracks it holds, then how long they run.",
+    "placeholders": {
+      "tracks": {
+        "type": "String"
+      },
+      "length": {
+        "type": "String"
       }
     }
   },

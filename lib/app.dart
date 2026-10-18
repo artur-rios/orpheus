@@ -53,8 +53,8 @@ class OrpheusApp extends ConsumerWidget {
   );
 }
 
-/// The shell, with the system back gesture wired to the music area's own
-/// navigation.
+/// The shell, with the system back gesture wired to the navigation of
+/// whichever library area is showing — Music's, or Genres' own.
 ///
 /// On Android, back is how an owner leaves a record — there is no breadcrumb
 /// wide enough to be worth showing on a phone, and a back gesture that closed
@@ -68,6 +68,7 @@ class _ShellWithBack extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final destination = ref.watch(shellControllerProvider);
     final browse = ref.watch(musicBrowseControllerProvider);
+    final genre = ref.watch(genreBrowseControllerProvider);
     // The same test the shell uses to decide results are showing: a single
     // character left in the field shows the listing, and a back press that
     // spent itself clearing an invisible term would look like it did nothing.
@@ -76,7 +77,11 @@ class _ShellWithBack extends ConsumerWidget {
     final canGoUp =
         searching ||
         (destination == ShellDestination.music &&
-            (browse.inAlbum || browse.inArtist));
+            (browse.inAlbum || browse.inArtist)) ||
+        // Inside a genre at all, not only inside a drill: the list of genres
+        // is a level above the genre's own top, and back is how a phone gets
+        // there.
+        (destination == ShellDestination.genres && genre.inGenre);
 
     return PopScope(
       canPop: !canGoUp,
@@ -92,7 +97,13 @@ class _ShellWithBack extends ConsumerWidget {
           return;
         }
 
-        ref.read(musicBrowseControllerProvider.notifier).back();
+        // The back of the area that is showing: each keeps its own place, and
+        // stepping out of a record under Rock must not move Music.
+        if (destination == ShellDestination.genres) {
+          ref.read(genreBrowseControllerProvider.notifier).back();
+        } else {
+          ref.read(musicBrowseControllerProvider.notifier).back();
+        }
       },
       child: const MediaSessionNamesScope(child: ShellScreen()),
     );

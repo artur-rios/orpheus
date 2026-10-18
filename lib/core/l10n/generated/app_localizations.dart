@@ -158,6 +158,12 @@ abstract class AppLocalizations {
   /// **'Music'**
   String get destinationMusic;
 
+  /// The area that browses the library by genre, in the navigation panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Genres'**
+  String get destinationGenres;
+
   /// The play queue area, in the navigation panel.
   ///
   /// In en, this message translates to:
@@ -379,6 +385,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{No tracks} =1{1 track} other{{count} tracks}}'**
   String musicTrackCount(int count);
+
+  /// The group of tracks whose tags name no genre.
+  ///
+  /// In en, this message translates to:
+  /// **'No genre'**
+  String get genreUnknown;
+
+  /// Plays every track tagged with a genre.
+  ///
+  /// In en, this message translates to:
+  /// **'Play the genre'**
+  String get genrePlay;
+
+  /// Plays every track tagged with a genre, in an order nobody chose.
+  ///
+  /// In en, this message translates to:
+  /// **'Shuffle the genre'**
+  String get genreShuffle;
+
+  /// Under a genre's name: how many tracks it holds, then how long they run.
+  ///
+  /// In en, this message translates to:
+  /// **'{tracks} · {length}'**
+  String genreRowSummary(String tracks, String length);
 
   /// Shown in the bar and the player when the queue is empty.
   ///

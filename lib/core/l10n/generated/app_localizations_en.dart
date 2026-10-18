@@ -40,6 +40,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get destinationMusic => 'Music';
 
   @override
+  String get destinationGenres => 'Genres';
+
+  @override
   String get destinationQueue => 'Queue';
 
   @override
@@ -164,6 +167,20 @@ class AppLocalizationsEn extends AppLocalizations {
       zero: 'No tracks',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get genreUnknown => 'No genre';
+
+  @override
+  String get genrePlay => 'Play the genre';
+
+  @override
+  String get genreShuffle => 'Shuffle the genre';
+
+  @override
+  String genreRowSummary(String tracks, String length) {
+    return '$tracks · $length';
   }
 
   @override

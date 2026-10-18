@@ -9,6 +9,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/breakpoints.dart';
 import '../../library/presentation/library_folders_view.dart';
 import '../../library/presentation/scan_strip.dart';
+import '../../playback/presentation/genres_view.dart';
 import '../../playback/presentation/music_library_view.dart';
 import '../../playback/presentation/now_playing_screen.dart';
 import '../../playback/presentation/queue_view.dart';
@@ -284,6 +285,7 @@ class _Content extends ConsumerWidget {
         _ when searching && destination != ShellDestination.folders =>
           const SearchResultsView(),
         ShellDestination.music => const MusicLibraryView(),
+        ShellDestination.genres => const GenresView(),
         ShellDestination.queue => const QueueView(),
         ShellDestination.folders => const LibraryFoldersView(),
       },
