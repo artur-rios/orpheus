@@ -1334,8 +1334,9 @@ graph LR
 1. The owner selects *Genres* in the shell, between *Music* and *Queue*.
 2. The application derives the genres from the catalog (`BR-39`) and lists them
    as rows, alphabetically and ignoring case, with *No genre* last. Each row
-   gives the genre's name, how many tracks are tagged with it and how long they
-   run, and carries a play and a shuffle button (`FR-CT-12`).
+   gives the genre's name, how many tracks are tagged with it and, where every
+   one of their lengths is known, how long they run, and carries a play and a
+   shuffle button (`FR-CT-12`).
 3. The owner selects a genre. A breadcrumb *Genres › Rock* appears, with the
    same controls as the music area: a switch between *Artists*, *Albums* and
    *Songs*, a shuffle button, and the rows or sleeves layout, which is the one
@@ -1346,11 +1347,12 @@ graph LR
    those tagged with other genres (`BR-37`, `FR-CT-13`). Each crumb of
    *Genres › Rock › Artist › Record* goes back to its level.
 5. In *Albums* the records listed under the genre are shown, each opened whole.
-   In *Songs* the tracks tagged with the genre are listed, by album artist, then
-   record, then track order.
+   In *Songs* the tracks tagged with the genre are listed by title, as in the
+   music area.
 6. The owner plays. Play or shuffle on a genre row, and the shuffle button
    inside a genre, queue only the tracks tagged with it, in a queue named after
-   the genre. Play on an artist queues that artist's records listed under the
+   the genre and, unshuffled, ordered by album artist, then record, then track
+   order. Play on an artist queues that artist's records listed under the
    genre, whole, in the order shown. Play on a record plays the whole record,
    and a track selected inside a record plays the record from there. A track
    selected in *Songs* plays alone (`BR-38`, `FR-CT-14`, UC-13, UC-15).
