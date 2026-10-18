@@ -194,6 +194,12 @@ class ManyTagEditController extends Notifier<ManyTagEditState> {
   @override
   ManyTagEditState build() => const ManyTagEditState();
 
+  /// What each file being edited holds, as last read, in library order: what
+  /// a form's edits are worked out against, file by file.
+  List<FileTags> get files => [
+    for (final target in _targets.values) target.tags,
+  ];
+
   /// Reads [entries]' tags to edit, one after another.
   Future<void> load(List<MusicEntry> entries) async {
     _targets.clear();

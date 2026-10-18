@@ -134,6 +134,22 @@ void main() {
   );
 
   test(
+    'GivenThreeFlacsAndAnOgg_WhenLoaded_ThenTheFilesAreTheThreeAsRead',
+    () async {
+      final (:harness, scanner: _) = harnessFor();
+      harness.tagWriter.files[second.file.path] = tagsOf(
+        values: const {AutofillField.year: 1997},
+      );
+      final controller = controllerOf(harness);
+
+      await controller.load([...tracks, ogg]);
+
+      expect(controller.files, hasLength(3));
+      expect(controller.files[1].values[AutofillField.year], 1997);
+    },
+  );
+
+  test(
     'GivenTheFilesAreBeingRead_WhenLoading_ThenItPublishesProgress',
     () async {
       final (:harness, scanner: _) = harnessFor();

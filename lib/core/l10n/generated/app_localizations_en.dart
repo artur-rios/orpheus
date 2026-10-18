@@ -865,4 +865,92 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tagEditSaved => 'Tags saved';
+
+  @override
+  String tagEditManySubtitle(String label, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count songs',
+      one: '1 song',
+    );
+    return '$label · $_temp0';
+  }
+
+  @override
+  String tagEditManyReading(int done, int total) {
+    return 'Reading $done of $total…';
+  }
+
+  @override
+  String tagEditManySaving(int done, int total) {
+    return 'Saving $done of $total…';
+  }
+
+  @override
+  String get tagEditManyMixed => 'Mixed — leave blank to keep each song\'s own';
+
+  @override
+  String get tagEditManyMixedCovers => 'Different covers';
+
+  @override
+  String get tagEditManyOneAtATime =>
+      'Title and track number are edited one song at a time.';
+
+  @override
+  String tagEditManySkipped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count songs can\'t be changed and will be left alone',
+      one: '1 song can\'t be changed and will be left alone',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagEditManySkippedFormat => 'Not an MP3 or FLAC file';
+
+  @override
+  String get tagEditManySkippedUnsafe => 'Its tags can\'t be changed safely';
+
+  @override
+  String tagEditManyPartly(int written, int failed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      written,
+      locale: localeName,
+      other: '$written songs',
+      one: '1 song',
+      zero: 'no songs',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      failed,
+      locale: localeName,
+      other: '$failed couldn\'t be changed:',
+      one: '1 couldn\'t be changed:',
+    );
+    return 'Saved to $_temp0. $_temp1';
+  }
+
+  @override
+  String tagEditManySaved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tags saved to $count songs',
+      one: 'Tags saved to 1 song',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagEditManyTrackTotalLeft =>
+      'Its track total was left as it was: it has no track number';
+
+  @override
+  String get tagEditManyDiscTotalLeft =>
+      'Its disc total was left as it was: it has no disc number';
+
+  @override
+  String get musicGroupActions => 'More actions';
 }
