@@ -34,7 +34,11 @@ class JsonCatalogStore implements CatalogStore {
   /// A catalog written by a version that recorded different fields is
   /// discarded rather than half-read: it costs one re-scan, and the
   /// alternative is a library that is subtly wrong in ways nobody can see.
-  static const int documentVersion = 1;
+  ///
+  /// Version 2 replaced a row's single `genre` with a `genres` list; a
+  /// version-1 catalog holds only the first genre of each file, and the
+  /// re-scan is what recovers the rest.
+  static const int documentVersion = 2;
 
   /// The file's name inside [directory].
   static const String fileName = 'catalog.json';
@@ -105,7 +109,7 @@ class JsonCatalogStore implements CatalogStore {
       if (metadata.artist != null) 'artist': metadata.artist,
       if (metadata.albumArtist != null) 'albumArtist': metadata.albumArtist,
       if (metadata.album != null) 'album': metadata.album,
-      if (metadata.genre != null) 'genre': metadata.genre,
+      if (metadata.genres.isNotEmpty) 'genres': metadata.genres,
       if (metadata.track != null) 'track': metadata.track,
       if (metadata.trackTotal != null) 'trackTotal': metadata.trackTotal,
       if (metadata.disc != null) 'disc': metadata.disc,
@@ -131,7 +135,11 @@ class JsonCatalogStore implements CatalogStore {
         artist: row['artist'] as String?,
         albumArtist: row['albumArtist'] as String?,
         album: row['album'] as String?,
-        genre: row['genre'] as String?,
+        genres: [
+          if (row['genres'] case final List<dynamic> genres)
+            for (final genre in genres)
+              if (genre is String) genre,
+        ],
         track: row['track'] as int?,
         trackTotal: row['trackTotal'] as int?,
         disc: row['disc'] as int?,

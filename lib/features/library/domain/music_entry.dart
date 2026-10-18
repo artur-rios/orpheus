@@ -74,6 +74,9 @@ class MusicEntry {
   /// application's terms — its name on disk is not one.
   String? get title => trimmedOrNull(metadata.title);
 
+  /// Every genre the track carries, in the order its file names them.
+  List<String> get genres => metadata.genres;
+
   /// How long the track is, where the tags said.
   Duration? get duration => metadata.duration;
 

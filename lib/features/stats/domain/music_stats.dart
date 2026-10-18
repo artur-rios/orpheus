@@ -132,14 +132,20 @@ MusicStats musicStatsFrom({
     final artist = entry?.albumArtist;
     final album = entry?.album;
     // Through the same trimming rule every other tag in the application
-    // reads by, so a genre of three spaces is absent here too.
-    final genre = trimmedOrNull(entry?.metadata.genre);
+    // reads by, so a genre of three spaces is absent here too. A set, so a
+    // track is credited once to a genre it somehow lists twice.
+    final entryGenres = <String>{
+      for (final raw in entry?.genres ?? const <String>[]) ?trimmedOrNull(raw),
+    };
 
     // Only a file the catalog holds can be said to lack tags. One it no
     // longer holds — moved, deleted, or a library that would not load — has
     // nothing to correct, and counting it would send an owner looking for
     // tags on files that are not there.
-    if (entry != null && artist == null && album == null && genre == null) {
+    if (entry != null &&
+        artist == null &&
+        album == null &&
+        entryGenres.isEmpty) {
       untagged++;
     }
 
@@ -149,7 +155,7 @@ MusicStats musicStatsFrom({
     if (album != null) {
       albums.update((album, artist), (e) => e + plays, ifAbsent: () => plays);
     }
-    if (genre != null) {
+    for (final genre in entryGenres) {
       genres.update(genre, (e) => e + plays, ifAbsent: () => plays);
     }
   }
