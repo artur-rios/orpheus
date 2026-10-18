@@ -12,6 +12,9 @@ abstract interface class CatalogStore {
   /// Never throws for a document that will not parse: a catalog nobody can
   /// read is a catalog nobody has, and the answer to that is an empty library
   /// and a re-scan, not a launch that fails.
+  ///
+  /// A document written by another version comes back empty and
+  /// [MusicCatalog.isStale], which is what makes startup scan it.
   Future<MusicCatalog> read();
 
   /// Writes [catalog] as the whole document.

@@ -22,8 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- The first launch of this version scans the library once more, because the catalog now keeps every genre a file
-  holds and not only the first.
+- The first launch of this version scans the library once more, even with *Re-scan the library at every launch*
+  turned off, because the catalog now keeps every genre a file holds and not only the first.
 - A genre containing a `/` is now one genre in MP3 files, as in every other format: *Hip-Hop/Rap* is no longer read
   as *Hip-Hop* and *Rap*. An MP3's ID3v2.4 genre frame now keeps every value it holds, and numeric references such
   as `(17)` are still read as the genre they name. Genres are split at `;`, `|` and `,`. An MP4 file with several

@@ -192,4 +192,40 @@ void main() {
       expect((await store.read()).isEmpty, isTrue);
     },
   );
+
+  test(
+    'GivenADocumentWrittenAsVersion1_WhenTheCatalogIsRead_ThenItIsReportedAsStale',
+    () async {
+      // What startup scans on, whatever the owner's preference: a refused
+      // document is a library that is empty until someone scans it.
+      File(store.path).writeAsStringSync(
+        jsonEncode({
+          'version': 1,
+          'tracks': [
+            {'path': file('1').path, 'genre': 'Rock'},
+          ],
+        }),
+      );
+
+      expect((await store.read()).isStale, isTrue);
+    },
+  );
+
+  test(
+    'GivenACurrentDocument_WhenTheCatalogIsRead_ThenItIsNotStale',
+    () async {
+      await store.write(MusicCatalog(entries: [entry(id: '1', title: 'A')]));
+
+      expect((await store.read()).isStale, isFalse);
+    },
+  );
+
+  test(
+    'GivenNoDocument_WhenTheCatalogIsRead_ThenItIsNotStale',
+    () async {
+      // A library never scanned is not one this application broke; it is the
+      // owner's preference that decides whether startup scans it.
+      expect((await store.read()).isStale, isFalse);
+    },
+  );
 }

@@ -67,6 +67,7 @@ class JsonCatalogStore implements CatalogStore {
       return MusicCatalog(
         entries: document.entries ?? const [],
         scannedAt: document.scannedAt,
+        isStale: document.isStale,
       );
     } on Object catch (error, trace) {
       // Broad by intent, as everywhere a stored document is read: a catalog
@@ -160,7 +161,12 @@ class JsonCatalogStore implements CatalogStore {
 /// that the document was written by another version — so that it is logged on
 /// the isolate that has the logger rather than on the one that has the file.
 class _CatalogDocument {
-  const _CatalogDocument({this.entries, this.scannedAt, this.note});
+  const _CatalogDocument({
+    this.entries,
+    this.scannedAt,
+    this.note,
+    this.isStale = false,
+  });
 
   /// Every track the document holds, or `null` when it holds none.
   final List<MusicEntry>? entries;
@@ -170,6 +176,10 @@ class _CatalogDocument {
 
   /// What is worth saying about a document that yielded nothing.
   final String? note;
+
+  /// Whether the document was written by another version and refused — see
+  /// [MusicCatalog.isStale].
+  final bool isStale;
 }
 
 /// Reads and decodes the document at [path].
@@ -183,6 +193,7 @@ _CatalogDocument _parse(String path) {
   if (decoded['version'] != JsonCatalogStore.documentVersion) {
     return const _CatalogDocument(
       note: 'the catalog was written by another version; re-scanning',
+      isStale: true,
     );
   }
 
