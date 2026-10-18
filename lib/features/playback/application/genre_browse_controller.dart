@@ -171,10 +171,12 @@ class GenreBrowseController extends Notifier<GenreBrowseState>
 
   /// Whether some track of [library] belongs to the genre [key] names.
   ///
-  /// Through the grouping the list is built from, so that what counts as there
-  /// is exactly what the list would show.
+  /// Through [hasGenre], the rule the list's groups are built by, so that what
+  /// counts as there is exactly what the list would show — and a stop at the
+  /// first match rather than the whole list built, because this runs on every
+  /// way up and every library change while a genre is open.
   bool _genreExists(String? key, List<MusicEntry> library) =>
-      genresIn(library).any((group) => group.key == key);
+      library.any((entry) => hasGenre(entry, key));
 
   /// Keeps the owner where they were across a library that changed under them,
   /// from [before] to [after].

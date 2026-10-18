@@ -218,9 +218,32 @@ bool hasGenre(MusicEntry entry, String? key) => key == null
 /// hand-built entry can hold `Rock` and `rock` together. A tie goes to the
 /// spelling that sorts first by [byName], then by plain `compareTo`, so the name
 /// never depends on the order the files happened to be read in.
-Map<String, String> genreNamesIn(List<MusicEntry> library) {
+Map<String, String> genreNamesIn(List<MusicEntry> library) =>
+    _genresAcross(library).names;
+
+/// What each genre in [library] is called, and the tracks that carry it, in one
+/// pass over the library.
+///
+/// One pass because the Genres list is built from it on every rebuild, over the
+/// whole library: asking each genre for its tracks in turn walked every track
+/// once per genre, which at forty thousand tracks and four hundred genres was
+/// most of a second on the interface's isolate. Each track's genre keys are
+/// worked out once here, and it is appended to the bucket of each — once per
+/// genre, however many spellings of it the track holds, as [hasGenre] matches.
+///
+/// The buckets are in the library's own order, unsorted; [genresIn] orders
+/// them. A track whose only genres are blank is in none, and `null` holds the
+/// tracks with no genres at all — both exactly as [hasGenre] decides.
+({Map<String, String> names, Map<String?, List<MusicEntry>> tracks})
+_genresAcross(List<MusicEntry> library) {
   final spellings = <String, Map<String, int>>{};
+  final tracks = <String?, List<MusicEntry>>{};
   for (final entry in library) {
+    if (entry.genres.isEmpty) {
+      (tracks[null] ??= []).add(entry);
+      continue;
+    }
+
     final seen = <String>{};
     for (final genre in entry.genres) {
       final name = genre.trim();
@@ -228,13 +251,17 @@ Map<String, String> genreNamesIn(List<MusicEntry> library) {
       if (key.isEmpty || !seen.add(key)) continue;
 
       _count(spellings, key, name);
+      (tracks[key] ??= []).add(entry);
     }
   }
 
-  return {
-    for (final MapEntry(:key, value: counts) in spellings.entries)
-      key: _commonSpelling(counts),
-  };
+  return (
+    names: {
+      for (final MapEntry(:key, value: counts) in spellings.entries)
+        key: _commonSpelling(counts),
+    },
+    tracks: tracks,
+  );
 }
 
 /// The spelling in [counts] that most tracks use, ties broken as
@@ -258,15 +285,23 @@ String _commonSpelling(Map<String, int> counts) {
 /// library does not list a group with nothing in it. A track with several
 /// genres is in the group of each.
 List<GenreGroup> genresIn(List<MusicEntry> library) {
-  final names = genreNamesIn(library);
+  final (:names, :tracks) = _genresAcross(library);
   final named = names.entries.toList()
     ..sort((a, b) => byName(a.value, b.value));
 
   return [
     for (final MapEntry(:key, :value) in named)
-      GenreGroup(key: key, name: value, tracks: tracksOfGenre(key, library)),
-    if (library.any((entry) => hasGenre(entry, null)))
-      GenreGroup(key: null, name: null, tracks: tracksOfGenre(null, library)),
+      GenreGroup(
+        key: key,
+        name: value,
+        tracks: tracks[key]!..sort(_genreTrackOrder),
+      ),
+    if (tracks[null] case final untagged?)
+      GenreGroup(
+        key: null,
+        name: null,
+        tracks: untagged..sort(_genreTrackOrder),
+      ),
   ];
 }
 
@@ -277,21 +312,24 @@ List<GenreGroup> genresIn(List<MusicEntry> library) {
 /// artist's queue plays ([inArtistOrder] shares the record-then-track rule), one
 /// artist after another by their name. Browsing is another question; see
 /// [genreLibrary].
-List<MusicEntry> tracksOfGenre(String? key, List<MusicEntry> library) =>
-    [
-      for (final entry in library)
-        if (hasGenre(entry, key)) entry,
-    ]..sort((a, b) {
-      final byArtist = byName(a.albumArtist, b.albumArtist);
-      if (byArtist != 0) return byArtist;
+List<MusicEntry> tracksOfGenre(String? key, List<MusicEntry> library) => [
+  for (final entry in library)
+    if (hasGenre(entry, key)) entry,
+]..sort(_genreTrackOrder);
 
-      // Two artists whose names differ only in case are two artists; without
-      // this their records would interleave.
-      final exactArtist = (a.albumArtist ?? '').compareTo(b.albumArtist ?? '');
-      if (exactArtist != 0) return exactArtist;
+/// The order [tracksOfGenre] gives, and [genresIn] gives each of its groups:
+/// by artist, then record, then track.
+int _genreTrackOrder(MusicEntry a, MusicEntry b) {
+  final byArtist = byName(a.albumArtist, b.albumArtist);
+  if (byArtist != 0) return byArtist;
 
-      return _recordThenTrackOrder(a, b);
-    });
+  // Two artists whose names differ only in case are two artists; without this
+  // their records would interleave.
+  final exactArtist = (a.albumArtist ?? '').compareTo(b.albumArtist ?? '');
+  if (exactArtist != 0) return exactArtist;
+
+  return _recordThenTrackOrder(a, b);
+}
 
 /// The entries of [library] that browsing the genre [key] names shows, in the
 /// library's own order.

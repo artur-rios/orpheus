@@ -486,6 +486,90 @@ void main() {
       },
     );
 
+    test(
+      'GivenAMixedLibrary_WhenGenresAreListed_ThenEachGroupHoldsExactlyWhatTracksOfGenreGives',
+      () {
+        // genresIn buckets the library in one pass rather than asking
+        // tracksOfGenre once per genre; this is what keeps the two the same
+        // answer — the same groups, each with the same tracks in the same
+        // order.
+        final library = [
+          entry(
+            id: '01',
+            artist: 'Radiohead',
+            album: 'OK Computer',
+            track: 2,
+            genres: ['Rock', 'Alternative'],
+          ),
+          entry(
+            id: '02',
+            artist: 'Radiohead',
+            album: 'OK Computer',
+            track: 1,
+            genres: ['rock'],
+          ),
+          entry(id: '03', artist: 'Björk', album: 'Post', genres: ['Pop']),
+          entry(
+            id: '04',
+            artist: 'radiohead',
+            album: 'Kid A',
+            track: 1,
+            genres: ['Rock', 'ROCK', 'Electronic'],
+          ),
+          entry(
+            id: '05',
+            artist: 'Air',
+            title: 'Loose',
+            genres: ['electronic'],
+          ),
+          entry(id: '06', artist: 'Air', album: 'Moon Safari'),
+          entry(id: '07', title: 'Untagged'),
+          entry(
+            id: '08',
+            artist: 'Massive Attack',
+            album: 'Mezzanine',
+            disc: 2,
+            track: 1,
+            genres: ['Trip-Hop', 'Electronic'],
+          ),
+          entry(
+            id: '09',
+            artist: 'Massive Attack',
+            album: 'Mezzanine',
+            disc: 1,
+            track: 3,
+            genres: [' Trip-Hop '],
+          ),
+          entry(id: '10', artist: 'Blank', album: 'Nothing', genres: ['']),
+          entry(
+            id: '11',
+            artist: 'Air',
+            album: 'Talkie Walkie',
+            genres: ['Pop'],
+          ),
+        ];
+        final grouped = albumArtistsAcross(library);
+
+        final groups = genresIn(grouped);
+
+        expect(groups.map((g) => g.key), [
+          'alternative',
+          'electronic',
+          'pop',
+          'rock',
+          'trip-hop',
+          null,
+        ]);
+        for (final group in groups) {
+          expect(
+            group.tracks,
+            orderedEquals(tracksOfGenre(group.key, grouped)),
+            reason: 'genre ${group.key}',
+          );
+        }
+      },
+    );
+
     test('GivenAKey_WhenATrackIsMatched_ThenItIsComparedByGenreKey', () {
       final track = entry(id: '1', genres: [' Rock ']);
 
