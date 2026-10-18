@@ -224,10 +224,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(selected(harness), hasLength(12));
       expect(find.text('12 selecionadas'), findsOneWidget);
-      expect(
-        find.widgetWithText(FilledButton, 'Editar tags…'),
-        findsOneWidget,
-      );
+      expect(find.widgetWithText(FilledButton, 'Editar tags…'), findsOneWidget);
     },
   );
 
@@ -630,22 +627,23 @@ void main() {
       expect(find.byType(Checkbox), findsNothing);
     });
 
-    testWidgets('GivenASelection_WhenTheFormIsCancelled_ThenTheSelectionStays', (
-      tester,
-    ) async {
-      final harness = await songsToEdit(tester);
-      await hold(tester, 'Alpha');
-      await tap(tester, 'Bravo');
-      await tester.tap(barButton('Edit tags…'));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'GivenASelection_WhenTheFormIsCancelled_ThenTheSelectionStays',
+      (tester) async {
+        final harness = await songsToEdit(tester);
+        await hold(tester, 'Alpha');
+        await tap(tester, 'Bravo');
+        await tester.tap(barButton('Edit tags…'));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(EditManyTagsDialog), findsNothing);
-      expect(selected(harness), {a.file.path, b.file.path});
-      expect(find.text('2 selected'), findsOneWidget);
-    });
+        expect(find.byType(EditManyTagsDialog), findsNothing);
+        expect(selected(harness), {a.file.path, b.file.path});
+        expect(find.text('2 selected'), findsOneWidget);
+      },
+    );
 
     testWidgets(
       'GivenOneSelected_WhenEditTagsSavesInTheOneTrackForm_ThenTheSelectionEnds',
