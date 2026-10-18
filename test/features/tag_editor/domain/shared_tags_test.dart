@@ -359,7 +359,7 @@ void main() {
       expect(other.leftForMissingNumber, isEmpty);
     });
 
-    test('GivenTheDiscNumberClearedWhileAFileHoldsADiscTotal_WhenEditsAreWorkedOut_ThenThePairIsLeftAndNoted', () {
+    test('GivenTheDiscNumberAndTotalBothCleared_WhenEditsAreWorkedOut_ThenBothAreRemoved', () {
       final files = [
         file(
           values: const {
@@ -375,12 +375,18 @@ void main() {
         ),
       ];
       final shared = SharedTags.of(files);
-      final form = formWith(shared, {AutofillField.discNumber: ''});
+      final form = formWith(shared, {
+        AutofillField.discNumber: '',
+        AutofillField.discTotal: '',
+      });
 
+      expect(sharedNumberProblems(shared, form), isEmpty);
       final edits = editsFor(files.first, shared, form);
-      expect(edits.values, isNot(contains(AutofillField.discNumber)));
-      expect(edits.values, isNot(contains(AutofillField.discTotal)));
-      expect(edits.leftForMissingNumber, {AutofillField.discTotal});
+      expect(edits.values, {
+        AutofillField.discNumber: null,
+        AutofillField.discTotal: null,
+      });
+      expect(edits.leftForMissingNumber, isEmpty);
     });
 
     test('GivenAFileHoldingATotalWithNoNumber_WhenOtherFieldsChange_ThenNothingIsNoted', () {
@@ -418,6 +424,58 @@ void main() {
         file(values: const {AutofillField.year: 2000}),
       ]);
       final form = formWith(shared, const {});
+
+      expect(sharedNumberProblems(shared, form), isEmpty);
+    });
+
+    test('GivenTheSharedDiscNumberClearedWhileTheTotalStays_WhenChecked_ThenTheDiscNumberIsAProblem', () {
+      final f = file(
+        values: const {AutofillField.discNumber: 1, AutofillField.discTotal: 2},
+      );
+      final shared = SharedTags.of([f, f]);
+      final form = formWith(shared, {AutofillField.discNumber: ''});
+
+      expect(sharedNumberProblems(shared, form), {
+        AutofillField.discNumber: NumberProblem.totalWithoutNumber,
+      });
+    });
+
+    test('GivenTheDiscNumberClearedAndATotalTyped_WhenChecked_ThenTheDiscNumberIsAProblem', () {
+      final f = file(values: const {AutofillField.discNumber: 1});
+      final shared = SharedTags.of([f, f]);
+      final form = formWith(shared, {
+        AutofillField.discNumber: '',
+        AutofillField.discTotal: '2',
+      });
+
+      expect(sharedNumberProblems(shared, form), {
+        AutofillField.discNumber: NumberProblem.totalWithoutNumber,
+      });
+    });
+
+    test('GivenTheSharedDiscNumberClearedOverMixedTotals_WhenChecked_ThenTheDiscNumberIsAProblem', () {
+      // A mixed total starts blank and cannot be cleared from the form, yet
+      // the song holding 2 would keep it.
+      final shared = SharedTags.of([
+        file(
+          values: const {
+            AutofillField.discNumber: 1,
+            AutofillField.discTotal: 2,
+          },
+        ),
+        file(values: const {AutofillField.discNumber: 1}),
+      ]);
+      final form = formWith(shared, {AutofillField.discNumber: ''});
+
+      expect(sharedNumberProblems(shared, form), {
+        AutofillField.discNumber: NumberProblem.totalWithoutNumber,
+      });
+    });
+
+    test('GivenTheSharedDiscNumberClearedWithNoTotal_WhenChecked_ThenItIsNoProblem', () {
+      final f = file(values: const {AutofillField.discNumber: 1});
+      final shared = SharedTags.of([f, f]);
+      final form = formWith(shared, {AutofillField.discNumber: ''});
 
       expect(sharedNumberProblems(shared, form), isEmpty);
     });

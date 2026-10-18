@@ -131,12 +131,15 @@ Rules, each a unit test:
   already hold that value (`03` over `3` is no change, as in `tagEdits`). A file with an empty `values` is not written.
 - **Cover per file.** `keep` → absent; `remove` → `null` where the file has a cover; `replace(bytes)` → the bytes where
   the file's cover differs.
-- **A total without its number.** ID3 cannot hold `/12`, and the writer refuses it. If a file's edits would leave it
-  with a track (or disc) total and no number — its own number is absent and unchanged, or the owner cleared the disc
-  number — that file's edits to that pair are dropped and the total is named in `leftForMissingNumber`; the file's
-  other edits are still written. *(My call, so that one untracked song does not block a whole album's track total.)*
+- **A total without its number.** ID3 cannot hold `/12`, and the writer refuses it. If a file's edits would give it
+  a track (or disc) total while its own number is absent and unchanged, that file's total edit is dropped and the total
+  is named in `leftForMissingNumber`; the file's other edits are still written. *(My call, so that one untracked song
+  does not block a whole album's track total.)* The owner clearing the disc number while the songs would keep a disc
+  total — typed non-blank, or left alone and held by some song, mixed included — is not this case but a form error
+  on the disc number (`totalWithoutNumber`), as for one track.
 - **Form-level number problems.** A changed number field is checked with `numberProblem` as today; *Save* is
-  disabled while any field has a problem. The total-without-number rule is per file, not a form error.
+  disabled while any field has a problem. A cleared disc number under a kept total is a form error, as above; a total
+  given to a file that has no number of its own is per file, not a form error.
 
 ### 4.2 Application — `ManyTagEditController`
 

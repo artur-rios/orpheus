@@ -207,6 +207,31 @@ void main() {
     },
   );
 
+  testWidgets(
+    'GivenTheDiscNumberClearedUnderASharedTotal_WhenTyped_ThenSaveIsDisabledAndTheFieldSaysWhy',
+    (tester) async {
+      final harness = harnessFor();
+      for (final track in tracks) {
+        harness.tagWriter.files[track.file.path] = tagsOf(
+          values: const {
+            AutofillField.discNumber: 1,
+            AutofillField.discTotal: 2,
+          },
+        );
+      }
+      await open(tester, harness);
+
+      await tester.enterText(field(AutofillField.discNumber), '');
+      await tester.pump();
+
+      expect(saveOf(tester), isNull);
+      expect(
+        textFieldOf(tester, AutofillField.discNumber).decoration!.errorText,
+        'Enter a number, or clear the total',
+      );
+    },
+  );
+
   testWidgets('GivenAYearOf0_WhenTyped_ThenSaveIsDisabledAndTheFieldSaysWhy', (
     tester,
   ) async {

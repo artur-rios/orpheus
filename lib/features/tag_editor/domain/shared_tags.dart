@@ -95,18 +95,49 @@ bool isMixed(SharedTags shared, AutofillField field) =>
 /// The number fields of [form] the owner changed into something that cannot be
 /// written.
 ///
-/// Only changed ones: a mixed field starts blank, and blank is no change. The
-/// total a file is left without a number for is not a problem here but a note,
-/// see [FileEdits.leftForMissingNumber].
+/// Only changed ones: a mixed field starts blank, and blank is no change.
+///
+/// A disc number the owner cleared while the songs would keep a disc total is
+/// a problem on the disc number, as it is for one track: ID3 cannot hold a
+/// total without its number, and leaving the pair as each file has it would
+/// drop the owner's change unexplained. The songs keep a total where the form's
+/// is typed non-blank, or is left alone and some song holds one — a mixed
+/// total too, which the form cannot clear. A song that has no number of its
+/// own and is given a total is not a problem here but a note, see
+/// [FileEdits.leftForMissingNumber].
 Map<AutofillField, NumberProblem> sharedNumberProblems(
   SharedTags shared,
   TagForm form,
-) => {
-  for (final field in sharedTextFields)
-    if (numberFields.contains(field))
-      if (_changedText(shared, form, field) case final text?)
-        field: ?numberProblem(field, text),
-};
+) {
+  final problems = <AutofillField, NumberProblem>{
+    for (final field in sharedTextFields)
+      if (numberFields.contains(field))
+        if (_changedText(shared, form, field) case final text?)
+          field: ?numberProblem(field, text),
+  };
+
+  const number = AutofillField.discNumber;
+  if (!problems.containsKey(number) &&
+      _changedText(shared, form, number) == '' &&
+      _keepsTotal(shared, form, AutofillField.discTotal)) {
+    problems[number] = NumberProblem.totalWithoutNumber;
+  }
+
+  return problems;
+}
+
+/// Whether, after [form], some file would still hold the total [field].
+bool _keepsTotal(SharedTags shared, TagForm form, AutofillField field) {
+  if (_changedText(shared, form, field) case final typed?) {
+    return typed.isNotEmpty;
+  }
+
+  return switch (shared.values[field]) {
+    Same(:final value) => value != null,
+    Mixed() => true,
+    null => false,
+  };
+}
 
 /// Whether [form] changes anything: a text field typed over, or a cover other
 /// than keeping the files' own.
@@ -143,9 +174,9 @@ const List<(AutofillField, AutofillField)> _numberedPairs = [
 /// cover where it differs.
 ///
 /// A number with a [numberProblem] is never in it — callers check
-/// [sharedNumberProblems] before saving. A pair the edits would leave with a
-/// total and no number is left as the file has it, and the total named in
-/// [FileEdits.leftForMissingNumber]; the file's other edits stay.
+/// [sharedNumberProblems] before saving. A total given to a file that has no
+/// number of its own, and is not given one, is left as the file has it and
+/// named in [FileEdits.leftForMissingNumber]; the file's other edits stay.
 FileEdits editsFor(FileTags file, SharedTags shared, TagForm form) {
   final edits = <AutofillField, Object?>{};
 
@@ -183,20 +214,14 @@ FileEdits editsFor(FileTags file, SharedTags shared, TagForm form) {
 
   final left = <AutofillField>{};
   for (final (number, total) in _numberedPairs) {
-    if (!edits.containsKey(number) && !edits.containsKey(total)) continue;
+    // Only a file with no number of its own that the edits leave alone: a
+    // number the owner cleared under a total is a form error instead, see
+    // [sharedNumberProblems].
+    if (edits.containsKey(number) || _holds(file.values[number])) continue;
+    if (!edits.containsKey(total) || !_holds(edits[total])) continue;
 
-    final holdsNumber = _holds(
-      edits.containsKey(number) ? edits[number] : file.values[number],
-    );
-    final holdsTotal = _holds(
-      edits.containsKey(total) ? edits[total] : file.values[total],
-    );
-    if (holdsTotal && !holdsNumber) {
-      edits
-        ..remove(number)
-        ..remove(total);
-      left.add(total);
-    }
+    edits.remove(total);
+    left.add(total);
   }
 
   return FileEdits(values: edits, leftForMissingNumber: left);
