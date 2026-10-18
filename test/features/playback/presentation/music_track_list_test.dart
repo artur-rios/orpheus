@@ -232,6 +232,24 @@ void main() {
   );
 
   testWidgets(
+    'GivenBSelected_WhenDsTickBoxIsShiftClicked_ThenBThroughDAreSelected',
+    (tester) async {
+      final harness = await songs(tester);
+      await hold(tester, 'Bravo');
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.tap(
+        find.descendant(of: row('Delta'), matching: find.byType(Checkbox)),
+      );
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pumpAndSettle();
+
+      expect(selected(harness), {b.file.path, c.file.path, d.file.path});
+      expect(find.text('3 selected'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'GivenSomeSelected_WhenSelectAllIsPressed_ThenAllFourAreSelectedAndSelectAllIsGone',
     (tester) async {
       final harness = await songs(tester);

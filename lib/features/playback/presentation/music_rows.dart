@@ -704,7 +704,10 @@ class _MusicTrackListState extends ConsumerState<MusicTrackList> {
                     // A right-click on a picked song is about the picked
                     // songs; on any other it is about that song alone.
                     selection: isPicked
-                        ? (count: picked, editTags: _editSelected)
+                        ? (
+                            count: picked,
+                            editTags: () => unawaited(_editSelected()),
+                          )
                         : null,
                     child: ListTile(
                       selected: isPicked,
@@ -714,7 +717,10 @@ class _MusicTrackListState extends ConsumerState<MusicTrackList> {
                           ? Checkbox(
                               value: isPicked,
                               semanticLabel: l10n.musicSelectionSelect(title),
-                              onChanged: (_) => controller.toggle(scope, path),
+                              // Through the row's own logic, so Shift draws a
+                              // range from a tick box as it does from a row.
+                              onChanged: (_) =>
+                                  _tap(entry, selecting: selecting),
                             )
                           : widget.numbered
                           ? SizedBox(

@@ -75,7 +75,9 @@ class _ShellWithBack extends ConsumerWidget {
     final searching = isSearchable(ref.watch(searchTermProvider));
 
     // A selection only lives while its list is on screen, so an active one is
-    // a visible one — and the first thing back ends.
+    // normally a visible one — and the first thing back ends. (A reload in
+    // flight can keep one a moment after its list has gone; back ending it
+    // then is harmless.)
     final selecting = ref.watch(songSelectionProvider).isActive;
 
     final canGoUp =
