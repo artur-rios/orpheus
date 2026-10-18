@@ -137,16 +137,19 @@ void main() {
       expect(result.songs, hasLength(9));
     });
 
-    test('GivenAPlayDatedAfterNow_WhenWorkedOut_ThenItDoesNotCountAsLately', () {
-      final ahead = now.add(const Duration(days: 1));
-      final tracks = tenRecent();
-      tracks[4] = played(pathOf(4), plays: 1, last: ahead, recent: [ahead]);
+    test(
+      'GivenAPlayDatedAfterNow_WhenWorkedOut_ThenItDoesNotCountAsLately',
+      () {
+        final ahead = now.add(const Duration(days: 1));
+        final tracks = tenRecent();
+        tracks[4] = played(pathOf(4), plays: 1, last: ahead, recent: [ahead]);
 
-      final result = favouritesLately(historyOf(tracks), libraryOf(10), now);
+        final result = favouritesLately(historyOf(tracks), libraryOf(10), now);
 
-      // Nine songs with a play that counts: below the ten.
-      expect(result.isFallback, isTrue);
-    });
+        // Nine songs with a play that counts: below the ten.
+        expect(result.isFallback, isTrue);
+      },
+    );
 
     test('GivenAPlayDatedExactlyNow_WhenWorkedOut_ThenItCountsAsLately', () {
       final tracks = tenRecent();
