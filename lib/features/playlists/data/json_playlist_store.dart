@@ -83,9 +83,13 @@ class JsonPlaylistStore implements PlaylistStore {
     // file that cannot be opened — locked for a moment by an antivirus scan or
     // a sync client, say — is not a damaged one: its error goes up to the
     // caller, who can say so, rather than the playlists being set aside as if
-    // they were lost.
+    // they were lost. So the bytes are read and then decoded here, rather
+    // than read as text: `readAsString` reports bytes that are not UTF-8 as a
+    // [FileSystemException], the same as a file that could not be opened.
     try {
-      return _playlistsIn(jsonDecode(await file.readAsString()));
+      final bytes = await file.readAsBytes();
+
+      return _playlistsIn(jsonDecode(utf8.decode(bytes)));
     } on FormatException catch (error) {
       // Text that is not UTF-8, not JSON, or not the document's shape.
       await _setAside(file, error);

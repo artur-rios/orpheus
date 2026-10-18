@@ -111,6 +111,20 @@ void main() {
     );
   });
 
+  test('GivenBytesThatAreNotUtf8_WhenRead_ThenTheyAreKeptAside', () async {
+    await Directory(store.directory).create(recursive: true);
+    const bytes = [0x7b, 0xff, 0xfe, 0x7d];
+    await File(store.path).writeAsBytes(bytes);
+
+    expect(await store.read(), isEmpty);
+
+    expect(File(store.path).existsSync(), isFalse);
+    expect(
+      File(p.join(store.directory, asideName())).readAsBytesSync(),
+      bytes,
+    );
+  });
+
   test('GivenAWrongShape_WhenRead_ThenItIsKeptAside', () async {
     await Directory(store.directory).create(recursive: true);
     const wrong = '{"version": 1, "playlists": [{"id": "p1"}]}';
