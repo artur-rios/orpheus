@@ -1867,6 +1867,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip those'**
   String get playlistSkipThose;
+
+  /// The heading over the auto playlists at the top of the Playlists tab: the ones Orpheus keeps by itself from what the owner listens to.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto playlists'**
+  String get autoPlaylistSection;
+
+  /// The heading over the owner's own playlists in the Playlists tab, below the auto playlists.
+  ///
+  /// In en, this message translates to:
+  /// **'Your playlists'**
+  String get autoPlaylistYours;
+
+  /// The name of the auto playlist of the songs the owner has played most in the last 30 days.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourites lately'**
+  String get autoPlaylistLately;
+
+  /// The name of the auto playlist of the songs the owner has played most, whenever they were played.
+  ///
+  /// In en, this message translates to:
+  /// **'All-time favourites'**
+  String get autoPlaylistAllTime;
+
+  /// Shown under the header of Favourites lately while there are too few recent plays recorded to rank by them, so it is ranked by the songs last played instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting to know your recent listening'**
+  String get autoPlaylistFallbackNote;
+
+  /// What Favourites lately shows when no song has been played in the last 30 days.
+  ///
+  /// In en, this message translates to:
+  /// **'Play some music and your recent favourites will show here'**
+  String get autoPlaylistLatelyEmpty;
+
+  /// What All-time favourites shows when no song in the library has been played yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Play some music and your favourites will show here'**
+  String get autoPlaylistAllTimeEmpty;
+
+  /// The preference that shows or hides the auto playlists in the Playlists tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Show auto playlists'**
+  String get autoPlaylistShow;
+
+  /// The line under the Show auto playlists preference: what it shows, and that turning it off does not stop plays being recorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourites lately and All-time favourites, at the top of Playlists. Your plays are still counted while they are hidden.'**
+  String get autoPlaylistShowDetail;
 }
 
 class _AppLocalizationsDelegate

@@ -123,7 +123,13 @@ void main() {
           find.descendant(of: row, matching: find.byType(PlaylistCover)),
           findsOneWidget,
         );
-        expect(find.text('No songs'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.widgetWithText(ListTile, 'Empty one'),
+            matching: find.text('No songs'),
+          ),
+          findsOneWidget,
+        );
       },
     );
 

@@ -9,6 +9,11 @@ const String autoLatelyId = 'auto:lately';
 /// The id of *All-time favourites*; see [autoLatelyId].
 const String autoAllTimeId = 'auto:all-time';
 
+/// Whether [playlistId] names an auto playlist rather than one of the owner's
+/// — which can be opened, played and exported, but not changed.
+bool isAutoPlaylistId(String playlistId) =>
+    playlistId == autoLatelyId || playlistId == autoAllTimeId;
+
 /// How far back *lately* looks.
 const Duration latelyWindow = Duration(days: 30);
 

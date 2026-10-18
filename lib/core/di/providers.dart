@@ -351,11 +351,18 @@ final playlistBrowseProvider =
 /// playlist was deleted while it was open — is none open, and so is any id
 /// while the playlists are still being read. The one answer to "is a playlist
 /// open", for the tab that shows it and the Back that closes it alike.
+///
+/// An auto playlist's id is read against [autoPlaylistsProvider] instead, and
+/// only that: it opens whatever became of the owner's playlists, and it reads
+/// as none open while the auto playlists are hidden — turning them off closes
+/// the one that was open.
 final openPlaylistProvider = Provider<Playlist?>((ref) {
   final open = ref.watch(playlistBrowseProvider);
   if (open == null) return null;
 
-  final playlists = ref.watch(playlistsControllerProvider).value ?? const [];
+  final playlists = isAutoPlaylistId(open)
+      ? ref.watch(autoPlaylistsProvider).value ?? const <Playlist>[]
+      : ref.watch(playlistsControllerProvider).value ?? const <Playlist>[];
   for (final playlist in playlists) {
     if (playlist.id == open) return playlist;
   }
@@ -400,6 +407,31 @@ final autoPlaylistsProvider = Provider<AsyncValue<List<Playlist>>>((ref) {
       ref.read(clockProvider)(),
     ),
   );
+});
+
+/// Whether *Favourites lately* is ranked on the weaker evidence of when songs
+/// were last played, because too few have dated plays — when it says so under
+/// its header (see [AutoList.isFallback]).
+///
+/// Worked out beside [autoPlaylistsProvider], from the same history, library
+/// and clock, rather than carried on its playlists: a [Playlist] has nowhere to
+/// hold it. `false` whenever that provider has no playlists to show.
+final autoLatelyIsFallbackProvider = Provider<bool>((ref) {
+  final shown = ref.watch(
+    preferencesControllerProvider.select((state) => state.showsAutoPlaylists),
+  );
+  if (!shown) return false;
+
+  final history = ref.watch(playHistoryProvider);
+  final catalog = ref.watch(musicLibraryControllerProvider);
+  if (history.hasError || catalog.hasError) return false;
+  if (!history.hasValue || !catalog.hasValue) return false;
+
+  return favouritesLately(
+    history.requireValue,
+    catalog.requireValue.byPath,
+    ref.read(clockProvider)(),
+  ).isFallback;
 });
 
 /// The picture the owner chose as a playlist's cover, or `null` for none.

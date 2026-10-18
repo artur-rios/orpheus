@@ -270,4 +270,63 @@ void main() {
       expect(harness.read(autoPlaylistsProvider).requireValue, hasLength(2));
     },
   );
+
+  group('the fallback', () {
+    test(
+      'GivenFewerRecentSongsThanLatelyNeeds_WhenItIsRead_ThenFavouritesLatelyIsTheFallback',
+      () async {
+        final harness = Harness(library: [aria], now: now);
+        harness.plays.history = historyOf([
+          played(aria.file.path, plays: 1, last: now),
+        ]);
+        await loaded(harness);
+
+        expect(harness.read(autoLatelyIsFallbackProvider), isTrue);
+      },
+    );
+
+    test(
+      'GivenEnoughRecentSongs_WhenItIsRead_ThenFavouritesLatelyIsNotTheFallback',
+      () async {
+        final many = [
+          for (var i = 0; i < latelyEnough; i++) entry(id: 'm$i'),
+        ];
+        final harness = Harness(library: many, now: now);
+        harness.plays.history = historyOf([
+          for (final song in many) played(song.file.path, plays: 1, last: now),
+        ]);
+        await loaded(harness);
+
+        expect(harness.read(autoLatelyIsFallbackProvider), isFalse);
+      },
+    );
+
+    test(
+      'GivenNothingPlayed_WhenItIsRead_ThenThereIsNoFallback',
+      () async {
+        final harness = Harness(library: [aria], now: now);
+        await loaded(harness);
+
+        expect(harness.read(autoLatelyIsFallbackProvider), isFalse);
+      },
+    );
+
+    test(
+      'GivenThePreferenceIsOff_WhenItIsRead_ThenThereIsNoFallback',
+      () async {
+        final harness = Harness(
+          library: [aria],
+          now: now,
+          settings: InMemorySettingsStore(showsAutoPlaylists: false),
+        );
+        harness.plays.history = historyOf([
+          played(aria.file.path, plays: 1, last: now),
+        ]);
+        await harness.library();
+        await harness.read(playHistoryProvider.future);
+
+        expect(harness.read(autoLatelyIsFallbackProvider), isFalse);
+      },
+    );
+  });
 }

@@ -32,11 +32,18 @@ final Logger _log = Logger('playlists');
 ///
 /// Drawn only once the library has loaded: [songs] is what says a row is
 /// missing, and a library still being read would make every row look so.
+///
+/// [readOnly] is an auto playlist's: the same rows, playing and picking, with
+/// nothing that changes the playlist — no handles and no *Remove from
+/// playlist*. Its entry ids are its songs' paths, so what is picked in it is
+/// held by path.
 class PlaylistTrackList extends ConsumerStatefulWidget {
   /// Creates the list.
   const PlaylistTrackList({
     required this.playlist,
     required this.songs,
+    this.readOnly = false,
+    this.emptyMessage,
     super.key,
   });
 
@@ -46,6 +53,13 @@ class PlaylistTrackList extends ConsumerStatefulWidget {
   /// The library's songs by file path: an entry whose path is not here is
   /// missing.
   final Map<String, MusicEntry> songs;
+
+  /// Whether the playlist can only be played and picked in, not reordered or
+  /// taken from.
+  final bool readOnly;
+
+  /// What an empty playlist says, when not that it has no songs yet.
+  final String? emptyMessage;
 
   @override
   ConsumerState<PlaylistTrackList> createState() => _PlaylistTrackListState();
@@ -336,7 +350,7 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
     if (entries.isEmpty) {
       return Center(
         child: Text(
-          l10n.playlistNoSongs,
+          widget.emptyMessage ?? l10n.playlistNoSongs,
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
@@ -346,6 +360,7 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
     }
 
     final controller = ref.read(songSelectionProvider.notifier);
+    final readOnly = widget.readOnly;
     // Counted against the rows, as [MusicTrackList] counts: an entry removed
     // a frame ago must not be counted.
     final ticked = selecting ? _ticked(selection.paths) : <PlaylistEntry>[];
@@ -355,11 +370,12 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
 
     // What the picked songs' right-click menu offers besides *Edit tags*.
     List<Widget> selectionItems() => [
-      MenuItemButton(
-        leadingIcon: const Icon(Icons.playlist_remove),
-        onPressed: () => unawaited(_removeTicked()),
-        child: Text(l10n.playlistRemoveFrom),
-      ),
+      if (!readOnly)
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.playlist_remove),
+          onPressed: () => unawaited(_removeTicked()),
+          child: Text(l10n.playlistRemoveFrom),
+        ),
       // Only songs the library has can be added: a missing one has no tags
       // to snapshot.
       if (tickedSongs.isNotEmpty)
@@ -369,6 +385,68 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
           child: Text(l10n.playlistAddTo),
         ),
     ];
+
+    // The song at [index] with its menu: the row, short of its handle.
+    Widget rowAt(int index) {
+      final entry = entries[index];
+      final song = _songOf(entry);
+      final isPicked = selecting && selection.paths.contains(entry.id);
+
+      final tile = SongTile(
+        title: song != null
+            ? musicTitleOf(song, l10n)
+            : tagOr(entry.title, l10n.musicUnknownTitle),
+        subtitle: song != null
+            ? musicArtistOf(song, l10n)
+            : _missingLine(entry, l10n),
+        duration: song?.duration ?? entry.duration,
+        picked: selecting ? isPicked : null,
+        onTicked: () => _tap(index, selecting: selecting),
+        greyed: song == null,
+        leading: AlbumArt(coverId: song?.metadata.coverId, side: 44),
+        onTap: () => _tap(index, selecting: selecting),
+        onLongPress: () => controller.toggle(scope, entry.id),
+      );
+
+      final removeThis = MenuItemButton(
+        leadingIcon: const Icon(Icons.playlist_remove),
+        onPressed: () => unawaited(_remove({entry.id})),
+        child: Text(l10n.playlistRemoveFrom),
+      );
+
+      return song != null
+          ? MusicRowMenu(
+              entry: song,
+              selection: isPicked
+                  ? (
+                      count: tickedSongs.length,
+                      editTags: () => unawaited(_editTicked()),
+                    )
+                  : null,
+              extraItems: [if (!readOnly) removeThis],
+              selectionItems: selectionItems(),
+              child: tile,
+            )
+          // A missing song has nothing to play or to tag: only
+          // its place in the playlist, to remove.
+          : SongRowMenu(
+              ownItems: [if (!readOnly) removeThis],
+              selectionItems: isPicked
+                  ? [
+                      ...selectionItems(),
+                      if (tickedSongs.isNotEmpty)
+                        MenuItemButton(
+                          leadingIcon: const Icon(Icons.edit_outlined),
+                          onPressed: () => unawaited(_editTicked()),
+                          child: Text(
+                            l10n.musicSelectionEditTags(tickedSongs.length),
+                          ),
+                        ),
+                    ]
+                  : null,
+              child: tile,
+            );
+    }
 
     return CallbackShortcuts(
       bindings: {
@@ -392,11 +470,12 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
                     ? null
                     : () => unawaited(_editTicked()),
                 actions: [
-                  IconButton(
-                    tooltip: l10n.playlistRemoveFrom,
-                    icon: const Icon(Icons.playlist_remove),
-                    onPressed: () => unawaited(_removeTicked()),
-                  ),
+                  if (!readOnly)
+                    IconButton(
+                      tooltip: l10n.playlistRemoveFrom,
+                      icon: const Icon(Icons.playlist_remove),
+                      onPressed: () => unawaited(_removeTicked()),
+                    ),
                   IconButton(
                     tooltip: l10n.playlistAddTo,
                     icon: const Icon(Icons.playlist_add),
@@ -408,109 +487,52 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
               ),
             Expanded(
               key: const ValueKey('rows'),
-              child: ReorderableListView.builder(
-                // The handle is the only thing a row is dragged by: touch and
-                // hold picks songs here, as in every song list.
-                buildDefaultDragHandles: false,
-                itemCount: entries.length,
-                onReorderItem: _reorder,
-                itemBuilder: (context, index) {
-                  final entry = entries[index];
-                  final song = _songOf(entry);
-                  final isPicked =
-                      selecting && selection.paths.contains(entry.id);
-
-                  final tile = SongTile(
-                    title: song != null
-                        ? musicTitleOf(song, l10n)
-                        : tagOr(entry.title, l10n.musicUnknownTitle),
-                    subtitle: song != null
-                        ? musicArtistOf(song, l10n)
-                        : _missingLine(entry, l10n),
-                    duration: song?.duration ?? entry.duration,
-                    picked: selecting ? isPicked : null,
-                    onTicked: () => _tap(index, selecting: selecting),
-                    greyed: song == null,
-                    leading: AlbumArt(
-                      coverId: song?.metadata.coverId,
-                      side: 44,
-                    ),
-                    onTap: () => _tap(index, selecting: selecting),
-                    onLongPress: () => controller.toggle(scope, entry.id),
-                  );
-
-                  final removeThis = MenuItemButton(
-                    leadingIcon: const Icon(Icons.playlist_remove),
-                    onPressed: () => unawaited(_remove({entry.id})),
-                    child: Text(l10n.playlistRemoveFrom),
-                  );
-
-                  final menu = song != null
-                      ? MusicRowMenu(
-                          entry: song,
-                          selection: isPicked
-                              ? (
-                                  count: tickedSongs.length,
-                                  editTags: () => unawaited(_editTicked()),
-                                )
-                              : null,
-                          extraItems: [removeThis],
-                          selectionItems: selectionItems(),
-                          child: tile,
-                        )
-                      // A missing song has nothing to play or to tag: only
-                      // its place in the playlist, to remove.
-                      : SongRowMenu(
-                          ownItems: [removeThis],
-                          selectionItems: isPicked
-                              ? [
-                                  ...selectionItems(),
-                                  if (tickedSongs.isNotEmpty)
-                                    MenuItemButton(
-                                      leadingIcon: const Icon(
-                                        Icons.edit_outlined,
-                                      ),
-                                      onPressed: () => unawaited(_editTicked()),
-                                      child: Text(
-                                        l10n.musicSelectionEditTags(
-                                          tickedSongs.length,
-                                        ),
-                                      ),
-                                    ),
-                                ]
-                              : null,
-                          child: tile,
-                        );
-
-                  return Row(
-                    // By entry id: the same song twice is two rows, and each
-                    // must keep its own place as they move.
-                    key: ValueKey(entry.id),
-                    children: [
-                      Expanded(child: menu),
-                      // Always drawn, and still while picking — but not
-                      // dragged then: two gestures on one row at once is
-                      // a bug farm.
-                      ReorderableDragStartListener(
-                        index: index,
-                        enabled: !selecting,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm,
-                          ),
-                          child: Icon(
-                            Icons.drag_handle,
-                            semanticLabel: l10n.playlistReorder,
-                            color: selecting
-                                ? theme.disabledColor
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
+              // Not a reorderable list at all when read-only, rather than
+              // one without handles: it would still offer moves to a
+              // screen reader.
+              child: readOnly
+                  ? ListView.builder(
+                      itemCount: entries.length,
+                      itemBuilder: (context, index) => KeyedSubtree(
+                        key: ValueKey(entries[index].id),
+                        child: rowAt(index),
                       ),
-                    ],
-                  );
-                },
-              ),
+                    )
+                  : ReorderableListView.builder(
+                      // The handle is the only thing a row is dragged by:
+                      // touch and hold picks songs here, as in every song
+                      // list.
+                      buildDefaultDragHandles: false,
+                      itemCount: entries.length,
+                      onReorderItem: _reorder,
+                      itemBuilder: (context, index) => Row(
+                        // By entry id: the same song twice is two rows, and
+                        // each must keep its own place as they move.
+                        key: ValueKey(entries[index].id),
+                        children: [
+                          Expanded(child: rowAt(index)),
+                          // Always drawn, and still while picking — but not
+                          // dragged then: two gestures on one row at once is
+                          // a bug farm.
+                          ReorderableDragStartListener(
+                            index: index,
+                            enabled: !selecting,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm,
+                              ),
+                              child: Icon(
+                                Icons.drag_handle,
+                                semanticLabel: l10n.playlistReorder,
+                                color: selecting
+                                    ? theme.disabledColor
+                                    : theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
             ),
           ],
         ),

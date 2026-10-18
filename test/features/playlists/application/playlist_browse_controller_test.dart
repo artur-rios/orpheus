@@ -1,7 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
+import 'package:orpheus/core/settings/in_memory_settings_store.dart';
+import 'package:orpheus/features/playlists/domain/auto_playlists.dart';
 import 'package:orpheus/features/playlists/domain/playlist.dart';
 
+import '../../../support/entries.dart';
 import '../../../support/test_container.dart';
 
 /// Which playlist is open.
@@ -77,6 +80,49 @@ void main() {
             .rename('p1', 'Night drive');
 
         expect(harness.read(openPlaylistProvider)?.name, 'Night drive');
+      },
+    );
+
+    test(
+      'GivenAnAutoPlaylistOpen_WhenTheOpenPlaylistIsRead_ThenItIsThatAutoPlaylist',
+      () async {
+        final harness = Harness(library: [entry(id: 'a')]);
+        await harness.library();
+        await harness.read(playHistoryProvider.future);
+
+        harness.read(playlistBrowseProvider.notifier).open(autoAllTimeId);
+
+        expect(harness.read(openPlaylistProvider)?.id, autoAllTimeId);
+      },
+    );
+
+    test(
+      'GivenAnAutoPlaylistOpenWithThemHidden_WhenTheOpenPlaylistIsRead_ThenItIsNull',
+      () async {
+        final harness = Harness(
+          library: [entry(id: 'a')],
+          settings: InMemorySettingsStore(showsAutoPlaylists: false),
+        );
+        await harness.library();
+        await harness.read(playHistoryProvider.future);
+
+        harness.read(playlistBrowseProvider.notifier).open(autoLatelyId);
+
+        expect(harness.read(openPlaylistProvider), isNull);
+      },
+    );
+
+    test(
+      'GivenTheOwnersPlaylistsCannotBeRead_WhenAnAutoPlaylistIsOpen_ThenItIsStillOpen',
+      () async {
+        final harness = Harness(library: [entry(id: 'a')]);
+        harness.playlistStore.failRead = Exception('unreadable');
+        await harness.library();
+        await harness.read(playHistoryProvider.future);
+
+        harness.read(playlistBrowseProvider.notifier).open(autoLatelyId);
+
+        expect(harness.read(openPlaylistProvider)?.id, autoLatelyId);
       },
     );
   });

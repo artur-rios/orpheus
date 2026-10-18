@@ -11,9 +11,11 @@ import '../../library/domain/music_catalog.dart';
 import '../../library/domain/music_entry.dart';
 import '../../playback/presentation/music_display_name.dart';
 import '../../shell/presentation/async_state_view.dart';
+import '../domain/auto_playlists.dart';
 import '../domain/playlist.dart';
 import 'playlist_cover.dart';
 import 'playlist_menu.dart';
+import 'playlist_names.dart';
 import 'playlist_track_list.dart';
 
 /// The open playlist: its name and the way back, its picture and what it
@@ -25,14 +27,21 @@ import 'playlist_track_list.dart';
 /// Everything below the name waits for the library: whether a song is
 /// missing is read off the catalog, and a catalog still being read would
 /// make every row look missing.
+///
+/// An auto playlist is shown the same way, read-only: under its localised
+/// name, with no handles and no *Remove from playlist*, its own menu only
+/// *Add to playlist…* and export, and a note under *Favourites lately*'s
+/// header while that is ranked on its fallback.
 class PlaylistView extends ConsumerWidget {
   /// Creates the view.
   const PlaylistView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playlist = ref.watch(openPlaylistProvider);
-    if (playlist == null) return const SizedBox.shrink();
+    final open = ref.watch(openPlaylistProvider);
+    if (open == null) return const SizedBox.shrink();
+
+    final playlist = shownAs(open, AppLocalizations.of(context));
 
     final library = ref.watch(musicLibraryControllerProvider);
 
@@ -111,6 +120,13 @@ class _Loaded extends ConsumerWidget {
     ];
     final count = l10n.playlistSongCount(playlist.entries.length);
     final length = _lengthOf(playlist, songs);
+    final readOnly = isAutoPlaylistId(playlist.id);
+    // Only with songs to explain: the fallback is never in use for an empty
+    // list, and the empty state is then all there is to say.
+    final fallback =
+        playlist.id == autoLatelyId &&
+        playlist.entries.isNotEmpty &&
+        ref.watch(autoLatelyIsFallbackProvider);
 
     void play({required bool shuffled}) => unawaited(
       ref
@@ -169,9 +185,27 @@ class _Loaded extends ConsumerWidget {
             ),
           ],
         ),
+        if (fallback) ...[
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            l10n.autoPlaylistFallbackNote,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpacing.md),
         Expanded(
-          child: PlaylistTrackList(playlist: playlist, songs: songs),
+          child: PlaylistTrackList(
+            playlist: playlist,
+            songs: songs,
+            readOnly: readOnly,
+            emptyMessage: switch (playlist.id) {
+              autoLatelyId => l10n.autoPlaylistLatelyEmpty,
+              autoAllTimeId => l10n.autoPlaylistAllTimeEmpty,
+              _ => null,
+            },
+          ),
         ),
       ],
     );
