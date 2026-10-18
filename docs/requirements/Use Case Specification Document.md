@@ -1459,7 +1459,7 @@ graph LR
 | AF-08 | The owner touches and holds an album or an artist | Its menu opens, as before (`FR-UX-12`). |
 | AF-09 | The owner cancels the form, or it writes no song | The selection stays, so the owner can adjust it. |
 | AF-10 | The owner taps a song when nothing is selected | It plays, as before. |
-| AF-11 | The window is narrower than 480 logical pixels | The actions in the bar are icons with tooltips, so the count keeps its room (`FR-UX-13`). |
+| AF-11 | The bar is narrower than 480 logical pixels, as on a phone held upright | *Edit tags…* in it is an icon with a tooltip, so the count keeps its room (`FR-UX-13`). |
 
 ### UC-39: Keep playlists
 
@@ -1490,7 +1490,8 @@ graph LR
 8. The owner picks *Remove from playlist* on a song's menu; that entry goes, and the song and its file stay
    (`FR-PS-04`).
 9. From the playlist's menu — its ⋮ button, a right-click or a touch and hold — the owner picks *Rename…*,
-   *Choose cover…* or *Remove cover*, *Export to .m3u…* or *Delete…* (`FR-PS-01`, `FR-PS-06`, `FR-PS-11`).
+   *Choose cover…*, *Remove cover* (offered only while the playlist has a cover of its own), *Export to .m3u…* or
+   *Delete…* (`FR-PS-01`, `FR-PS-06`, `FR-PS-11`).
 10. *Rename…* asks for a name and stores it. *Choose cover…* asks for a JPEG or PNG and keeps a copy of it in the
     application's own data for this playlist; *Remove cover* returns to the mosaic of up to four of its albums' covers.
 11. *Export to .m3u…* asks where to save `<name>.m3u` and writes the extended M3U there, naming the place when it is
@@ -1508,7 +1509,7 @@ graph LR
 | AF-04 | The name is blank | The dialog says to give the playlist a name and stays open; a name is trimmed, and may repeat another playlist's (`FR-PS-01`). |
 | AF-05 | An album or an artist is added | Its songs are gathered from the whole library, an album in track order and an artist in the order the artist is listed, not only those on screen (`FR-PS-02`). |
 | AF-06 | A song's file is no longer in the library — a drive is unplugged, a folder is unreachable | The song stays in the playlist, greyed and labelled *Missing* with what was saved of it. Tapping it does nothing, *Play* and *Shuffle* skip it, and the owner can select and remove it. When the file is back it is an ordinary song again (`FR-PS-09`). |
-| AF-07 | Every song in the playlist is missing, or it has none | *Play* and *Shuffle* are not offered, and an empty playlist says it has no songs yet. |
+| AF-07 | Every song in the playlist is missing, or it has none | *Play* and *Shuffle* are disabled, and an empty playlist says it has no songs yet. |
 | AF-08 | The library is still loading, or could not be read | The playlist shows the loading state or the error with a retry in place of its songs, so that no song is shown missing for want of an answer (`FR-PS-09`). |
 | AF-09 | The owner starts a selection in a playlist | Each entry is selected on its own, so a song that is in twice can be picked once; dragging is not offered; the bar offers *Remove from playlist*, *Add to playlist…* and *Edit tags…*, the last two over the songs the library holds, each once, in the playlist's order. Missing entries can be picked and removed (`FR-PS-10`). |
 | AF-10 | Back is used in a playlist | It ends a selection if there is one, and otherwise closes the playlist and shows the list (`FR-PS-07`). |
@@ -1520,7 +1521,7 @@ graph LR
 | AF-16 | The playlists cannot be stored — a full disk, a locked file | A message says the playlists could not be saved; what is on screen and what is stored are as they were (`FR-PS-12`). |
 | AF-17 | The stored document cannot be read, or was written by another version | It is kept aside as `playlists.json.bad-<time>`, never overwritten, and the application starts with no playlists (`FR-PS-13`). |
 | AF-18 | The stored document can be neither read nor kept aside | The Playlists destination shows the error with a retry; no playlist can be created or changed, so nothing is written over the document (`FR-PS-13`). |
-| AF-19 | The window is narrower than 480 logical pixels | The actions in a selection's bar are icons with tooltips (`FR-UX-13`). |
+| AF-19 | The selection's bar is narrower than 480 logical pixels, as on a phone held upright | *Edit tags…* in it is an icon with a tooltip (`FR-UX-13`). |
 | AF-20 | A scan runs, or a music folder cannot be reached | No playlist changes; songs whose files the scan no longer finds are shown as missing (AF-06). |
 
 ---

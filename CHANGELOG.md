@@ -37,8 +37,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   or an artist, over exactly those songs. One selected song opens the one-track editor.
 - Playlists. A new *Playlists* tab, after Genres, lists them, the most recently changed first, as rows or tiles, with
   *New playlist* at the top. Each playlist's menu — its ⋮ button, a right-click or a touch and hold — has *Rename…*,
-  *Choose cover…* or *Remove cover*, *Export to .m3u…* and *Delete…*, which asks first and never touches a song. The
-  cover is a JPEG or PNG of your own, or else a mosaic of up to four of its albums' covers.
+  *Choose cover…*, *Remove cover* (only once it has a cover of your own), *Export to .m3u…* and *Delete…*, which asks
+  first and never touches a song. The cover is a JPEG or PNG of your own, or else a mosaic of up to four of its albums'
+  covers.
 - Add to a playlist. *Add to playlist…* is on a song's menu, in the bar and the right-click menu of a selection, and on
   an album's and an artist's ⋮ menu. Pick a playlist, or *New playlist…* first in the list; the songs go at the end, and
   a message says *Added N songs to X*. Songs a playlist already holds are asked about — *Add anyway*, *Skip those* or
@@ -68,8 +69,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The album row's autofill button moved into its new ⋮ menu, beside *Edit tags…*.
 - Touch and hold on a song now selects it instead of opening its menu, which is on its ⋮ button and a right-click.
   Touch and hold on an album or an artist still opens its menu.
-- On a phone narrower than 480 logical pixels, the actions in a selection's bar are icons with tooltips, so the count
-  keeps its room.
+- On a phone, *Edit tags…* in a selection's bar is an icon with a tooltip, where the bar is narrower than 480 logical
+  pixels, so the count keeps its room. The bar's other actions are icons at any width.
 
 ## [1.4.0] - 2026-10-13
 
