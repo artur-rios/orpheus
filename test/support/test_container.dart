@@ -59,6 +59,7 @@ class Harness {
     FakeCoverPicker? coverPicker,
     List<Playlist> playlists = const [],
     FakeFileSaver? fileSaver,
+    String Function()? idGenerator,
   }) : player = FakeMediaPlayer(),
        storyShare = storyShare ?? RecordingStoryShare(),
        releases = releases ?? ScriptedReleaseSource(),
@@ -113,6 +114,9 @@ class Harness {
         playlistStoreProvider.overrideWithValue(playlistStore),
         playlistCoverStoreProvider.overrideWithValue(playlistCovers),
         fileSaverProvider.overrideWithValue(this.fileSaver),
+        // Ids a test can name: `id-1`, `id-2`, ... in the order they are asked
+        // for, rather than random ones.
+        idGeneratorProvider.overrideWithValue(idGenerator ?? _sequentialIds()),
         audioPlayerProvider.overrideWithValue(player),
         mediaSessionProvider.overrideWithValue(session),
         trackProbeProvider.overrideWithValue(probe),
@@ -239,4 +243,10 @@ class Harness {
   /// Waits for the library to load, which every player flow depends on.
   Future<MusicCatalog> library() =>
       container.read(musicLibraryControllerProvider.future);
+}
+
+/// Ids `id-1`, `id-2`, ... for a test that wants to say which one it means.
+String Function() _sequentialIds() {
+  var last = 0;
+  return () => 'id-${++last}';
 }

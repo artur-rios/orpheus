@@ -64,10 +64,13 @@ import '../../features/playback/domain/song_selection.dart';
 import '../../features/playback/domain/track_analysis.dart';
 import '../../features/playback/domain/track_energy.dart';
 import '../../features/playback/domain/track_probe.dart';
+import '../../features/playlists/application/playlist_browse_controller.dart';
+import '../../features/playlists/application/playlists_controller.dart';
 import '../../features/playlists/data/file_picker_file_saver.dart';
 import '../../features/playlists/data/file_playlist_cover_store.dart';
 import '../../features/playlists/data/json_playlist_store.dart';
 import '../../features/playlists/domain/file_saver.dart';
+import '../../features/playlists/domain/playlist.dart';
 import '../../features/playlists/domain/playlist_cover_store.dart';
 import '../../features/playlists/domain/playlist_store.dart';
 import '../../features/shell/application/preferences_controller.dart';
@@ -122,6 +125,19 @@ final hostPlatformProvider = Provider<HostPlatform>(
 
 /// The clock, so that a test can pin what "now" is.
 final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
+/// Where the ids of new things come from, so that a test can name them.
+///
+/// Random rather than counted: an id has to stay unique across runs and
+/// devices, and no counter survives both. 128 bits as hexadecimal, from the
+/// operating system's source.
+final idGeneratorProvider = Provider<String Function()>((ref) {
+  final random = Random.secure();
+  return () => [
+    for (var i = 0; i < 16; i++)
+      random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+  ].join();
+});
 
 /// Where a shuffle gets its randomness.
 ///
@@ -303,6 +319,23 @@ final playlistCoverStoreProvider = Provider<PlaylistCoverStore>(
 final fileSaverProvider = Provider<FileSaver>(
   (ref) => const FilePickerFileSaver(),
 );
+
+/// The playlists.
+///
+/// Not retried when the store cannot be read: that failure is a document that
+/// could not be set aside, which asking again does not mend, and a retry would
+/// only delay the error that every change must report.
+final playlistsControllerProvider =
+    AsyncNotifierProvider<PlaylistsController, List<Playlist>>(
+      PlaylistsController.new,
+      retry: (_, _) => null,
+    );
+
+/// Which playlist is open, or `null` for the list of them.
+final playlistBrowseProvider =
+    NotifierProvider<PlaylistBrowseController, String?>(
+      PlaylistBrowseController.new,
+    );
 
 /// What counts a play, and what has been counted.
 ///
