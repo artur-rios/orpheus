@@ -79,6 +79,21 @@ void main() {
     },
   );
 
+  test(
+    'GivenABareNumberWithATrailingSpace_WhenItsGenresAreRead_ThenItIsNamed',
+    () {
+      // Not a genre called "17": the space is the writer's, not the code's.
+      expect(id3GenreValues(genreTag('17 ')), ['Rock']);
+    },
+  );
+
+  test(
+    'GivenAReferenceWithATrailingNewline_WhenItsGenresAreRead_ThenItIsNamed',
+    () {
+      expect(id3GenreValues(genreTag('(17)\n')), ['Rock']);
+    },
+  );
+
   test('GivenTheRemixReference_WhenItsGenresAreRead_ThenItIsRemix', () {
     expect(id3GenreValues(genreTag('(RX)')), ['Remix']);
   });

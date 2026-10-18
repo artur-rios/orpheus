@@ -192,6 +192,44 @@ void main() {
   });
 
   testWidgets(
+    'GivenRockIsOpen_WhenTheToolbarShuffleIsPressed_ThenOnlyItsTaggedTracksAreQueuedUnderItsName',
+    (tester) async {
+      // Not the whole library, which is what the same button shuffles under
+      // Music, and not OK Computer whole, which is how the record is browsed:
+      // Karma Police is on a Rock record but is not Rock.
+      final harness = await openRock(tester);
+
+      await tester.tap(find.byTooltip('Shuffle the genre'));
+      await tester.pumpAndSettle();
+
+      final queue = harness.read(audioPlaybackControllerProvider).queue;
+      expect(queue.label, 'Rock');
+      expect(queue.tracks, unorderedEquals([file('1'), file('5')]));
+    },
+  );
+
+  testWidgets(
+    'GivenTheNoGenreRow_WhenTapped_ThenItsArtistsAreShownUnderANoGenreCrumb',
+    (tester) async {
+      final harness = Harness(library: library);
+      await tester.pumpHarness(harness, area());
+
+      await tester.tap(find.text('No genre'));
+      await tester.pumpAndSettle();
+
+      final state = harness.read(genreBrowseControllerProvider);
+      expect(state.inGenre, isTrue);
+      expect(state.genre, isNull);
+      expect(find.text('Nobody'), findsOneWidget);
+      expect(find.text('Radiohead'), findsNothing);
+      // The list's row is gone, so this is the crumb naming where the owner is.
+      expect(rowOf('No genre'), findsNothing);
+      expect(find.text('No genre'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'Genres'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'GivenAnEmptyLibrary_WhenGenresIsOpened_ThenTheLibrarysEmptyMessageIsShown',
     (tester) async {
       final harness = Harness();

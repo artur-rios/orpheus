@@ -1368,7 +1368,7 @@ graph LR
 | AF-05 | The library carries no genre tags at all | Only *No genre* is listed (`FR-CT-17`). |
 | AF-06 | The library is empty | The empty state of the music area says so, and points at the folders screen (UC-07 AF-01). |
 | AF-07 | A scan leaves a genre with nothing in it, or a level the owner is in empty | The owner is taken out to the nearest level that still has content, to the genres list where the genre no longer exists. A record or artist renamed by a changed tag is followed (`FR-CT-19`). |
-| AF-08 | An edit or a scan takes the open genre's last tag off the record the owner is in | The owner stays in the record, which is still in the library and is drawn whole from it, and playing it plays it whole. Going back up shows the genre without it (`FR-CT-19`). |
+| AF-08 | An edit or a scan takes the open genre's last tag off the record the owner is in | The owner stays in the record, which is still in the library and is drawn whole from it, and playing it plays it whole. Going back up shows the genre without it (`FR-CT-19`). If the record carried the genre's last tag anywhere in the library, the genre no longer exists and the owner is returned to the genres list instead. |
 | AF-09 | The owner switches to another destination and back | The genre, view, artist and record are as they were left, and independent of the music area's (`FR-CT-12`). |
 | AF-10 | The owner searches while in the genres area | The same results as in the music area are shown, with the selector of UC-12. |
 | AF-11 | The system back gesture is used inside a genre | It clears a search first, then goes back one level — record, artist, genre — and from the genres list does whatever the platform does with it (`FR-CT-18`). |

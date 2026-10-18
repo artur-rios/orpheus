@@ -26,6 +26,10 @@ dependencies:
   # Tags and embedded cover art, in pure Dart. Pure Dart matters here: it is
   # the one component that would otherwise need a native build per target, and
   # a reader that cannot run in a test is a reader whose parsing nobody checks.
+  #
+  # lib/features/library/data/id3_genres.dart imports the package's private
+  # src/constants/id3_genres.dart for its ID3v1 genre table, which no release
+  # promises to keep: an upgrade must check that file is still there.
   audio_metadata_reader: ^1.8.0
 
   # Where the catalog, the settings and the cover cache live on each platform.

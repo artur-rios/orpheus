@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/features/library/data/tag_reading.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../support/ape_fixture.dart';
 import '../../../support/flac_fixture.dart';
 import '../../../support/id3_fixture.dart';
 
@@ -157,6 +158,36 @@ void main() {
       final file = write(
         'track.flac',
         taggedFlac(tags: {'TITLE': 'x', 'GENRE': 'Rock; Pop'}),
+      );
+
+      expect(readTags(file).metadata.genres, ['Rock', 'Pop']);
+    },
+  );
+
+  test(
+    'GivenAFlacFileWithTwoGenreComments_WhenItsTagsAreRead_ThenBothAreKept',
+    () {
+      // Vorbis comments repeat a field rather than packing one: a second
+      // GENRE is a second genre, not a replacement for the first.
+      final file = write(
+        'track.flac',
+        flacOf([
+          streamInfoBlock(),
+          vorbisCommentBlock(['TITLE=x', 'GENRE=Rock', 'GENRE=Pop']),
+        ]),
+      );
+
+      expect(readTags(file).metadata.genres, ['Rock', 'Pop']);
+    },
+  );
+
+  test(
+    'GivenAnApeFileWithTwoGenresInItsGenreItem_WhenItsTagsAreRead_ThenBothAreKept',
+    () {
+      // APEv2 holds several values in one item, a zero byte between each.
+      final file = write(
+        'track.ape',
+        taggedApe(tags: {'Title': 'x', 'Genre': 'Rock\u0000Pop'}),
       );
 
       expect(readTags(file).metadata.genres, ['Rock', 'Pop']);

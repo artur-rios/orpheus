@@ -273,8 +273,9 @@ class _GroupActions extends ConsumerWidget {
               : l10n.audioShuffleArtist,
           icon: const Icon(Icons.shuffle),
           // The same gathering "play album" does, in a different order: the
-          // queue is the record (or the artist's whole catalogue), never the
-          // one track this button happens to have in hand.
+          // queue is the record, or the artist's records in the part of the
+          // library the nearest MusicScope browses — never the one track this
+          // button happens to have in hand.
           onPressed: () => _play(ref, within, shuffled: true),
         ),
         if (kind == MusicGroupKind.album)

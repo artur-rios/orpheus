@@ -49,7 +49,12 @@ final RegExp _reference = RegExp(r'\((\d+|RX|CR)\)');
 ///
 /// A code the table does not hold is dropped rather than shown as a number,
 /// because "999" is not a genre a listener could recognise or search for.
-List<String> _resolve(String value) {
+///
+/// Trimmed first: a writer that leaves a space or a line break after `17` or
+/// `(17)` still means the code, and untrimmed it matched neither pattern and
+/// became a genre called "17".
+List<String> _resolve(String raw) {
+  final value = raw.trim();
   if (_bareCode.hasMatch(value)) return _named(value);
 
   final match = _references.firstMatch(value);
