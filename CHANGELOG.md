@@ -7,6 +7,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- A letter bar beside Artists, Albums and Songs. Tap a letter, or drag along the bar, to jump to the first name under
+  it; a large letter follows your finger while you drag. Names starting with a digit or symbol are under *#*, accents
+  are ignored (*Édith* is under E), and letters with nothing under them are dimmed. It works with rows and sleeves
+  alike, and under a genre too. Artist and album rows now keep their name to one line.
+
+### Fixed
+
+- Coming back to Artists, Albums or Songs by the breadcrumb returns to where you had scrolled, instead of the top.
+  Each view, and rows and sleeves, keep their own place while Orpheus runs, including when switching between views.
+
 ## [1.5.1] - 2026-10-19
 
 ### Fixed

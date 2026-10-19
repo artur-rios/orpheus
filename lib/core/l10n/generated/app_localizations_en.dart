@@ -148,6 +148,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get musicBreadcrumbRoot => 'Library';
 
   @override
+  String musicJumpToLetter(String letter) {
+    return 'Jump to letter $letter';
+  }
+
+  @override
   String get musicUnknownArtist => 'Unknown artist';
 
   @override
