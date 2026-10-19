@@ -736,7 +736,7 @@ class RestoreController extends Notifier<RestoreState> {
     }
   }
 
-  /// The playlists, written as one list, then their covers.
+  /// The playlists: their covers, then the list as one write.
   Future<(PartResult, List<String>)> _restorePlaylists(
     BackupContents backup,
     SongMatcher matcher,

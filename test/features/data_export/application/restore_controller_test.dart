@@ -733,6 +733,8 @@ void main() {
       final summary = await controller.restore();
 
       expect(namesIn(harness), ['Theirs']);
+      // It names no picture that is not there.
+      expect(harness.playlistStore.playlists.single.coverId, isNull);
       expect(summary.coverFailures, ['Theirs']);
       expect(summary.playlists, isA<PlaylistsRestored>());
     });
