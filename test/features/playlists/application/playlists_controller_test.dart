@@ -466,6 +466,217 @@ void main() {
     );
   });
 
+  group('replaceAll', () {
+    final picture = Uint8List.fromList([7, 7]);
+
+    test(
+      'GivenANewList_WhenItReplacesThePlaylists_ThenItIsWrittenOnceAndShown',
+      () async {
+        final harness = harnessOver(playlists: [stored('p', name: 'One')]);
+        final controller = await controllerOf(harness);
+        final next = [stored('p', name: 'One'), stored('q', name: 'Two')];
+
+        final failed = await controller.replaceAll(
+          (_) => (playlists: next, covers: const {}),
+        );
+
+        expect(failed, isEmpty);
+        expect(harness.playlistStore.writes, 1);
+        expect(harness.playlistStore.playlists, next);
+        expect(harness.read(playlistsControllerProvider).value, next);
+      },
+    );
+
+    test(
+      'GivenCovers_WhenThePlaylistsAreReplaced_ThenEachIsStoredUnderItsId',
+      () async {
+        final harness = harnessOver();
+        final controller = await controllerOf(harness);
+
+        await controller.replaceAll(
+          (_) => (
+            playlists: [stored('q', coverId: 'q')],
+            covers: {'q': picture},
+          ),
+        );
+
+        expect(harness.playlistCovers.covers, {'q': picture});
+      },
+    );
+
+    test(
+      'GivenPlaylistsNoLongerInTheList_WhenReplaced_ThenTheirCoversAreDeleted',
+      () async {
+        final harness = harnessOver(
+          playlists: [
+            stored('p', name: 'One', coverId: 'p'),
+            stored('k', name: 'Kept', coverId: 'k'),
+          ],
+        );
+        harness.playlistCovers.covers['p'] = picture;
+        harness.playlistCovers.covers['k'] = picture;
+        final controller = await controllerOf(harness);
+
+        await controller.replaceAll(
+          (_) => (
+            playlists: [stored('k', name: 'Kept', coverId: 'k')],
+            covers: {'n': picture},
+          ),
+        );
+
+        expect(harness.playlistCovers.deleted, ['p']);
+        expect(harness.playlistCovers.covers.keys, unorderedEquals(['k', 'n']));
+      },
+    );
+
+    test(
+      'GivenACoverThatCannotBeStored_WhenReplaced_ThenThePlaylistStaysWithoutNamingItAndItsIdIsAnswered',
+      () async {
+        final harness = harnessOver();
+        harness.playlistCovers.unwritable.add('q');
+        final controller = await controllerOf(harness);
+        final next = [stored('q', coverId: 'q'), stored('r', coverId: 'r')];
+
+        final failed = await controller.replaceAll(
+          (_) => (playlists: next, covers: {'q': picture, 'r': picture}),
+        );
+
+        expect(failed, {'q'});
+        // No playlist names a picture that is not there.
+        expect(harness.playlistStore.playlists, [
+          stored('q'),
+          stored('r', coverId: 'r'),
+        ]);
+        expect(harness.read(playlistsControllerProvider).value, [
+          stored('q'),
+          stored('r', coverId: 'r'),
+        ]);
+        expect(harness.playlistCovers.covers.keys, ['r']);
+      },
+    );
+
+    test(
+      'GivenAPlaylistWithACover_WhenANewOneCannotBeStored_ThenItStillNamesTheOneItHad',
+      () async {
+        final harness = harnessOver(playlists: [stored('p', coverId: 'p')]);
+        harness.playlistCovers.covers['p'] = picture;
+        harness.playlistCovers.unwritable.add('p');
+        final controller = await controllerOf(harness);
+
+        final failed = await controller.replaceAll(
+          (before) => (
+            playlists: [...before, stored('q', name: 'Two')],
+            covers: {'p': Uint8List.fromList([1])},
+          ),
+        );
+
+        expect(failed, {'p'});
+        expect(harness.playlistStore.playlists.first.coverId, 'p');
+        expect(harness.playlistCovers.covers['p'], picture);
+      },
+    );
+
+    test(
+      'GivenCovers_WhenThePlaylistsAreReplaced_ThenEachIsStoredBeforeTheListNamesIt',
+      () async {
+        final harness = harnessOver();
+        final controller = await controllerOf(harness);
+        harness.playlistStore.holdWrites = true;
+
+        final replaced = controller.replaceAll(
+          (_) => (
+            playlists: [stored('q', coverId: 'q')],
+            covers: {'q': picture},
+          ),
+        );
+        await pumpEventQueue();
+
+        // The list is still on its way to the disk, and its picture is there.
+        expect(harness.playlistStore.heldWrites, hasLength(1));
+        expect(harness.playlistCovers.covers, {'q': picture});
+        harness.playlistStore.heldWrites.single.complete();
+        await replaced;
+        expect(harness.playlistStore.playlists.single.coverId, 'q');
+      },
+    );
+
+    test(
+      'GivenAFailedWrite_WhenReplaced_ThenTheCoversJustStoredAreDeletedAndItThrows',
+      () async {
+        final harness = harnessOver(playlists: [stored('p', coverId: 'p')]);
+        harness.playlistCovers.covers['p'] = picture;
+        final controller = await controllerOf(harness);
+        harness.playlistStore.failNextWrite = Exception('disk full');
+
+        await expectLater(
+          controller.replaceAll(
+            (_) => (playlists: const [], covers: {'n': picture}),
+          ),
+          throwsException,
+        );
+
+        // The list is as it was, and names no picture that went.
+        expect(harness.playlistCovers.covers.keys, ['p']);
+        expect(harness.playlistCovers.deleted, ['n']);
+        expect(harness.read(playlistsControllerProvider).value, [
+          stored('p', coverId: 'p'),
+        ]);
+      },
+    );
+  });
+
+  group('replaceAll, queued', () {
+    test(
+      'GivenAChangeQueuedAhead_WhenThePlaylistsAreReplaced_ThenThePlanStartsFromIt',
+      () async {
+        // A restore works its list out from the one there is when its turn
+        // comes, not when it asked: a change still waiting to be written
+        // would otherwise be written over.
+        final harness = harnessOver(playlists: [stored('p', name: 'One')]);
+        final controller = await controllerOf(harness);
+        harness.playlistStore.holdWrites = true;
+        final created = controller.create('Two');
+        final seen = <List<Playlist>>[];
+
+        final replaced = controller.replaceAll((before) {
+          seen.add(before);
+
+          return (
+            playlists: [...before, stored('q', name: 'Three')],
+            covers: const {},
+          );
+        });
+        await pumpEventQueue();
+        harness.playlistStore.heldWrites.removeAt(0).complete();
+        await created;
+        await pumpEventQueue();
+        harness.playlistStore.heldWrites.removeAt(0).complete();
+        await replaced;
+
+        expect([for (final p in seen.single) p.name], ['One', 'Two']);
+        expect(
+          [for (final p in harness.playlistStore.playlists) p.name],
+          ['One', 'Two', 'Three'],
+        );
+      },
+    );
+
+    test(
+      'GivenAPlanThatAnswersTheListItWasGiven_WhenReplaced_ThenNothingIsWritten',
+      () async {
+        final harness = harnessOver(playlists: [stored('p')]);
+        final controller = await controllerOf(harness);
+
+        final failed = await controller.replaceAll(
+          (before) => (playlists: before, covers: const {}),
+        );
+
+        expect(failed, isEmpty);
+        expect(harness.playlistStore.writes, 0);
+      },
+    );
+  });
+
   group('serialising', () {
     test('GivenTwoAddsNotAwaited_WhenBothFinish_ThenBothLanded', () async {
       final harness = harnessOver(playlists: [stored('p')]);
@@ -667,6 +878,12 @@ void main() {
           controller.setCover('p', Uint8List.fromList([1])),
       'removeCover': (controller) => controller.removeCover('p'),
       'delete': (controller) => controller.delete('p'),
+      'replaceAll': (controller) => controller.replaceAll(
+        (_) => (
+          playlists: [stored('p', coverId: 'p')],
+          covers: {'p': Uint8List.fromList([1])},
+        ),
+      ),
     };
 
     for (final MapEntry(key: name, value: mutate) in mutations.entries) {

@@ -68,8 +68,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   your plays are still recorded, so turning it back on finds the lists as your listening has made them.
 - Each play is now recorded with its date, and a song keeps the dates of its plays from the last 90 days. That is what
   *Favourites lately* is worked out from; the statistics screen shows the same numbers as before.
-- Export my data. *Export my data…*, under *Your data* in the preferences, saves your library, playlists, both auto
-  playlists, play history and statistics to one JSON file, in a place you choose; the suggested name is
+- Export my data. *Export my data (JSON)…*, under *Your data* in the preferences, saves your library, playlists, both
+  auto playlists, play history and statistics to one JSON file, in a place you choose; the suggested name is
   `orpheus-data-<yyyy-MM-dd>.json`. Songs are listed with their path, tags and length, the playlists with the details
   saved for each song, and the play history with songs the library no longer holds. It waits for the library, the
   playlists and the play history to load and does not freeze the window while it builds the file. It only reads: the one
@@ -77,8 +77,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   rebuilt after an upgrade, that section is empty, the file's `problems` says why, and Orpheus says *Exported, but some
   data could not be read*; if the library fails to load, nothing is exported, and a catalog that cannot be read counts
   as an empty library, which a rescan rebuilds. The result is shown under the button. The layout is documented and versioned in
-  `docs/data-export.md`. Restoring from the file is not part of this version. It holds no cover images, audio or
-  preferences.
+  `docs/data-export.md`. It holds no cover images, audio or preferences; *Restore from a backup…* can read it back, as
+  below.
+- Back up and restore. *Back up Orpheus (ZIP)…*, under *Your data*, saves one ZIP, suggested as
+  `orpheus-backup-<yyyy-MM-dd>.zip`, that holds the data of *Export my data (JSON)…* exactly as it writes it, the cover
+  picture of every playlist that has one, and your preferences with your music folders; the update you chose to skip is
+  left out. *About these exports* shows what each file holds, and each says in a line what it is for. Like the export,
+  a backup waits for the library, the playlists and the play history, does not freeze the window, only reads, and says
+  *Backed up, but some data could not be read* when a source or a cover picture could not be; the layout is documented
+  and versioned in `docs/data-export.md`.
+- *Restore from a backup…*, under *Your data*, reads a backup ZIP or an exported JSON, and says *This isn't an Orpheus
+  backup* or, for a file from a newer Orpheus, *update first*. For a ZIP it first shows the music folders the backup
+  names, each found on this device or not, and yours: *Choose folders…* sets the whole set, and *Continue* applies it,
+  which changes your music folders now, and scans the library with progress; cancelling later keeps them. Then it shows
+  what the file holds and, separately for the playlists, the play history and the preferences, offers *Merge*, *Skip* or
+  *Replace*, *Merge* to begin with. *Merge* never loses anything here: playlists are told apart by name and get the
+  songs and cover they lack, each song keeps the higher play count, the later last play and the dated plays of both, and
+  a preference still at its default takes the backup's. *Skip* adds only what is wholly new. *Replace* says first
+  what it removes. Songs are matched to your library by path, with a folder moved from the backup's one music folder to yours,
+  and then by title, artist, album and length within 2 seconds when exactly one song answers; one that cannot be matched
+  keeps the backup's path. A part the backup could not read is not offered, a part this device could not read is left
+  alone, each part is written whole or not at all, and a part that fails does not stop the others. A summary says what
+  was restored and what was not. Your music files are never changed. From a JSON, the preferences and the covers are not
+  restored, and it says so.
 
 ### Changed
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:orpheus/features/playlists/domain/file_saver.dart';
@@ -65,16 +66,32 @@ class FakePlaylistCoverStore implements PlaylistCoverStore {
   /// The pictures, by playlist id.
   final Map<String, Uint8List> covers = {};
 
+  /// The ids whose picture cannot be read: [read] throws for them.
+  final Set<String> unreadable = {};
+
+  /// The ids whose picture cannot be stored: [put] throws for them.
+  final Set<String> unwritable = {};
+
   /// The ids deleted, in order.
   final List<String> deleted = [];
 
   @override
   Future<void> put(String playlistId, Uint8List bytes) async {
+    if (unwritable.contains(playlistId)) {
+      throw const FileSystemException('disk full');
+    }
+
     covers[playlistId] = bytes;
   }
 
   @override
-  Future<Uint8List?> read(String playlistId) async => covers[playlistId];
+  Future<Uint8List?> read(String playlistId) async {
+    if (unreadable.contains(playlistId)) {
+      throw const FileSystemException('no access');
+    }
+
+    return covers[playlistId];
+  }
 
   @override
   Future<void> delete(String playlistId) async {

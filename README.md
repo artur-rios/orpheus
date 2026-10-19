@@ -13,7 +13,7 @@ result in a file beside its own settings.
 
 > **Status:** complete and tested — the unit and widget suite green and
 > `flutter analyze` clean. Every use case in the [specifications](#specifications),
-> UC-01 to UC-41, is implemented — see the [roadmap](#roadmap). All three
+> UC-01 to UC-43, is implemented — see the [roadmap](#roadmap). All three
 > release builds and the Windows installer are produced and verified by CI on
 > every pull request. It runs on Linux, Windows and Android: the fixes released
 > since 1.0.0 came from running it on a Windows machine and an Android phone.
@@ -87,12 +87,26 @@ result in a file beside its own settings.
   playlist of your own with *Add to playlist…*, but not reorder or edit them.
   *Show auto playlists* in the preferences hides them; your plays are still
   counted.
-- **Exports your data.** *Preferences → Your data → Export my data…* saves your
-  library, playlists, both auto playlists, play history and statistics to one
-  JSON file, where you choose, to keep as a backup or to read in any tool. It
-  only reads: the one thing it writes is that file. If the playlists or the
-  history cannot be read, the file says so and the export tells you it is
-  partial. The layout is documented in [`docs/data-export.md`](docs/data-export.md).
+- **Exports your data.** *Preferences → Your data → Export my data (JSON)…*
+  saves your library, playlists, both auto playlists, play history and
+  statistics to one JSON file, where you choose, to read in any tool. It only
+  reads: the one thing it writes is that file. If the playlists or the history
+  cannot be read, the file says so and the export tells you it is partial. The
+  layout is documented in [`docs/data-export.md`](docs/data-export.md).
+- **Backs up and restores Orpheus.** *Back up Orpheus (ZIP)…*, beside it, saves
+  that data together with your playlists' cover pictures and your preferences,
+  music folders included, to one ZIP; *About these exports* shows what each
+  file holds. *Restore from a backup…* reads the ZIP, or an exported JSON, on
+  this device or another. For a ZIP it first shows the music folders the backup
+  names and lets you point Orpheus at the music, then scans the library so the
+  backup's songs can be matched by path, and by their tags and length when the
+  path differs. Then you choose, for the playlists, the play history and the
+  preferences separately, *Merge*, *Skip* or *Replace* — *Merge* to begin
+  with, which never loses what is here, and *Replace* says what it removes
+  first. A part the backup could not read is not offered, and a part this
+  device could not read is not written over. Each part is written whole or not
+  at all, and a summary says what was restored. Your music files are never
+  touched.
 - **Searches** across titles, artists, albums and genres — all together, or
   one kind at a time with a selector — ranked so a match at the start of a
   title comes above one buried in the middle of something else.
@@ -149,7 +163,7 @@ detail.
 | [Vision Document](docs/requirements/Vision%20Document.md) | Stakeholders, positioning, and the `F-xx` features. |
 | [System Requirements Document](docs/requirements/System%20Requirements%20Document.md) | The `FR-<AREA>-xx` and `NFR-xx` requirements, the data model, and traceability. |
 | [Use Case Specification Document](docs/requirements/Use%20Case%20Specification%20Document.md) | The `UC-xx` use cases, their flows, and their `AF-xx` alternatives. |
-| [Data export](docs/data-export.md) | The layout of the file *Export my data…* writes, field by field, and its versioning rules. |
+| [Data export](docs/data-export.md) | The layout of the file *Export my data (JSON)…* writes and of the ZIP *Back up Orpheus (ZIP)…* writes, field by field, how a restore reads them, and the versioning rules. |
 | [Development Workflow Document](docs/requirements/Development%20Workflow%20Document.md) | The normative branch pattern, issue lifecycle, and Definition of Done. |
 | [Testing Specification Document](docs/requirements/Testing%20Specification%20Document.md) | How tests are written, named, and run. |
 | [Technology Stack Document](docs/requirements/Technology%20Stack%20Document.md) | The single source of truth for every technology and version. |
@@ -525,10 +539,15 @@ not written, and on Windows the track playing may be refused as in use.
   an `.m3u` cannot be read back in. The two auto playlists fill themselves and
   are the only ones that do: there is no other kind, and no setting for their
   size or window.
-- **Your data can be exported but not yet restored.** The export file is
-  documented and versioned so that a later version can read it back; this one
-  only writes it. Nothing in Orpheus imports it, and it holds no cover images,
-  audio or preferences.
+- **A restore brings back your data, not your music.** The songs come from your
+  music files and a scan, so a restore needs the music to be on the device; it
+  matches the backup's songs to what the scan found, and a song it cannot match
+  keeps its old path until the file turns up. The backup holds no audio, and
+  not the update you chose to skip. You choose *Merge*, *Skip* or *Replace* for
+  the playlists, the play history and the preferences as three parts, not for
+  one playlist at a time, and there is no scheduled or cloud backup. Orpheus
+  reads only its own backups and exports; a backup from a newer Orpheus is
+  refused, and other programs' formats are not read.
 - **The statistics are all-time, with no windows.** "This month" is a control, a
   parameter, and a second set of numbers to explain, and none of it is worth
   adding before anyone has read the first set. The history stores a count per
@@ -558,8 +577,8 @@ not written, and on Windows the track playing may be refused as in use.
 
 Nine milestones covering thirty-four issues: one foundation issue plus one
 issue per use case from UC-01 to UC-33. UC-34, UC-35, UC-36, UC-37, UC-38,
-UC-39, UC-40 and UC-41 came after the backlog was filed and have no milestone;
-they are listed after M-09.
+UC-39, UC-40, UC-41, UC-42 and UC-43 came after the backlog was filed and have
+no milestone; they are listed after M-09.
 Milestones are dependency-ordered — no milestone depends on a later one, and
 every milestone after `M-01` depends on it.
 
@@ -664,7 +683,7 @@ Built, tested and specified, and merged.
 
 ### After the backlog — Tags and genres
 
-Built, tested and specified, and merged. UC-34, UC-36, UC-37, UC-38, UC-39, UC-40 and UC-41 have no issue, so the use case itself is linked.
+Built, tested and specified, and merged. UC-34, UC-36, UC-37, UC-38, UC-39, UC-40, UC-41, UC-42 and UC-43 have no issue, so the use case itself is linked.
 
 | Issue | Work | Spec |
 | --- | --- | --- |
@@ -676,6 +695,8 @@ Built, tested and specified, and merged. UC-34, UC-36, UC-37, UC-38, UC-39, UC-4
 | [UC-39](docs/requirements/Use%20Case%20Specification%20Document.md#uc-39-keep-playlists) | UC-39 — Keep playlists — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [UC-40](docs/requirements/Use%20Case%20Specification%20Document.md#uc-40-play-the-auto-playlists) | UC-40 — Play the auto playlists — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [UC-41](docs/requirements/Use%20Case%20Specification%20Document.md#uc-41-export-my-data) | UC-41 — Export my data — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-42](docs/requirements/Use%20Case%20Specification%20Document.md#uc-42-back-up-orpheus) | UC-42 — Back up Orpheus — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-43](docs/requirements/Use%20Case%20Specification%20Document.md#uc-43-restore-from-a-backup) | UC-43 — Restore from a backup — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
 ## Changelog
 

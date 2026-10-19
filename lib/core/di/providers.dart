@@ -8,6 +8,7 @@
 /// A feature adds its gateway here and changes nothing else.
 library;
 
+import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -20,8 +21,13 @@ import '../../features/autofill/data/audio_metadata_tag_writer.dart';
 import '../../features/autofill/data/musicbrainz_source.dart';
 import '../../features/autofill/domain/metadata_source.dart';
 import '../../features/autofill/domain/tag_writer.dart';
+import '../../features/data_export/application/backup_controller.dart';
 import '../../features/data_export/application/data_export_controller.dart';
+import '../../features/data_export/application/restore_controller.dart';
+import '../../features/data_export/data/file_picker_file_opener.dart';
+import '../../features/data_export/domain/backup.dart';
 import '../../features/data_export/domain/data_export.dart';
+import '../../features/data_export/domain/file_opener.dart';
 import '../../features/library/application/library_folders_controller.dart';
 import '../../features/library/application/music_library_controller.dart';
 import '../../features/library/application/scan_controller.dart';
@@ -342,6 +348,46 @@ final dataExportEncoderProvider =
     Provider<Future<Uint8List> Function(ExportSources sources)>(
       (ref) => encodeOffTheUiIsolate,
     );
+
+/// Backs Orpheus up to a ZIP; its state is whether one is running.
+final backupControllerProvider = NotifierProvider<BackupController, bool>(
+  BackupController.new,
+);
+
+/// How the backup ZIP is built and encoded: off the UI isolate.
+///
+/// Overridden in every test by a direct call, for the reason the export's is.
+final backupEncoderProvider =
+    Provider<Future<Uint8List> Function(BackupSources sources)>(
+      (ref) => encodeBackupOffTheUiIsolate,
+    );
+
+/// The platform's open dialog, for the file a restore is read from.
+final fileOpenerProvider = Provider<FileOpener>(
+  (ref) => const FilePickerFileOpener(),
+);
+
+/// How a picked file is read as a backup: off the UI isolate.
+///
+/// Overridden in every test by a direct call, for the reason the export's
+/// encoder is.
+final backupReaderProvider =
+    Provider<Future<BackupContents> Function(Uint8List bytes)>(
+      (ref) => readBackupOffTheUiIsolate,
+    );
+
+/// Whether a folder of the given name exists on this device, which is what a
+/// restore says about each of the backup's music folders.
+///
+/// Overridden in every test: no test looks at the developer's own folders.
+final folderExistsProvider = Provider<bool Function(String folder)>(
+  (ref) =>
+      (folder) => Directory(folder).existsSync(),
+);
+
+/// Restores Orpheus from a backup; its state is where the restore is.
+final restoreControllerProvider =
+    NotifierProvider<RestoreController, RestoreState>(RestoreController.new);
 
 /// The playlists.
 ///

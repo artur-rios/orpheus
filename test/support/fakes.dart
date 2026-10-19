@@ -295,6 +295,10 @@ class InMemoryPlayHistoryStore implements PlayHistoryStore {
   /// When set, [read] throws it: a history that could not be read.
   Exception? failRead;
 
+  /// When set, [write] waits for it before storing anything: a disk that
+  /// takes its time.
+  Completer<void>? writeGate;
+
   @override
   Future<PlayHistory> read() async {
     final failure = failRead;
@@ -305,6 +309,7 @@ class InMemoryPlayHistoryStore implements PlayHistoryStore {
 
   @override
   Future<void> write(PlayHistory history) async {
+    await writeGate?.future;
     writes++;
     this.history = history;
   }
