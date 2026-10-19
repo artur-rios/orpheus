@@ -226,8 +226,25 @@ void main() {
 
     expect(
       tester.widget<Text>(said('Exported to /exports/saved')).style?.color,
-      isNot(Theme.of(tester.element(exportTile())).colorScheme.error),
+      Theme.of(tester.element(exportTile())).colorScheme.onSurfaceVariant,
     );
+  });
+
+  testWidgets('GivenAStatusIsShown_WhenItAppears_ThenItIsALiveRegion', (
+    tester,
+  ) async {
+    await open(tester);
+
+    await tapExport(tester);
+    await tester.pumpAndSettle();
+
+    final live = find.ancestor(
+      of: said('Exported to /exports/saved'),
+      matching: find.byWidgetPredicate(
+        (widget) => widget is Semantics && widget.properties.liveRegion == true,
+      ),
+    );
+    expect(live, findsOneWidget);
   });
 
   testWidgets(

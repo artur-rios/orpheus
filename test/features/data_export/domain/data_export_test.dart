@@ -405,6 +405,44 @@ void main() {
     });
   });
 
+  test('GivenTimesWithMicroseconds_WhenTheyAreExported_ThenSixFractionalDigitsAreWritten', () {
+    final withMicros = DateTime.utc(2026, 10, 18, 22, 30, 0, 123, 456);
+    final document = buildDataExport(
+      ExportSources(
+        songs: songs,
+        playlists: const [],
+        history: PlayHistory(
+          tracks: {
+            '/library/zzz-a.flac': TrackPlays(
+              path: '/library/zzz-a.flac',
+              plays: 1,
+              lastPlayedAt: withMicros,
+              recent: [withMicros],
+            ),
+          },
+        ),
+        now: withMicros,
+        orpheusVersion: '1.5.0',
+        problems: const [],
+      ),
+    );
+
+    expect(document['exportedAt'], '2026-10-18T22:30:00.123456Z');
+    final row = section(document, 'playHistory').single;
+    expect(row['lastPlayedAt'], '2026-10-18T22:30:00.123456Z');
+    expect(row['recentPlays'], ['2026-10-18T22:30:00.123456Z']);
+  });
+
+  test('GivenTimesWithoutMicroseconds_WhenTheyAreExported_ThenThreeFractionalDigitsAreWritten', () {
+    final document = built();
+
+    expect(document['exportedAt'], '2026-10-18T22:30:00.000Z');
+    expect(
+      section(document, 'playlists').first['modifiedAt'],
+      matches(r'\.\d{3}Z$'),
+    );
+  });
+
   test('GivenAHistoryAndTheCatalog_WhenStatisticsAreExported_ThenTheyAreWhatMusicStatsFromSays', () {
     final stats = musicStatsFrom(
       history: history,

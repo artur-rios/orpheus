@@ -4,6 +4,7 @@ import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 import 'package:orpheus/features/shell/presentation/preferences_dialog.dart';
 
+import '../../../support/fakes.dart';
 import '../../../support/pump.dart';
 import '../../../support/test_container.dart';
 
@@ -23,6 +24,32 @@ void main() {
   Finder autoSwitch() => find.ancestor(
     of: find.text('Show auto playlists'),
     matching: find.byType(SwitchListTile),
+  );
+
+  testWidgets(
+    'GivenAPreferenceCannotBeSaved_WhenItIsChanged_ThenTheNoteSitsAboveTheYourDataSection',
+    (tester) async {
+      final harness = Harness(settings: UnwritableSettingsStore());
+      await tester.pumpHarness(harness, const _OpenPreferences());
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(autoSwitch());
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(of: autoSwitch(), matching: find.byType(Switch)),
+      );
+      await tester.pumpAndSettle();
+
+      final note = find.text(
+        'This applies now, but could not be saved for next time.',
+      );
+      expect(note, findsOneWidget);
+      expect(
+        tester.getTopLeft(note).dy,
+        lessThan(tester.getTopLeft(find.text('Your data')).dy),
+      );
+    },
   );
 
   testWidgets(

@@ -18,8 +18,8 @@ enum DataExportOutcome {
   /// The file was saved, with everything in it.
   saved,
 
-  /// The file was saved, but a source could not be read, so the document says
-  /// a section is empty for that reason.
+  /// The file was saved, but a source could not be read, or the library is
+  /// being rebuilt, so the document says a section is empty for that reason.
   savedWithProblems,
 
   /// The owner closed the save dialog; nothing was written.
@@ -115,6 +115,17 @@ class DataExportController extends Notifier<bool> {
       }
 
       final problems = <ExportProblem>[];
+      // A catalog another version wrote reads as empty until the scan the
+      // upgrade owes has refilled it, and an export made in that window would
+      // present the empty library as the owner's data.
+      if (catalog.isStale) {
+        problems.add(
+          const ExportProblem(
+            'songs',
+            'The library is being rebuilt, so no songs are listed',
+          ),
+        );
+      }
       final playlists = await _playlists(problems);
       final history = await _history(problems);
 

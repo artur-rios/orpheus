@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/features/data_export/application/data_export_controller.dart';
 import 'package:orpheus/features/data_export/domain/data_export.dart';
+import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_grouping.dart';
 import 'package:orpheus/features/playlists/domain/file_saver.dart';
 import 'package:orpheus/features/playlists/domain/playlist.dart';
@@ -119,6 +120,35 @@ void main() {
     expect(document['playHistory'], hasLength(1));
     expect(document['exportedAt'], now.toUtc().toIso8601String());
     expect(document['orpheusVersion'], '1.0.0');
+  });
+
+  test('GivenTheLibraryIsBeingRebuilt_WhenTheDataIsExported_ThenItHasNoSongsAndTheDocumentSaysSo', () async {
+    final harness = build();
+    // What a document another version wrote reads as: refused, empty, and
+    // owed a scan that has not refilled it yet.
+    harness.catalogs.seed(MusicCatalog(entries: const [], isStale: true));
+
+    final result = await exporter(harness).export();
+
+    expect(result.outcome, DataExportOutcome.savedWithProblems);
+    final document = savedDocument(harness);
+    expect(document['songs'], isEmpty);
+    final problems = (document['problems']! as List<Object?>)
+        .cast<Map<String, Object?>>();
+    expect(problems, hasLength(1));
+    expect(problems.single['section'], 'songs');
+    expect(problems.single['message'], contains('being rebuilt'));
+    // The sources that could be read are all there.
+    expect(document['playHistory'], hasLength(1));
+  });
+
+  test('GivenALibraryThatNeverHeldAnything_WhenTheDataIsExported_ThenNoProblemIsReported', () async {
+    final harness = Harness(now: now);
+
+    final result = await exporter(harness).export();
+
+    expect(result.outcome, DataExportOutcome.saved);
+    expect(problemSections(savedDocument(harness)), isEmpty);
   });
 
   test('GivenThePlaylistsCannotBeRead_WhenTheDataIsExported_ThenTheyAreEmptyAndTheDocumentSaysSo', () async {

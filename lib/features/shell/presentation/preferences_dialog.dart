@@ -179,10 +179,8 @@ class PreferencesDialog extends ConsumerWidget {
                 onChanged: (value) => unawaited(controller.setVolume(value)),
               ),
 
-              const SizedBox(height: AppSpacing.lg),
-              _Heading(text: l10n.dataExportHeading),
-              const ExportDataTile(),
-
+              // With the preferences it describes, above the entry that is
+              // not one of them.
               if (preferences.unsaved) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Text(
@@ -192,6 +190,10 @@ class PreferencesDialog extends ConsumerWidget {
                   ),
                 ),
               ],
+
+              const SizedBox(height: AppSpacing.lg),
+              _Heading(text: l10n.dataExportHeading),
+              const ExportDataTile(),
             ],
           ),
         ),

@@ -45,12 +45,18 @@ class _ExportDataTileState extends ConsumerState<ExportDataTile> {
       title: Text(l10n.dataExportAction),
       subtitle: status == null
           ? null
-          : Text(
-              status.text,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: status.isProblem
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.onSurfaceVariant,
+          // A live region, so that a screen reader announces how the export
+          // went when the line appears, without the owner having to go and
+          // find it.
+          : Semantics(
+              liveRegion: true,
+              child: Text(
+                status.text,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: status.isProblem
+                      ? theme.colorScheme.error
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
       trailing: exporting
