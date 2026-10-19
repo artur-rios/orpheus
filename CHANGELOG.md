@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-10-19
+
+### Fixed
+
+- A track whose lyrics had been saved beside it as a `.lrc` file plays again. Since the words were saved, opening it
+  skipped it as a track that could not be played, and its energy could not be measured either.
+
 ## [1.5.0] - 2026-10-19
 
 ### Added
@@ -315,7 +322,8 @@ A pre-release built from the `diagnose/android-usb-folder` branch to diagnose fo
 - Release downloads: a Windows installer, a portable Windows archive, a Linux installer and an Android APK, with
   `SHA256SUMS.txt`.
 
-[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/artur-rios/orpheus/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/artur-rios/orpheus/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/artur-rios/orpheus/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/artur-rios/orpheus/compare/v1.2.1...v1.3.0
