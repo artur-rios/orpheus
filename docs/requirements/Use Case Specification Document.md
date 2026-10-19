@@ -18,7 +18,7 @@ done.
 | Actor | Description |
 | --- | --- |
 | **Owner** | The single human user, and the only actor with intent. Interacts with every use case below. |
-| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, to the one file the owner chose for an export (UC-39), and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed (UC-34, UC-35, UC-37, UC-38). |
+| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, to the one file the owner chose for an export (UC-39, UC-41), and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed (UC-34, UC-35, UC-37, UC-38). |
 | **Metadata service** | MusicBrainz, and the Cover Art Archive for covers. Asked only when the owner starts an autofill (UC-34), at most once a second, and sent nothing that identifies the owner. |
 | **Playback engine** | The libmpv-backed engine linked in process. Opens files, reports position and duration, and reports what it cannot decode. Never modifies a file. |
 | **Host platform** | Windows, Linux or Android. Grants or refuses read access, provides the folder picker, and — on Android alone — provides the media session and the foreground service. |
@@ -104,6 +104,10 @@ graph LR
         UC40[UC-40: Play the auto playlists]
     end
 
+    subgraph "Data export (DX)"
+        UC41[UC-41: Export my data]
+    end
+
     OWNER --> UC01
     OWNER --> UC07
     OWNER --> UC13
@@ -118,6 +122,7 @@ graph LR
     OWNER --> UC38
     OWNER --> UC39
     OWNER --> UC40
+    OWNER --> UC41
 ```
 
 ---
@@ -1073,7 +1078,7 @@ graph LR
 | **Description** | The owner changes the theme, the language, and how the application behaves. |
 | **Preconditions** | None. |
 | **Postconditions** | The choices apply and are remembered. |
-| **Requirements** | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21 |
+| **Requirements** | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21, FR-DX-01 |
 
 **Main Flow**
 
@@ -1084,6 +1089,8 @@ graph LR
    whether the auto playlists are shown (*Show auto playlists*, on by default;
    UC-40).
 3. Each choice applies immediately and is written behind.
+4. Under *Your data*, *Export my data…* saves the owner's data to a file they choose (UC-41). It is an action, not a
+   choice: nothing about it is remembered.
 
 **Alternative Flows**
 
@@ -1586,6 +1593,48 @@ graph LR
 
 ---
 
+### UC-41: Export my data
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-41 |
+| **Name** | Export my data |
+| **Actors** | Owner, Local filesystem |
+| **Description** | The owner saves everything Orpheus knows about their music — the library, the playlists, the auto playlists, the play history and the statistics — to one JSON file, to keep as a backup, to analyse in any tool, or to import elsewhere. |
+| **Preconditions** | None. |
+| **Postconditions** | One file exists where the owner chose. Nothing Orpheus holds has changed, no audio file or music folder has been touched, and nothing else has been written (`NFR-03`). Restoring from the file is not part of this use case. |
+| **Requirements** | FR-DX-01 … FR-DX-09 |
+
+**Main Flow**
+
+1. The owner opens the preferences (UC-29). Under *Your data* is *Export my data…*.
+2. The owner picks it. The entry shows that it is working and cannot be picked again until it is done (`FR-DX-05`).
+3. Orpheus waits for the library, the playlists and the play history to load, then reads them (`FR-DX-05`).
+4. It builds the document — the songs, artists, albums, playlists, both auto playlists, the play history and the
+   statistics, in the layout documented in `docs/data-export.md` (`FR-DX-02`, `FR-DX-03`) — and encodes it off the
+   interface's thread, so the window does not freeze however large the library is (`FR-DX-08`).
+5. The save dialog asks where to save the file, suggesting `orpheus-data-<yyyy-MM-dd>.json` for today (`FR-DX-01`).
+6. The owner chooses a place. The file is written there, and *Exported to* and the place appear under the entry; when
+   the system gives no place to name, as with Android's document picker, it says *Exported* (`FR-DX-09`).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | The owner cancels the save dialog | Nothing is written and nothing is said (`FR-DX-01`). |
+| AF-02 | The library, the playlists or the play history is still loading when the owner picks the entry | The export waits for all three, with the entry showing progress, rather than save a section that is empty only because it has not loaded (`FR-DX-05`). |
+| AF-03 | The library fails to load | The export is refused: no save dialog is offered, and *Your library couldn't be read, so there's nothing to export* is shown under the entry (`FR-DX-06`). |
+| AF-04 | The playlists could not be read, or the play history could not be read in this run | The export completes. That section is empty, `problems` in the file says which section and why, and *Exported, but some data could not be read* is shown under the entry (`FR-DX-07`). |
+| AF-05 | A playlists or play history document was unreadable but has been kept aside and replaced by an empty one | It is not a source that could not be read: the export completes as usual and `problems` is empty (`FR-DX-07`, `FR-PS-13`, `FR-ST-18`). |
+| AF-06 | The file could not be written | *Couldn't export your data* is shown under the entry; nothing else is written (`FR-DX-09`, `NFR-03`). |
+| AF-07 | The owner turned off *Show auto playlists* | The auto playlists are in the file all the same: the preference decides what is shown, not what the owner's data is (`FR-DX-02`). |
+| AF-08 | A played song is no longer in the library, or a playlist holds one | It is in the file, with its path, and its reference to a song is `null` (`FR-DX-03`). |
+| AF-09 | The preferences are closed while the export runs | The export finishes and the file is written; the result has nowhere to be shown (`FR-DX-09`). |
+| AF-10 | The owner exports again | The last result is cleared as the new export starts (`FR-DX-09`). |
+| AF-11 | The library is being rebuilt — its stored catalog was refused as another version's and the scan it is owed has not refilled it | The export completes with no songs, `problems` names `songs` and says the library is being rebuilt, and *Exported, but some data could not be read* is shown under the entry (`FR-DX-06`, `FR-DX-07`). A catalog document that cannot be read reads as an empty library and is not reported: an export with no songs and no problem means Orpheus found no music. |
+
+---
+
 ## 3. Use case — requirements traceability
 
 | Use case | Requirements |
@@ -1618,7 +1667,7 @@ graph LR
 | UC-26 Count a play | FR-ST-01 … FR-ST-07, FR-ST-16 … FR-ST-19 |
 | UC-27 See what you listen to | FR-ST-08 … FR-ST-15, FR-ST-20, FR-UX-03 |
 | UC-28 Navigate the shell | FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-07 |
-| UC-29 Manage preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21 |
+| UC-29 Manage preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21, FR-DX-01 |
 | UC-30 Read the words | FR-LY-01, FR-LY-02, FR-LY-03, FR-LY-07 … FR-LY-10, FR-LY-12 |
 | UC-31 Follow and jump | FR-LY-04, FR-LY-05, FR-LY-06, FR-LY-11 |
 | UC-32 See the music move | FR-VZ-01 … FR-VZ-11 |
@@ -1629,6 +1678,7 @@ graph LR
 | UC-38 Select several songs and edit their tags | FR-UX-11, FR-UX-12, FR-UX-13, FR-TE-09 |
 | UC-39 Keep playlists | FR-PS-01 … FR-PS-13, FR-UX-01, FR-UX-13 |
 | UC-40 Play the auto playlists | FR-PS-14 … FR-PS-21, FR-ST-16 … FR-ST-20, FR-UX-06 |
+| UC-41 Export my data | FR-DX-01 … FR-DX-09 |
 
 ## 4. State diagrams
 

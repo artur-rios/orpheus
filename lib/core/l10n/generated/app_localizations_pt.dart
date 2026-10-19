@@ -1174,4 +1174,29 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get autoPlaylistShowDetail =>
       'Favoritas do momento e Favoritas de todos os tempos, no topo de Playlists. O que você ouve continua sendo contado enquanto elas estão ocultas.';
+
+  @override
+  String get dataExportHeading => 'Seus dados';
+
+  @override
+  String get dataExportAction => 'Exportar meus dados…';
+
+  @override
+  String dataExportSaved(String path) {
+    return 'Exportado para $path';
+  }
+
+  @override
+  String get dataExported => 'Exportado';
+
+  @override
+  String get dataExportPartial =>
+      'Exportado, mas alguns dados não puderam ser lidos';
+
+  @override
+  String get dataExportFailed => 'Não foi possível exportar seus dados';
+
+  @override
+  String get dataExportLibraryFailed =>
+      'Sua biblioteca não pôde ser lida, então não há nada para exportar';
 }

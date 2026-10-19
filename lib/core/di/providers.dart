@@ -20,6 +20,8 @@ import '../../features/autofill/data/audio_metadata_tag_writer.dart';
 import '../../features/autofill/data/musicbrainz_source.dart';
 import '../../features/autofill/domain/metadata_source.dart';
 import '../../features/autofill/domain/tag_writer.dart';
+import '../../features/data_export/application/data_export_controller.dart';
+import '../../features/data_export/domain/data_export.dart';
 import '../../features/library/application/library_folders_controller.dart';
 import '../../features/library/application/music_library_controller.dart';
 import '../../features/library/application/scan_controller.dart';
@@ -327,6 +329,19 @@ final playlistCoverStoreProvider = Provider<PlaylistCoverStore>(
 final fileSaverProvider = Provider<FileSaver>(
   (ref) => const FilePickerFileSaver(),
 );
+
+/// Exports the owner's data to a file; its state is whether one is running.
+final dataExportControllerProvider =
+    NotifierProvider<DataExportController, bool>(DataExportController.new);
+
+/// How the export document is built and encoded: off the UI isolate.
+///
+/// Overridden in every test by a direct call, because an isolate's answer does
+/// not reach a widget test's fake time.
+final dataExportEncoderProvider =
+    Provider<Future<Uint8List> Function(ExportSources sources)>(
+      (ref) => encodeOffTheUiIsolate,
+    );
 
 /// The playlists.
 ///

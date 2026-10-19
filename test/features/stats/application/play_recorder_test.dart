@@ -169,6 +169,28 @@ void main() {
     },
   );
 
+  test(
+    'GivenAStoreThatCannotBeRead_WhenTheHistoryIsAskedFor_ThenTheReadFailedFlagIsSet',
+    () async {
+      final recorder = PlayRecorder(store: _UnreadableStore(), clock: () => now);
+
+      await recorder.current();
+
+      expect(recorder.readFailed, isTrue);
+    },
+  );
+
+  test(
+    'GivenAStoreThatCanBeRead_WhenTheHistoryIsAskedFor_ThenTheReadFailedFlagIsNotSet',
+    () async {
+      final recorder = recorderOver(InMemoryPlayHistoryStore());
+
+      await recorder.current();
+
+      expect(recorder.readFailed, isFalse);
+    },
+  );
+
   group('over the history on disk', () {
     late Directory directory;
     late JsonPlayHistoryStore store;

@@ -30,6 +30,7 @@ Section 4 is the traceability.
 | `AF` | Autofill |
 | `TE` | Tag editing |
 | `PS` | Playlists |
+| `DX` | Data export |
 
 ### 1.3 Keywords
 
@@ -270,13 +271,29 @@ Realises F-21 and F-22.
 | **FR-PS-20** | The *Auto playlists* section must stand on its own: it must show when the owner has no playlists, which then says so in a line under *Your playlists* with *New playlist*, and when the owner's playlists could not be read, above that error. A line of loading stands in for it while the library is read, and it is not shown when the library could not be. |
 | **FR-PS-21** | The owner must be able to turn the auto playlists off and on with *Show auto playlists* in the preferences, on by default; the choice applies at once and is kept (`FR-UX-06`). Off, the section is not shown and an auto playlist that is open closes; the plays keep being recorded, so that turning it on finds the lists as the listening has made them. |
 
+### 2.12 Data export (DX)
+
+Realises F-23.
+
+| ID | Requirement |
+| --- | --- |
+| **FR-DX-01** | The preferences must have a *Your data* section with *Export my data…*, which saves the owner's data to one JSON file at the place the owner chooses in the save dialog, suggesting `orpheus-data-<yyyy-MM-dd>.json` for the day it was asked. Cancelling the dialog writes nothing and is not a failure. |
+| **FR-DX-02** | The file must hold every song of the library with its path and the tags and length the catalog holds; the artists and the albums as the library lists them, each naming its songs; the owner's playlists, each entry with the path and the details saved with it, and whether the playlist has a cover of its own; both auto playlists, whatever *Show auto playlists* says (`FR-PS-21`); the play history, including songs the library no longer holds; the statistics as the statistics screen shows them (`FR-ST-08` … `FR-ST-12`); and the layout's version, the application's version when it is known, and the time. It must not hold cover images, audio or preferences. |
+| **FR-DX-03** | The file's layout must be documented in `docs/data-export.md`, field by field, and versioned: a `format` of `orpheus-data` and an integer `formatVersion`, now 1, which a change that could break a reader must raise. It must be UTF-8, indented by two spaces, with its keys in the documented order, times as ISO-8601 UTC strings, durations as whole milliseconds, and a tag the song does not have as `null` rather than left out. Songs must be referred to by an `id` that exists only inside the file, and a reference to a song the library does not hold must be `null`, beside the path. A test must hold the document's top-level keys to the ones the application writes. |
+| **FR-DX-04** | The export must only read the owner's data: nothing it reads may be changed, and the only thing written is the file the owner chose (`NFR-03`). |
+| **FR-DX-05** | The export must wait for the library, the playlists and the play history to finish loading rather than present a section that is empty only because it is not loaded yet; it shows that it is working, and only one runs at a time. |
+| **FR-DX-06** | When the library fails to load the export must be refused, with a message saying so, and the save dialog must not be offered: with no songs there is nothing meaningful to save. A catalog document that cannot be read reads as an empty library, which a scan rebuilds, and the export cannot tell it from a library with no music; a library that is being rebuilt, because its stored catalog was refused as another version's and is owed a scan, is reported as a problem instead (`FR-DX-07`). |
+| **FR-DX-07** | When the playlists could not be read, the play history could not be read in this run, or the library is being rebuilt (`FR-DX-06`), the export must still complete: that section is empty, `problems` names the section and says why, and the owner is told the export is partial. A playlists or play history document that was kept aside and replaced by an empty one (`FR-PS-13`, `FR-ST-18`) is not a source that could not be read. |
+| **FR-DX-08** | Building and encoding the file must not freeze the window, however large the library: it runs off the interface's thread. |
+| **FR-DX-09** | The result must be said under the *Export my data…* entry, where the owner is looking, and stay until the next export starts or the preferences close: *Exported to* and the place when the system gives one, *Exported* when it does not, *Exported, but some data could not be read* for a partial file, *Your library couldn't be read, so there's nothing to export*, or *Couldn't export your data* when the file could not be written, in which case nothing else is written either. Cancelling says nothing. |
+
 ## 3. Non-functional requirements
 
 | ID | Requirement |
 | --- | --- |
 | **NFR-01** | **One source, three targets.** Windows, Linux and Android must build from the same source with no per-platform implementation of any feature above the platform edges. |
 | **NFR-02** | **Three network calls, named.** The application must make no network request other than the lyrics lookup of `FR-LY-13`, the MusicBrainz and Cover Art Archive lookups an autofill makes when the owner starts one (`FR-AF-02`), and, on Windows and Linux, the release check of `BR-03` — the one request at startup for the newest release (the latest full release, or for a build that is itself a pre-release, the release list), and the download of an installer and its checksums the owner accepted. No telemetry, analytics, crash reporting, scrobbling or other lookup may be added. The Android package must declare exactly the permissions its manifest lists, and this must be verifiable from the built package. |
-| **NFR-03** | **Audio files are changed for confirmed tags only.** No audio file may be renamed, moved, deleted or re-encoded, and its tags may be written only for changes the owner confirmed (`FR-AF-05`, `FR-TE-03`, `FR-TE-07`). Exporting a playlist writes only the file the owner chose (`FR-PS-11`). |
+| **NFR-03** | **Audio files are changed for confirmed tags only.** No audio file may be renamed, moved, deleted or re-encoded, and its tags may be written only for changes the owner confirmed (`FR-AF-05`, `FR-TE-03`, `FR-TE-07`). Exporting a playlist or the owner's data writes only the file the owner chose (`FR-PS-11`, `FR-DX-04`). |
 | **NFR-04** | **Startup is not gated on a scan.** The library from the last scan must be on screen before a new scan is started. |
 | **NFR-05** | **Scanning is proportional to change.** Re-scanning an unchanged library must not re-parse it. |
 | **NFR-06** | **The cover cache is proportional to records, not files.** |
@@ -305,7 +322,7 @@ Realises F-21 and F-22.
 | F-10 Background playback | FR-BG-01 … FR-BG-10 |
 | F-11 Listening statistics | FR-ST-01 … FR-ST-15, FR-ST-20 |
 | F-12 Adaptive shell | FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-10 |
-| F-13 Preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21 |
+| F-13 Preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21, FR-DX-01 |
 | F-14 Localization | FR-UX-09, FR-CT-06 |
 | F-15 Lyrics | FR-LY-01 … FR-LY-17 |
 | F-16 Sound bars | FR-VZ-01 … FR-VZ-11 |
@@ -315,6 +332,7 @@ Realises F-21 and F-22.
 | F-20 Select several songs | FR-UX-11, FR-UX-12, FR-UX-13, FR-TE-09 |
 | F-21 Playlists | FR-PS-01 … FR-PS-13, FR-UX-01 |
 | F-22 Auto playlists | FR-PS-14 … FR-PS-21, FR-ST-16 … FR-ST-20, FR-UX-06 |
+| F-23 Export my data | FR-DX-01 … FR-DX-09 |
 
 ### 4.2 Requirements to use cases
 
@@ -331,6 +349,7 @@ Realises F-21 and F-22.
 | AF | UC-34 |
 | TE | UC-35, UC-37, UC-38 |
 | PS | UC-39, UC-40 |
+| DX | UC-29, UC-41 |
 
 ## 5. Data model
 

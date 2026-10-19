@@ -1170,4 +1170,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get autoPlaylistShowDetail =>
       'Favourites lately and All-time favourites, at the top of Playlists. Your plays are still counted while they are hidden.';
+
+  @override
+  String get dataExportHeading => 'Your data';
+
+  @override
+  String get dataExportAction => 'Export my data…';
+
+  @override
+  String dataExportSaved(String path) {
+    return 'Exported to $path';
+  }
+
+  @override
+  String get dataExported => 'Exported';
+
+  @override
+  String get dataExportPartial => 'Exported, but some data could not be read';
+
+  @override
+  String get dataExportFailed => 'Couldn\'t export your data';
+
+  @override
+  String get dataExportLibraryFailed =>
+      'Your library couldn\'t be read, so there\'s nothing to export';
 }
