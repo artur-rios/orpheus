@@ -1837,6 +1837,10 @@
   "@restoreUnreadableHistory": {
     "description": "Shown on the play history part of a restore when the history on this device cannot be read, so it is never written over."
   },
+  "restoreScanFailed": "Não foi possível examinar sua música, então algumas faixas do backup podem não ser encontradas na sua biblioteca.",
+  "@restoreScanFailed": {
+    "description": "Shown at the second stage of a restore when the library could not be scanned in the first stage — the scan failed or access to the music was refused — so songs in the backup may not be matched."
+  },
   "restoreFoldersKept": "Suas pastas de música foram mudadas na etapa anterior. Cancelar mantém as pastas como estão agora.",
   "@restoreFoldersKept": {
     "description": "A note at the second stage of a restore, shown when the first stage changed the music folders: cancelling does not put them back."
@@ -1873,7 +1877,7 @@
       }
     }
   },
-  "restoreDonePlaylistsReplaced": "Playlists: as suas {replaced} foram trocadas por {added} do backup",
+  "restoreDonePlaylistsReplaced": "Playlists: {replaced, plural, =1{a sua playlist foi trocada} other{as suas {replaced} playlists foram trocadas}} por {added} do backup",
   "@restoreDonePlaylistsReplaced": {
     "description": "A line of the restore summary for a Replace of the playlists: how many were removed and how many the backup put in their place.",
     "placeholders": {
@@ -1976,7 +1980,7 @@
       }
     }
   },
-  "restoreDonePlaylistsEmptied": "Playlists: suas {replaced} foram removidas; o backup não tinha nenhuma",
+  "restoreDonePlaylistsEmptied": "Playlists: {replaced, plural, =1{a sua playlist foi removida} other{as suas {replaced} playlists foram removidas}}; o backup não tinha nenhuma",
   "@restoreDonePlaylistsEmptied": {
     "description": "A line of the restore summary for a Replace of the playlists with a backup that holds none: how many were removed.",
     "placeholders": {

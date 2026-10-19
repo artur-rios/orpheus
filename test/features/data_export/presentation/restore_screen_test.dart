@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
+import 'package:orpheus/core/failures/failure.dart';
+import 'package:orpheus/core/l10n/generated/app_localizations.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 import 'package:orpheus/features/data_export/application/restore_controller.dart';
 import 'package:orpheus/features/data_export/data/zip_backup_codec.dart';
@@ -630,6 +632,39 @@ void main() {
     );
 
     testWidgets(
+      'GivenAScanThatFailed_WhenTheChoicesShow_ThenTheySaySongsMayNotBeFound',
+      (tester) async {
+        final harness = build(
+          picker: FakeFolderPicker('/new'),
+          scanner: ScriptedScanner(const [ScanFailed(UnexpectedFailure())]),
+        );
+        await start(tester, harness, zip());
+        await tapText(tester, 'Choose folders…');
+        await toChoices(tester);
+
+        expect(
+          find.text(
+            "Your music couldn't be scanned, so some songs in the backup may "
+            'not be found in your library.',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'GivenAScanThatWorked_WhenTheChoicesShow_ThenNoWordIsSaidAboutIt',
+      (tester) async {
+        final harness = build(picker: FakeFolderPicker('/new'));
+        await start(tester, harness, zip());
+        await tapText(tester, 'Choose folders…');
+        await toChoices(tester);
+
+        expect(find.textContaining("couldn't be scanned"), findsNothing);
+      },
+    );
+
+    testWidgets(
       'GivenTheFoldersWereNotChanged_WhenTheChoicesShow_ThenNoWordIsSaidAboutKeepingThem',
       (tester) async {
         await start(tester, build(), zip());
@@ -789,7 +824,7 @@ void main() {
         expect(harness.plays.history.tracks, isEmpty);
         expect(harness.playlistStore.playlists, isEmpty);
         expect(
-          find.text('Playlists: removed your 1; the backup had none'),
+          find.text('Playlists: removed your 1 playlist; the backup had none'),
           findsOneWidget,
         );
         expect(
@@ -989,6 +1024,50 @@ void main() {
     );
   });
 
+  group('the summary in words', () {
+    final en = lookupAppLocalizations(const Locale('en'));
+    final ptBr = lookupAppLocalizations(const Locale('pt', 'BR'));
+
+    test('GivenOneOrMorePlaylistsRemoved_WhenTheBackupHadNone_ThenTheLineCountsThemInEitherLanguage', () {
+      expect(
+        en.restoreDonePlaylistsEmptied(1),
+        'Playlists: removed your 1 playlist; the backup had none',
+      );
+      expect(
+        en.restoreDonePlaylistsEmptied(3),
+        'Playlists: removed your 3 playlists; the backup had none',
+      );
+      expect(
+        ptBr.restoreDonePlaylistsEmptied(1),
+        'Playlists: a sua playlist foi removida; o backup não tinha nenhuma',
+      );
+      expect(
+        ptBr.restoreDonePlaylistsEmptied(3),
+        'Playlists: as suas 3 playlists foram removidas; o backup não tinha '
+        'nenhuma',
+      );
+    });
+
+    test('GivenOneOrMorePlaylistsReplaced_WhenTheBackupHadSome_ThenTheLineCountsThemInEitherLanguage', () {
+      expect(
+        en.restoreDonePlaylistsReplaced(1, 2),
+        'Playlists: replaced your 1 playlist with 2 from the backup',
+      );
+      expect(
+        en.restoreDonePlaylistsReplaced(3, 2),
+        'Playlists: replaced your 3 playlists with 2 from the backup',
+      );
+      expect(
+        ptBr.restoreDonePlaylistsReplaced(1, 2),
+        'Playlists: a sua playlist foi trocada por 2 do backup',
+      );
+      expect(
+        ptBr.restoreDonePlaylistsReplaced(3, 2),
+        'Playlists: as suas 3 playlists foram trocadas por 2 do backup',
+      );
+    });
+  });
+
   group('at 360dp in Portuguese', () {
     const phone = Size(360, 740);
     const pt = Locale('pt', 'BR');
@@ -1083,11 +1162,33 @@ void main() {
         await tapText(tester, 'Restaurar');
 
         expect(
-          find.textContaining('o backup não tinha nenhuma'),
+          find.text(
+            'Playlists: a sua playlist foi removida; o backup não tinha '
+            'nenhuma',
+          ),
           findsOneWidget,
         );
         expect(
           find.text('Preferências: você escolheu ignorar'),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'GivenAScanThatFailed_WhenTheChoicesShowOnAPhone_ThenNothingOverflows',
+      (tester) async {
+        final harness = build(
+          picker: FakeFolderPicker('/new'),
+          scanner: ScriptedScanner(const [ScanFailed(UnexpectedFailure())]),
+        );
+        await start(tester, harness, zip(), window: phone, locale: pt);
+        await tapText(tester, 'Escolher pastas…');
+        await toChoices(tester, label: 'Continuar');
+
+        expect(
+          find.textContaining('Não foi possível examinar sua música'),
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);

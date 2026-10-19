@@ -353,9 +353,19 @@ freezing the window, and shows what it holds before anything is written.
 - Anything else shows *This isn't an Orpheus backup*, and a `formatVersion` higher than this release reads shows *This
   backup is from a newer Orpheus — update first*. Nothing is written either way.
 
-**What a restore reads from `data.json`.** Only the `songs` (`id`, `path`, `title`, `artist`, `album`, `durationMs`),
-the `playlists` with their entries, the `playHistory`, and the section names in `problems`. The artists, albums, auto
-playlists and statistics are worked out again from the library and the history, and are not restored.
+**What a restore reads.** Besides `preferences.json` and `covers/`, only these keys, and nothing else in the file:
+
+- `format` and `formatVersion` of `data.json`, and of `backup.json` in a ZIP, to accept the file. The date the restore
+  shows is `backup.json`'s `createdAt` for a ZIP, and `data.json`'s `exportedAt` for a data JSON.
+- `songs`: `id`, `path`, `title`, `artist`, `album` and `durationMs`, which the songs the playlists and the history name
+  are matched by.
+- `playlists`: `id` (which the playlist's cover is filed under), `name`, `createdAt` and `modifiedAt`, and each entry's
+  `path`, `songId`, `title`, `artist`, `album` and `durationMs`.
+- `playHistory`: each record's `path`, `songId`, `plays`, `lastPlayedAt` and `recentPlays`.
+- `problems`: each problem's `section`.
+
+The artists, albums, auto playlists and statistics are worked out again from the library and the history, and are not
+restored.
 
 **A part the backup could not read.** When `problems` names `playlists` or `playHistory`, that section of the file is
 empty because it could not be read, not because the owner had none, so a restore does not offer it (*Not in this
@@ -366,11 +376,12 @@ songs to match by.
 
 A path is only good on the machine that wrote it, so a backup's songs are matched to the library of the device that is
 restoring. For a ZIP, the restore's first stage is where the owner points Orpheus at the music, and the library is
-scanned before anything is matched.
+scanned before anything is matched. A scan already under way is waited for first, for a data JSON too. When the scan
+fails, or access to the music is refused, the choices say that some songs may not be found in the library.
 
 1. **By path.** When the backup named exactly one music folder and this device has exactly one, a path under the old
-   folder is first moved to the same relative path under the new one, using the new folder's separators; then the path
-   is looked for in the library.
+   folder is moved to the same relative path under the new one, using the new folder's separators, and the moved path
+   is looked for in the library first; then the path as the backup has it.
 2. **By tags**, when no path matched: the same `title`, `artist` and `album`, compared trimmed and ignoring case, and a
    length within 2 seconds, and only when **exactly one** library song answers. A song with no title or no length is not
    matched by tags, and two library songs that both answer are not guessed between.

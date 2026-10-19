@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 
 import '../../../core/di/providers.dart';
+import '../../../core/failures/failure.dart';
 import '../../library/domain/music_entry.dart';
 import '../data/zip_backup_codec.dart';
 import '../domain/backup.dart';
@@ -38,8 +39,9 @@ enum RestoreStage {
   /// for the owner to confirm or change.
   folders,
 
-  /// The folders are being applied and the library scanned, so the backup's
-  /// songs can be matched against it.
+  /// The folders are being applied and the library scanned, or a scan under
+  /// way is being waited for, so the backup's songs can be matched against
+  /// the library.
   scanning,
 
   /// Stage 2: what the file holds, and a choice for each part.
@@ -157,6 +159,7 @@ class RestoreState {
     this.deviceFolders = const [],
     this.stagedFolders,
     this.foldersChanged = false,
+    this.scanFailed = false,
     this.choices = defaultChoices,
     this.disabled = const {},
     this.playlistsHere,
@@ -199,6 +202,11 @@ class RestoreState {
   /// keeps them, and the library has been scanned with them.
   final bool foldersChanged;
 
+  /// Whether the library could not be scanned in stage 1 — the scan failed,
+  /// or access to the music was refused — so the backup's songs are matched
+  /// against a library that may not hold them.
+  final bool scanFailed;
+
   /// What is done with each part.
   final Map<RestorePart, RestoreChoice> choices;
 
@@ -230,6 +238,7 @@ class RestoreState {
     deviceFolders: deviceFolders,
     stagedFolders: stagedFolders ?? this.stagedFolders,
     foldersChanged: foldersChanged,
+    scanFailed: scanFailed,
     choices: choices ?? this.choices,
     disabled: disabled,
     playlistsHere: playlistsHere,
@@ -410,7 +419,9 @@ class RestoreController extends Notifier<RestoreState> {
       _failUnexpectedly(session, error, stack);
       return;
     }
-    if (!backup.isFullBackup) await _toChoices(session, foldersChanged: false);
+    if (!backup.isFullBackup) {
+      await _toChoices(session, foldersChanged: false, scanFailed: false);
+    }
   }
 
   /// Shows what [backup] holds: its folders for a ZIP, or, for a data JSON,
@@ -470,17 +481,22 @@ class RestoreController extends Notifier<RestoreState> {
 
     final current = ref.read(libraryFoldersControllerProvider);
     final changed = chosen != null && !_sameFolders(chosen, current);
+    var scanFailed = false;
     try {
       if (changed) await _setFolders(chosen);
-      if (changed || await _libraryWantsScan()) await _scanned();
+      if (changed || await _libraryWantsScan()) {
+        await _scanned();
+        scanFailed = _lastScanFailed();
+      }
     } on Object catch (error) {
       // The choices still work against whatever library there is: fewer
       // songs matched is a smaller restore, not a wrong one.
       _log.warning('the library could not be scanned for the restore', error);
+      scanFailed = true;
     }
     if (session != _session) return;
 
-    await _toChoices(session, foldersChanged: changed);
+    await _toChoices(session, foldersChanged: changed, scanFailed: scanFailed);
   }
 
   /// Chooses what is done with [part]. A part the file cannot restore keeps
@@ -554,20 +570,41 @@ class RestoreController extends Notifier<RestoreState> {
     _matcher = null;
   }
 
-  /// Builds the matcher over the library as it is now and shows the choices.
+  /// Builds the matcher over the library as it is once no scan is running,
+  /// and shows the choices.
   ///
   /// Never throws: anything unforeseen is [RestoreStage.failed].
-  Future<void> _toChoices(int session, {required bool foldersChanged}) async {
+  Future<void> _toChoices(
+    int session, {
+    required bool foldersChanged,
+    required bool scanFailed,
+  }) async {
     try {
-      await _showChoices(session, foldersChanged: foldersChanged);
+      await _showChoices(
+        session,
+        foldersChanged: foldersChanged,
+        scanFailed: scanFailed,
+      );
     } on Object catch (error, stack) {
       _failUnexpectedly(session, error, stack);
     }
   }
 
-  Future<void> _showChoices(int session, {required bool foldersChanged}) async {
+  Future<void> _showChoices(
+    int session, {
+    required bool foldersChanged,
+    required bool scanFailed,
+  }) async {
+    // A scan under way — one the owner started, or the one at startup — is
+    // about to change the library the backup's songs are matched against.
+    // A data JSON waits for it with the scan's progress on screen.
+    if (ref.read(scanControllerProvider).isRunning &&
+        state.stage == RestoreStage.reading) {
+      state = state.copyWith(stage: RestoreStage.scanning);
+    }
+    await _noScanRunning();
     final backup = _backup;
-    if (backup == null) return;
+    if (backup == null || session != _session) return;
 
     final deviceFolders = ref.read(libraryFoldersControllerProvider);
     final backupFolders = backup.preferences?.libraryFolders ?? const [];
@@ -591,6 +628,7 @@ class RestoreController extends Notifier<RestoreState> {
       backupFolders: state.backupFolders,
       deviceFolders: deviceFolders,
       foldersChanged: foldersChanged,
+      scanFailed: scanFailed,
       disabled: {
         if (unreadable.contains(_playlistsSection))
           RestorePart.playlists: RestoreRefusal.notInBackup,
@@ -639,6 +677,15 @@ class RestoreController extends Notifier<RestoreState> {
     await _noScanRunning();
     await ref.read(scanControllerProvider.notifier).scan();
     await _noScanRunning();
+  }
+
+  /// Whether the scan that just ran did not read the library: it failed, or
+  /// access to the music was refused. A catalog read but not saved is a
+  /// library all the same.
+  bool _lastScanFailed() {
+    final failure = ref.read(scanControllerProvider).failure;
+
+    return failure != null && failure is! CatalogUnavailable;
   }
 
   Future<void> _noScanRunning() async {

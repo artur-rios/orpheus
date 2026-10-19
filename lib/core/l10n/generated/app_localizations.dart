@@ -2408,6 +2408,12 @@ abstract class AppLocalizations {
   /// **'Your play history couldn\'t be read here, so this part won\'t be restored.'**
   String get restoreUnreadableHistory;
 
+  /// Shown at the second stage of a restore when the library could not be scanned in the first stage — the scan failed or access to the music was refused — so songs in the backup may not be matched.
+  ///
+  /// In en, this message translates to:
+  /// **'Your music couldn\'t be scanned, so some songs in the backup may not be found in your library.'**
+  String get restoreScanFailed;
+
   /// A note at the second stage of a restore, shown when the first stage changed the music folders: cancelling does not put them back.
   ///
   /// In en, this message translates to:
@@ -2453,7 +2459,7 @@ abstract class AppLocalizations {
   /// A line of the restore summary for a Replace of the playlists: how many were removed and how many the backup put in their place.
   ///
   /// In en, this message translates to:
-  /// **'Playlists: replaced your {replaced} with {added} from the backup'**
+  /// **'Playlists: replaced your {replaced, plural, =1{1 playlist} other{{replaced} playlists}} with {added} from the backup'**
   String restoreDonePlaylistsReplaced(int replaced, int added);
 
   /// A line of the restore summary: the playlists part ran and had nothing to change.
@@ -2549,7 +2555,7 @@ abstract class AppLocalizations {
   /// A line of the restore summary for a Replace of the playlists with a backup that holds none: how many were removed.
   ///
   /// In en, this message translates to:
-  /// **'Playlists: removed your {replaced}; the backup had none'**
+  /// **'Playlists: removed your {replaced, plural, =1{1 playlist} other{{replaced} playlists}}; the backup had none'**
   String restoreDonePlaylistsEmptied(int replaced);
 
   /// A line of the restore summary for a Replace of the play history with a backup that holds no plays: the history here is now empty.

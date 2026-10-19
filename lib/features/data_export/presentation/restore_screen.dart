@@ -306,6 +306,15 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (overview != null) _overview(l10n, overview),
+        if (state.scanFailed) ...[
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            l10n.restoreScanFailed,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+        ],
         for (final part in RestorePart.values) ...[
           const SizedBox(height: AppSpacing.md),
           _PartSection(part: part, state: state),

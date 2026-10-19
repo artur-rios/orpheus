@@ -1497,6 +1497,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível ler o seu histórico de reproduções aqui, então esta parte não será restaurada.';
 
   @override
+  String get restoreScanFailed =>
+      'Não foi possível examinar sua música, então algumas faixas do backup podem não ser encontradas na sua biblioteca.';
+
+  @override
   String get restoreFoldersKept =>
       'Suas pastas de música foram mudadas na etapa anterior. Cancelar mantém as pastas como estão agora.';
 
@@ -1522,7 +1526,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String restoreDonePlaylistsReplaced(int replaced, int added) {
-    return 'Playlists: as suas $replaced foram trocadas por $added do backup';
+    String _temp0 = intl.Intl.pluralLogic(
+      replaced,
+      locale: localeName,
+      other: 'as suas $replaced playlists foram trocadas',
+      one: 'a sua playlist foi trocada',
+    );
+    return 'Playlists: $_temp0 por $added do backup';
   }
 
   @override
@@ -1600,7 +1610,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String restoreDonePlaylistsEmptied(int replaced) {
-    return 'Playlists: suas $replaced foram removidas; o backup não tinha nenhuma';
+    String _temp0 = intl.Intl.pluralLogic(
+      replaced,
+      locale: localeName,
+      other: 'as suas $replaced playlists foram removidas',
+      one: 'a sua playlist foi removida',
+    );
+    return 'Playlists: $_temp0; o backup não tinha nenhuma';
   }
 
   @override

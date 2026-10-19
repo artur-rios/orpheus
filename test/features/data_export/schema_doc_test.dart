@@ -74,9 +74,9 @@ void main() {
   });
 
   test('GivenTheSchemaDocumentsBackupExample_WhenItIsParsed_ThenItIsAManifestInTheBuiltOrderAtTheCurrentVersion', () {
-    final example =
-        jsonDecode(blockUnder('### Example backup.json').join('\n'))
-            as Map<String, Object?>;
+    final example = jsonDecode(
+      blockUnder('### Example backup.json').join('\n'),
+    ) as Map<String, Object?>;
     final manifest = backupManifest(
       createdAt: DateTime.utc(2026, 10, 19),
       orpheusVersion: '1.5.0',

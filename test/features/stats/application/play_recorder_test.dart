@@ -292,7 +292,10 @@ void main() {
         final subscription = recorder.changes.listen(heard.add);
         addTearDown(subscription.cancel);
 
-        await expectLater(recorder.replaceHistory((_) => restored), throwsStateError);
+        await expectLater(
+          recorder.replaceHistory((_) => restored),
+          throwsStateError,
+        );
         await pumpEventQueue();
 
         expect(store.writes, 0);
@@ -312,7 +315,10 @@ void main() {
         final subscription = recorder.changes.listen(heard.add);
         addTearDown(subscription.cancel);
 
-        await expectLater(recorder.replaceHistory((_) => restored), throwsStateError);
+        await expectLater(
+          recorder.replaceHistory((_) => restored),
+          throwsStateError,
+        );
         await pumpEventQueue();
 
         expect(heard, isEmpty);
@@ -327,7 +333,10 @@ void main() {
         final recorder = PlayRecorder(store: store, clock: () => now);
         store.failNextWrite = true;
 
-        await expectLater(recorder.replaceHistory((_) => restored), throwsStateError);
+        await expectLater(
+          recorder.replaceHistory((_) => restored),
+          throwsStateError,
+        );
         await recorder.record('/library/a.flac');
 
         expect(store.history.tracks['/library/a.flac']!.plays, 1);

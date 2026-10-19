@@ -7,12 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
+import 'package:orpheus/core/failures/failure.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 import 'package:orpheus/features/data_export/application/restore_controller.dart';
 import 'package:orpheus/features/data_export/data/zip_backup_codec.dart';
 import 'package:orpheus/features/data_export/domain/backup.dart';
 import 'package:orpheus/features/data_export/domain/data_export.dart';
 import 'package:orpheus/features/data_export/domain/restore_plan.dart';
+import 'package:orpheus/features/library/domain/library_access.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
@@ -135,6 +137,8 @@ void main() {
     Set<String> existing = const {'/music'},
     List<MusicEntry>? scanned,
     InMemorySettingsStore? settings,
+    LibraryScanner? scanner,
+    FakeLibraryAccess? access,
     List<Override> overrides = const [],
   }) {
     final harness = Harness(
@@ -142,26 +146,29 @@ void main() {
       playlists: playlists ?? [ownPlaylist],
       now: now,
       existingFolders: {...existing},
+      access: access,
       settings:
           settings ??
           InMemorySettingsStore(
             themeMode: ThemeMode.dark,
             libraryFolders: folders,
           ),
-      scanner: ScriptedScanner([
-        ScanCompleted(
-          catalog: MusicCatalog(
-            entries: albumArtistsAcross(scanned ?? library),
-            scannedAt: now,
-          ),
-          report: ScanReport(
-            tracks: (scanned ?? library).length,
-            added: 1,
-            removed: 0,
-            reused: 0,
-          ),
-        ),
-      ]),
+      scanner:
+          scanner ??
+          ScriptedScanner([
+            ScanCompleted(
+              catalog: MusicCatalog(
+                entries: albumArtistsAcross(scanned ?? library),
+                scannedAt: now,
+              ),
+              report: ScanReport(
+                tracks: (scanned ?? library).length,
+                added: 1,
+                removed: 0,
+                reused: 0,
+              ),
+            ),
+          ]),
       overrides: overrides,
     );
     harness.playlistCovers.covers['m'] = Uint8List.fromList([1]);
@@ -362,46 +369,108 @@ void main() {
         final state = stateOf(harness);
         expect(state.stage, RestoreStage.choices);
         expect(state.foldersChanged, isTrue);
+        expect(state.scanFailed, isFalse);
       },
     );
 
-    test(
-      'GivenADeviceWithNoFolders_WhenAZipIsPicked_ThenTheBackupFoldersThatExistHereAreStaged',
-      () async {
-        final harness = build(
-          folders: const [],
-          existing: {'/music'},
-          deviceLibrary: false,
-        );
-        harness.fileOpener.next = zip(
-          preferences: const PreferencesSnapshot(
-            themeMode: 'light',
-            locale: null,
-            opensPlayerOnPlay: true,
-            rescansAtStartup: true,
-            fetchesLyricsOnline: true,
-            checksForUpdatesOnStartup: true,
-            showsAutoPlaylists: true,
-            volume: 1,
-            libraryFolders: ['/old/Music', '/music'],
-          ),
-        );
-        final controller = restorer(harness);
+    test('GivenAScanThatFails_WhenContinuing_ThenTheChoicesSayTheMusicCouldNotBeScanned', () async {
+      final harness = build(
+        scanner: ScriptedScanner(const [ScanFailed(UnexpectedFailure())]),
+      );
+      harness.fileOpener.next = zip();
+      final controller = restorer(harness);
+      await controller.pick();
+      controller.chooseFolders(['/new']);
 
-        await controller.pick();
+      await controller.continueToChoices();
 
-        expect(stateOf(harness).stagedFolders, ['/music']);
-        // Staged, not written.
-        expect(harness.settings.libraryFolders, isEmpty);
+      expect(stateOf(harness).stage, RestoreStage.choices);
+      expect(stateOf(harness).scanFailed, isTrue);
+    });
 
-        await controller.continueToChoices();
+    test('GivenAccessToTheMusicIsRefused_WhenContinuing_ThenTheChoicesSayTheMusicCouldNotBeScanned', () async {
+      final harness = build(
+        access: FakeLibraryAccess(LibraryAccessDecision.denied),
+      );
+      harness.fileOpener.next = zip();
+      final controller = restorer(harness);
+      await controller.pick();
+      controller.chooseFolders(['/new']);
 
-        expect(harness.read(libraryFoldersControllerProvider), ['/music']);
-        expect(scannerOf(harness).requests, [
-          ['/music'],
-        ]);
-      },
-    );
+      await controller.continueToChoices();
+
+      expect(stateOf(harness).stage, RestoreStage.choices);
+      expect(stateOf(harness).scanFailed, isTrue);
+      expect(scannerOf(harness).requests, isEmpty);
+    });
+
+    test('GivenAScanUnderWay_WhenADataJsonIsPicked_ThenItsSongsAreMatchedOnceTheScanHasEnded', () async {
+      final scanner = HeldScanner();
+      final harness = build(
+        deviceLibrary: false,
+        scanner: scanner,
+        history: PlayHistory.empty,
+      );
+      final scanning = harness.read(scanControllerProvider.notifier).scan();
+      await pumpEventQueue();
+      expect(harness.read(scanControllerProvider).isRunning, isTrue);
+      harness.fileOpener.next = json();
+      final controller = restorer(harness);
+
+      final picking = controller.pick();
+      await pumpEventQueue();
+
+      // The library is still being scanned, so nothing is matched against it
+      // yet, and the scan's progress is what shows.
+      expect(stateOf(harness).stage, RestoreStage.scanning);
+      await scanner.complete(
+        MusicCatalog(entries: albumArtistsAcross(library), scannedAt: now),
+        const ScanReport(tracks: 2, added: 2, removed: 0, reused: 0),
+      );
+      await scanning;
+      await picking;
+      expect(stateOf(harness).stage, RestoreStage.choices);
+
+      final summary = await controller.restore();
+
+      final history = summary.history as HistoryRestored;
+      expect((history.songs, history.notInLibrary), (2, 0));
+    });
+
+    test('GivenADeviceWithNoFolders_WhenAZipIsPicked_ThenTheBackupFoldersThatExistHereAreStaged', () async {
+      final harness = build(
+        folders: const [],
+        existing: {'/music'},
+        deviceLibrary: false,
+      );
+      harness.fileOpener.next = zip(
+        preferences: const PreferencesSnapshot(
+          themeMode: 'light',
+          locale: null,
+          opensPlayerOnPlay: true,
+          rescansAtStartup: true,
+          fetchesLyricsOnline: true,
+          checksForUpdatesOnStartup: true,
+          showsAutoPlaylists: true,
+          volume: 1,
+          libraryFolders: ['/old/Music', '/music'],
+        ),
+      );
+      final controller = restorer(harness);
+
+      await controller.pick();
+
+      expect(stateOf(harness).stagedFolders, ['/music']);
+      // Staged, not written.
+      expect(harness.settings.libraryFolders, isEmpty);
+
+      await controller.continueToChoices();
+
+      expect(harness.read(libraryFoldersControllerProvider), ['/music']);
+      expect(scannerOf(harness).requests, [
+        ['/music'],
+      ]);
+    });
 
     test(
       'GivenADeviceWithFolders_WhenAZipIsPicked_ThenNothingIsStaged',
@@ -415,17 +484,14 @@ void main() {
       },
     );
 
-    test(
-      'GivenADeviceWithNoFoldersAndNoneOfTheBackupsHere_WhenAZipIsPicked_ThenNothingIsStaged',
-      () async {
-        final harness = build(folders: const [], existing: const {});
-        harness.fileOpener.next = zip();
+    test('GivenADeviceWithNoFoldersAndNoneOfTheBackupsHere_WhenAZipIsPicked_ThenNothingIsStaged', () async {
+      final harness = build(folders: const [], existing: const {});
+      harness.fileOpener.next = zip();
 
-        await restorer(harness).pick();
+      await restorer(harness).pick();
 
-        expect(stateOf(harness).stagedFolders, isNull);
-      },
-    );
+      expect(stateOf(harness).stagedFolders, isNull);
+    });
 
     test('GivenNoFoldersChosenAndALibrary_WhenContinuing_ThenItMovesOnWithoutAScan', () async {
       final harness = build();
@@ -558,6 +624,10 @@ void main() {
           [for (final e in mine.entries) e.path],
           [songA.file.path, songB.file.path],
         );
+        // Its cover is the one it had, and nothing is deleted.
+        expect(mine.coverId, 'm');
+        expect(harness.playlistCovers.covers['m'], Uint8List.fromList([1]));
+        expect(harness.playlistCovers.deleted, isEmpty);
         expect(namesIn(harness), ['Mine', 'Theirs']);
         // The higher count of each song.
         expect(harness.plays.history.tracks[songA.file.path]!.plays, 5);
@@ -739,29 +809,26 @@ void main() {
       expect(summary.playlists, isA<PlaylistsRestored>());
     });
 
-    test(
-      'GivenAPlayRecordedWhileTheHistoryIsRestored_WhenBothLand_ThenThePlayIsKept',
-      () async {
-        final songC = entry(id: 'c', title: 'Gamma', artist: 'Cy', album: 'Two');
-        final harness = build(device: [songC]);
-        final controller = await atChoices(harness, zip());
-        final recorder = harness.read(playRecorderProvider);
-        final gate = harness.plays.writeGate = Completer<void>();
-        // One play waiting on the disk, and one queued behind it.
-        final first = recorder.record(songA.file.path);
-        final second = recorder.record(songC.file.path);
+    test('GivenAPlayRecordedWhileTheHistoryIsRestored_WhenBothLand_ThenThePlayIsKept', () async {
+      final songC = entry(id: 'c', title: 'Gamma', artist: 'Cy', album: 'Two');
+      final harness = build(device: [songC]);
+      final controller = await atChoices(harness, zip());
+      final recorder = harness.read(playRecorderProvider);
+      final gate = harness.plays.writeGate = Completer<void>();
+      // One play waiting on the disk, and one queued behind it.
+      final first = recorder.record(songA.file.path);
+      final second = recorder.record(songC.file.path);
 
-        final restoring = controller.restore();
-        await pumpEventQueue();
-        gate.complete();
-        await Future.wait([first, second, restoring]);
+      final restoring = controller.restore();
+      await pumpEventQueue();
+      gate.complete();
+      await Future.wait([first, second, restoring]);
 
-        final tracks = harness.plays.history.tracks;
-        expect(tracks[songC.file.path]!.plays, 1);
-        expect(tracks[songA.file.path]!.plays, 6);
-        expect(tracks[songB.file.path]!.plays, 4);
-      },
-    );
+      final tracks = harness.plays.history.tracks;
+      expect(tracks[songC.file.path]!.plays, 1);
+      expect(tracks[songA.file.path]!.plays, 6);
+      expect(tracks[songB.file.path]!.plays, 4);
+    });
 
     test(
       'GivenARestoreUnderWay_WhenAskedAgain_ThenTheOneUnderWayIsAnswered',
@@ -795,38 +862,35 @@ void main() {
   });
 
   group('something unforeseen', () {
-    test(
-      'GivenAPartThatThrows_WhenRestored_ThenItEndsDoneWithWhatWasWrittenAndTheRestNotWritten',
-      () async {
-        final settings = _VolumeUnreadable(
-          themeMode: ThemeMode.dark,
-          libraryFolders: const ['/music'],
-        );
-        final harness = build(settings: settings);
-        final controller = await atChoices(harness, zip());
-        // The preferences are read only once the playlists and the history
-        // are written.
-        settings.failVolume = true;
+    test('GivenAPartThatThrows_WhenRestored_ThenItEndsDoneWithWhatWasWrittenAndTheRestNotWritten', () async {
+      final settings = _VolumeUnreadable(
+        themeMode: ThemeMode.dark,
+        libraryFolders: const ['/music'],
+      );
+      final harness = build(settings: settings);
+      final controller = await atChoices(harness, zip());
+      // The preferences are read only once the playlists and the history
+      // are written.
+      settings.failVolume = true;
 
-        final summary = await controller.restore();
+      final summary = await controller.restore();
 
-        expect(stateOf(harness).stage, RestoreStage.done);
-        expect(stateOf(harness).summary, same(summary));
-        expect(summary.playlists, isA<PlaylistsRestored>());
-        expect(namesIn(harness), ['Mine', 'Theirs']);
-        expect(summary.history, isA<HistoryRestored>());
-        expect(harness.plays.writes, 1);
-        expect(
-          (summary.preferences as PartRefused).reason,
-          RestoreRefusal.notWritten,
-        );
-        expect(harness.settings.themeMode, ThemeMode.dark);
-        expect(harness.settings.opensPlayerOnPlay, isTrue);
+      expect(stateOf(harness).stage, RestoreStage.done);
+      expect(stateOf(harness).summary, same(summary));
+      expect(summary.playlists, isA<PlaylistsRestored>());
+      expect(namesIn(harness), ['Mine', 'Theirs']);
+      expect(summary.history, isA<HistoryRestored>());
+      expect(harness.plays.writes, 1);
+      expect(
+        (summary.preferences as PartRefused).reason,
+        RestoreRefusal.notWritten,
+      );
+      expect(harness.settings.themeMode, ThemeMode.dark);
+      expect(harness.settings.opensPlayerOnPlay, isTrue);
 
-        controller.cancel();
-        expect(stateOf(harness).stage, RestoreStage.idle);
-      },
-    );
+      controller.cancel();
+      expect(stateOf(harness).stage, RestoreStage.idle);
+    });
 
     test(
       'GivenTheChoicesCannotBePrepared_WhenContinuing_ThenItFailsWithAWayOut',
@@ -850,23 +914,20 @@ void main() {
       },
     );
 
-    test(
-      'GivenTheChoicesCannotBePrepared_WhenADataJsonIsPicked_ThenItFailsWithAWayOut',
-      () async {
-        final harness = build(
-          overrides: [
-            playRecorderProvider.overrideWithValue(_UnreadyRecorder(now)),
-          ],
-        );
-        harness.fileOpener.next = json();
+    test('GivenTheChoicesCannotBePrepared_WhenADataJsonIsPicked_ThenItFailsWithAWayOut', () async {
+      final harness = build(
+        overrides: [
+          playRecorderProvider.overrideWithValue(_UnreadyRecorder(now)),
+        ],
+      );
+      harness.fileOpener.next = json();
 
-        await restorer(harness).pick();
+      await restorer(harness).pick();
 
-        expect(stateOf(harness).stage, RestoreStage.failed);
-        expect(stateOf(harness).failure, isNull);
-        expectNothingWritten(harness);
-      },
-    );
+      expect(stateOf(harness).stage, RestoreStage.failed);
+      expect(stateOf(harness).failure, isNull);
+      expectNothingWritten(harness);
+    });
   });
 }
 
@@ -878,8 +939,9 @@ class _VolumeUnreadable extends InMemorySettingsStore {
   bool failVolume = false;
 
   @override
-  double get volume =>
-      failVolume ? throw StateError('the volume could not be read') : super.volume;
+  double get volume => failVolume
+      ? throw StateError('the volume could not be read')
+      : super.volume;
 }
 
 /// A recorder that cannot answer what it holds: something a restore does not
