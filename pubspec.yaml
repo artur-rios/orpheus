@@ -98,6 +98,12 @@ dependencies:
   # between runs. Desktop-only by nature, and guarded as such at every call.
   window_manager: ^0.5.2
 
+  # The backup file: a ZIP holding the exported data, the playlist covers and
+  # the preferences, written and read in pure Dart so the format is exercised
+  # by tests on every target. Already in the tree as somebody else's transitive
+  # dependency; named here because the backup format now depends on it directly.
+  archive: ^4.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
