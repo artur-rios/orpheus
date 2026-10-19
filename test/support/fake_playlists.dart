@@ -91,6 +91,10 @@ class FakeFileSaver implements FileSaver {
   /// When set, [save] throws it instead of answering.
   Exception? failure;
 
+  /// When set, [save] waits for it before answering: an owner still choosing
+  /// where to put the file.
+  Completer<void>? gate;
+
   /// The names offered and the bytes saved, in order.
   final List<({String suggestedName, Uint8List bytes})> saved = [];
 
@@ -99,6 +103,8 @@ class FakeFileSaver implements FileSaver {
     required String suggestedName,
     required Uint8List bytes,
   }) async {
+    await gate?.future;
+
     final error = failure;
     if (error != null) throw error;
 
