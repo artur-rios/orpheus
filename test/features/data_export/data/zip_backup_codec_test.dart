@@ -93,6 +93,54 @@ void main() {
       },
     );
 
+    test('GivenACoverOverTheLimit_WhenRead_ThenItIsSkippedAndNamed', () {
+      final back = readBackup(
+        encodeBackupZip(
+          data: data(),
+          preferences: preferences,
+          covers: {
+            'big': Uint8List(maxBackupCoverBytes + 1),
+            'small': Uint8List.fromList([1, 2, 3]),
+          },
+          createdAt: createdAt,
+        ),
+      );
+
+      expect(back.covers.keys, ['small']);
+      expect(back.skippedCovers, {'big'});
+    });
+
+    test('GivenACoverAtTheLimit_WhenRead_ThenItIsKept', () {
+      final back = readBackup(
+        encodeBackupZip(
+          data: data(),
+          preferences: preferences,
+          covers: {'exact': Uint8List(maxBackupCoverBytes)},
+          createdAt: createdAt,
+        ),
+      );
+
+      expect(back.covers['exact'], hasLength(maxBackupCoverBytes));
+      expect(back.skippedCovers, isEmpty);
+    });
+
+    test('GivenACoverWhoseHeaderUnderstatesItsSize_WhenRead_ThenItIsSkipped', () {
+      // A header can say less than the entry holds.
+      final archive = ZipDecoder().decodeBytes(
+        encodeBackupZip(
+          data: data(),
+          preferences: preferences,
+          covers: const {},
+          createdAt: createdAt,
+        ),
+      )..add(ArchiveFile('covers/liar', 10, Uint8List(maxBackupCoverBytes + 1)));
+
+      final back = readBackup(ZipEncoder().encodeBytes(archive));
+
+      expect(back.covers, isEmpty);
+      expect(back.skippedCovers, {'liar'});
+    });
+
     test('GivenNoCovers_WhenWrittenAndRead_ThenThereAreNone', () {
       final back = readBackup(
         encodeBackupZip(
@@ -104,6 +152,7 @@ void main() {
       );
 
       expect(back.covers, isEmpty);
+      expect(back.skippedCovers, isEmpty);
       expect(back.preferences, preferences);
     });
 

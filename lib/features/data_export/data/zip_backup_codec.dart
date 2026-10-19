@@ -84,30 +84,51 @@ BackupContents _readZip(Uint8List bytes) {
   final data = _object(dataBytes);
   checkDataDocument(data);
 
+  final (:covers, :skipped) = _covers(archive);
+
   return BackupContents(
     data: data,
     preferences: _preferences(archive.findFile(backupPreferencesFile)),
-    covers: _covers(archive),
+    covers: covers,
+    skippedCovers: skipped,
     createdAt: _time(manifest['createdAt']),
     isFullBackup: true,
   );
 }
 
 /// The covers in [archive] by playlist id: each file directly under
-/// `covers/`, however its bytes turn out to be stored.
-Map<String, Uint8List> _covers(Archive archive) {
+/// `covers/`, however its bytes turn out to be stored, and the ids of those
+/// left unread for weighing more than [maxBackupCoverBytes].
+///
+/// An entry is judged by the size its header declares before it is
+/// decompressed, so one that declares too much is never inflated; and again by
+/// the bytes it yields, because a header can say less than the entry holds.
+({Map<String, Uint8List> covers, Set<String> skipped}) _covers(
+  Archive archive,
+) {
   final covers = <String, Uint8List>{};
+  final skipped = <String>{};
   for (final file in archive.files) {
     if (!file.isFile || !file.name.startsWith(backupCoversFolder)) continue;
 
     final id = file.name.substring(backupCoversFolder.length);
+    if (id.isEmpty || id.contains('/')) continue;
+    if (file.size > maxBackupCoverBytes) {
+      skipped.add(id);
+      continue;
+    }
+
     final bytes = file.readBytes();
-    if (id.isEmpty || id.contains('/') || bytes == null) continue;
+    if (bytes == null) continue;
+    if (bytes.length > maxBackupCoverBytes) {
+      skipped.add(id);
+      continue;
+    }
 
     covers[id] = bytes;
   }
 
-  return covers;
+  return (covers: covers, skipped: skipped);
 }
 
 /// The preferences in [file], or `null` when it is absent or not a document.

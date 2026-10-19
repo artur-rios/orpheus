@@ -809,6 +809,26 @@ void main() {
       expect(summary.playlists, isA<PlaylistsRestored>());
     });
 
+    test('GivenACoverOverTheSizeLimit_WhenRestored_ThenThePlaylistIsKeptAndTheCoverListed', () async {
+      final harness = build(playlists: const []);
+      final controller = await atChoices(
+        harness,
+        zip(
+          playlists: [backupPlaylists.last],
+          covers: {'b2': Uint8List(maxBackupCoverBytes + 1)},
+        ),
+      );
+
+      final summary = await controller.restore();
+
+      expect(namesIn(harness), ['Theirs']);
+      expect(harness.playlistStore.playlists.single.coverId, isNull);
+      // Only the owner's own cover is there.
+      expect(harness.playlistCovers.covers.keys, ['m']);
+      expect(summary.coverFailures, ['Theirs']);
+      expect(summary.playlists, isA<PlaylistsRestored>());
+    });
+
     test('GivenAPlayRecordedWhileTheHistoryIsRestored_WhenBothLand_ThenThePlayIsKept', () async {
       final songC = entry(id: 'c', title: 'Gamma', artist: 'Cy', album: 'Two');
       final harness = build(device: [songC]);

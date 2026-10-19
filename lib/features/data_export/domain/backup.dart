@@ -21,6 +21,14 @@ const String backupPreferencesFile = 'preferences.json';
 /// playlist's id in the data document.
 const String backupCoversFolder = 'covers/';
 
+/// The most a cover picture in a backup may weigh, uncompressed: 20 MB.
+///
+/// A cover is a small picture the owner chose, and the backup file is one
+/// somebody else may hand over. An entry declaring more than this, or turning
+/// out to hold more, is not read — a cover the size of a movie is not worth
+/// the memory it would take — and its playlist is restored without it.
+const int maxBackupCoverBytes = 20 * 1024 * 1024;
+
 /// What `backup.json` says about a backup, with its keys in the order they are
 /// written.
 ///
@@ -192,6 +200,7 @@ class BackupContents {
     required this.covers,
     required this.createdAt,
     required this.isFullBackup,
+    this.skippedCovers = const {},
   });
 
   /// Step 6's export document.
@@ -205,6 +214,11 @@ class BackupContents {
   /// The playlists' custom covers by playlist id, as the data document names
   /// the playlist; empty for a data JSON.
   final Map<String, Uint8List> covers;
+
+  /// The ids of the playlists whose cover the file holds but was not read,
+  /// because it weighs more than [maxBackupCoverBytes]. Such a playlist is
+  /// restored without a picture, and the restore says so.
+  final Set<String> skippedCovers;
 
   /// When the file was made: the backup's `createdAt`, or for a data JSON its
   /// `exportedAt`. `null` when the file does not say, or says it unreadably.

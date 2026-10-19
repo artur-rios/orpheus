@@ -328,8 +328,9 @@ class RestoreSummary {
   /// How the preferences went.
   final PartResult preferences;
 
-  /// The names of the playlists restored whose cover could not be written:
-  /// the playlist is there, its picture is not.
+  /// The names of the playlists restored whose cover could not be written, or
+  /// that the backup holds too large to read: the playlist is there, its
+  /// picture is not.
   final List<String> coverFailures;
 }
 
@@ -845,7 +846,9 @@ class RestoreController extends Notifier<RestoreState> {
       ),
       [
         for (final playlist in outcome.playlists)
-          if (failed.contains(playlist.id)) playlist.name,
+          if (failed.contains(playlist.id) ||
+              outcome.coversLost.contains(playlist.id))
+            playlist.name,
       ],
     );
   }
