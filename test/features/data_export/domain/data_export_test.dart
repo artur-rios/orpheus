@@ -283,6 +283,32 @@ void main() {
     },
   );
 
+  test('GivenAnArtistOnTwoAlbums_WhenTheyAreExported_ThenTheSongsRunAlbumByAlbum', () {
+    // Track 1 of each album would sort ahead of track 2 of the first if the
+    // songs were in track order across records.
+    final document = built(
+      songs_: [
+        entry(id: 'a2', title: 'A2', artist: 'Ann', album: 'Alpha', track: 2),
+        entry(id: 'b1', title: 'B1', artist: 'Ann', album: 'Beta', track: 1),
+        entry(id: 'a1', title: 'A1', artist: 'Ann', album: 'Alpha', track: 1),
+        entry(id: 'b2', title: 'B2', artist: 'Ann', album: 'Beta', track: 2),
+      ],
+      playlists_: const [],
+      history_: PlayHistory.empty,
+    );
+
+    final songs = section(document, 'songs');
+    String idOf(String title) =>
+        songs.firstWhere((song) => song['title'] == title)['id']! as String;
+
+    expect(section(document, 'artists').single['songs'], [
+      idOf('A1'),
+      idOf('A2'),
+      idOf('B1'),
+      idOf('B2'),
+    ]);
+  });
+
   test(
     'GivenTheUntaggedSong_WhenGroupsAreExported_ThenItsGroupsHaveNullNames',
     () {

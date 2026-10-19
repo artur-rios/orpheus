@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../../library/domain/audio_file.dart';
 import '../../library/domain/music_catalog.dart';
 import '../../library/domain/music_entry.dart';
 import '../../library/domain/music_grouping.dart';
@@ -91,6 +92,11 @@ Map<String, Object?> buildDataExport(ExportSources sources) {
     for (var i = 0; i < songs.length; i++) songs[i].file.path: 's${i + 1}',
   };
   String? idOf(String path) => idsByPath[path];
+  // An artist's songs are listed record by record, the order playing an artist
+  // uses, where the group's own entries are in track order across records.
+  List<String> idsOfFiles(Iterable<AudioFile> files) => [
+    for (final file in files) idsByPath[file.path]!,
+  ];
   List<String> idsOf(Iterable<MusicEntry> entries) => [
     for (final entry in entries) idsByPath[entry.file.path]!,
   ];
@@ -107,7 +113,10 @@ Map<String, Object?> buildDataExport(ExportSources sources) {
     ],
     'artists': [
       for (final artist in artistsIn(songs))
-        {'name': artist.name, 'songs': idsOf(artist.entries)},
+        {
+          'name': artist.name,
+          'songs': idsOfFiles(inArtistOrder(artist.entries)),
+        },
     ],
     'albums': [
       for (final album in albumsIn(songs))
