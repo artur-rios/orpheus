@@ -19,7 +19,9 @@ and writes only the file you chose. Not included: cover images, the audio itself
 - UTF-8 text, indented by two spaces, ending in a newline. It is named `orpheus-data-<yyyy-MM-dd>.json` unless you
   change it in the save dialog.
 - The keys of every object are always in the order given here.
-- Times are ISO-8601 strings in UTC, with milliseconds: `2026-10-18T22:30:00.000Z`.
+- Times are ISO-8601 strings in UTC with a `Z`, such as `2026-10-18T22:30:00.000Z`. The fractional seconds have 3
+  digits, or 6 when the time carries microseconds (`2026-10-18T22:30:00.123456Z`): parse them with an ISO-8601
+  parser, not a fixed pattern.
 - Durations are whole milliseconds, as integers.
 - A value Orpheus does not have is `null`; the key is **never left out**. The one exception is stated where it
   applies: `fallback` on the *All-time favourites* auto playlist.
@@ -203,13 +205,19 @@ the export pretending there is nothing there: a partial file you know about is b
 
 | Field | Type | Nullable | Meaning |
 | --- | --- | --- | --- |
-| `section` | string | no | The section that is empty because of it: `"playlists"` or `"playHistory"`. |
+| `section` | string | no | The section that is empty because of it: `"songs"`, `"playlists"` or `"playHistory"`. |
 | `message` | string | no | What went wrong, in English, for a person to read. |
 
 The `playlists` source is a problem when the playlists could not be read; `playHistory` when the play history could not
-be read in this run. A playlists or history file that was set aside as unreadable and replaced by an empty one is not a
-problem: Orpheus kept it aside, as a `.bad-` file next to its data. If the library itself cannot be read, there is
-nothing worth saving, so no file is written at all.
+be read in this run. When the play history is unreadable, `autoPlaylists` and `statistics` come out empty too, because
+they are worked out from it. `songs` is a problem when the library is being rebuilt: after an upgrade Orpheus refuses
+the catalog an older version wrote and scans again, and until that scan has refilled it the library is empty. A
+playlists or history file that was set aside as unreadable and replaced by an empty one is not a problem: Orpheus kept
+it aside, as a `.bad-` file next to its data. If the library fails to load, there is nothing worth saving, so no file is
+written at all.
+
+A `catalog.json` that cannot be read at all reads as an empty library (a rescan rebuilds it), and the export cannot tell
+that apart from a library with no music. So an export with no songs and no problem means Orpheus found no music.
 
 When `problems` is not empty, Orpheus tells you so after the export: *Exported, but some data could not be read*.
 

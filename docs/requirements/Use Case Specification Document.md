@@ -1623,7 +1623,7 @@ graph LR
 | --- | --- | --- |
 | AF-01 | The owner cancels the save dialog | Nothing is written and nothing is said (`FR-DX-01`). |
 | AF-02 | The library, the playlists or the play history is still loading when the owner picks the entry | The export waits for all three, with the entry showing progress, rather than save a section that is empty only because it has not loaded (`FR-DX-05`). |
-| AF-03 | The library could not be read | The export is refused: no save dialog is offered, and *Your library couldn't be read, so there's nothing to export* is shown under the entry (`FR-DX-06`). |
+| AF-03 | The library fails to load | The export is refused: no save dialog is offered, and *Your library couldn't be read, so there's nothing to export* is shown under the entry (`FR-DX-06`). |
 | AF-04 | The playlists could not be read, or the play history could not be read in this run | The export completes. That section is empty, `problems` in the file says which section and why, and *Exported, but some data could not be read* is shown under the entry (`FR-DX-07`). |
 | AF-05 | A playlists or play history document was unreadable but has been kept aside and replaced by an empty one | It is not a source that could not be read: the export completes as usual and `problems` is empty (`FR-DX-07`, `FR-PS-13`, `FR-ST-18`). |
 | AF-06 | The file could not be written | *Couldn't export your data* is shown under the entry; nothing else is written (`FR-DX-09`, `NFR-03`). |
@@ -1631,7 +1631,7 @@ graph LR
 | AF-08 | A played song is no longer in the library, or a playlist holds one | It is in the file, with its path, and its reference to a song is `null` (`FR-DX-03`). |
 | AF-09 | The preferences are closed while the export runs | The export finishes and the file is written; the result has nowhere to be shown (`FR-DX-09`). |
 | AF-10 | The owner exports again | The last result is cleared as the new export starts (`FR-DX-09`). |
-
+| AF-11 | The library is being rebuilt — its stored catalog was refused as another version's and the scan it is owed has not refilled it | The export completes with no songs, `problems` names `songs` and says the library is being rebuilt, and *Exported, but some data could not be read* is shown under the entry (`FR-DX-06`, `FR-DX-07`). A catalog document that cannot be read reads as an empty library and is not reported: an export with no songs and no problem means Orpheus found no music. |
 
 ---
 
