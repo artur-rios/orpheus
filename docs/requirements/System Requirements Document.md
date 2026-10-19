@@ -31,6 +31,7 @@ Section 4 is the traceability.
 | `TE` | Tag editing |
 | `PS` | Playlists |
 | `DX` | Data export |
+| `BK` | Backup and restore |
 
 ### 1.3 Keywords
 
@@ -277,7 +278,7 @@ Realises F-23.
 
 | ID | Requirement |
 | --- | --- |
-| **FR-DX-01** | The preferences must have a *Your data* section with *Export my data…*, which saves the owner's data to one JSON file at the place the owner chooses in the save dialog, suggesting `orpheus-data-<yyyy-MM-dd>.json` for the day it was asked. Cancelling the dialog writes nothing and is not a failure. |
+| **FR-DX-01** | The preferences must have a *Your data* section with *Export my data (JSON)…*, which saves the owner's data to one JSON file at the place the owner chooses in the save dialog, suggesting `orpheus-data-<yyyy-MM-dd>.json` for the day it was asked. Cancelling the dialog writes nothing and is not a failure. |
 | **FR-DX-02** | The file must hold every song of the library with its path and the tags and length the catalog holds; the artists and the albums as the library lists them, each naming its songs; the owner's playlists, each entry with the path and the details saved with it, and whether the playlist has a cover of its own; both auto playlists, whatever *Show auto playlists* says (`FR-PS-21`); the play history, including songs the library no longer holds; the statistics as the statistics screen shows them (`FR-ST-08` … `FR-ST-12`); and the layout's version, the application's version when it is known, and the time. It must not hold cover images, audio or preferences. |
 | **FR-DX-03** | The file's layout must be documented in `docs/data-export.md`, field by field, and versioned: a `format` of `orpheus-data` and an integer `formatVersion`, now 1, which a change that could break a reader must raise. It must be UTF-8, indented by two spaces, with its keys in the documented order, times as ISO-8601 UTC strings, durations as whole milliseconds, and a tag the song does not have as `null` rather than left out. Songs must be referred to by an `id` that exists only inside the file, and a reference to a song the library does not hold must be `null`, beside the path. A test must hold the document's top-level keys to the ones the application writes. |
 | **FR-DX-04** | The export must only read the owner's data: nothing it reads may be changed, and the only thing written is the file the owner chose (`NFR-03`). |
@@ -285,7 +286,34 @@ Realises F-23.
 | **FR-DX-06** | When the library fails to load the export must be refused, with a message saying so, and the save dialog must not be offered: with no songs there is nothing meaningful to save. A catalog document that cannot be read reads as an empty library, which a scan rebuilds, and the export cannot tell it from a library with no music; a library that is being rebuilt, because its stored catalog was refused as another version's and is owed a scan, is reported as a problem instead (`FR-DX-07`). |
 | **FR-DX-07** | When the playlists could not be read, the play history could not be read in this run, or the library is being rebuilt (`FR-DX-06`), the export must still complete: that section is empty, `problems` names the section and says why, and the owner is told the export is partial. A playlists or play history document that was kept aside and replaced by an empty one (`FR-PS-13`, `FR-ST-18`) is not a source that could not be read. |
 | **FR-DX-08** | Building and encoding the file must not freeze the window, however large the library: it runs off the interface's thread. |
-| **FR-DX-09** | The result must be said under the *Export my data…* entry, where the owner is looking, and stay until the next export starts or the preferences close: *Exported to* and the place when the system gives one, *Exported* when it does not, *Exported, but some data could not be read* for a partial file, *Your library couldn't be read, so there's nothing to export*, or *Couldn't export your data* when the file could not be written, in which case nothing else is written either. Cancelling says nothing. |
+| **FR-DX-09** | The result must be said under the *Export my data (JSON)…* entry, where the owner is looking, and stay until the next export starts or the preferences close: *Exported to* and the place when the system gives one, *Exported* when it does not, *Exported, but some data could not be read* for a partial file, *Your library couldn't be read, so there's nothing to export*, or *Couldn't export your data* when the file could not be written, in which case nothing else is written either. Cancelling says nothing. |
+
+### 2.13 Backup and restore (BK)
+
+Realises F-24.
+
+| ID | Requirement |
+| --- | --- |
+| **FR-BK-01** | The *Your data* section of the preferences (`FR-DX-01`) must offer *Back up Orpheus (ZIP)…* beside *Export my data (JSON)…*, which saves a ZIP file at the place the owner chooses in the save dialog, suggesting `orpheus-backup-<yyyy-MM-dd>.zip` for the day it was asked. Cancelling the dialog writes nothing and is not a failure. |
+| **FR-BK-02** | The ZIP must hold `backup.json`, saying what it is and when it was made and naming its other files; `data.json`, the document of `FR-DX-02` exactly as the JSON export writes it; `preferences.json`, the owner's theme, language, the four switches (open the player when a track starts, re-scan at every launch, look up missing lyrics online, check for updates at startup), *Show auto playlists*, volume and music folders; and, for each playlist with a cover of its own, that picture under `covers/` named by the playlist's id. It must not hold audio, the library's cover cache or the update version the owner chose to skip, which is a fact about one device. |
+| **FR-BK-03** | The ZIP's layout must be documented in `docs/data-export.md` (*Backup file*) and versioned: a `format` of `orpheus-backup` and an integer `formatVersion`, now 1, under the rules of `FR-DX-03`, apart from `data.json`'s. A test must hold the keys of `backup.json` and `preferences.json` to the ones the application writes. |
+| **FR-BK-04** | Each of the two exports must say in a line under its entry what it is for, and an *About these exports* link must show, side by side, what each holds: songs, playlists, auto playlists and play history in both; playlist covers and preferences, with the music folders, only in the ZIP; the owner's music files in neither. |
+| **FR-BK-05** | A backup must do what `FR-DX-04`, `FR-DX-05` and `FR-DX-08` require of an export: only read the owner's data and write the one file the owner chose, wait for the library, the playlists and the play history to load, show that it is working, and run one at a time, and build and encode the ZIP off the interface's thread. |
+| **FR-BK-06** | When the library fails to load the backup must be refused as `FR-DX-06` says. When a source could not be read (`FR-DX-07`), or a playlist's cover picture could not, the backup must still be saved, with the picture left out or the section empty and `problems` saying why, and the owner told. The result must be said under the entry, as `FR-DX-09` says for an export: *Backed up to* and the place, or *Backed up* when the system gives none, *Backed up, but some data could not be read*, *Your library couldn't be read, so there's nothing to back up*, or *Couldn't back up Orpheus*. |
+| **FR-BK-07** | The *Your data* section must offer *Restore from a backup…*, which asks for a file ending in `.zip` or `.json` and reads it, off the interface's thread, as a backup ZIP or a data JSON (`FR-DX-03`). Cancelling the dialog does nothing. |
+| **FR-BK-08** | A ZIP must hold a `backup.json` whose `format` is `orpheus-backup` and a `data.json` whose `format` is `orpheus-data`, each with a supported `formatVersion`; a JSON must be the latter. Any other file must be refused with *This isn't an Orpheus backup*, and a file of a higher `formatVersion` than this release reads with *This backup is from a newer Orpheus — update first*; nothing is written either way. A ZIP without a readable `preferences.json` must still be restored, without preferences, and a cover that cannot be read is passed over. |
+| **FR-BK-09** | Reading a file must show a restore screen with two stages, and nothing may be written before the owner presses *Continue* in the first or *Restore* in the second. The first stage, *Your music*, is shown for a ZIP only. The screen must not be left while the library is being scanned or the parts are being written, and a restore must run one at a time. |
+| **FR-BK-10** | The first stage must show the music folders the backup names, each marked as found on this device or not, and this device's folders; it must let the owner choose this device's folders with *Choose folders…* and take one out, the set chosen becoming the **whole** set, so that a folder not in it is removed from the library (`BR-02`). A device with no folders must start with the backup's folders that are found on it, chosen but not yet applied. The screen must say that *Continue* changes the music folders now and scans the library, and that cancelling later keeps them. *Continue* must apply a changed set and scan the library with progress before the second stage, and with no change must go on at once, scanning first only when there are folders and the library is empty or another version's. A scan that fails must not stop the restore. The music folders must change in no other way (`NFR-03`). |
+| **FR-BK-11** | The second stage, *What to restore*, must show, before anything is written, what the file holds (the date it was made, how many playlists, how many songs with plays, how many playlist covers, and whether it holds preferences), and a choice for each of the playlists, the play history and the preferences: *Merge*, *Skip* or *Replace*, each *Merge* until the owner chooses, with a line saying what the chosen one does for that part. *Replace* must show what it removes: how many playlists, and how many songs' play counts. It must offer *Restore* and *Cancel*. |
+| **FR-BK-12** | A part that the backup could not read when it was made, because its data document's `problems` names `playlists` or `playHistory`, must be offered as *Not in this backup* and never restored, so that *Replace* cannot wipe real data with an empty section; a `songs` problem only means fewer songs to match by. The preferences must be offered as *Not in this file* when the file holds none, as a data JSON never does. A part whose data here could not be read must say so and not be restored. |
+| **FR-BK-13** | A backup's songs must be matched to the library as it is when the choices are shown, after the first stage's scan for a ZIP: by path, a path under the one folder of the backup first moved to the same place under the one folder of this device when each has exactly one; then by tags, the same title, artist and album ignoring case and surrounding spaces and a length within 2 seconds, only when exactly one library song answers. A matched song's data must go to the library song's path; one that is not matched must keep the backup's path. |
+| **FR-BK-14** | *Playlists* must be told apart by name. *Merge* must add the backup's playlists whose name is not here; give the playlist here with a backup playlist's name (the most recently changed, if several) the backup's entries whose song it does not hold, appended in the backup's order; and give a cover only to a playlist here that has none. *Skip* must only add the backup's playlists whose name is not here. *Replace* must remove every playlist here, with its cover, and create the backup's, with their covers. |
+| **FR-BK-15** | *Play history*, by song, under *Merge* must keep the higher of the counts here and in the backup, raised to the number of dated plays that remain once both lists are put together if that is higher, the later last play, and every dated play of either from the last 90 days once, and add the songs only the backup holds. *Skip* must only add songs with no history here. *Replace* must put the backup's history in place of this one. |
+| **FR-BK-16** | *Preferences* under *Merge* must apply the backup's value for each setting whose value here equals a fresh install's, since the store cannot tell a setting never changed from one set back to its default, and keep the others; *Skip* must change none; *Replace* must apply all eight values, the volume and a language that follows the system included. The music folders must not be one of them (`FR-BK-10`). |
+| **FR-BK-17** | Every playlist a restore adds, and every entry in it, must get a new identifier from the application's generator, because a backup's may be one already used here, and its cover must be stored under the new identifier. |
+| **FR-BK-18** | A restore must write the playlists, then the play history, then the preferences, each part whole or not at all: the playlists as one write of the whole list and the history as one write of the whole history, a cover afterwards and best-effort, so that a playlist whose picture cannot be stored is still restored. A part whose data here could not be read must be refused with its reason and nothing of it written; a part that fails must not stop the others, and parts already written stay. |
+| **FR-BK-19** | When the restore has finished a summary must say what was restored, under *Restored* — playlists added, merged or replaced, play history for how many songs and how many of them the library does not hold, preferences applied, the playlists whose cover picture could not be saved, and preferences that applied but could not be saved — and what was not, under *Couldn't restore*, each with its reason: the backup could not read the part when it was made, the file does not have it, it could not be read here and was left alone, or it could not be saved and nothing of it changed. The auto playlists and the statistics follow the new history by themselves. |
+| **FR-BK-20** | A restore must never rename, move, delete or change a music file (`NFR-03`); its writes must be to the application's own data and preferences (`IR-05`), and to the music folders' registration only as `FR-BK-10` says. |
 
 ## 3. Non-functional requirements
 
@@ -293,7 +321,7 @@ Realises F-23.
 | --- | --- |
 | **NFR-01** | **One source, three targets.** Windows, Linux and Android must build from the same source with no per-platform implementation of any feature above the platform edges. |
 | **NFR-02** | **Three network calls, named.** The application must make no network request other than the lyrics lookup of `FR-LY-13`, the MusicBrainz and Cover Art Archive lookups an autofill makes when the owner starts one (`FR-AF-02`), and, on Windows and Linux, the release check of `BR-03` — the one request at startup for the newest release (the latest full release, or for a build that is itself a pre-release, the release list), and the download of an installer and its checksums the owner accepted. No telemetry, analytics, crash reporting, scrobbling or other lookup may be added. The Android package must declare exactly the permissions its manifest lists, and this must be verifiable from the built package. |
-| **NFR-03** | **Audio files are changed for confirmed tags only.** No audio file may be renamed, moved, deleted or re-encoded, and its tags may be written only for changes the owner confirmed (`FR-AF-05`, `FR-TE-03`, `FR-TE-07`). Exporting a playlist or the owner's data writes only the file the owner chose (`FR-PS-11`, `FR-DX-04`). |
+| **NFR-03** | **Audio files are changed for confirmed tags only.** No audio file may be renamed, moved, deleted or re-encoded, and its tags may be written only for changes the owner confirmed (`FR-AF-05`, `FR-TE-03`, `FR-TE-07`). Exporting a playlist, the owner's data or a backup writes only the file the owner chose (`FR-PS-11`, `FR-DX-04`, `FR-BK-05`), and restoring from a backup changes no audio file: the music folders change only through the restore's first stage, which the owner confirms (`FR-BK-10`, `FR-BK-20`). |
 | **NFR-04** | **Startup is not gated on a scan.** The library from the last scan must be on screen before a new scan is started. |
 | **NFR-05** | **Scanning is proportional to change.** Re-scanning an unchanged library must not re-parse it. |
 | **NFR-06** | **The cover cache is proportional to records, not files.** |
@@ -322,7 +350,7 @@ Realises F-23.
 | F-10 Background playback | FR-BG-01 … FR-BG-10 |
 | F-11 Listening statistics | FR-ST-01 … FR-ST-15, FR-ST-20 |
 | F-12 Adaptive shell | FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-10 |
-| F-13 Preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21, FR-DX-01 |
+| F-13 Preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21, FR-DX-01, FR-BK-01, FR-BK-07 |
 | F-14 Localization | FR-UX-09, FR-CT-06 |
 | F-15 Lyrics | FR-LY-01 … FR-LY-17 |
 | F-16 Sound bars | FR-VZ-01 … FR-VZ-11 |
@@ -333,6 +361,7 @@ Realises F-23.
 | F-21 Playlists | FR-PS-01 … FR-PS-13, FR-UX-01 |
 | F-22 Auto playlists | FR-PS-14 … FR-PS-21, FR-ST-16 … FR-ST-20, FR-UX-06 |
 | F-23 Export my data | FR-DX-01 … FR-DX-09 |
+| F-24 Back up and restore | FR-BK-01 … FR-BK-20 |
 
 ### 4.2 Requirements to use cases
 
@@ -350,6 +379,7 @@ Realises F-23.
 | TE | UC-35, UC-37, UC-38 |
 | PS | UC-39, UC-40 |
 | DX | UC-29, UC-41 |
+| BK | UC-29, UC-42, UC-43 |
 
 ## 5. Data model
 

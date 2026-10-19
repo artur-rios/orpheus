@@ -18,7 +18,7 @@ done.
 | Actor | Description |
 | --- | --- |
 | **Owner** | The single human user, and the only actor with intent. Interacts with every use case below. |
-| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, to the one file the owner chose for an export (UC-39, UC-41), and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed (UC-34, UC-35, UC-37, UC-38). |
+| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, to the one file the owner chose for an export or a backup (UC-39, UC-41, UC-42), read when the owner restores from one (UC-43), and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed (UC-34, UC-35, UC-37, UC-38). |
 | **Metadata service** | MusicBrainz, and the Cover Art Archive for covers. Asked only when the owner starts an autofill (UC-34), at most once a second, and sent nothing that identifies the owner. |
 | **Playback engine** | The libmpv-backed engine linked in process. Opens files, reports position and duration, and reports what it cannot decode. Never modifies a file. |
 | **Host platform** | Windows, Linux or Android. Grants or refuses read access, provides the folder picker, and — on Android alone — provides the media session and the foreground service. |
@@ -108,6 +108,11 @@ graph LR
         UC41[UC-41: Export my data]
     end
 
+    subgraph "Backup and restore (BK)"
+        UC42[UC-42: Back up Orpheus]
+        UC43[UC-43: Restore from a backup]
+    end
+
     OWNER --> UC01
     OWNER --> UC07
     OWNER --> UC13
@@ -123,6 +128,8 @@ graph LR
     OWNER --> UC39
     OWNER --> UC40
     OWNER --> UC41
+    OWNER --> UC42
+    OWNER --> UC43
 ```
 
 ---
@@ -1078,7 +1085,7 @@ graph LR
 | **Description** | The owner changes the theme, the language, and how the application behaves. |
 | **Preconditions** | None. |
 | **Postconditions** | The choices apply and are remembered. |
-| **Requirements** | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21, FR-DX-01 |
+| **Requirements** | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21, FR-DX-01, FR-BK-01, FR-BK-07 |
 
 **Main Flow**
 
@@ -1089,8 +1096,9 @@ graph LR
    whether the auto playlists are shown (*Show auto playlists*, on by default;
    UC-40).
 3. Each choice applies immediately and is written behind.
-4. Under *Your data*, *Export my data…* saves the owner's data to a file they choose (UC-41). It is an action, not a
-   choice: nothing about it is remembered.
+4. Under *Your data*, *Export my data (JSON)…* saves the owner's data to a file they choose (UC-41), *Back up Orpheus
+   (ZIP)…* saves a backup to one (UC-42), and *Restore from a backup…* brings a backup or an export back (UC-43);
+   *About these exports* compares the first two. They are actions, not choices: nothing about them is remembered.
 
 **Alternative Flows**
 
@@ -1600,14 +1608,14 @@ graph LR
 | **ID** | UC-41 |
 | **Name** | Export my data |
 | **Actors** | Owner, Local filesystem |
-| **Description** | The owner saves everything Orpheus knows about their music — the library, the playlists, the auto playlists, the play history and the statistics — to one JSON file, to keep as a backup, to analyse in any tool, or to import elsewhere. |
+| **Description** | The owner saves everything Orpheus knows about their music — the library, the playlists, the auto playlists, the play history and the statistics — to one JSON file, to analyse in any tool, to import elsewhere, or to restore the playlists and the play history from (UC-43). It is one of two exports: the backup of UC-42 also holds the playlists' covers and the preferences. |
 | **Preconditions** | None. |
-| **Postconditions** | One file exists where the owner chose. Nothing Orpheus holds has changed, no audio file or music folder has been touched, and nothing else has been written (`NFR-03`). Restoring from the file is not part of this use case. |
+| **Postconditions** | One file exists where the owner chose. Nothing Orpheus holds has changed, no audio file or music folder has been touched, and nothing else has been written (`NFR-03`). Restoring from the file is UC-43. |
 | **Requirements** | FR-DX-01 … FR-DX-09 |
 
 **Main Flow**
 
-1. The owner opens the preferences (UC-29). Under *Your data* is *Export my data…*.
+1. The owner opens the preferences (UC-29). Under *Your data* is *Export my data (JSON)…*.
 2. The owner picks it. The entry shows that it is working and cannot be picked again until it is done (`FR-DX-05`).
 3. Orpheus waits for the library, the playlists and the play history to load, then reads them (`FR-DX-05`).
 4. It builds the document — the songs, artists, albums, playlists, both auto playlists, the play history and the
@@ -1632,6 +1640,109 @@ graph LR
 | AF-09 | The preferences are closed while the export runs | The export finishes and the file is written; the result has nowhere to be shown (`FR-DX-09`). |
 | AF-10 | The owner exports again | The last result is cleared as the new export starts (`FR-DX-09`). |
 | AF-11 | The library is being rebuilt — its stored catalog was refused as another version's and the scan it is owed has not refilled it | The export completes with no songs, `problems` names `songs` and says the library is being rebuilt, and *Exported, but some data could not be read* is shown under the entry (`FR-DX-06`, `FR-DX-07`). A catalog document that cannot be read reads as an empty library and is not reported: an export with no songs and no problem means Orpheus found no music. |
+
+---
+
+### UC-42: Back up Orpheus
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-42 |
+| **Name** | Back up Orpheus |
+| **Actors** | Owner, Local filesystem |
+| **Description** | The owner saves what is needed to bring Orpheus back on this or another device — the data of UC-41, the playlists' cover pictures and the preferences, with the music folders — to one ZIP file. |
+| **Preconditions** | None. |
+| **Postconditions** | One file exists where the owner chose. Nothing Orpheus holds has changed, no audio file or music folder has been touched, and nothing else has been written (`NFR-03`). Bringing the data back is UC-43. |
+| **Requirements** | FR-BK-01 … FR-BK-06 |
+
+**Main Flow**
+
+1. The owner opens the preferences (UC-29). Under *Your data* are *Export my data (JSON)…* (UC-41) and *Back up Orpheus
+   (ZIP)…*, each with a line saying what it is for, and *About these exports*, which compares what the two hold
+   (`FR-BK-04`).
+2. The owner picks *Back up Orpheus (ZIP)…*. The entry shows that it is working and cannot be picked again until it is
+   done (`FR-BK-05`).
+3. Orpheus waits for the library, the playlists and the play history to load, then reads them, the cover of every
+   playlist that has one, and the preferences (`FR-BK-05`).
+4. It builds the ZIP — `backup.json`, `data.json`, `preferences.json` and the covers, in the layout documented in
+   `docs/data-export.md` (`FR-BK-02`, `FR-BK-03`) — off the interface's thread, so the window does not freeze however
+   large the library is (`FR-BK-05`).
+5. The save dialog asks where to save the file, suggesting `orpheus-backup-<yyyy-MM-dd>.zip` for today (`FR-BK-01`).
+6. The owner chooses a place. The file is written there, and *Backed up to* and the place appear under the entry; when
+   the system gives no place to name, as with Android's document picker, it says *Backed up* (`FR-BK-06`).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | The owner cancels the save dialog | Nothing is written and nothing is said (`FR-BK-01`). |
+| AF-02 | The library, the playlists or the play history is still loading when the owner picks the entry | The backup waits for all three, with the entry showing progress (`FR-BK-05`). |
+| AF-03 | The library fails to load | The backup is refused: no save dialog is offered, and *Your library couldn't be read, so there's nothing to back up* is shown under the entry (`FR-BK-06`). |
+| AF-04 | The playlists could not be read, or the play history could not be read in this run | The backup completes. That section of `data.json` is empty, its `problems` says which section and why, and *Backed up, but some data could not be read* is shown under the entry. A restore will not offer that part (UC-43 AF-05; `FR-BK-06`, `FR-BK-12`). |
+| AF-05 | A playlist's cover picture cannot be read | The backup completes without that picture, the playlist is in it all the same, and *Backed up, but some data could not be read* is shown under the entry (`FR-BK-06`). A playlist whose picture is simply gone has nothing to save and is not a problem. |
+| AF-06 | The file could not be written | *Couldn't back up Orpheus* is shown under the entry; nothing else is written (`FR-BK-06`, `NFR-03`). |
+| AF-07 | The preferences are closed while the backup runs | The backup finishes and the file is written; the result has nowhere to be shown. |
+| AF-08 | The owner backs up again | The last result is cleared as the new backup starts. |
+| AF-09 | The owner turned off *Show auto playlists* | The auto playlists are in `data.json` all the same, and the preference is in `preferences.json` (`FR-BK-02`). |
+
+---
+
+### UC-43: Restore from a backup
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-43 |
+| **Name** | Restore from a backup |
+| **Actors** | Owner, Local filesystem |
+| **Description** | The owner brings back the playlists, the play history and the preferences from a backup ZIP, or the playlists and the play history from an exported JSON, on this device or another, choosing for each whether to merge, skip or replace. |
+| **Preconditions** | None. A device whose music has been copied over is the usual case, but the music need not be there yet. |
+| **Postconditions** | Each part the owner chose to restore, and could, is written whole, and each other part is as it was. The auto playlists and the statistics follow the new history. The music folders are as the owner left them in the first stage. No audio file has been touched (`NFR-03`, `FR-BK-20`). |
+| **Requirements** | FR-BK-07 … FR-BK-20 |
+
+**Main Flow**
+
+1. The owner opens the preferences (UC-29) and picks *Restore from a backup…* under *Your data*. A file dialog asks for
+   a `.zip` or a `.json` (`FR-BK-07`).
+2. Orpheus reads the file off the interface's thread and checks that it is a backup it can read (`FR-BK-08`). Nothing is
+   written. The restore screen opens (`FR-BK-09`).
+3. **Your music** (for a ZIP). The screen shows the music folders the backup names, each *Found on this device* or *Not
+   found*, and this device's folders. A device with no folders starts with the backup's folders that are found on it,
+   chosen but not yet applied. The owner may take a folder out, or add one with *Choose folders…*; the set shown becomes
+   the whole set (`FR-BK-10`).
+4. The owner presses *Continue*. A changed set is applied now, and the library is scanned, with progress; with no
+   change it goes on at once (`FR-BK-10`).
+5. **What to restore.** The screen shows what the file holds — when it was made, how many playlists, how many songs with
+   plays, how many playlist covers, whether the preferences are in it — and for the playlists, the play history and the
+   preferences a choice of *Merge*, *Skip* or *Replace*, each *Merge* to begin with, and a line on what the chosen one
+   does (`FR-BK-11`).
+6. The owner presses *Restore*. The playlists, then the play history, then the preferences are written, each as the
+   owner chose (`FR-BK-13` … `FR-BK-18`).
+7. A summary says what was restored and, under *Couldn't restore*, what was not and why. The owner closes it
+   (`FR-BK-19`).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | The owner cancels the file dialog | Nothing happens (`FR-BK-07`). |
+| AF-02 | The file is not an Orpheus backup | *This isn't an Orpheus backup* is shown, and nothing is written (`FR-BK-08`). |
+| AF-03 | The file is a backup from a newer Orpheus than this one reads | *This backup is from a newer Orpheus — update first* is shown, and nothing is written (`FR-BK-08`). |
+| AF-04 | The file is an exported JSON | The first stage is skipped, since the file names no folders, and no scan runs before the choices. The preferences are *Not in this file*, and playlists restored from it have no covers (`FR-BK-08`, `FR-BK-12`). |
+| AF-05 | The backup could not read its playlists, or its play history, when it was made | That part is *Not in this backup*, cannot be chosen, and is not restored: an empty section is not the owner's data, and replacing theirs with it would lose it. A song list that could not be read only means fewer songs to match by (`FR-BK-12`). |
+| AF-06 | A ZIP has no readable `preferences.json` | The rest is restored, and the preferences are *Not in this file* (`FR-BK-08`, `FR-BK-12`). |
+| AF-07 | A backup folder is *Not found* on this device | The owner chooses the folders where the music is, or goes on without; songs that cannot be found keep the backup's path and wait for the file to turn up (`FR-BK-10`, `FR-BK-13`). |
+| AF-08 | The owner removes every folder | The screen warns that no songs can be matched, and the restore goes on if they continue (`FR-BK-10`). |
+| AF-09 | The owner chooses *Merge* | Nothing here is lost. Playlists are added or given the entries and cover they lack; each song's play count is the higher, its last play the later and its dated plays the two together; preferences still at their defaults take the backup's (`FR-BK-14` … `FR-BK-16`). |
+| AF-10 | The owner chooses *Skip* | Playlists and songs the backup holds that are wholly new are added, and for the preferences nothing changes (`FR-BK-14` … `FR-BK-16`). |
+| AF-11 | The owner chooses *Replace* | The screen first says what it removes — how many playlists, how many songs' play counts, all the settings — and the part is put in place of what is here, even when the backup's is empty. The covers of the playlists removed are deleted with them (`FR-BK-11`, `FR-BK-14` … `FR-BK-16`). |
+| AF-12 | What this device holds of a part could not be read | The screen says so under that part, and the part is refused with *this part couldn't be read here, so it was left alone* rather than written over (`FR-BK-12`, `FR-BK-18`). |
+| AF-13 | A part cannot be written | It is reported under *Couldn't restore* as *this part couldn't be saved, so nothing of it changed*; the parts already written stay, and the others are still tried (`FR-BK-18`, `FR-BK-19`). |
+| AF-14 | A playlist is restored but its cover picture cannot be stored | The playlist is there without it, and the summary names it (`FR-BK-18`, `FR-BK-19`). |
+| AF-15 | A preference is applied but cannot be saved | It applies until Orpheus closes, and the summary says so (`FR-BK-19`, UC-29 AF-01). |
+| AF-16 | A song in the backup is not in the library | It is matched by its path and then by its tags and length, and when neither finds exactly one song it keeps the backup's path; the summary counts those among the history's songs (`FR-BK-13`, `FR-BK-19`). |
+| AF-17 | The owner cancels in the first stage before *Continue*, or in the second stage | Nothing is written. The folders *Continue* changed stay as they were set, and the screen says so before the owner cancels (`FR-BK-09`, `FR-BK-10`). |
+| AF-18 | The owner tries to leave while the library is scanned or the parts are written | It cannot be left: each part is whole or untouched, and the owner is owed the summary of what was written (`FR-BK-09`). |
+| AF-19 | A restore is already under way | Asking again answers with the one under way (`FR-BK-09`). |
 
 ---
 
@@ -1667,7 +1778,7 @@ graph LR
 | UC-26 Count a play | FR-ST-01 … FR-ST-07, FR-ST-16 … FR-ST-19 |
 | UC-27 See what you listen to | FR-ST-08 … FR-ST-15, FR-ST-20, FR-UX-03 |
 | UC-28 Navigate the shell | FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-07 |
-| UC-29 Manage preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21, FR-DX-01 |
+| UC-29 Manage preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21, FR-DX-01, FR-BK-01, FR-BK-07 |
 | UC-30 Read the words | FR-LY-01, FR-LY-02, FR-LY-03, FR-LY-07 … FR-LY-10, FR-LY-12 |
 | UC-31 Follow and jump | FR-LY-04, FR-LY-05, FR-LY-06, FR-LY-11 |
 | UC-32 See the music move | FR-VZ-01 … FR-VZ-11 |
@@ -1679,6 +1790,8 @@ graph LR
 | UC-39 Keep playlists | FR-PS-01 … FR-PS-13, FR-UX-01, FR-UX-13 |
 | UC-40 Play the auto playlists | FR-PS-14 … FR-PS-21, FR-ST-16 … FR-ST-20, FR-UX-06 |
 | UC-41 Export my data | FR-DX-01 … FR-DX-09 |
+| UC-42 Back up Orpheus | FR-BK-01 … FR-BK-06 |
+| UC-43 Restore from a backup | FR-BK-07 … FR-BK-20 |
 
 ## 4. State diagrams
 
