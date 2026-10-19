@@ -1931,7 +1931,7 @@ abstract class AppLocalizations {
   /// The preferences entry that saves everything Orpheus knows about the owner's music to a JSON file where they choose.
   ///
   /// In en, this message translates to:
-  /// **'Export my data…'**
+  /// **'Export my data (JSON)…'**
   String get dataExportAction;
 
   /// Shown once the owner's data has been exported, naming the file it was saved as.
@@ -1963,6 +1963,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your library couldn\'t be read, so there\'s nothing to export'**
   String get dataExportLibraryFailed;
+
+  /// The one-line explanation under the Export my data (JSON) entry in the preferences: what that export is for.
+  ///
+  /// In en, this message translates to:
+  /// **'For looking at your data in other tools, or importing it elsewhere.'**
+  String get dataExportExplanation;
+
+  /// The preferences entry that saves a backup of Orpheus, including the playlist covers and the preferences, to a ZIP file where the owner chooses.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up Orpheus (ZIP)…'**
+  String get backupAction;
+
+  /// The one-line explanation under the Back up Orpheus (ZIP) entry in the preferences: what that backup is for and holds.
+  ///
+  /// In en, this message translates to:
+  /// **'For restoring Orpheus on this or another device: your data, playlist covers and preferences.'**
+  String get backupExplanation;
+
+  /// Shown once Orpheus has been backed up, naming the file it was saved as.
+  ///
+  /// In en, this message translates to:
+  /// **'Backed up to {path}'**
+  String backupSaved(String path);
+
+  /// Shown once Orpheus has been backed up to a place the system gives no file path for, such as Android's document provider.
+  ///
+  /// In en, this message translates to:
+  /// **'Backed up'**
+  String get backedUp;
+
+  /// Shown when Orpheus was backed up but one of its sources, such as the playlists, the play history or a playlist cover, could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Backed up, but some data could not be read'**
+  String get backupPartial;
+
+  /// Shown when the file holding the backup could not be saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t back up Orpheus'**
+  String get backupFailed;
+
+  /// Shown when Orpheus is not backed up because the library could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Your library couldn\'t be read, so there\'s nothing to back up'**
+  String get backupLibraryFailed;
+
+  /// The preferences link that opens a comparison of the JSON export and the ZIP backup.
+  ///
+  /// In en, this message translates to:
+  /// **'About these exports'**
+  String get backupAboutAction;
+
+  /// The title of the dialog comparing what the JSON export and the ZIP backup contain.
+  ///
+  /// In en, this message translates to:
+  /// **'About these exports'**
+  String get backupAboutTitle;
+
+  /// The heading of the JSON export's column in the comparison of the two exports; the name of its preferences entry without the ellipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Export my data (JSON)'**
+  String get backupAboutColumnJson;
+
+  /// The heading of the ZIP backup's column in the comparison of the two exports; the name of its preferences entry without the ellipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up Orpheus (ZIP)'**
+  String get backupAboutColumnZip;
+
+  /// The label of the row of the comparison of the two exports that says what each is for.
+  ///
+  /// In en, this message translates to:
+  /// **'For'**
+  String get backupAboutFor;
+
+  /// In the comparison of the two exports: what the JSON export is for.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking at your data in other tools, importing elsewhere'**
+  String get backupAboutForJson;
+
+  /// In the comparison of the two exports: what the ZIP backup is for.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring Orpheus on this or another device'**
+  String get backupAboutForZip;
+
+  /// A row of the comparison of the two exports: the library as a list.
+  ///
+  /// In en, this message translates to:
+  /// **'Songs, artists, albums (as a list)'**
+  String get backupAboutSongs;
+
+  /// A row of the comparison of the two exports: the owner playlists.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlists'**
+  String get backupAboutPlaylists;
+
+  /// A row of the comparison of the two exports: the auto playlists as they are at the moment of the export.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto playlists (as they are now)'**
+  String get backupAboutAutoPlaylists;
+
+  /// A row of the comparison of the two exports: the plays Orpheus has recorded and what is counted from them.
+  ///
+  /// In en, this message translates to:
+  /// **'Play history and statistics'**
+  String get backupAboutHistory;
+
+  /// A row of the comparison of the two exports: the pictures the owner chose as playlist covers.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlist cover pictures'**
+  String get backupAboutCovers;
+
+  /// A row of the comparison of the two exports: the preferences, including the folders the library is built from.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences (incl. music folders)'**
+  String get backupAboutPreferences;
+
+  /// A row of the comparison of the two exports: the audio files themselves, which neither holds.
+  ///
+  /// In en, this message translates to:
+  /// **'Your music files'**
+  String get backupAboutMusicFiles;
+
+  /// Read aloud for a check mark in the comparison of the two exports: the export holds this.
+  ///
+  /// In en, this message translates to:
+  /// **'Included'**
+  String get backupAboutIncluded;
+
+  /// Read aloud for a dash in the comparison of the two exports: the export does not hold this.
+  ///
+  /// In en, this message translates to:
+  /// **'Not included'**
+  String get backupAboutNotIncluded;
 }
 
 class _AppLocalizationsDelegate

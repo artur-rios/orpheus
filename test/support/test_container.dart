@@ -8,6 +8,7 @@ import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 import 'package:orpheus/core/platform/host_platform.dart';
 import 'package:orpheus/core/settings/settings_store.dart';
+import 'package:orpheus/features/data_export/data/zip_backup_codec.dart';
 import 'package:orpheus/features/data_export/domain/data_export.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
@@ -119,6 +120,15 @@ class Harness {
         // on fake time, which a real isolate's answer would never reach.
         dataExportEncoderProvider.overrideWithValue(
           (sources) async => encodeDataExport(buildDataExport(sources)),
+        ),
+        backupEncoderProvider.overrideWithValue(
+          (sources) async => encodeBackupZip(
+            data: buildDataExport(sources.export),
+            preferences: sources.preferences,
+            covers: sources.covers,
+            createdAt: sources.export.now,
+            orpheusVersion: sources.export.orpheusVersion,
+          ),
         ),
         // Ids a test can name: `id-1`, `id-2`, ... in the order they are asked
         // for, rather than random ones.

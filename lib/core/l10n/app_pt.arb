@@ -1472,7 +1472,7 @@
   "@dataExportHeading": {
     "description": "The heading over the section of the preferences that exports the owner's data."
   },
-  "dataExportAction": "Exportar meus dados…",
+  "dataExportAction": "Exportar meus dados (JSON)…",
   "@dataExportAction": {
     "description": "The preferences entry that saves everything Orpheus knows about the owner's music to a JSON file where they choose."
   },
@@ -1500,5 +1500,106 @@
   "dataExportLibraryFailed": "Sua biblioteca não pôde ser lida, então não há nada para exportar",
   "@dataExportLibraryFailed": {
     "description": "Shown when the owner's data is not exported because the library could not be read."
+  },
+  "dataExportExplanation": "Para ver seus dados em outras ferramentas ou importá-los em outro lugar.",
+  "@dataExportExplanation": {
+    "description": "The one-line explanation under the Export my data (JSON) entry in the preferences: what that export is for."
+  },
+  "backupAction": "Fazer backup do Orpheus (ZIP)…",
+  "@backupAction": {
+    "description": "The preferences entry that saves a backup of Orpheus, including the playlist covers and the preferences, to a ZIP file where the owner chooses."
+  },
+  "backupExplanation": "Para restaurar o Orpheus neste ou em outro dispositivo: seus dados, capas de playlists e preferências.",
+  "@backupExplanation": {
+    "description": "The one-line explanation under the Back up Orpheus (ZIP) entry in the preferences: what that backup is for and holds."
+  },
+  "backupSaved": "Backup salvo em {path}",
+  "@backupSaved": {
+    "description": "Shown once Orpheus has been backed up, naming the file it was saved as.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "backedUp": "Backup feito",
+  "@backedUp": {
+    "description": "Shown once Orpheus has been backed up to a place the system gives no file path for, such as Android's document provider."
+  },
+  "backupPartial": "Backup feito, mas alguns dados não puderam ser lidos",
+  "@backupPartial": {
+    "description": "Shown when Orpheus was backed up but one of its sources, such as the playlists, the play history or a playlist cover, could not be read."
+  },
+  "backupFailed": "Não foi possível fazer o backup do Orpheus",
+  "@backupFailed": {
+    "description": "Shown when the file holding the backup could not be saved."
+  },
+  "backupLibraryFailed": "Sua biblioteca não pôde ser lida, então não há nada para incluir no backup",
+  "@backupLibraryFailed": {
+    "description": "Shown when Orpheus is not backed up because the library could not be read."
+  },
+  "backupAboutAction": "Sobre estas exportações",
+  "@backupAboutAction": {
+    "description": "The preferences link that opens a comparison of the JSON export and the ZIP backup."
+  },
+  "backupAboutTitle": "Sobre estas exportações",
+  "@backupAboutTitle": {
+    "description": "The title of the dialog comparing what the JSON export and the ZIP backup contain."
+  },
+  "backupAboutColumnJson": "Exportar meus dados (JSON)",
+  "@backupAboutColumnJson": {
+    "description": "The heading of the JSON export's column in the comparison of the two exports; the name of its preferences entry without the ellipsis."
+  },
+  "backupAboutColumnZip": "Fazer backup do Orpheus (ZIP)",
+  "@backupAboutColumnZip": {
+    "description": "The heading of the ZIP backup's column in the comparison of the two exports; the name of its preferences entry without the ellipsis."
+  },
+  "backupAboutFor": "Para",
+  "@backupAboutFor": {
+    "description": "The label of the row of the comparison of the two exports that says what each is for."
+  },
+  "backupAboutForJson": "Ver seus dados em outras ferramentas, importar em outro lugar",
+  "@backupAboutForJson": {
+    "description": "In the comparison of the two exports: what the JSON export is for."
+  },
+  "backupAboutForZip": "Restaurar o Orpheus neste ou em outro dispositivo",
+  "@backupAboutForZip": {
+    "description": "In the comparison of the two exports: what the ZIP backup is for."
+  },
+  "backupAboutSongs": "Músicas, artistas, álbuns (como lista)",
+  "@backupAboutSongs": {
+    "description": "A row of the comparison of the two exports: the library as a list."
+  },
+  "backupAboutPlaylists": "Playlists",
+  "@backupAboutPlaylists": {
+    "description": "A row of the comparison of the two exports: the owner playlists."
+  },
+  "backupAboutAutoPlaylists": "Playlists automáticas (como estão agora)",
+  "@backupAboutAutoPlaylists": {
+    "description": "A row of the comparison of the two exports: the auto playlists as they are at the moment of the export."
+  },
+  "backupAboutHistory": "Histórico de reproduções e estatísticas",
+  "@backupAboutHistory": {
+    "description": "A row of the comparison of the two exports: the plays Orpheus has recorded and what is counted from them."
+  },
+  "backupAboutCovers": "Imagens de capa das playlists",
+  "@backupAboutCovers": {
+    "description": "A row of the comparison of the two exports: the pictures the owner chose as playlist covers."
+  },
+  "backupAboutPreferences": "Preferências (incl. pastas de música)",
+  "@backupAboutPreferences": {
+    "description": "A row of the comparison of the two exports: the preferences, including the folders the library is built from."
+  },
+  "backupAboutMusicFiles": "Seus arquivos de música",
+  "@backupAboutMusicFiles": {
+    "description": "A row of the comparison of the two exports: the audio files themselves, which neither holds."
+  },
+  "backupAboutIncluded": "Incluído",
+  "@backupAboutIncluded": {
+    "description": "Read aloud for a check mark in the comparison of the two exports: the export holds this."
+  },
+  "backupAboutNotIncluded": "Não incluído",
+  "@backupAboutNotIncluded": {
+    "description": "Read aloud for a dash in the comparison of the two exports: the export does not hold this."
   }
 }

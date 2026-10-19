@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../data_export/presentation/export_data_tile.dart';
+import '../../data_export/presentation/your_data_section.dart';
 
 /// The preferences.
 ///
@@ -192,8 +192,7 @@ class PreferencesDialog extends ConsumerWidget {
               ],
 
               const SizedBox(height: AppSpacing.lg),
-              _Heading(text: l10n.dataExportHeading),
-              const ExportDataTile(),
+              const YourDataSection(),
             ],
           ),
         ),

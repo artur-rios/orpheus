@@ -1175,7 +1175,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dataExportHeading => 'Your data';
 
   @override
-  String get dataExportAction => 'Export my data…';
+  String get dataExportAction => 'Export my data (JSON)…';
 
   @override
   String dataExportSaved(String path) {
@@ -1194,4 +1194,82 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dataExportLibraryFailed =>
       'Your library couldn\'t be read, so there\'s nothing to export';
+
+  @override
+  String get dataExportExplanation =>
+      'For looking at your data in other tools, or importing it elsewhere.';
+
+  @override
+  String get backupAction => 'Back up Orpheus (ZIP)…';
+
+  @override
+  String get backupExplanation =>
+      'For restoring Orpheus on this or another device: your data, playlist covers and preferences.';
+
+  @override
+  String backupSaved(String path) {
+    return 'Backed up to $path';
+  }
+
+  @override
+  String get backedUp => 'Backed up';
+
+  @override
+  String get backupPartial => 'Backed up, but some data could not be read';
+
+  @override
+  String get backupFailed => 'Couldn\'t back up Orpheus';
+
+  @override
+  String get backupLibraryFailed =>
+      'Your library couldn\'t be read, so there\'s nothing to back up';
+
+  @override
+  String get backupAboutAction => 'About these exports';
+
+  @override
+  String get backupAboutTitle => 'About these exports';
+
+  @override
+  String get backupAboutColumnJson => 'Export my data (JSON)';
+
+  @override
+  String get backupAboutColumnZip => 'Back up Orpheus (ZIP)';
+
+  @override
+  String get backupAboutFor => 'For';
+
+  @override
+  String get backupAboutForJson =>
+      'Looking at your data in other tools, importing elsewhere';
+
+  @override
+  String get backupAboutForZip => 'Restoring Orpheus on this or another device';
+
+  @override
+  String get backupAboutSongs => 'Songs, artists, albums (as a list)';
+
+  @override
+  String get backupAboutPlaylists => 'Playlists';
+
+  @override
+  String get backupAboutAutoPlaylists => 'Auto playlists (as they are now)';
+
+  @override
+  String get backupAboutHistory => 'Play history and statistics';
+
+  @override
+  String get backupAboutCovers => 'Playlist cover pictures';
+
+  @override
+  String get backupAboutPreferences => 'Preferences (incl. music folders)';
+
+  @override
+  String get backupAboutMusicFiles => 'Your music files';
+
+  @override
+  String get backupAboutIncluded => 'Included';
+
+  @override
+  String get backupAboutNotIncluded => 'Not included';
 }

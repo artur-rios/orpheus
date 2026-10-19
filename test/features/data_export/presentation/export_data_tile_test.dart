@@ -39,7 +39,8 @@ void main() {
     matching: find.text(text),
   );
 
-  Finder exportTile() => find.widgetWithText(ListTile, 'Export my data…');
+  Finder exportTile() =>
+      find.widgetWithText(ListTile, 'Export my data (JSON)…');
 
   Future<void> tapExport(WidgetTester tester) async {
     await tester.ensureVisible(exportTile());
@@ -139,7 +140,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(SnackBar), findsNothing);
-      expect(tester.widget<ListTile>(exportTile()).subtitle, isNull);
+      // What is left under the entry is its explanation, not a status.
+      expect(
+        find.descendant(
+          of: exportTile(),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics && widget.properties.liveRegion == true,
+          ),
+        ),
+        findsNothing,
+      );
+      expect(said('Exported to /exports/saved'), findsNothing);
     },
   );
 
