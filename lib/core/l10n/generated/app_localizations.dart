@@ -2107,6 +2107,426 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not included'**
   String get backupAboutNotIncluded;
+
+  /// The preferences entry that restores Orpheus from a backup ZIP or an exported JSON the owner picks.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from a backup…'**
+  String get restoreAction;
+
+  /// The one-line explanation under the Restore from a backup entry in the preferences: what a restore brings back.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring back playlists, play history and preferences from a backup ZIP or an exported JSON.'**
+  String get restoreExplanation;
+
+  /// The title of the restore screen when the picked file could not be restored.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from a backup'**
+  String get restoreTitle;
+
+  /// Shown on the restore screen when the picked file is not an Orpheus backup or exported data file; nothing was changed.
+  ///
+  /// In en, this message translates to:
+  /// **'This isn\'t an Orpheus backup'**
+  String get restoreFailedNotABackup;
+
+  /// Shown on the restore screen when the picked file was made by a newer version of Orpheus than the one running.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup is from a newer Orpheus — update first'**
+  String get restoreFailedNewer;
+
+  /// The title of the first stage of a restore, which is about where the music is on this device.
+  ///
+  /// In en, this message translates to:
+  /// **'Your music'**
+  String get restoreFoldersTitle;
+
+  /// Explains, at the first stage of a restore, why the music folders come first.
+  ///
+  /// In en, this message translates to:
+  /// **'The songs in a backup are matched against your library, so your music needs to be where Orpheus looks for it.'**
+  String get restoreFoldersIntro;
+
+  /// Heading of the list of music folders the backup was made with, at the first stage of a restore.
+  ///
+  /// In en, this message translates to:
+  /// **'Folders in the backup'**
+  String get restoreBackupFolders;
+
+  /// Shown at the first stage of a restore when the backup lists no music folders.
+  ///
+  /// In en, this message translates to:
+  /// **'The backup doesn\'t name any folders.'**
+  String get restoreBackupFoldersNone;
+
+  /// Beside a music folder named by the backup: a folder of that name exists on this device.
+  ///
+  /// In en, this message translates to:
+  /// **'Found on this device'**
+  String get restoreFolderFound;
+
+  /// Beside a music folder named by the backup: no folder of that name exists on this device.
+  ///
+  /// In en, this message translates to:
+  /// **'Not found'**
+  String get restoreFolderNotFound;
+
+  /// Heading of the list of music folders this device's library is built from, at the first stage of a restore.
+  ///
+  /// In en, this message translates to:
+  /// **'Music folders on this device'**
+  String get restoreDeviceFolders;
+
+  /// Shown under the heading of this device's music folders when it has none.
+  ///
+  /// In en, this message translates to:
+  /// **'None yet'**
+  String get restoreDeviceFoldersNone;
+
+  /// Shown at the first stage of a restore when the music folders listed are not yet this device's: they are applied when the owner continues.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes when you continue'**
+  String get restoreFoldersStaged;
+
+  /// The tooltip of the button that takes a folder out of the set of music folders chosen at the first stage of a restore.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {folder}'**
+  String restoreRemoveFolder(String folder);
+
+  /// The button at the first stage of a restore that opens the folder chooser, to add a music folder to the set.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose folders…'**
+  String get restoreChooseFolders;
+
+  /// A note at the first stage of a restore: continuing applies the folders at once, and cancelling afterwards does not undo that.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue changes your music folders now and scans your library. If you cancel later, the folders stay as you set them.'**
+  String get restoreFoldersNote;
+
+  /// The button that leaves the first stage of a restore: applies the music folders, scans the library and moves on.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get restoreContinue;
+
+  /// Shown while a restore scans the library after the music folders were set.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning your music…'**
+  String get restoreScanning;
+
+  /// The title of the second stage of a restore, where a choice is made for each part.
+  ///
+  /// In en, this message translates to:
+  /// **'What to restore'**
+  String get restoreChoicesTitle;
+
+  /// Heads the summary of what a picked backup holds; the date is when it was made.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup from {date}'**
+  String restoreBackupFrom(String date);
+
+  /// Heads the summary of what a picked file holds when it does not say when it was made.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup'**
+  String get restoreBackupUndated;
+
+  /// In the summary of what a picked backup holds: how many playlists.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 playlist} other{{count} playlists}}'**
+  String restoreHoldsPlaylists(int count);
+
+  /// In the summary of what a picked backup holds: for how many songs it has play counts.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 song with plays} other{{count} songs with plays}}'**
+  String restoreHoldsSongs(int count);
+
+  /// In the summary of what a picked backup holds: how many playlist cover pictures.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No playlist covers} =1{1 playlist cover} other{{count} playlist covers}}'**
+  String restoreHoldsCovers(int count);
+
+  /// In the summary of what a picked backup holds: it carries the preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences included'**
+  String get restoreHoldsPreferences;
+
+  /// In the summary of what a picked file holds: it carries no preferences, as an exported data JSON does not.
+  ///
+  /// In en, this message translates to:
+  /// **'No preferences'**
+  String get restoreHoldsNoPreferences;
+
+  /// The name of the playlists part of a restore, with its covers.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlists'**
+  String get restorePartPlaylists;
+
+  /// The name of the play history part of a restore, which the statistics follow.
+  ///
+  /// In en, this message translates to:
+  /// **'Play history'**
+  String get restorePartHistory;
+
+  /// The name of the preferences part of a restore, apart from the music folders.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get restorePartPreferences;
+
+  /// A choice for a part of a restore: keep what is here and add what the backup has that is not.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get restoreMerge;
+
+  /// A choice for a part of a restore: keep what is here and add only what is wholly new.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get restoreSkip;
+
+  /// A choice for a part of a restore: put the backup's in place of what is here.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get restoreReplace;
+
+  /// What Merge does to the playlists, one line under the choices.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds the backup\'s playlists that aren\'t here, and the songs your same-named ones lack.'**
+  String get restorePlaylistsMerge;
+
+  /// What Skip does to the playlists, one line under the choices.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds only the backup\'s playlists whose name isn\'t here.'**
+  String get restorePlaylistsSkip;
+
+  /// What Replace does to the playlists, one line under the choices.
+  ///
+  /// In en, this message translates to:
+  /// **'Removes your playlists and uses the backup\'s, covers included.'**
+  String get restorePlaylistsReplace;
+
+  /// What Merge does to the play history, one line under the choices.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps the higher play count and the later date for each song, and adds the rest.'**
+  String get restoreHistoryMerge;
+
+  /// What Skip does to the play history, one line under the choices.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds only songs with no play history here.'**
+  String get restoreHistorySkip;
+
+  /// What Replace does to the play history, one line under the choices.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaces your play history with the backup\'s.'**
+  String get restoreHistoryReplace;
+
+  /// What Merge does to the preferences, one line under the choices.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies the backup\'s settings only where yours are still the default.'**
+  String get restorePreferencesMerge;
+
+  /// What Skip does to the preferences, one line under the choices.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes none of your settings.'**
+  String get restorePreferencesSkip;
+
+  /// What Replace does to the preferences, one line under the choices.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies all of the backup\'s settings, volume and language included.'**
+  String get restorePreferencesReplace;
+
+  /// Shown on a part of a restore that cannot be chosen because the backup could not read it when it was made.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in this backup'**
+  String get restoreNotInBackup;
+
+  /// Shown on a part of a restore that cannot be chosen because the picked file carries none of it.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in this file'**
+  String get restoreNotInFile;
+
+  /// The warning under Replace on the playlists: how many playlists it removes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{You have no playlists to replace} =1{Replaces your 1 playlist} other{Replaces your {count} playlists}}'**
+  String restoreReplacePlaylists(int count);
+
+  /// The warning under Replace on the play history: for how many songs the counts here are replaced.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{You have no play counts to replace} =1{Replaces play counts for 1 song} other{Replaces play counts for {count} songs}}'**
+  String restoreReplaceHistory(int count);
+
+  /// The warning under Replace on the preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaces all your settings with the backup\'s'**
+  String get restoreReplacePreferences;
+
+  /// Shown on the playlists part of a restore when the playlists on this device cannot be read, so they are never written over.
+  ///
+  /// In en, this message translates to:
+  /// **'Your playlists couldn\'t be read here, so this part won\'t be restored.'**
+  String get restoreUnreadablePlaylists;
+
+  /// Shown on the play history part of a restore when the history on this device cannot be read, so it is never written over.
+  ///
+  /// In en, this message translates to:
+  /// **'Your play history couldn\'t be read here, so this part won\'t be restored.'**
+  String get restoreUnreadableHistory;
+
+  /// A note at the second stage of a restore, shown when the first stage changed the music folders: cancelling does not put them back.
+  ///
+  /// In en, this message translates to:
+  /// **'Your music folders were changed in the last step. Cancelling keeps your music folders as they are now.'**
+  String get restoreFoldersKept;
+
+  /// The button that writes the chosen parts of a restore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get restoreRestore;
+
+  /// Shown while the parts of a restore are being written.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring…'**
+  String get restoreRestoring;
+
+  /// The title of the summary shown when a restore is over.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore finished'**
+  String get restoreDoneTitle;
+
+  /// Heading of the lines of the restore summary that say what was restored.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored'**
+  String get restoreDoneRestored;
+
+  /// Heading of the lines of the restore summary that say which parts were not restored, and why.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t restore'**
+  String get restoreDoneRefused;
+
+  /// A line of the restore summary: playlists the backup added, and playlists here it added songs or a cover to.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlists: {added} added, {merged} merged'**
+  String restoreDonePlaylists(int added, int merged);
+
+  /// A line of the restore summary for a Replace of the playlists: how many were removed and how many the backup put in their place.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlists: replaced your {replaced} with {added} from the backup'**
+  String restoreDonePlaylistsReplaced(int replaced, int added);
+
+  /// A line of the restore summary: the playlists part ran and had nothing to change.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlists: nothing to add'**
+  String get restoreDonePlaylistsNothing;
+
+  /// A line of the restore summary: for how many songs the backup's plays were applied.
+  ///
+  /// In en, this message translates to:
+  /// **'Play history for {songs, plural, =1{1 song} other{{songs} songs}}'**
+  String restoreDoneHistory(int songs);
+
+  /// A line of the restore summary: the songs whose plays were applied, and how many of them the library does not hold, which wait for the file to turn up.
+  ///
+  /// In en, this message translates to:
+  /// **'Play history for {songs, plural, =1{1 song} other{{songs} songs}} ({missing} not in your library)'**
+  String restoreDoneHistoryMissing(int songs, int missing);
+
+  /// A line of the restore summary: the play history part ran and had nothing to change.
+  ///
+  /// In en, this message translates to:
+  /// **'Play history: no songs to add'**
+  String get restoreDoneHistoryNothing;
+
+  /// A line of the restore summary: some preferences changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences applied'**
+  String get restoreDonePreferences;
+
+  /// A line of the restore summary: the preferences part ran and no value differed.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences: nothing to change'**
+  String get restoreDonePreferencesNone;
+
+  /// A line of the restore summary: a preference was applied but could not be written to disk.
+  ///
+  /// In en, this message translates to:
+  /// **'Some preferences couldn\'t be saved and last only until Orpheus closes'**
+  String get restoreDonePreferencesUnsaved;
+
+  /// A line of the restore summary: playlists restored whose cover picture could not be written; their names follow.
+  ///
+  /// In en, this message translates to:
+  /// **'These playlists are back, but their cover pictures couldn\'t be saved: {names}'**
+  String restoreDoneCoverFailures(String names);
+
+  /// A line of the restore summary naming a part that was not restored and why.
+  ///
+  /// In en, this message translates to:
+  /// **'{part}: {reason}'**
+  String restoreRefusedLine(String part, String reason);
+
+  /// Why a part was not restored: the backup could not read it when it was made.
+  ///
+  /// In en, this message translates to:
+  /// **'the backup couldn\'t read this part when it was made'**
+  String get restoreReasonNotInBackup;
+
+  /// Why a part was not restored: the picked file carries none of it.
+  ///
+  /// In en, this message translates to:
+  /// **'this file doesn\'t have this part'**
+  String get restoreReasonNotInFile;
+
+  /// Why a part was not restored: what this device holds of it could not be read, and is not written over.
+  ///
+  /// In en, this message translates to:
+  /// **'this part couldn\'t be read here, so it was left alone'**
+  String get restoreReasonUnreadableHere;
+
+  /// Why a part was not restored: writing it failed and what was there is as it was.
+  ///
+  /// In en, this message translates to:
+  /// **'this part couldn\'t be saved, so nothing of it changed'**
+  String get restoreReasonNotWritten;
 }
 
 class _AppLocalizationsDelegate

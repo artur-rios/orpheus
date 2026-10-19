@@ -5,6 +5,7 @@ import '../../../core/theme/app_spacing.dart';
 import 'about_exports_dialog.dart';
 import 'backup_tile.dart';
 import 'export_data_tile.dart';
+import 'restore_tile.dart';
 
 /// The *Your data* section of the Preferences: the two ways out of Orpheus,
 /// each saying in a line what it is for, and the link that compares them.
@@ -35,6 +36,7 @@ class YourDataSection extends StatelessWidget {
         ),
         const ExportDataTile(),
         const BackupTile(),
+        const RestoreTile(),
         Align(
           alignment: AlignmentDirectional.centerStart,
           child: TextButton(

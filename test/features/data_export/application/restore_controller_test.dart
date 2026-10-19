@@ -360,6 +360,68 @@ void main() {
       },
     );
 
+    test(
+      'GivenADeviceWithNoFolders_WhenAZipIsPicked_ThenTheBackupFoldersThatExistHereAreStaged',
+      () async {
+        final harness = build(
+          folders: const [],
+          existing: {'/music'},
+          deviceLibrary: false,
+        );
+        harness.fileOpener.next = zip(
+          preferences: const PreferencesSnapshot(
+            themeMode: 'light',
+            locale: null,
+            opensPlayerOnPlay: true,
+            rescansAtStartup: true,
+            fetchesLyricsOnline: true,
+            checksForUpdatesOnStartup: true,
+            showsAutoPlaylists: true,
+            volume: 1,
+            libraryFolders: ['/old/Music', '/music'],
+          ),
+        );
+        final controller = restorer(harness);
+
+        await controller.pick();
+
+        expect(stateOf(harness).stagedFolders, ['/music']);
+        // Staged, not written.
+        expect(harness.settings.libraryFolders, isEmpty);
+
+        await controller.continueToChoices();
+
+        expect(harness.read(libraryFoldersControllerProvider), ['/music']);
+        expect(scannerOf(harness).requests, [
+          ['/music'],
+        ]);
+      },
+    );
+
+    test(
+      'GivenADeviceWithFolders_WhenAZipIsPicked_ThenNothingIsStaged',
+      () async {
+        final harness = build(existing: {'/music'});
+        harness.fileOpener.next = zip();
+
+        await restorer(harness).pick();
+
+        expect(stateOf(harness).stagedFolders, isNull);
+      },
+    );
+
+    test(
+      'GivenADeviceWithNoFoldersAndNoneOfTheBackupsHere_WhenAZipIsPicked_ThenNothingIsStaged',
+      () async {
+        final harness = build(folders: const [], existing: const {});
+        harness.fileOpener.next = zip();
+
+        await restorer(harness).pick();
+
+        expect(stateOf(harness).stagedFolders, isNull);
+      },
+    );
+
     test('GivenNoFoldersChosenAndALibrary_WhenContinuing_ThenItMovesOnWithoutAScan', () async {
       final harness = build();
       harness.fileOpener.next = zip();

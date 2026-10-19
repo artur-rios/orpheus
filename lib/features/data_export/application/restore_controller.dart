@@ -406,15 +406,28 @@ class RestoreController extends Notifier<RestoreState> {
     _backup = backup;
     final overview = BackupOverview.of(backup);
     final exists = ref.read(folderExistsProvider);
+    final backupFolders = [
+      for (final folder
+          in backup.preferences?.libraryFolders ?? const <String>[])
+        FolderStatus(path: folder, found: exists(folder)),
+    ];
+    final deviceFolders = ref.read(libraryFoldersControllerProvider);
+    // A device with no music folders has no library to match the backup's
+    // songs against, so the backup's folders that are here are staged for it:
+    // *Continue* without choosing still gives the restore something to match.
+    // Staged is not applied; the owner sees the set, and can change it.
+    final here = [
+      for (final folder in backupFolders)
+        if (folder.found) folder.path,
+    ];
     state = RestoreState(
       stage: backup.isFullBackup ? RestoreStage.folders : RestoreStage.reading,
       overview: overview,
-      backupFolders: [
-        for (final folder
-            in backup.preferences?.libraryFolders ?? const <String>[])
-          FolderStatus(path: folder, found: exists(folder)),
-      ],
-      deviceFolders: ref.read(libraryFoldersControllerProvider),
+      backupFolders: backupFolders,
+      deviceFolders: deviceFolders,
+      stagedFolders: deviceFolders.isEmpty && here.isNotEmpty
+          ? List.unmodifiable(here)
+          : null,
     );
     if (!backup.isFullBackup) await _toChoices(session, foldersChanged: false);
   }

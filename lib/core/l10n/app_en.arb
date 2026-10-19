@@ -1601,5 +1601,362 @@
   "backupAboutNotIncluded": "Not included",
   "@backupAboutNotIncluded": {
     "description": "Read aloud for a dash in the comparison of the two exports: the export does not hold this."
+  },
+  "restoreAction": "Restore from a backup…",
+  "@restoreAction": {
+    "description": "The preferences entry that restores Orpheus from a backup ZIP or an exported JSON the owner picks."
+  },
+  "restoreExplanation": "Bring back playlists, play history and preferences from a backup ZIP or an exported JSON.",
+  "@restoreExplanation": {
+    "description": "The one-line explanation under the Restore from a backup entry in the preferences: what a restore brings back."
+  },
+  "restoreTitle": "Restore from a backup",
+  "@restoreTitle": {
+    "description": "The title of the restore screen when the picked file could not be restored."
+  },
+  "restoreFailedNotABackup": "This isn't an Orpheus backup",
+  "@restoreFailedNotABackup": {
+    "description": "Shown on the restore screen when the picked file is not an Orpheus backup or exported data file; nothing was changed."
+  },
+  "restoreFailedNewer": "This backup is from a newer Orpheus — update first",
+  "@restoreFailedNewer": {
+    "description": "Shown on the restore screen when the picked file was made by a newer version of Orpheus than the one running."
+  },
+  "restoreFoldersTitle": "Your music",
+  "@restoreFoldersTitle": {
+    "description": "The title of the first stage of a restore, which is about where the music is on this device."
+  },
+  "restoreFoldersIntro": "The songs in a backup are matched against your library, so your music needs to be where Orpheus looks for it.",
+  "@restoreFoldersIntro": {
+    "description": "Explains, at the first stage of a restore, why the music folders come first."
+  },
+  "restoreBackupFolders": "Folders in the backup",
+  "@restoreBackupFolders": {
+    "description": "Heading of the list of music folders the backup was made with, at the first stage of a restore."
+  },
+  "restoreBackupFoldersNone": "The backup doesn't name any folders.",
+  "@restoreBackupFoldersNone": {
+    "description": "Shown at the first stage of a restore when the backup lists no music folders."
+  },
+  "restoreFolderFound": "Found on this device",
+  "@restoreFolderFound": {
+    "description": "Beside a music folder named by the backup: a folder of that name exists on this device."
+  },
+  "restoreFolderNotFound": "Not found",
+  "@restoreFolderNotFound": {
+    "description": "Beside a music folder named by the backup: no folder of that name exists on this device."
+  },
+  "restoreDeviceFolders": "Music folders on this device",
+  "@restoreDeviceFolders": {
+    "description": "Heading of the list of music folders this device's library is built from, at the first stage of a restore."
+  },
+  "restoreDeviceFoldersNone": "None yet",
+  "@restoreDeviceFoldersNone": {
+    "description": "Shown under the heading of this device's music folders when it has none."
+  },
+  "restoreFoldersStaged": "Changes when you continue",
+  "@restoreFoldersStaged": {
+    "description": "Shown at the first stage of a restore when the music folders listed are not yet this device's: they are applied when the owner continues."
+  },
+  "restoreRemoveFolder": "Remove {folder}",
+  "@restoreRemoveFolder": {
+    "description": "The tooltip of the button that takes a folder out of the set of music folders chosen at the first stage of a restore.",
+    "placeholders": {
+      "folder": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreChooseFolders": "Choose folders…",
+  "@restoreChooseFolders": {
+    "description": "The button at the first stage of a restore that opens the folder chooser, to add a music folder to the set."
+  },
+  "restoreFoldersNote": "Continue changes your music folders now and scans your library. If you cancel later, the folders stay as you set them.",
+  "@restoreFoldersNote": {
+    "description": "A note at the first stage of a restore: continuing applies the folders at once, and cancelling afterwards does not undo that."
+  },
+  "restoreContinue": "Continue",
+  "@restoreContinue": {
+    "description": "The button that leaves the first stage of a restore: applies the music folders, scans the library and moves on."
+  },
+  "restoreScanning": "Scanning your music…",
+  "@restoreScanning": {
+    "description": "Shown while a restore scans the library after the music folders were set."
+  },
+  "restoreChoicesTitle": "What to restore",
+  "@restoreChoicesTitle": {
+    "description": "The title of the second stage of a restore, where a choice is made for each part."
+  },
+  "restoreBackupFrom": "Backup from {date}",
+  "@restoreBackupFrom": {
+    "description": "Heads the summary of what a picked backup holds; the date is when it was made.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreBackupUndated": "Backup",
+  "@restoreBackupUndated": {
+    "description": "Heads the summary of what a picked file holds when it does not say when it was made."
+  },
+  "restoreHoldsPlaylists": "{count, plural, =1{1 playlist} other{{count} playlists}}",
+  "@restoreHoldsPlaylists": {
+    "description": "In the summary of what a picked backup holds: how many playlists.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreHoldsSongs": "{count, plural, =1{1 song with plays} other{{count} songs with plays}}",
+  "@restoreHoldsSongs": {
+    "description": "In the summary of what a picked backup holds: for how many songs it has play counts.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreHoldsCovers": "{count, plural, =0{No playlist covers} =1{1 playlist cover} other{{count} playlist covers}}",
+  "@restoreHoldsCovers": {
+    "description": "In the summary of what a picked backup holds: how many playlist cover pictures.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreHoldsPreferences": "Preferences included",
+  "@restoreHoldsPreferences": {
+    "description": "In the summary of what a picked backup holds: it carries the preferences."
+  },
+  "restoreHoldsNoPreferences": "No preferences",
+  "@restoreHoldsNoPreferences": {
+    "description": "In the summary of what a picked file holds: it carries no preferences, as an exported data JSON does not."
+  },
+  "restorePartPlaylists": "Playlists",
+  "@restorePartPlaylists": {
+    "description": "The name of the playlists part of a restore, with its covers."
+  },
+  "restorePartHistory": "Play history",
+  "@restorePartHistory": {
+    "description": "The name of the play history part of a restore, which the statistics follow."
+  },
+  "restorePartPreferences": "Preferences",
+  "@restorePartPreferences": {
+    "description": "The name of the preferences part of a restore, apart from the music folders."
+  },
+  "restoreMerge": "Merge",
+  "@restoreMerge": {
+    "description": "A choice for a part of a restore: keep what is here and add what the backup has that is not."
+  },
+  "restoreSkip": "Skip",
+  "@restoreSkip": {
+    "description": "A choice for a part of a restore: keep what is here and add only what is wholly new."
+  },
+  "restoreReplace": "Replace",
+  "@restoreReplace": {
+    "description": "A choice for a part of a restore: put the backup's in place of what is here."
+  },
+  "restorePlaylistsMerge": "Adds the backup's playlists that aren't here, and the songs your same-named ones lack.",
+  "@restorePlaylistsMerge": {
+    "description": "What Merge does to the playlists, one line under the choices."
+  },
+  "restorePlaylistsSkip": "Adds only the backup's playlists whose name isn't here.",
+  "@restorePlaylistsSkip": {
+    "description": "What Skip does to the playlists, one line under the choices."
+  },
+  "restorePlaylistsReplace": "Removes your playlists and uses the backup's, covers included.",
+  "@restorePlaylistsReplace": {
+    "description": "What Replace does to the playlists, one line under the choices."
+  },
+  "restoreHistoryMerge": "Keeps the higher play count and the later date for each song, and adds the rest.",
+  "@restoreHistoryMerge": {
+    "description": "What Merge does to the play history, one line under the choices."
+  },
+  "restoreHistorySkip": "Adds only songs with no play history here.",
+  "@restoreHistorySkip": {
+    "description": "What Skip does to the play history, one line under the choices."
+  },
+  "restoreHistoryReplace": "Replaces your play history with the backup's.",
+  "@restoreHistoryReplace": {
+    "description": "What Replace does to the play history, one line under the choices."
+  },
+  "restorePreferencesMerge": "Applies the backup's settings only where yours are still the default.",
+  "@restorePreferencesMerge": {
+    "description": "What Merge does to the preferences, one line under the choices."
+  },
+  "restorePreferencesSkip": "Changes none of your settings.",
+  "@restorePreferencesSkip": {
+    "description": "What Skip does to the preferences, one line under the choices."
+  },
+  "restorePreferencesReplace": "Applies all of the backup's settings, volume and language included.",
+  "@restorePreferencesReplace": {
+    "description": "What Replace does to the preferences, one line under the choices."
+  },
+  "restoreNotInBackup": "Not in this backup",
+  "@restoreNotInBackup": {
+    "description": "Shown on a part of a restore that cannot be chosen because the backup could not read it when it was made."
+  },
+  "restoreNotInFile": "Not in this file",
+  "@restoreNotInFile": {
+    "description": "Shown on a part of a restore that cannot be chosen because the picked file carries none of it."
+  },
+  "restoreReplacePlaylists": "{count, plural, =0{You have no playlists to replace} =1{Replaces your 1 playlist} other{Replaces your {count} playlists}}",
+  "@restoreReplacePlaylists": {
+    "description": "The warning under Replace on the playlists: how many playlists it removes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreReplaceHistory": "{count, plural, =0{You have no play counts to replace} =1{Replaces play counts for 1 song} other{Replaces play counts for {count} songs}}",
+  "@restoreReplaceHistory": {
+    "description": "The warning under Replace on the play history: for how many songs the counts here are replaced.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreReplacePreferences": "Replaces all your settings with the backup's",
+  "@restoreReplacePreferences": {
+    "description": "The warning under Replace on the preferences."
+  },
+  "restoreUnreadablePlaylists": "Your playlists couldn't be read here, so this part won't be restored.",
+  "@restoreUnreadablePlaylists": {
+    "description": "Shown on the playlists part of a restore when the playlists on this device cannot be read, so they are never written over."
+  },
+  "restoreUnreadableHistory": "Your play history couldn't be read here, so this part won't be restored.",
+  "@restoreUnreadableHistory": {
+    "description": "Shown on the play history part of a restore when the history on this device cannot be read, so it is never written over."
+  },
+  "restoreFoldersKept": "Your music folders were changed in the last step. Cancelling keeps your music folders as they are now.",
+  "@restoreFoldersKept": {
+    "description": "A note at the second stage of a restore, shown when the first stage changed the music folders: cancelling does not put them back."
+  },
+  "restoreRestore": "Restore",
+  "@restoreRestore": {
+    "description": "The button that writes the chosen parts of a restore."
+  },
+  "restoreRestoring": "Restoring…",
+  "@restoreRestoring": {
+    "description": "Shown while the parts of a restore are being written."
+  },
+  "restoreDoneTitle": "Restore finished",
+  "@restoreDoneTitle": {
+    "description": "The title of the summary shown when a restore is over."
+  },
+  "restoreDoneRestored": "Restored",
+  "@restoreDoneRestored": {
+    "description": "Heading of the lines of the restore summary that say what was restored."
+  },
+  "restoreDoneRefused": "Couldn't restore",
+  "@restoreDoneRefused": {
+    "description": "Heading of the lines of the restore summary that say which parts were not restored, and why."
+  },
+  "restoreDonePlaylists": "Playlists: {added} added, {merged} merged",
+  "@restoreDonePlaylists": {
+    "description": "A line of the restore summary: playlists the backup added, and playlists here it added songs or a cover to.",
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "merged": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreDonePlaylistsReplaced": "Playlists: replaced your {replaced} with {added} from the backup",
+  "@restoreDonePlaylistsReplaced": {
+    "description": "A line of the restore summary for a Replace of the playlists: how many were removed and how many the backup put in their place.",
+    "placeholders": {
+      "replaced": {
+        "type": "int"
+      },
+      "added": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreDonePlaylistsNothing": "Playlists: nothing to add",
+  "@restoreDonePlaylistsNothing": {
+    "description": "A line of the restore summary: the playlists part ran and had nothing to change."
+  },
+  "restoreDoneHistory": "Play history for {songs, plural, =1{1 song} other{{songs} songs}}",
+  "@restoreDoneHistory": {
+    "description": "A line of the restore summary: for how many songs the backup's plays were applied.",
+    "placeholders": {
+      "songs": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreDoneHistoryMissing": "Play history for {songs, plural, =1{1 song} other{{songs} songs}} ({missing} not in your library)",
+  "@restoreDoneHistoryMissing": {
+    "description": "A line of the restore summary: the songs whose plays were applied, and how many of them the library does not hold, which wait for the file to turn up.",
+    "placeholders": {
+      "songs": {
+        "type": "int"
+      },
+      "missing": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreDoneHistoryNothing": "Play history: no songs to add",
+  "@restoreDoneHistoryNothing": {
+    "description": "A line of the restore summary: the play history part ran and had nothing to change."
+  },
+  "restoreDonePreferences": "Preferences applied",
+  "@restoreDonePreferences": {
+    "description": "A line of the restore summary: some preferences changed."
+  },
+  "restoreDonePreferencesNone": "Preferences: nothing to change",
+  "@restoreDonePreferencesNone": {
+    "description": "A line of the restore summary: the preferences part ran and no value differed."
+  },
+  "restoreDonePreferencesUnsaved": "Some preferences couldn't be saved and last only until Orpheus closes",
+  "@restoreDonePreferencesUnsaved": {
+    "description": "A line of the restore summary: a preference was applied but could not be written to disk."
+  },
+  "restoreDoneCoverFailures": "These playlists are back, but their cover pictures couldn't be saved: {names}",
+  "@restoreDoneCoverFailures": {
+    "description": "A line of the restore summary: playlists restored whose cover picture could not be written; their names follow.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreRefusedLine": "{part}: {reason}",
+  "@restoreRefusedLine": {
+    "description": "A line of the restore summary naming a part that was not restored and why.",
+    "placeholders": {
+      "part": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreReasonNotInBackup": "the backup couldn't read this part when it was made",
+  "@restoreReasonNotInBackup": {
+    "description": "Why a part was not restored: the backup could not read it when it was made."
+  },
+  "restoreReasonNotInFile": "this file doesn't have this part",
+  "@restoreReasonNotInFile": {
+    "description": "Why a part was not restored: the picked file carries none of it."
+  },
+  "restoreReasonUnreadableHere": "this part couldn't be read here, so it was left alone",
+  "@restoreReasonUnreadableHere": {
+    "description": "Why a part was not restored: what this device holds of it could not be read, and is not written over."
+  },
+  "restoreReasonNotWritten": "this part couldn't be saved, so nothing of it changed",
+  "@restoreReasonNotWritten": {
+    "description": "Why a part was not restored: writing it failed and what was there is as it was."
   }
 }

@@ -1272,4 +1272,305 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupAboutNotIncluded => 'Not included';
+
+  @override
+  String get restoreAction => 'Restore from a backup…';
+
+  @override
+  String get restoreExplanation =>
+      'Bring back playlists, play history and preferences from a backup ZIP or an exported JSON.';
+
+  @override
+  String get restoreTitle => 'Restore from a backup';
+
+  @override
+  String get restoreFailedNotABackup => 'This isn\'t an Orpheus backup';
+
+  @override
+  String get restoreFailedNewer =>
+      'This backup is from a newer Orpheus — update first';
+
+  @override
+  String get restoreFoldersTitle => 'Your music';
+
+  @override
+  String get restoreFoldersIntro =>
+      'The songs in a backup are matched against your library, so your music needs to be where Orpheus looks for it.';
+
+  @override
+  String get restoreBackupFolders => 'Folders in the backup';
+
+  @override
+  String get restoreBackupFoldersNone =>
+      'The backup doesn\'t name any folders.';
+
+  @override
+  String get restoreFolderFound => 'Found on this device';
+
+  @override
+  String get restoreFolderNotFound => 'Not found';
+
+  @override
+  String get restoreDeviceFolders => 'Music folders on this device';
+
+  @override
+  String get restoreDeviceFoldersNone => 'None yet';
+
+  @override
+  String get restoreFoldersStaged => 'Changes when you continue';
+
+  @override
+  String restoreRemoveFolder(String folder) {
+    return 'Remove $folder';
+  }
+
+  @override
+  String get restoreChooseFolders => 'Choose folders…';
+
+  @override
+  String get restoreFoldersNote =>
+      'Continue changes your music folders now and scans your library. If you cancel later, the folders stay as you set them.';
+
+  @override
+  String get restoreContinue => 'Continue';
+
+  @override
+  String get restoreScanning => 'Scanning your music…';
+
+  @override
+  String get restoreChoicesTitle => 'What to restore';
+
+  @override
+  String restoreBackupFrom(String date) {
+    return 'Backup from $date';
+  }
+
+  @override
+  String get restoreBackupUndated => 'Backup';
+
+  @override
+  String restoreHoldsPlaylists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count playlists',
+      one: '1 playlist',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreHoldsSongs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count songs with plays',
+      one: '1 song with plays',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreHoldsCovers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count playlist covers',
+      one: '1 playlist cover',
+      zero: 'No playlist covers',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get restoreHoldsPreferences => 'Preferences included';
+
+  @override
+  String get restoreHoldsNoPreferences => 'No preferences';
+
+  @override
+  String get restorePartPlaylists => 'Playlists';
+
+  @override
+  String get restorePartHistory => 'Play history';
+
+  @override
+  String get restorePartPreferences => 'Preferences';
+
+  @override
+  String get restoreMerge => 'Merge';
+
+  @override
+  String get restoreSkip => 'Skip';
+
+  @override
+  String get restoreReplace => 'Replace';
+
+  @override
+  String get restorePlaylistsMerge =>
+      'Adds the backup\'s playlists that aren\'t here, and the songs your same-named ones lack.';
+
+  @override
+  String get restorePlaylistsSkip =>
+      'Adds only the backup\'s playlists whose name isn\'t here.';
+
+  @override
+  String get restorePlaylistsReplace =>
+      'Removes your playlists and uses the backup\'s, covers included.';
+
+  @override
+  String get restoreHistoryMerge =>
+      'Keeps the higher play count and the later date for each song, and adds the rest.';
+
+  @override
+  String get restoreHistorySkip => 'Adds only songs with no play history here.';
+
+  @override
+  String get restoreHistoryReplace =>
+      'Replaces your play history with the backup\'s.';
+
+  @override
+  String get restorePreferencesMerge =>
+      'Applies the backup\'s settings only where yours are still the default.';
+
+  @override
+  String get restorePreferencesSkip => 'Changes none of your settings.';
+
+  @override
+  String get restorePreferencesReplace =>
+      'Applies all of the backup\'s settings, volume and language included.';
+
+  @override
+  String get restoreNotInBackup => 'Not in this backup';
+
+  @override
+  String get restoreNotInFile => 'Not in this file';
+
+  @override
+  String restoreReplacePlaylists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Replaces your $count playlists',
+      one: 'Replaces your 1 playlist',
+      zero: 'You have no playlists to replace',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreReplaceHistory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Replaces play counts for $count songs',
+      one: 'Replaces play counts for 1 song',
+      zero: 'You have no play counts to replace',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get restoreReplacePreferences =>
+      'Replaces all your settings with the backup\'s';
+
+  @override
+  String get restoreUnreadablePlaylists =>
+      'Your playlists couldn\'t be read here, so this part won\'t be restored.';
+
+  @override
+  String get restoreUnreadableHistory =>
+      'Your play history couldn\'t be read here, so this part won\'t be restored.';
+
+  @override
+  String get restoreFoldersKept =>
+      'Your music folders were changed in the last step. Cancelling keeps your music folders as they are now.';
+
+  @override
+  String get restoreRestore => 'Restore';
+
+  @override
+  String get restoreRestoring => 'Restoring…';
+
+  @override
+  String get restoreDoneTitle => 'Restore finished';
+
+  @override
+  String get restoreDoneRestored => 'Restored';
+
+  @override
+  String get restoreDoneRefused => 'Couldn\'t restore';
+
+  @override
+  String restoreDonePlaylists(int added, int merged) {
+    return 'Playlists: $added added, $merged merged';
+  }
+
+  @override
+  String restoreDonePlaylistsReplaced(int replaced, int added) {
+    return 'Playlists: replaced your $replaced with $added from the backup';
+  }
+
+  @override
+  String get restoreDonePlaylistsNothing => 'Playlists: nothing to add';
+
+  @override
+  String restoreDoneHistory(int songs) {
+    String _temp0 = intl.Intl.pluralLogic(
+      songs,
+      locale: localeName,
+      other: '$songs songs',
+      one: '1 song',
+    );
+    return 'Play history for $_temp0';
+  }
+
+  @override
+  String restoreDoneHistoryMissing(int songs, int missing) {
+    String _temp0 = intl.Intl.pluralLogic(
+      songs,
+      locale: localeName,
+      other: '$songs songs',
+      one: '1 song',
+    );
+    return 'Play history for $_temp0 ($missing not in your library)';
+  }
+
+  @override
+  String get restoreDoneHistoryNothing => 'Play history: no songs to add';
+
+  @override
+  String get restoreDonePreferences => 'Preferences applied';
+
+  @override
+  String get restoreDonePreferencesNone => 'Preferences: nothing to change';
+
+  @override
+  String get restoreDonePreferencesUnsaved =>
+      'Some preferences couldn\'t be saved and last only until Orpheus closes';
+
+  @override
+  String restoreDoneCoverFailures(String names) {
+    return 'These playlists are back, but their cover pictures couldn\'t be saved: $names';
+  }
+
+  @override
+  String restoreRefusedLine(String part, String reason) {
+    return '$part: $reason';
+  }
+
+  @override
+  String get restoreReasonNotInBackup =>
+      'the backup couldn\'t read this part when it was made';
+
+  @override
+  String get restoreReasonNotInFile => 'this file doesn\'t have this part';
+
+  @override
+  String get restoreReasonUnreadableHere =>
+      'this part couldn\'t be read here, so it was left alone';
+
+  @override
+  String get restoreReasonNotWritten =>
+      'this part couldn\'t be saved, so nothing of it changed';
 }
