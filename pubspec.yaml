@@ -37,7 +37,7 @@ dependencies:
   path_provider: ^2.1.6
 
   # The local settings store: library folders, layout, theme, resume positions.
-  shared_preferences: ^2.5.5
+  shared_preferences: ^2.5.6
 
   # The lyrics lookup. `http` rather than a bare `HttpClient` from dart:io for
   # one reason that matters to this project more than convenience: its
