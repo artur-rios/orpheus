@@ -1,6 +1,7 @@
 import 'audio_file.dart';
 import 'genres.dart';
 import 'music_entry.dart';
+import 'name_folding.dart';
 
 /// One artist, or one album, and the tracks under it.
 ///
@@ -380,7 +381,14 @@ List<MusicEntry> genreLibrary(String? key, List<MusicEntry> library) {
 List<MusicEntry> inTrackOrder(List<MusicEntry> entries) =>
     [...entries]..sort(_trackComparison);
 
-/// Case-insensitively by name, with an absent name last.
+/// By name, ignoring case and accents, with an absent name last.
+///
+/// Accents are read as the plain letter ([foldAccents]): compared as they are,
+/// *Ângela* and *Édith* would sort after *Zappa*, which is nowhere an owner
+/// would look for them. Two names that differ only by an accent are then put
+/// plain first rather than called a tie, which would leave their order to a
+/// sort that is not stable. Two that differ only by case are still a tie, for
+/// the caller to break as it chooses.
 ///
 /// Absent last rather than first: the untagged files are a chore to work
 /// through, not the first thing an owner came to see.
@@ -389,7 +397,11 @@ int byName(String? left, String? right) {
   if (left == null) return 1;
   if (right == null) return -1;
 
-  return left.toLowerCase().compareTo(right.toLowerCase());
+  final lowerLeft = left.toLowerCase();
+  final lowerRight = right.toLowerCase();
+  final folded = foldAccents(lowerLeft).compareTo(foldAccents(lowerRight));
+
+  return folded != 0 ? folded : lowerLeft.compareTo(lowerRight);
 }
 
 /// [entries] again, each told who the record it belongs to is by.

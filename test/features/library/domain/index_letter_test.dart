@@ -52,8 +52,8 @@ void main() {
     });
 
     test('GivenALetterThatReturnsLaterInTheList_WhenTheyAreIndexed_ThenItsFirstAppearanceWins', () {
-      // An accented name sorts after Z, but the letter still leads to the
-      // block of names the owner sees at E.
+      // A name out of order further down does not move the letter away from
+      // the block of names the owner sees at E.
       final starts = firstIndexByLetter(['Eagles', 'Zappa', 'Édith Piaf']);
 
       expect(starts['E'], 0);
