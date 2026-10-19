@@ -158,6 +158,45 @@ class PlaylistsController extends AsyncNotifier<List<Playlist>> {
     await _deleteCover(playlistId);
   });
 
+  /// Puts [playlists] in place of every playlist there is, and gives each
+  /// playlist in [covers] its picture: what a restore from a backup writes.
+  ///
+  /// The list is one write, so it lands whole or not at all; only once it is
+  /// stored are the pictures written, each under its playlist's id. A picture
+  /// is only a picture: one that cannot be stored leaves its playlist as it is,
+  /// and its id is in what this answers, so the owner can be told. The covers
+  /// of the playlists no longer in the list are deleted after, as [delete]
+  /// deletes one.
+  ///
+  /// Throws a [StateError] while the stored playlists could not be read, and
+  /// whatever the store throws when the list could not be written; nothing
+  /// changes either way.
+  Future<Set<String>> replaceAll(
+    List<Playlist> playlists,
+    Map<String, Uint8List> covers,
+  ) => _serialised(() async {
+    final before = await _loaded();
+    await _commit([...playlists]);
+
+    final store = ref.read(playlistCoverStoreProvider);
+    final failed = <String>{};
+    for (final MapEntry(key: playlistId, value: bytes) in covers.entries) {
+      try {
+        await store.put(playlistId, bytes);
+      } on Object catch (error) {
+        _log.warning('Could not store the cover of $playlistId: $error');
+        failed.add(playlistId);
+      }
+    }
+
+    final kept = {for (final playlist in playlists) playlist.id};
+    for (final playlist in before) {
+      if (!kept.contains(playlist.id)) await _deleteCover(playlist.id);
+    }
+
+    return failed;
+  });
+
   /// Offers [playlist] to the owner as `<name>.m3u` and saves it where they
   /// say.
   ///

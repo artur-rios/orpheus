@@ -19,6 +19,7 @@ import 'package:orpheus/features/updates/application/update_controller.dart';
 import 'package:orpheus/features/updates/domain/app_version.dart';
 
 import 'fake_autofill.dart';
+import 'fake_file_opener.dart';
 import 'fake_media_player.dart';
 import 'fake_media_session.dart';
 import 'fake_playlists.dart';
@@ -61,6 +62,8 @@ class Harness {
     FakeCoverPicker? coverPicker,
     List<Playlist> playlists = const [],
     FakeFileSaver? fileSaver,
+    FakeFileOpener? fileOpener,
+    Set<String>? existingFolders,
     String Function()? idGenerator,
   }) : player = FakeMediaPlayer(),
        storyShare = storyShare ?? RecordingStoryShare(),
@@ -84,6 +87,8 @@ class Harness {
        playlistStore = FakePlaylistStore(playlists),
        playlistCovers = FakePlaylistCoverStore(),
        fileSaver = fileSaver ?? FakeFileSaver(),
+       fileOpener = fileOpener ?? FakeFileOpener(),
+       existingFolders = existingFolders ?? {},
        access = access ?? FakeLibraryAccess(),
        picker = picker ?? FakeFolderPicker(),
        platform = platform ?? const FakeHostPlatform(),
@@ -116,6 +121,16 @@ class Harness {
         playlistStoreProvider.overrideWithValue(playlistStore),
         playlistCoverStoreProvider.overrideWithValue(playlistCovers),
         fileSaverProvider.overrideWithValue(this.fileSaver),
+        fileOpenerProvider.overrideWithValue(this.fileOpener),
+        // Asked of a set rather than of the disk: no test looks at the
+        // developer's own folders.
+        folderExistsProvider.overrideWithValue(
+          (folder) => this.existingFolders.contains(folder),
+        ),
+        // Read where the test is, for the reason the encoders below are.
+        backupReaderProvider.overrideWithValue(
+          (bytes) async => readBackup(bytes),
+        ),
         // Built where the test is, not on another isolate: a widget test runs
         // on fake time, which a real isolate's answer would never reach.
         dataExportEncoderProvider.overrideWithValue(
@@ -243,6 +258,12 @@ class Harness {
 
   /// Where an exported playlist went, in place of the owner's disk.
   final FakeFileSaver fileSaver;
+
+  /// The file a restore is read from, in place of the platform's dialog.
+  final FakeFileOpener fileOpener;
+
+  /// The folders that exist on this pretend device.
+  final Set<String> existingFolders;
 
   /// The preferences, in memory.
   final SettingsStore settings;

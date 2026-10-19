@@ -191,6 +191,105 @@ void main() {
     },
   );
 
+  group('replaceHistory', () {
+    final restored = PlayHistory(
+      tracks: {
+        '/library/r.flac': TrackPlays(
+          path: '/library/r.flac',
+          plays: 9,
+          lastPlayedAt: DateTime.utc(2026, 9, 1),
+        ),
+      },
+    );
+
+    test(
+      'GivenAHistory_WhenItIsReplaced_ThenItIsWrittenOnceHeldAndHeard',
+      () async {
+        final store = InMemoryPlayHistoryStore();
+        final recorder = recorderOver(store);
+        final heard = <PlayHistory>[];
+        final subscription = recorder.changes.listen(heard.add);
+        addTearDown(subscription.cancel);
+        await recorder.record('/library/a.flac');
+        final writesBefore = store.writes;
+
+        await recorder.replaceHistory(restored);
+        await pumpEventQueue();
+
+        expect(store.writes, writesBefore + 1);
+        expect(store.history, same(restored));
+        expect(await recorder.current(), same(restored));
+        expect(heard.last, same(restored));
+      },
+    );
+
+    test(
+      'GivenAPlayStartedFirst_WhenTheHistoryIsReplaced_ThenTheReplacementIsWrittenAfterIt',
+      () async {
+        final store = InMemoryPlayHistoryStore();
+        final recorder = recorderOver(store);
+
+        await Future.wait([
+          recorder.record('/library/a.flac'),
+          recorder.replaceHistory(restored),
+        ]);
+
+        expect(store.history, same(restored));
+      },
+    );
+
+    test(
+      'GivenAStoreThatCannotBeRead_WhenTheHistoryIsReplaced_ThenItThrowsAndWritesNothing',
+      () async {
+        final store = _UnreadableStore();
+        final recorder = PlayRecorder(store: store, clock: () => now);
+        final heard = <PlayHistory>[];
+        final subscription = recorder.changes.listen(heard.add);
+        addTearDown(subscription.cancel);
+
+        await expectLater(recorder.replaceHistory(restored), throwsStateError);
+        await pumpEventQueue();
+
+        expect(store.writes, 0);
+        expect(heard, isEmpty);
+        expect((await recorder.current()).isEmpty, isTrue);
+      },
+    );
+
+    test(
+      'GivenAStoreThatWillNotWrite_WhenTheHistoryIsReplaced_ThenItThrowsAndTheHeldHistoryStays',
+      () async {
+        final recorder = PlayRecorder(
+          store: _RefusingStore(),
+          clock: () => now,
+        );
+        final heard = <PlayHistory>[];
+        final subscription = recorder.changes.listen(heard.add);
+        addTearDown(subscription.cancel);
+
+        await expectLater(recorder.replaceHistory(restored), throwsStateError);
+        await pumpEventQueue();
+
+        expect(heard, isEmpty);
+        expect((await recorder.current()).isEmpty, isTrue);
+      },
+    );
+
+    test(
+      'GivenAReplacementThatFailed_WhenAPlayIsRecordedAfter_ThenItIsStillRecorded',
+      () async {
+        final store = _FailingOnceStore();
+        final recorder = PlayRecorder(store: store, clock: () => now);
+        store.failNextWrite = true;
+
+        await expectLater(recorder.replaceHistory(restored), throwsStateError);
+        await recorder.record('/library/a.flac');
+
+        expect(store.history.tracks['/library/a.flac']!.plays, 1);
+      },
+    );
+  });
+
   group('over the history on disk', () {
     late Directory directory;
     late JsonPlayHistoryStore store;
@@ -325,6 +424,26 @@ class _UnreadableStore implements PlayHistoryStore {
   @override
   Future<void> write(PlayHistory history) async {
     writes++;
+  }
+}
+
+/// A store in memory whose next write can be made to fail, once.
+class _FailingOnceStore implements PlayHistoryStore {
+  PlayHistory history = PlayHistory.empty;
+
+  bool failNextWrite = false;
+
+  @override
+  Future<PlayHistory> read() async => history;
+
+  @override
+  Future<void> write(PlayHistory history) async {
+    if (failNextWrite) {
+      failNextWrite = false;
+      throw StateError('the history could not be written');
+    }
+
+    this.history = history;
   }
 }
 

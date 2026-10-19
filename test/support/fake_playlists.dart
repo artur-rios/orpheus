@@ -69,11 +69,18 @@ class FakePlaylistCoverStore implements PlaylistCoverStore {
   /// The ids whose picture cannot be read: [read] throws for them.
   final Set<String> unreadable = {};
 
+  /// The ids whose picture cannot be stored: [put] throws for them.
+  final Set<String> unwritable = {};
+
   /// The ids deleted, in order.
   final List<String> deleted = [];
 
   @override
   Future<void> put(String playlistId, Uint8List bytes) async {
+    if (unwritable.contains(playlistId)) {
+      throw const FileSystemException('disk full');
+    }
+
     covers[playlistId] = bytes;
   }
 

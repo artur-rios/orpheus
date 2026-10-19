@@ -52,6 +52,35 @@ Future<Uint8List> encodeBackupOffTheUiIsolate(
   ),
 );
 
+/// The preferences as the owner has them now, as a backup carries them.
+///
+/// The language is written the way the settings store keeps it (`pt_BR`,
+/// `en`), which is not a language tag with a hyphen; the volume and the
+/// folders are read from the store, which is where playback writes the one
+/// and the library the other.
+PreferencesSnapshot preferencesNow(Ref ref) {
+  final preferences = ref.read(preferencesControllerProvider);
+  final settings = ref.read(settingsStoreProvider);
+  final locale = preferences.locale;
+  final country = locale?.countryCode;
+
+  return PreferencesSnapshot(
+    themeMode: preferences.themeMode.name,
+    locale: locale == null
+        ? null
+        : country == null || country.isEmpty
+        ? locale.languageCode
+        : '${locale.languageCode}_$country',
+    opensPlayerOnPlay: preferences.opensPlayerOnPlay,
+    rescansAtStartup: preferences.rescansAtStartup,
+    fetchesLyricsOnline: preferences.fetchesLyricsOnline,
+    checksForUpdatesOnStartup: preferences.checksForUpdatesOnStartup,
+    showsAutoPlaylists: preferences.showsAutoPlaylists,
+    volume: settings.volume,
+    libraryFolders: settings.libraryFolders,
+  );
+}
+
 /// Backs Orpheus up to a ZIP the owner chooses where to put.
 ///
 /// State is whether a backup is running, which is what the Preferences
@@ -99,7 +128,7 @@ class BackupController extends Notifier<bool> {
       final (:covers, :complete) = await _covers(export);
       final sources = BackupSources(
         export: export,
-        preferences: _preferences(),
+        preferences: preferencesNow(ref),
         covers: covers,
       );
       final bytes = await ref.read(backupEncoderProvider)(sources);
@@ -155,35 +184,6 @@ class BackupController extends Notifier<bool> {
     }
 
     return (covers: covers, complete: complete);
-  }
-
-  /// The preferences as the owner has them now.
-  ///
-  /// The language is written the way the settings store keeps it (`pt_BR`,
-  /// `en`), which is not a language tag with a hyphen; the volume and the
-  /// folders are read from the store, which is where playback writes the one
-  /// and the library the other.
-  PreferencesSnapshot _preferences() {
-    final preferences = ref.read(preferencesControllerProvider);
-    final settings = ref.read(settingsStoreProvider);
-    final locale = preferences.locale;
-    final country = locale?.countryCode;
-
-    return PreferencesSnapshot(
-      themeMode: preferences.themeMode.name,
-      locale: locale == null
-          ? null
-          : country == null || country.isEmpty
-          ? locale.languageCode
-          : '${locale.languageCode}_$country',
-      opensPlayerOnPlay: preferences.opensPlayerOnPlay,
-      rescansAtStartup: preferences.rescansAtStartup,
-      fetchesLyricsOnline: preferences.fetchesLyricsOnline,
-      checksForUpdatesOnStartup: preferences.checksForUpdatesOnStartup,
-      showsAutoPlaylists: preferences.showsAutoPlaylists,
-      volume: settings.volume,
-      libraryFolders: settings.libraryFolders,
-    );
   }
 
   /// `orpheus-backup-<yyyy-MM-dd>.zip`.

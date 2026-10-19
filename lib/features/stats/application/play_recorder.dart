@@ -97,6 +97,39 @@ class PlayRecorder {
     return _writes;
   }
 
+  /// Puts [history] in place of everything recorded: what a restore from a
+  /// backup writes.
+  ///
+  /// Queued with the plays, so a play recorded before it is not written over
+  /// it afterwards, and one recorded after it lands on it. Written first and
+  /// only then held and announced, the other way round from a play: a
+  /// restore reports what it did, and what it reports has to be what is on
+  /// disk.
+  ///
+  /// Unlike a play, this throws — a [StateError] when the history could not
+  /// be read this run, since writing over it would replace a history nobody
+  /// has seen, and whatever the store throws when it cannot write. Either way
+  /// nothing changes. A failure does not hold up the plays behind it.
+  Future<void> replaceHistory(PlayHistory history) {
+    final replaced = _writes.then((_) => _replace(history));
+    _writes = replaced.then((_) {}, onError: (_) {});
+
+    return replaced;
+  }
+
+  Future<void> _replace(PlayHistory history) async {
+    await current();
+    if (_readFailed) {
+      throw StateError(
+        'The play history could not be read, so it is not replaced',
+      );
+    }
+
+    await store.write(history);
+    _loaded = Future<PlayHistory>.value(history);
+    if (!_changes.isClosed) _changes.add(history);
+  }
+
   Future<void> _record(String path) async {
     try {
       final held = await current();

@@ -160,6 +160,20 @@ class PreferencesSnapshot {
   );
 }
 
+/// The preferences of a fresh install: what the settings store answers for
+/// each one never set, and what a restore's *Merge* compares the owner's with.
+const PreferencesSnapshot freshInstallPreferences = PreferencesSnapshot(
+  themeMode: 'system',
+  locale: null,
+  opensPlayerOnPlay: true,
+  rescansAtStartup: true,
+  fetchesLyricsOnline: true,
+  checksForUpdatesOnStartup: true,
+  showsAutoPlaylists: true,
+  volume: 1,
+  libraryFolders: [],
+);
+
 bool _sameStrings(List<String> a, List<String> b) {
   if (a.length != b.length) return false;
   for (var i = 0; i < a.length; i++) {
