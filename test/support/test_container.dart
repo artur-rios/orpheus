@@ -8,16 +8,21 @@ import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
 import 'package:orpheus/core/platform/host_platform.dart';
 import 'package:orpheus/core/settings/settings_store.dart';
+import 'package:orpheus/features/data_export/data/zip_backup_codec.dart';
+import 'package:orpheus/features/data_export/domain/data_export.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/library/domain/music_grouping.dart';
+import 'package:orpheus/features/playlists/domain/playlist.dart';
 import 'package:orpheus/features/updates/application/update_controller.dart';
 import 'package:orpheus/features/updates/domain/app_version.dart';
 
 import 'fake_autofill.dart';
+import 'fake_file_opener.dart';
 import 'fake_media_player.dart';
 import 'fake_media_session.dart';
+import 'fake_playlists.dart';
 import 'fake_story_share.dart';
 import 'fake_tag_editor.dart';
 import 'fake_track_probe.dart';
@@ -55,6 +60,12 @@ class Harness {
     FakeTagWriter? tagWriter,
     FakeFileStamps? stamps,
     FakeCoverPicker? coverPicker,
+    List<Playlist> playlists = const [],
+    FakeFileSaver? fileSaver,
+    FakeFileOpener? fileOpener,
+    Set<String>? existingFolders,
+    String Function()? idGenerator,
+    List<Override> overrides = const [],
   }) : player = FakeMediaPlayer(),
        storyShare = storyShare ?? RecordingStoryShare(),
        releases = releases ?? ScriptedReleaseSource(),
@@ -74,6 +85,11 @@ class Harness {
        remoteLyrics = remoteLyrics ?? ScriptedRemoteLyricsSource(),
        sidecars = RecordingLyricsSidecar(),
        plays = InMemoryPlayHistoryStore(),
+       playlistStore = FakePlaylistStore(playlists),
+       playlistCovers = FakePlaylistCoverStore(),
+       fileSaver = fileSaver ?? FakeFileSaver(),
+       fileOpener = fileOpener ?? FakeFileOpener(),
+       existingFolders = existingFolders ?? {},
        access = access ?? FakeLibraryAccess(),
        picker = picker ?? FakeFolderPicker(),
        platform = platform ?? const FakeHostPlatform(),
@@ -103,6 +119,36 @@ class Harness {
         remoteLyricsSourceProvider.overrideWithValue(this.remoteLyrics),
         lyricsSidecarProvider.overrideWithValue(sidecars),
         playHistoryStoreProvider.overrideWithValue(plays),
+        playlistStoreProvider.overrideWithValue(playlistStore),
+        playlistCoverStoreProvider.overrideWithValue(playlistCovers),
+        fileSaverProvider.overrideWithValue(this.fileSaver),
+        fileOpenerProvider.overrideWithValue(this.fileOpener),
+        // Asked of a set rather than of the disk: no test looks at the
+        // developer's own folders.
+        folderExistsProvider.overrideWithValue(
+          (folder) => this.existingFolders.contains(folder),
+        ),
+        // Read where the test is, for the reason the encoders below are.
+        backupReaderProvider.overrideWithValue(
+          (bytes) async => readBackup(bytes),
+        ),
+        // Built where the test is, not on another isolate: a widget test runs
+        // on fake time, which a real isolate's answer would never reach.
+        dataExportEncoderProvider.overrideWithValue(
+          (sources) async => encodeDataExport(buildDataExport(sources)),
+        ),
+        backupEncoderProvider.overrideWithValue(
+          (sources) async => encodeBackupZip(
+            data: buildDataExport(sources.export),
+            preferences: sources.preferences,
+            covers: sources.covers,
+            createdAt: sources.export.now,
+            orpheusVersion: sources.export.orpheusVersion,
+          ),
+        ),
+        // Ids a test can name: `id-1`, `id-2`, ... in the order they are asked
+        // for, rather than random ones.
+        idGeneratorProvider.overrideWithValue(idGenerator ?? _sequentialIds()),
         audioPlayerProvider.overrideWithValue(player),
         mediaSessionProvider.overrideWithValue(session),
         trackProbeProvider.overrideWithValue(probe),
@@ -127,6 +173,9 @@ class Harness {
         appShutdownProvider.overrideWithValue(shutdown),
         storyShareProvider.overrideWithValue(this.storyShare),
         runningVersionProvider.overrideWithValue(_runningVersion),
+        // Whatever else a test binds to a double of its own: a provider not
+        // bound above, so that no provider is overridden twice.
+        ...overrides,
       ],
     );
 
@@ -205,6 +254,21 @@ class Harness {
   /// What has been played, in memory.
   final InMemoryPlayHistoryStore plays;
 
+  /// The playlists, in memory.
+  final FakePlaylistStore playlistStore;
+
+  /// The playlists' own covers, in memory.
+  final FakePlaylistCoverStore playlistCovers;
+
+  /// Where an exported playlist went, in place of the owner's disk.
+  final FakeFileSaver fileSaver;
+
+  /// The file a restore is read from, in place of the platform's dialog.
+  final FakeFileOpener fileOpener;
+
+  /// The folders that exist on this pretend device.
+  final Set<String> existingFolders;
+
   /// The preferences, in memory.
   final SettingsStore settings;
 
@@ -220,4 +284,10 @@ class Harness {
   /// Waits for the library to load, which every player flow depends on.
   Future<MusicCatalog> library() =>
       container.read(musicLibraryControllerProvider.future);
+}
+
+/// Ids `id-1`, `id-2`, ... for a test that wants to say which one it means.
+String Function() _sequentialIds() {
+  var last = 0;
+  return () => 'id-${++last}';
 }

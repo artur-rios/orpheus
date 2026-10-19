@@ -40,6 +40,10 @@
   "@destinationMusic": {
     "description": "The library area, in the navigation panel."
   },
+  "destinationGenres": "Gêneros",
+  "@destinationGenres": {
+    "description": "The area that browses the library by genre, in the navigation panel."
+  },
   "destinationQueue": "Fila",
   "@destinationQueue": {
     "description": "The play queue area, in the navigation panel."
@@ -73,6 +77,26 @@
         "type": "String"
       }
     }
+  },
+  "searchFieldAll": "Tudo",
+  "@searchFieldAll": {
+    "description": "Search selector: match the term against everything."
+  },
+  "searchFieldSongs": "Faixas",
+  "@searchFieldSongs": {
+    "description": "Search selector: match the term against song titles only."
+  },
+  "searchFieldArtists": "Artistas",
+  "@searchFieldArtists": {
+    "description": "Search selector: match the term against artists only."
+  },
+  "searchFieldAlbums": "Álbuns",
+  "@searchFieldAlbums": {
+    "description": "Search selector: match the term against albums only."
+  },
+  "searchFieldGenres": "Gêneros",
+  "@searchFieldGenres": {
+    "description": "Search selector: match the term against genres only."
   },
   "settingsTitle": "Preferências",
   "@settingsTitle": {
@@ -200,6 +224,30 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "genreUnknown": "Sem gênero",
+  "@genreUnknown": {
+    "description": "The group of tracks whose tags name no genre."
+  },
+  "genrePlay": "Reproduzir o gênero",
+  "@genrePlay": {
+    "description": "Plays every track tagged with a genre."
+  },
+  "genreShuffle": "Embaralhar o gênero",
+  "@genreShuffle": {
+    "description": "Plays every track tagged with a genre, in an order nobody chose."
+  },
+  "genreRowSummary": "{tracks} · {length}",
+  "@genreRowSummary": {
+    "description": "Under a genre's name: how many tracks it holds, then how long they run.",
+    "placeholders": {
+      "tracks": {
+        "type": "String"
+      },
+      "length": {
+        "type": "String"
       }
     }
   },
@@ -1040,5 +1088,917 @@
   "tagEditSaved": "Tags salvas",
   "@tagEditSaved": {
     "description": "The message shown once the tag editor wrote the changed tags into the file."
+  },
+  "tagEditManySubtitle": "{label} · {count, plural, =1{1 faixa} other{{count} faixas}}",
+  "@tagEditManySubtitle": {
+    "description": "Under the title of the form that edits several songs' tags at once: the album or artist being edited, and how many songs it holds.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tagEditManyReading": "Lendo {done} de {total}…",
+  "@tagEditManyReading": {
+    "description": "Shown on the form that edits several songs' tags while their files are being read.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "tagEditManySaving": "Salvando {done} de {total}…",
+  "@tagEditManySaving": {
+    "description": "Shown on the form that edits several songs' tags while the changes are being written into their files.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "tagEditManyMixed": "Variado — deixe em branco para manter o de cada faixa",
+  "@tagEditManyMixed": {
+    "description": "The hint in a field of the form that edits several songs' tags when the songs hold different values for it: left blank, each song keeps its own."
+  },
+  "tagEditManyMixedCovers": "Capas diferentes",
+  "@tagEditManyMixedCovers": {
+    "description": "Shown in place of the cover on the form that edits several songs' tags when the songs have different covers."
+  },
+  "tagEditManyOneAtATime": "Título e número da faixa são editados uma faixa por vez.",
+  "@tagEditManyOneAtATime": {
+    "description": "Shown under the form that edits several songs' tags, which leaves out the title and the track number."
+  },
+  "tagEditManySkipped": "{count, plural, =1{1 faixa não pode ser alterada e ficará como está} other{{count} faixas não podem ser alteradas e ficarão como estão}}",
+  "@tagEditManySkipped": {
+    "description": "Shown above the form that edits several songs' tags when some of the songs cannot be written; it expands to name each and why.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tagEditManySkippedFormat": "Não é um arquivo MP3 ou FLAC",
+  "@tagEditManySkippedFormat": {
+    "description": "Why a song is left alone by the form that edits several songs' tags: Orpheus only writes MP3 and FLAC files."
+  },
+  "tagEditManySkippedUnsafe": "As tags dela não podem ser alteradas com segurança",
+  "@tagEditManySkippedUnsafe": {
+    "description": "Why a song is left alone by the form that edits several songs' tags: its tags could not be read, or are of a shape Orpheus will not change safely."
+  },
+  "tagEditManyPartly": "Salvo em {written, plural, =0{nenhuma faixa} =1{1 faixa} other{{written} faixas}}. {failed, plural, =1{1 não pôde ser alterada:} other{{failed} não puderam ser alteradas:}}",
+  "@tagEditManyPartly": {
+    "description": "Shown on the form that edits several songs' tags after a save some songs could not take; the songs that failed are listed beneath it with why.",
+    "placeholders": {
+      "written": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "tagEditManySaved": "{count, plural, =1{Tags salvas em 1 faixa} other{Tags salvas em {count} faixas}}",
+  "@tagEditManySaved": {
+    "description": "The message shown once the form that edits several songs' tags wrote the changes into them.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tagEditManyTrackTotalLeft": "O total de faixas dela ficou como estava: ela não tem número de faixa",
+  "@tagEditManyTrackTotalLeft": {
+    "description": "Shown beside a song after the form that edits several songs' tags set a track total: the song has no track number, so its total was not changed."
+  },
+  "tagEditManyDiscTotalLeft": "O total de discos dela ficou como estava: ela não tem número de disco",
+  "@tagEditManyDiscTotalLeft": {
+    "description": "Shown beside a song after the form that edits several songs' tags set a disc total: the song has no disc number, so its total was not changed."
+  },
+  "musicGroupActions": "Mais ações",
+  "@musicGroupActions": {
+    "description": "The tooltip of the button that opens the menu of actions for an album or an artist."
+  },
+  "musicSelectionCount": "{count, plural, =1{1 selecionada} other{{count} selecionadas}}",
+  "@musicSelectionCount": {
+    "description": "How many songs are selected, shown in the bar above a song list while the owner is selecting songs in it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicSelectionAll": "Selecionar tudo",
+  "@musicSelectionAll": {
+    "description": "The button in the selection bar above a song list that selects every song in the list."
+  },
+  "musicSelectionStop": "Parar de selecionar",
+  "@musicSelectionStop": {
+    "description": "The tooltip of the button in the selection bar above a song list that ends the selection."
+  },
+  "musicSelectionSelect": "Selecionar {title}",
+  "@musicSelectionSelect": {
+    "description": "The accessibility label of the tick box that selects or deselects a song in a song list.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "musicSelectionEditTags": "{count, plural, =1{Editar tags de 1 faixa…} other{Editar tags de {count} faixas…}}",
+  "@musicSelectionEditTags": {
+    "description": "The button and menu item that open the tag editor over the songs selected in a song list.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicSelectionLabel": "Faixas selecionadas",
+  "@musicSelectionLabel": {
+    "description": "What the tag editor calls the songs selected in a song list, in its subtitle."
+  },
+  "playlistTab": "Playlists",
+  "@playlistTab": {
+    "description": "The Playlists destination in the navigation panel, and the content area's heading while it shows."
+  },
+  "playlistNew": "Nova playlist",
+  "@playlistNew": {
+    "description": "The button on the Playlists tab that makes a playlist, and the title of the dialog it opens."
+  },
+  "playlistNameLabel": "Nome",
+  "@playlistNameLabel": {
+    "description": "The label of the field in which a playlist's name is typed, when making or renaming one."
+  },
+  "playlistNameRequired": "Dê um nome à playlist",
+  "@playlistNameRequired": {
+    "description": "Shown under the name field when the owner submits a blank name for a playlist."
+  },
+  "playlistCreate": "Criar",
+  "@playlistCreate": {
+    "description": "The button that makes the playlist named in the New playlist dialog."
+  },
+  "playlistSongCount": "{count, plural, =0{Nenhuma faixa} =1{1 faixa} other{{count} faixas}}",
+  "@playlistSongCount": {
+    "description": "How many songs a playlist holds, under its name on the Playlists tab.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "playlistEmpty": "Nenhuma playlist ainda",
+  "@playlistEmpty": {
+    "description": "What the Playlists tab says when the owner has made none."
+  },
+  "playlistActions": "Ações da playlist",
+  "@playlistActions": {
+    "description": "The tooltip of the ⋮ button on a playlist's row or tile, which opens its menu."
+  },
+  "playlistBackToList": "Todas as playlists",
+  "@playlistBackToList": {
+    "description": "The tooltip of the button that goes from an open playlist back to the list of them."
+  },
+  "playlistCoverLabel": "Capa da playlist",
+  "@playlistCoverLabel": {
+    "description": "The accessibility label of a playlist's picture: the owner's own cover, or the mosaic of its records."
+  },
+  "playlistRename": "Renomear…",
+  "@playlistRename": {
+    "description": "The playlist menu item that asks for a new name."
+  },
+  "playlistRenameTitle": "Renomear playlist",
+  "@playlistRenameTitle": {
+    "description": "The title of the dialog that asks for a playlist's new name."
+  },
+  "playlistRenameConfirm": "Renomear",
+  "@playlistRenameConfirm": {
+    "description": "The button that gives the playlist the name typed in the rename dialog."
+  },
+  "playlistChooseCover": "Escolher capa…",
+  "@playlistChooseCover": {
+    "description": "The playlist menu item that opens the image chooser to give the playlist a picture of the owner's own."
+  },
+  "playlistRemoveCover": "Remover capa",
+  "@playlistRemoveCover": {
+    "description": "The playlist menu item, shown only when the playlist has a picture of the owner's own, that takes it off so the mosaic of its records shows again."
+  },
+  "playlistCoverNotImage": "Escolha uma imagem JPEG ou PNG para a capa",
+  "@playlistCoverNotImage": {
+    "description": "Shown when the file chosen as a playlist's cover is not a JPEG or PNG image; nothing is changed."
+  },
+  "playlistCoverTooLarge": "Essa imagem tem mais de 20 MB, grande demais para um backup",
+  "@playlistCoverTooLarge": {
+    "description": "Shown when the picture chosen as a playlist's cover weighs more than 20 MB, which a backup would not read back; nothing is changed."
+  },
+  "playlistExport": "Exportar para .m3u…",
+  "@playlistExport": {
+    "description": "The playlist menu item that saves the playlist as an .m3u file where the owner chooses."
+  },
+  "playlistExportSaved": "Salvo em {path}",
+  "@playlistExportSaved": {
+    "description": "Shown once a playlist has been exported, naming the file it was saved as.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistExported": "Playlist exportada",
+  "@playlistExported": {
+    "description": "Shown once a playlist has been exported to a place the system gives no file path for, such as Android's document provider."
+  },
+  "playlistExportFailed": "Não foi possível exportar {name}",
+  "@playlistExportFailed": {
+    "description": "Shown when a playlist could not be saved as an .m3u file.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistDelete": "Excluir…",
+  "@playlistDelete": {
+    "description": "The playlist menu item that asks before deleting the playlist."
+  },
+  "playlistDeleteTitle": "Excluir {name}?",
+  "@playlistDeleteTitle": {
+    "description": "The question asked before a playlist is deleted.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistDeleteBody": "As faixas continuam na sua biblioteca.",
+  "@playlistDeleteBody": {
+    "description": "Under the question asked before a playlist is deleted: only the playlist goes, never a song or a file."
+  },
+  "playlistDeleteConfirm": "Excluir",
+  "@playlistDeleteConfirm": {
+    "description": "The button that deletes the playlist, in the question asked first."
+  },
+  "playlistSaveFailed": "Não foi possível salvar as playlists",
+  "@playlistSaveFailed": {
+    "description": "Shown when making, renaming, giving a cover to or deleting a playlist could not be saved; nothing was changed."
+  },
+  "playlistShuffle": "Embaralhar",
+  "@playlistShuffle": {
+    "description": "The button in an open playlist's header that plays every song in it that is in the library, in an order nobody chose."
+  },
+  "playlistSummary": "{songs} · {length}",
+  "@playlistSummary": {
+    "description": "Under an open playlist's name: how many songs it holds (already worded, e.g. '4 songs') and how long they last together (e.g. '1:02:15').",
+    "placeholders": {
+      "songs": {
+        "type": "String"
+      },
+      "length": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistNoSongs": "Nenhuma faixa nesta playlist ainda",
+  "@playlistNoSongs": {
+    "description": "What an open playlist shows in place of its rows when it holds no songs."
+  },
+  "playlistMissing": "Não encontrada",
+  "@playlistMissing": {
+    "description": "Under the title of a song in a playlist whose file is no longer in the library and whose artist is not known; the row cannot be played."
+  },
+  "playlistMissingBy": "Não encontrada · {artist}",
+  "@playlistMissingBy": {
+    "description": "Under the title of a song in a playlist whose file is no longer in the library, with the artist it had when it was added; the row cannot be played.",
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistRemoveFrom": "Remover da playlist",
+  "@playlistRemoveFrom": {
+    "description": "The song menu item, and the selection bar button and menu item, that take the song or the selected songs out of the open playlist; the files stay in the library."
+  },
+  "playlistReorder": "Arraste para reordenar",
+  "@playlistReorder": {
+    "description": "The accessibility label of the handle on each row of an open playlist, by which the row is dragged to another place."
+  },
+  "playlistAddTo": "Adicionar à playlist…",
+  "@playlistAddTo": {
+    "description": "The song, album and artist menu item, the selection menu item and the selection bar button that add the song, the tracks or the selected songs to a playlist the owner then chooses."
+  },
+  "playlistAddToTitle": "Adicionar à playlist",
+  "@playlistAddToTitle": {
+    "description": "The title of the dialog that lists the playlists to add songs to."
+  },
+  "playlistAddToNew": "Nova playlist…",
+  "@playlistAddToNew": {
+    "description": "The first row of the dialog that lists the playlists to add songs to: it asks for a name, makes the playlist and adds the songs to it."
+  },
+  "playlistAdded": "{count, plural, =1{1 faixa adicionada a {name}} other{{count} faixas adicionadas a {name}}}",
+  "@playlistAdded": {
+    "description": "Shown once songs have been added to a playlist, with how many were added and the playlist's name.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistNothingAdded": "Nada foi adicionado",
+  "@playlistNothingAdded": {
+    "description": "Shown when the owner chose to skip the songs already in a playlist and there were no others, so nothing was added."
+  },
+  "playlistDuplicateTitle": "Já está em {name} — adicionar de novo?",
+  "@playlistDuplicateTitle": {
+    "description": "The question asked when some of the songs about to be added to a playlist are already in it.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistAddAnyway": "Adicionar mesmo assim",
+  "@playlistAddAnyway": {
+    "description": "The answer to the already-in-the-playlist question that adds every song, the ones already there a second time."
+  },
+  "playlistSkipThose": "Pular essas",
+  "@playlistSkipThose": {
+    "description": "The answer to the already-in-the-playlist question that adds only the songs that are not there yet."
+  },
+  "autoPlaylistSection": "Playlists automáticas",
+  "@autoPlaylistSection": {
+    "description": "The heading over the auto playlists at the top of the Playlists tab: the ones Orpheus keeps by itself from what the owner listens to."
+  },
+  "autoPlaylistYours": "Suas playlists",
+  "@autoPlaylistYours": {
+    "description": "The heading over the owner's own playlists in the Playlists tab, below the auto playlists."
+  },
+  "autoPlaylistLately": "Favoritas do momento",
+  "@autoPlaylistLately": {
+    "description": "The name of the auto playlist of the songs the owner has played most in the last 30 days."
+  },
+  "autoPlaylistAllTime": "Favoritas de todos os tempos",
+  "@autoPlaylistAllTime": {
+    "description": "The name of the auto playlist of the songs the owner has played most, whenever they were played."
+  },
+  "autoPlaylistFallbackNote": "Conhecendo o que você tem ouvido",
+  "@autoPlaylistFallbackNote": {
+    "description": "Shown under the header of Favourites lately while there are too few recent plays recorded to rank by them, so it is ranked by the songs last played instead."
+  },
+  "autoPlaylistLatelyEmpty": "Ouça algumas músicas e suas favoritas do momento vão aparecer aqui",
+  "@autoPlaylistLatelyEmpty": {
+    "description": "What Favourites lately shows when no song has been played in the last 30 days."
+  },
+  "autoPlaylistAllTimeEmpty": "Ouça algumas músicas e suas favoritas vão aparecer aqui",
+  "@autoPlaylistAllTimeEmpty": {
+    "description": "What All-time favourites shows when no song in the library has been played yet."
+  },
+  "autoPlaylistShow": "Mostrar playlists automáticas",
+  "@autoPlaylistShow": {
+    "description": "The preference that shows or hides the auto playlists in the Playlists tab."
+  },
+  "autoPlaylistShowDetail": "Favoritas do momento e Favoritas de todos os tempos, no topo de Playlists. O que você ouve continua sendo contado enquanto elas estão ocultas.",
+  "@autoPlaylistShowDetail": {
+    "description": "The line under the Show auto playlists preference: what it shows, and that turning it off does not stop plays being recorded."
+  },
+  "dataExportHeading": "Seus dados",
+  "@dataExportHeading": {
+    "description": "The heading over the section of the preferences that exports the owner's data."
+  },
+  "dataExportAction": "Exportar meus dados (JSON)…",
+  "@dataExportAction": {
+    "description": "The preferences entry that saves everything Orpheus knows about the owner's music to a JSON file where they choose."
+  },
+  "dataExportSaved": "Exportado para {path}",
+  "@dataExportSaved": {
+    "description": "Shown once the owner's data has been exported, naming the file it was saved as.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "dataExported": "Exportado",
+  "@dataExported": {
+    "description": "Shown once the owner's data has been exported to a place the system gives no file path for, such as Android's document provider."
+  },
+  "dataExportPartial": "Exportado, mas alguns dados não puderam ser lidos",
+  "@dataExportPartial": {
+    "description": "Shown when the owner's data was exported but one of its sources, such as the playlists or the play history, could not be read; the file says which."
+  },
+  "dataExportFailed": "Não foi possível exportar seus dados",
+  "@dataExportFailed": {
+    "description": "Shown when the file holding the owner's data could not be saved."
+  },
+  "dataExportLibraryFailed": "Sua biblioteca não pôde ser lida, então não há nada para exportar",
+  "@dataExportLibraryFailed": {
+    "description": "Shown when the owner's data is not exported because the library could not be read."
+  },
+  "dataExportExplanation": "Para ver seus dados em outras ferramentas ou importá-los em outro lugar.",
+  "@dataExportExplanation": {
+    "description": "The one-line explanation under the Export my data (JSON) entry in the preferences: what that export is for."
+  },
+  "backupAction": "Fazer backup do Orpheus (ZIP)…",
+  "@backupAction": {
+    "description": "The preferences entry that saves a backup of Orpheus, including the playlist covers and the preferences, to a ZIP file where the owner chooses."
+  },
+  "backupExplanation": "Para restaurar o Orpheus neste ou em outro dispositivo: seus dados, capas de playlists e preferências.",
+  "@backupExplanation": {
+    "description": "The one-line explanation under the Back up Orpheus (ZIP) entry in the preferences: what that backup is for and holds."
+  },
+  "backupSaved": "Backup salvo em {path}",
+  "@backupSaved": {
+    "description": "Shown once Orpheus has been backed up, naming the file it was saved as.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "backedUp": "Backup feito",
+  "@backedUp": {
+    "description": "Shown once Orpheus has been backed up to a place the system gives no file path for, such as Android's document provider."
+  },
+  "backupPartial": "Backup feito, mas alguns dados não puderam ser lidos",
+  "@backupPartial": {
+    "description": "Shown when Orpheus was backed up but one of its sources, such as the playlists, the play history or a playlist cover, could not be read."
+  },
+  "backupFailed": "Não foi possível fazer o backup do Orpheus",
+  "@backupFailed": {
+    "description": "Shown when the file holding the backup could not be saved."
+  },
+  "backupLibraryFailed": "Sua biblioteca não pôde ser lida, então não há nada para incluir no backup",
+  "@backupLibraryFailed": {
+    "description": "Shown when Orpheus is not backed up because the library could not be read."
+  },
+  "backupAboutAction": "Sobre estas exportações",
+  "@backupAboutAction": {
+    "description": "The preferences link that opens a comparison of the JSON export and the ZIP backup."
+  },
+  "backupAboutTitle": "Sobre estas exportações",
+  "@backupAboutTitle": {
+    "description": "The title of the dialog comparing what the JSON export and the ZIP backup contain."
+  },
+  "backupAboutColumnJson": "Exportar meus dados (JSON)",
+  "@backupAboutColumnJson": {
+    "description": "The heading of the JSON export's column in the comparison of the two exports; the name of its preferences entry without the ellipsis."
+  },
+  "backupAboutColumnZip": "Fazer backup do Orpheus (ZIP)",
+  "@backupAboutColumnZip": {
+    "description": "The heading of the ZIP backup's column in the comparison of the two exports; the name of its preferences entry without the ellipsis."
+  },
+  "backupAboutFor": "Para",
+  "@backupAboutFor": {
+    "description": "The label of the row of the comparison of the two exports that says what each is for."
+  },
+  "backupAboutForJson": "Ver seus dados em outras ferramentas, importar em outro lugar",
+  "@backupAboutForJson": {
+    "description": "In the comparison of the two exports: what the JSON export is for."
+  },
+  "backupAboutForZip": "Restaurar o Orpheus neste ou em outro dispositivo",
+  "@backupAboutForZip": {
+    "description": "In the comparison of the two exports: what the ZIP backup is for."
+  },
+  "backupAboutSongs": "Músicas, artistas, álbuns (como lista)",
+  "@backupAboutSongs": {
+    "description": "A row of the comparison of the two exports: the library as a list."
+  },
+  "backupAboutPlaylists": "Playlists",
+  "@backupAboutPlaylists": {
+    "description": "A row of the comparison of the two exports: the owner playlists."
+  },
+  "backupAboutAutoPlaylists": "Playlists automáticas (como estão agora)",
+  "@backupAboutAutoPlaylists": {
+    "description": "A row of the comparison of the two exports: the auto playlists as they are at the moment of the export."
+  },
+  "backupAboutHistory": "Histórico de reproduções e estatísticas",
+  "@backupAboutHistory": {
+    "description": "A row of the comparison of the two exports: the plays Orpheus has recorded and what is counted from them."
+  },
+  "backupAboutCovers": "Imagens de capa das playlists",
+  "@backupAboutCovers": {
+    "description": "A row of the comparison of the two exports: the pictures the owner chose as playlist covers."
+  },
+  "backupAboutPreferences": "Preferências (incl. pastas de música)",
+  "@backupAboutPreferences": {
+    "description": "A row of the comparison of the two exports: the preferences, including the folders the library is built from."
+  },
+  "backupAboutMusicFiles": "Seus arquivos de música",
+  "@backupAboutMusicFiles": {
+    "description": "A row of the comparison of the two exports: the audio files themselves, which neither holds."
+  },
+  "backupAboutIncluded": "Incluído",
+  "@backupAboutIncluded": {
+    "description": "Read aloud for a check mark in the comparison of the two exports: the export holds this."
+  },
+  "backupAboutNotIncluded": "Não incluído",
+  "@backupAboutNotIncluded": {
+    "description": "Read aloud for a dash in the comparison of the two exports: the export does not hold this."
+  },
+  "restoreAction": "Restaurar de um backup…",
+  "@restoreAction": {
+    "description": "The preferences entry that restores Orpheus from a backup ZIP or an exported JSON the owner picks."
+  },
+  "restoreExplanation": "Traga de volta playlists, histórico de reproduções e preferências de um backup ZIP ou de um JSON exportado.",
+  "@restoreExplanation": {
+    "description": "The one-line explanation under the Restore from a backup entry in the preferences: what a restore brings back."
+  },
+  "restoreTitle": "Restaurar de um backup",
+  "@restoreTitle": {
+    "description": "The title of the restore screen when the picked file could not be restored."
+  },
+  "restoreFailedNotABackup": "Este arquivo não é um backup do Orpheus",
+  "@restoreFailedNotABackup": {
+    "description": "Shown on the restore screen when the picked file is not an Orpheus backup or exported data file; nothing was changed."
+  },
+  "restoreFailedNewer": "Este backup é de uma versão mais nova do Orpheus — atualize primeiro",
+  "@restoreFailedNewer": {
+    "description": "Shown on the restore screen when the picked file was made by a newer version of Orpheus than the one running."
+  },
+  "restoreFailedUnexpected": "Algo deu errado ao preparar a restauração. Nada foi restaurado.",
+  "@restoreFailedUnexpected": {
+    "description": "Shown on the restore screen when something unforeseen stopped the restore before any of the data was written; the music folders a first stage applied stay."
+  },
+  "restoreFoldersTitle": "Sua música",
+  "@restoreFoldersTitle": {
+    "description": "The title of the first stage of a restore, which is about where the music is on this device."
+  },
+  "restoreFoldersIntro": "As músicas de um backup são comparadas com a sua biblioteca, então sua música precisa estar onde o Orpheus a procura.",
+  "@restoreFoldersIntro": {
+    "description": "Explains, at the first stage of a restore, why the music folders come first."
+  },
+  "restoreBackupFolders": "Pastas no backup",
+  "@restoreBackupFolders": {
+    "description": "Heading of the list of music folders the backup was made with, at the first stage of a restore."
+  },
+  "restoreBackupFoldersNone": "O backup não cita nenhuma pasta.",
+  "@restoreBackupFoldersNone": {
+    "description": "Shown at the first stage of a restore when the backup lists no music folders."
+  },
+  "restoreFolderFound": "Encontrada neste dispositivo",
+  "@restoreFolderFound": {
+    "description": "Beside a music folder named by the backup: a folder of that name exists on this device."
+  },
+  "restoreFolderNotFound": "Não encontrada",
+  "@restoreFolderNotFound": {
+    "description": "Beside a music folder named by the backup: no folder of that name exists on this device."
+  },
+  "restoreDeviceFolders": "Pastas de música neste dispositivo",
+  "@restoreDeviceFolders": {
+    "description": "Heading of the list of music folders this device's library is built from, at the first stage of a restore."
+  },
+  "restoreDeviceFoldersNone": "Nenhuma ainda",
+  "@restoreDeviceFoldersNone": {
+    "description": "Shown under the heading of this device's music folders when it has none."
+  },
+  "restoreFoldersStaged": "Muda quando você continuar",
+  "@restoreFoldersStaged": {
+    "description": "Shown at the first stage of a restore when the music folders listed are not yet this device's: they are applied when the owner continues."
+  },
+  "restoreRemoveFolder": "Remover {folder}",
+  "@restoreRemoveFolder": {
+    "description": "The tooltip of the button that takes a folder out of the set of music folders chosen at the first stage of a restore.",
+    "placeholders": {
+      "folder": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreChooseFolders": "Escolher pastas…",
+  "@restoreChooseFolders": {
+    "description": "The button at the first stage of a restore that opens the folder chooser, to add a music folder to the set."
+  },
+  "restoreFoldersNote": "Continuar muda suas pastas de música agora e examina sua biblioteca. Se você cancelar depois, as pastas ficam como você as definiu.",
+  "@restoreFoldersNote": {
+    "description": "A note at the first stage of a restore: continuing applies the folders at once, and cancelling afterwards does not undo that."
+  },
+  "restoreContinue": "Continuar",
+  "@restoreContinue": {
+    "description": "The button that leaves the first stage of a restore: applies the music folders, scans the library and moves on."
+  },
+  "restoreScanning": "Examinando sua música…",
+  "@restoreScanning": {
+    "description": "Shown while a restore scans the library after the music folders were set."
+  },
+  "restoreChoicesTitle": "O que restaurar",
+  "@restoreChoicesTitle": {
+    "description": "The title of the second stage of a restore, where a choice is made for each part."
+  },
+  "restoreBackupFrom": "Backup de {date}",
+  "@restoreBackupFrom": {
+    "description": "Heads the summary of what a picked backup holds; the date is when it was made.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreBackupUndated": "Backup",
+  "@restoreBackupUndated": {
+    "description": "Heads the summary of what a picked file holds when it does not say when it was made."
+  },
+  "restoreHoldsPlaylists": "{count, plural, =1{1 playlist} other{{count} playlists}}",
+  "@restoreHoldsPlaylists": {
+    "description": "In the summary of what a picked backup holds: how many playlists.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreHoldsSongs": "{count, plural, =1{1 faixa com reproduções} other{{count} faixas com reproduções}}",
+  "@restoreHoldsSongs": {
+    "description": "In the summary of what a picked backup holds: for how many songs it has play counts.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreHoldsCovers": "{count, plural, =0{Nenhuma capa de playlist} =1{1 capa de playlist} other{{count} capas de playlist}}",
+  "@restoreHoldsCovers": {
+    "description": "In the summary of what a picked backup holds: how many playlist cover pictures.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreHoldsPreferences": "Preferências incluídas",
+  "@restoreHoldsPreferences": {
+    "description": "In the summary of what a picked backup holds: it carries the preferences."
+  },
+  "restoreHoldsNoPreferences": "Sem preferências",
+  "@restoreHoldsNoPreferences": {
+    "description": "In the summary of what a picked file holds: it carries no preferences, as an exported data JSON does not."
+  },
+  "restorePartPlaylists": "Playlists",
+  "@restorePartPlaylists": {
+    "description": "The name of the playlists part of a restore, with its covers."
+  },
+  "restorePartHistory": "Histórico de reproduções",
+  "@restorePartHistory": {
+    "description": "The name of the play history part of a restore, which the statistics follow."
+  },
+  "restorePartPreferences": "Preferências",
+  "@restorePartPreferences": {
+    "description": "The name of the preferences part of a restore, apart from the music folders."
+  },
+  "restoreMerge": "Mesclar",
+  "@restoreMerge": {
+    "description": "A choice for a part of a restore: keep what is here and add what the backup has that is not."
+  },
+  "restoreSkip": "Ignorar",
+  "@restoreSkip": {
+    "description": "A choice for a part of a restore: keep what is here and add only what is wholly new."
+  },
+  "restoreReplace": "Substituir",
+  "@restoreReplace": {
+    "description": "A choice for a part of a restore: put the backup's in place of what is here."
+  },
+  "restorePlaylistsMerge": "Adiciona as playlists do backup que não existem aqui e as faixas que as suas de mesmo nome não têm.",
+  "@restorePlaylistsMerge": {
+    "description": "What Merge does to the playlists, one line under the choices."
+  },
+  "restorePlaylistsSkip": "Adiciona só as playlists do backup cujo nome não existe aqui.",
+  "@restorePlaylistsSkip": {
+    "description": "What Skip does to the playlists, one line under the choices."
+  },
+  "restorePlaylistsReplace": "Remove suas playlists e usa as do backup, com as capas.",
+  "@restorePlaylistsReplace": {
+    "description": "What Replace does to the playlists, one line under the choices."
+  },
+  "restoreHistoryMerge": "Mantém a maior contagem e a data mais recente de cada faixa, e adiciona o restante.",
+  "@restoreHistoryMerge": {
+    "description": "What Merge does to the play history, one line under the choices."
+  },
+  "restoreHistorySkip": "Adiciona só as faixas sem histórico de reproduções aqui.",
+  "@restoreHistorySkip": {
+    "description": "What Skip does to the play history, one line under the choices."
+  },
+  "restoreHistoryReplace": "Troca o seu histórico de reproduções pelo do backup.",
+  "@restoreHistoryReplace": {
+    "description": "What Replace does to the play history, one line under the choices."
+  },
+  "restorePreferencesMerge": "Aplica as configurações do backup só onde as suas ainda são as padrão.",
+  "@restorePreferencesMerge": {
+    "description": "What Merge does to the preferences, one line under the choices."
+  },
+  "restorePreferencesSkip": "Não muda nenhuma das suas configurações.",
+  "@restorePreferencesSkip": {
+    "description": "What Skip does to the preferences, one line under the choices."
+  },
+  "restorePreferencesReplace": "Aplica todas as configurações do backup, inclusive volume e idioma.",
+  "@restorePreferencesReplace": {
+    "description": "What Replace does to the preferences, one line under the choices."
+  },
+  "restoreNotInBackup": "Não está neste backup",
+  "@restoreNotInBackup": {
+    "description": "Shown on a part of a restore that cannot be chosen because the backup could not read it when it was made."
+  },
+  "restoreNotInFile": "Não está neste arquivo",
+  "@restoreNotInFile": {
+    "description": "Shown on a part of a restore that cannot be chosen because the picked file carries none of it."
+  },
+  "restoreReplacePlaylists": "{count, plural, =0{Você não tem playlists para substituir} =1{Substitui a sua 1 playlist} other{Substitui as suas {count} playlists}}",
+  "@restoreReplacePlaylists": {
+    "description": "The warning under Replace on the playlists: how many playlists it removes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreReplaceHistory": "{count, plural, =0{Você não tem contagens para substituir} =1{Substitui as contagens de 1 faixa} other{Substitui as contagens de {count} faixas}}",
+  "@restoreReplaceHistory": {
+    "description": "The warning under Replace on the play history: for how many songs the counts here are replaced.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreReplacePreferences": "Substitui todas as suas configurações pelas do backup",
+  "@restoreReplacePreferences": {
+    "description": "The warning under Replace on the preferences."
+  },
+  "restoreUnreadablePlaylists": "Não foi possível ler as suas playlists aqui, então esta parte não será restaurada.",
+  "@restoreUnreadablePlaylists": {
+    "description": "Shown on the playlists part of a restore when the playlists on this device cannot be read, so they are never written over."
+  },
+  "restoreUnreadableHistory": "Não foi possível ler o seu histórico de reproduções aqui, então esta parte não será restaurada.",
+  "@restoreUnreadableHistory": {
+    "description": "Shown on the play history part of a restore when the history on this device cannot be read, so it is never written over."
+  },
+  "restoreScanFailed": "Não foi possível examinar sua música, então algumas faixas do backup podem não ser encontradas na sua biblioteca.",
+  "@restoreScanFailed": {
+    "description": "Shown at the second stage of a restore when the library could not be scanned in the first stage — the scan failed or access to the music was refused — so songs in the backup may not be matched."
+  },
+  "restoreFoldersKept": "Suas pastas de música foram mudadas na etapa anterior. Cancelar mantém as pastas como estão agora.",
+  "@restoreFoldersKept": {
+    "description": "A note at the second stage of a restore, shown when the first stage changed the music folders: cancelling does not put them back."
+  },
+  "restoreFoldersKeptFailed": "Suas pastas de música foram mudadas na etapa anterior e continuam como estão agora.",
+  "@restoreFoldersKeptFailed": {
+    "description": "A note on the restore screen when something unforeseen stopped the restore after the first stage had changed the music folders: closing does not put them back."
+  },
+  "restoreRestore": "Restaurar",
+  "@restoreRestore": {
+    "description": "The button that writes the chosen parts of a restore."
+  },
+  "restoreRestoring": "Restaurando…",
+  "@restoreRestoring": {
+    "description": "Shown while the parts of a restore are being written."
+  },
+  "restoreDoneTitle": "Restauração concluída",
+  "@restoreDoneTitle": {
+    "description": "The title of the summary shown when a restore is over."
+  },
+  "restoreDoneRestored": "Restaurado",
+  "@restoreDoneRestored": {
+    "description": "Heading of the lines of the restore summary that say what was restored."
+  },
+  "restoreDoneRefused": "Não foi possível restaurar",
+  "@restoreDoneRefused": {
+    "description": "Heading of the lines of the restore summary that say which parts were not restored, and why."
+  },
+  "restoreDonePlaylists": "Playlists: {added} adicionadas, {merged} mescladas",
+  "@restoreDonePlaylists": {
+    "description": "A line of the restore summary: playlists the backup added, and playlists here it added songs or a cover to.",
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "merged": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreDonePlaylistsReplaced": "Playlists: {replaced, plural, =1{a sua playlist foi trocada} other{as suas {replaced} playlists foram trocadas}} por {added} do backup",
+  "@restoreDonePlaylistsReplaced": {
+    "description": "A line of the restore summary for a Replace of the playlists: how many were removed and how many the backup put in their place.",
+    "placeholders": {
+      "replaced": {
+        "type": "int"
+      },
+      "added": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreDonePlaylistsNothing": "Playlists: nada a adicionar",
+  "@restoreDonePlaylistsNothing": {
+    "description": "A line of the restore summary: the playlists part ran and had nothing to change."
+  },
+  "restoreDoneHistory": "Histórico de reproduções de {songs, plural, =1{1 faixa} other{{songs} faixas}}",
+  "@restoreDoneHistory": {
+    "description": "A line of the restore summary: for how many songs the backup's plays were applied.",
+    "placeholders": {
+      "songs": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreDoneHistoryMissing": "Histórico de reproduções de {songs, plural, =1{1 faixa} other{{songs} faixas}} ({missing} fora da sua biblioteca)",
+  "@restoreDoneHistoryMissing": {
+    "description": "A line of the restore summary: the songs whose plays were applied, and how many of them the library does not hold, which wait for the file to turn up.",
+    "placeholders": {
+      "songs": {
+        "type": "int"
+      },
+      "missing": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreDoneHistoryNothing": "Histórico de reproduções: nenhuma faixa a adicionar",
+  "@restoreDoneHistoryNothing": {
+    "description": "A line of the restore summary: the play history part ran and had nothing to change."
+  },
+  "restoreDonePreferences": "Preferências aplicadas",
+  "@restoreDonePreferences": {
+    "description": "A line of the restore summary: some preferences changed."
+  },
+  "restoreDonePreferencesNone": "Preferências: nada a mudar",
+  "@restoreDonePreferencesNone": {
+    "description": "A line of the restore summary: the preferences part ran and no value differed."
+  },
+  "restoreDonePreferencesUnsaved": "Algumas preferências não puderam ser salvas e valem só até o Orpheus fechar",
+  "@restoreDonePreferencesUnsaved": {
+    "description": "A line of the restore summary: a preference was applied but could not be written to disk."
+  },
+  "restoreDoneCoverFailures": "Estas playlists voltaram, mas as capas não puderam ser salvas: {names}",
+  "@restoreDoneCoverFailures": {
+    "description": "A line of the restore summary: playlists restored whose cover picture could not be written, or was left out of the backup as too large to read; their names follow.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreRefusedLine": "{part}: {reason}",
+  "@restoreRefusedLine": {
+    "description": "A line of the restore summary naming a part that was not restored and why.",
+    "placeholders": {
+      "part": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreReasonNotInBackup": "o backup não conseguiu ler esta parte quando foi feito",
+  "@restoreReasonNotInBackup": {
+    "description": "Why a part was not restored: the backup could not read it when it was made."
+  },
+  "restoreReasonNotInFile": "este arquivo não tem esta parte",
+  "@restoreReasonNotInFile": {
+    "description": "Why a part was not restored: the picked file carries none of it."
+  },
+  "restoreReasonUnreadableHere": "esta parte não pôde ser lida aqui, então foi deixada como estava",
+  "@restoreReasonUnreadableHere": {
+    "description": "Why a part was not restored: what this device holds of it could not be read, and is not written over."
+  },
+  "restoreReasonNotWritten": "esta parte não pôde ser salva, então nada dela mudou",
+  "@restoreReasonNotWritten": {
+    "description": "Why a part was not restored: writing it failed and what was there is as it was."
+  },
+  "restoreFoldersAllRemoved": "Todas as suas pastas de música serão removidas, então nenhuma faixa poderá ser reconhecida.",
+  "@restoreFoldersAllRemoved": {
+    "description": "Shown at the first stage of a restore when the set of music folders chosen is empty while this device has folders: continuing removes them all."
+  },
+  "restoreDoneSkipped": "{part}: você escolheu ignorar",
+  "@restoreDoneSkipped": {
+    "description": "A line of the restore summary: the owner chose to skip this part and it added nothing.",
+    "placeholders": {
+      "part": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreDonePlaylistsEmptied": "Playlists: {replaced, plural, =1{a sua playlist foi removida} other{as suas {replaced} playlists foram removidas}}; o backup não tinha nenhuma",
+  "@restoreDonePlaylistsEmptied": {
+    "description": "A line of the restore summary for a Replace of the playlists with a backup that holds none: how many were removed.",
+    "placeholders": {
+      "replaced": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreDoneHistoryEmptied": "Histórico de reproduções substituído; o backup não tinha reproduções",
+  "@restoreDoneHistoryEmptied": {
+    "description": "A line of the restore summary for a Replace of the play history with a backup that holds no plays: the history here is now empty."
   }
 }

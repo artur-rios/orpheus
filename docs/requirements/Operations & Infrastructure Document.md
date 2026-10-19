@@ -35,15 +35,21 @@ patching a global, and it is the mechanism behind `NFR-07` and `NFR-08`.
 
 **IR-05** — Everything this application persists lives inside the platform's
 application-support directory for it. Nothing is written anywhere else, and
-the only things written into the owner's music folders are a `.lrc` beside a track whose words were looked up (`BR-29a`), and the tags of files whose autofill the owner confirmed (`FR-AF-05`).
+the only things written into the owner's music folders are a `.lrc` beside a track whose words were looked up (`BR-29a`), and the tags of files whose autofill the owner confirmed (`FR-AF-05`). The only other files it writes are a playlist the owner exports (`FR-PS-11`), the data the owner exports (`FR-DX-01`) and a backup the owner saves (`FR-BK-01`), each to the place they chose. A restore from a backup (`FR-BK-07`) writes only to the locations in the table below and to the music folders' registration (`FR-BK-10`), and adds no location of its own.
 
 | What | Where |
 | --- | --- |
 | Catalog | `catalog.json` |
-| Play history | `play-history.json` |
+| Play history | `play-history.json` (version 2: each play dated for 90 days), a `play-history.json.v1` copy of a version-1 document made once when it is first read, and a `play-history.json.bad-<time>` for a document that could not be read, or a copy of one that was partly read |
+| Playlists | `playlists.json`, and a `playlists.json.bad-<time>` for one that could not be read |
+| Playlist covers | `playlist-covers/` |
 | Cover cache | `covers/` |
 | Analysed spectra | `energy/` |
 | Preferences | the platform's own preference store |
+
+The two auto playlists have no row: they are worked out from the play history and the catalog each time and are never
+written (`FR-PS-14`). The `.v1` and `.bad-` files are the owner's to keep or delete; Orpheus never reads
+them again, and the `.v1` copy is made once, never over an earlier one.
 
 Both caches are disposable: deleting `covers/` or `energy/` costs the work of
 building them again and nothing else. They are directories of plain files, and
@@ -51,8 +57,11 @@ they are kept apart from each other so that either can be deleted on its own, by
 the owner, without this application's help.
 
 **IR-06** — Documents are versioned and written atomically: to a temporary file,
-then renamed over the real one. A document written by an incompatible version is
-discarded rather than partially read.
+then renamed over the real one. A catalog written by an incompatible version is
+discarded rather than partially read, as it can be built again. The play history
+and the playlists are the owner's own, and are never discarded: a document that
+cannot be understood is kept aside as a `.bad-<time>` file (a version-1 play
+history is migrated, not set aside).
 
 ## 3. Startup
 

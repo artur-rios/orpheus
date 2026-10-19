@@ -18,7 +18,7 @@ done.
 | Actor | Description |
 | --- | --- |
 | **Owner** | The single human user, and the only actor with intent. Interacts with every use case below. |
-| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed (UC-34, UC-35). |
+| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, to the one file the owner chose for an export or a backup (UC-39, UC-41, UC-42), read when the owner restores from one (UC-43), and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed (UC-34, UC-35, UC-37, UC-38). |
 | **Metadata service** | MusicBrainz, and the Cover Art Archive for covers. Asked only when the owner starts an autofill (UC-34), at most once a second, and sent nothing that identifies the owner. |
 | **Playback engine** | The libmpv-backed engine linked in process. Opens files, reports position and duration, and reports what it cannot decode. Never modifies a file. |
 | **Host platform** | Windows, Linux or Android. Grants or refuses read access, provides the folder picker, and — on Android alone — provides the media session and the foreground service. |
@@ -47,6 +47,7 @@ graph LR
         UC10[UC-10: Browse every song]
         UC11[UC-11: Switch the layout]
         UC12[UC-12: Search the library]
+        UC36[UC-36: Browse and play by genre]
     end
 
     subgraph "Playback (PL)"
@@ -94,6 +95,22 @@ graph LR
 
     subgraph "Tag editing (TE)"
         UC35[UC-35: Edit a track's tags by hand]
+        UC37[UC-37: Edit the tags of several tracks at once]
+        UC38[UC-38: Select several songs and edit their tags]
+    end
+
+    subgraph "Playlists (PS)"
+        UC39[UC-39: Keep playlists]
+        UC40[UC-40: Play the auto playlists]
+    end
+
+    subgraph "Data export (DX)"
+        UC41[UC-41: Export my data]
+    end
+
+    subgraph "Backup and restore (BK)"
+        UC42[UC-42: Back up Orpheus]
+        UC43[UC-43: Restore from a backup]
     end
 
     OWNER --> UC01
@@ -106,6 +123,13 @@ graph LR
     OWNER --> UC32
     OWNER --> UC34
     OWNER --> UC35
+    OWNER --> UC37
+    OWNER --> UC38
+    OWNER --> UC39
+    OWNER --> UC40
+    OWNER --> UC41
+    OWNER --> UC42
+    OWNER --> UC43
 ```
 
 ---
@@ -460,7 +484,7 @@ graph LR
 | **ID** | UC-12 |
 | **Name** | Search the library |
 | **Actors** | Owner |
-| **Description** | The owner finds tracks, artists and records by typing part of a name. |
+| **Description** | The owner finds tracks by typing part of a title, an artist, a record or a genre, and can narrow the search to one of those. |
 | **Preconditions** | The catalog holds at least one entry. |
 | **Postconditions** | None. |
 | **Requirements** | FR-CT-07, FR-CT-08, FR-CT-09 |
@@ -470,10 +494,21 @@ graph LR
 1. The owner types into the search field — present in the bar on a desktop, and
    behind a button on a phone, where a field beside a title would be too small
    to read.
-2. The application matches titles, artists and records together.
-3. Results are ranked so that a match at the start of a name outranks one within
-   it, and are grouped by what they are.
-4. The owner selects a result and plays it, or drills into it.
+2. Under the results heading a selector offers *All*, *Songs*, *Artists*,
+   *Albums* and *Genres*; *All* is chosen at first (`FR-CT-07`).
+3. The application matches the term against what the choice names: the title
+   for *Songs*; the artist and the album artist for *Artists*; the record for
+   *Albums*; any of a track's genres for *Genres*; and all of them for *All*,
+   where a genre match ranks after a record match.
+4. Results are ranked so that a match at the start of a name outranks one within
+   it (`FR-CT-08`), and are listed as tracks, whichever choice was made. A track
+   matches a choice only through the fields that choice names: under *Songs*, a
+   track tagged *Rock* is not a match for *Rock* unless its title is.
+5. The owner selects a result and plays it, or drills into it.
+6. The owner may change the choice at any time; the results are matched again,
+   and the choice is kept across searches, clearing and the destinations of the
+   shell for as long as the application runs, and is *All* again at the next
+   launch.
 
 **Alternative Flows**
 
@@ -483,6 +518,7 @@ graph LR
 | AF-02 | Nothing matches | The application says so, quoting what was typed. |
 | AF-03 | The owner clears the term | The results are dismissed and the listing behind returns, at the level they left it. |
 | AF-04 | The system back gesture is used while results are showing | It clears the search first, before it goes back a level, because the results are what is covering the screen. |
+| AF-05 | A narrowed search matches nothing | The application says so, quoting what was typed, and the selector stays where it was so the owner can widen the search to *All*. |
 
 ---
 
@@ -926,8 +962,8 @@ graph LR
 | **Actors** | Owner, Playback engine |
 | **Description** | The application decides that a track has been listened to, and records it. |
 | **Preconditions** | A track is open and its length is known. |
-| **Postconditions** | The play history holds one more play of that file. |
-| **Requirements** | FR-ST-01 … FR-ST-07 |
+| **Postconditions** | The play history holds one more play of that file, with the date it was counted. |
+| **Requirements** | FR-ST-01 … FR-ST-07, FR-ST-16 … FR-ST-19 |
 
 **Main Flow**
 
@@ -948,6 +984,11 @@ graph LR
 | AF-05 | The same track is opened again — repeat *one*, or played again from the start | The flag is cleared when the track *opens*, so the new playthrough counts again (`BR-21`). |
 | AF-06 | The history cannot be written | It is logged and dropped. Playback is unaffected (`BR-22`). |
 | AF-07 | Two plays are recorded at nearly the same moment | Writes are serialized, so neither is lost (FR-ST-05). |
+| AF-08 | The play history is of the version before dates were kept | Every track, its count and its last play are kept and it is written as version 2 by this play; the first time it is read, the old document is also copied once to `play-history.json.v1` (FR-ST-17). |
+| AF-09 | The stored history cannot be understood — it is not UTF-8 or not JSON, is not a play history, or was written by a version this one does not read | It is kept aside as `play-history.json.bad-<time>` and never overwritten, and the history starts empty (FR-ST-18). |
+| AF-10 | The stored history is readable but holds a row that is not a play, or a date that is not one | That row or date is stepped over, and the document is first copied aside as `play-history.json.bad-<time>` so what is left out can be recovered by hand (FR-ST-18). |
+| AF-11 | The stored history can be neither read, nor set aside or copied aside, nor — for one of the version before dates were kept — copied once to `play-history.json.v1` | Nothing is recorded for the rest of the run, nothing is written and the document is never replaced; playback continues, the failure is logged, and the next start tries again (FR-ST-19). |
+| AF-12 | A track has plays older than 90 days | Their dates are dropped when the history is read and written; the count and the last play stay (FR-ST-16). |
 
 ---
 
@@ -961,7 +1002,7 @@ graph LR
 | **Description** | The owner sees totals and four rankings drawn from their own listening. |
 | **Preconditions** | None. |
 | **Postconditions** | None. |
-| **Requirements** | FR-ST-08 … FR-ST-15, FR-UX-03 |
+| **Requirements** | FR-ST-08 … FR-ST-15, FR-ST-20, FR-UX-03 |
 
 **Main Flow**
 
@@ -971,7 +1012,10 @@ graph LR
 3. The screen shows the total number of plays and the number of distinct tracks
    they came from.
 4. Under them it shows four rankings — most played tracks, artists, records and
-   genres — most played first, ties ordered by name so the list is stable.
+   genres — most played first, ties ordered by name so the list is stable. A
+   track with several genres counts toward each of them, so a genre's share of
+   the plays is taken of all plays and the shares may add up to more than 100%
+   (`FR-ST-09`).
 5. The owner presses *read again* to read it afresh.
 
 **Alternative Flows**
@@ -980,11 +1024,12 @@ graph LR
 | --- | --- | --- |
 | AF-01 | Nothing has been played | The screen states what makes a track count, rather than only that there is nothing (FR-ST-15). |
 | AF-02 | A ranking has no rows | Its heading is drawn with a line saying it is empty. Dropping the heading would say the application forgot about genres. |
-| AF-03 | A played track carries no artist, record or genre tag | It counts in the totals, ranks in none of those three, and a note explains the difference (`BR-24`). |
+| AF-03 | A played track carries no artist, record or genre tag | It counts in the totals, ranks in none of those three, and a note explains the difference (`BR-24`). A track has no genre only when it has none at all. |
 | AF-04 | A played track carries no title | It is named by its file, which is the second documented exception to `BR-05`. |
 | AF-05 | A played file is no longer in the catalog | It still counts and is named by its file; there are no tags left to rank it by. |
 | AF-06 | The library cannot be read | The totals and the track ranking are still shown, named by file. Statistics do not fail because the library did. |
 | AF-07 | A play lands while the screen is open | The screen does not move. A chart reordering itself under the reader is harder to read than one a minute old, and *read again* is one press away. |
+| AF-08 | The history was migrated from the version before dates were kept | The totals and the rankings are the numbers they were: only counts and last plays are read (FR-ST-20). |
 
 > **All time, and no windows.** "This month" is a control, a parameter and a
 > second set of numbers to explain, and none of it is worth adding before anyone
@@ -999,14 +1044,14 @@ graph LR
 | **ID** | UC-28 |
 | **Name** | Navigate the application shell |
 | **Actors** | Owner |
-| **Description** | The owner moves between the three areas of the application. |
+| **Description** | The owner moves between the five areas of the application. |
 | **Preconditions** | None. |
 | **Postconditions** | None. |
 | **Requirements** | FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-07 |
 
 **Main Flow**
 
-1. The shell presents three destinations — music, queue, folders.
+1. The shell presents five destinations — music, genres, playlists, queue, folders.
 2. Where the window is wide enough they are a rail down the side; where it is
    not they are a bar across the bottom.
 3. The owner selects one and the content area changes.
@@ -1017,13 +1062,16 @@ graph LR
 | ID | Condition | Outcome |
 | --- | --- | --- |
 | AF-01 | The window is resized across the breakpoint | The arrangement changes with it, without losing where the owner was. |
-| AF-02 | The system back gesture is used with somewhere to go back to | It goes back a level in the music area, or clears a search, rather than closing the application. |
+| AF-02 | The system back gesture is used with somewhere to go back to | It goes back a level in the music area or in the genres area, closes an open playlist, or clears a search, rather than closing the application. |
 | AF-03 | The system back gesture is used with nowhere to go | It does whatever the platform does with it. |
 
-> **Three destinations, deliberately.** This application does one thing, and a
+> **Five destinations, deliberately.** This application does one thing, and a
 > navigation panel listing six ways into it would be six ways of asking the
-> owner where they want to be before they have heard anything. The statistics
-> screen is reached from the bar rather than becoming a fourth (FR-UX-03).
+> owner where they want to be before they have heard anything. Genres earned
+> its place beside Music because the owner listens by mood as often as by
+> artist, and Playlists earned its place beside Genres because a playlist is the
+> owner's own order, which neither of them can give. The statistics screen is
+> reached from the bar rather than becoming a sixth (FR-UX-03).
 
 ---
 
@@ -1037,15 +1085,20 @@ graph LR
 | **Description** | The owner changes the theme, the language, and how the application behaves. |
 | **Preconditions** | None. |
 | **Postconditions** | The choices apply and are remembered. |
-| **Requirements** | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18 |
+| **Requirements** | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21, FR-DX-01, FR-BK-01, FR-BK-07 |
 
 **Main Flow**
 
 1. The owner opens the preferences.
 2. They choose light, dark or the system's setting; English, Brazilian
    Portuguese or the system's language; whether the full player opens itself
-   when a track starts; and whether the library is re-scanned at launch.
+   when a track starts; whether the library is re-scanned at launch; and
+   whether the auto playlists are shown (*Show auto playlists*, on by default;
+   UC-40).
 3. Each choice applies immediately and is written behind.
+4. Under *Your data*, *Export my data (JSON)…* saves the owner's data to a file they choose (UC-41), *Back up Orpheus
+   (ZIP)…* saves a backup to one (UC-42), and *Restore from a backup…* brings a backup or an export back (UC-43);
+   *About these exports* compares the first two. They are actions, not choices: nothing about them is remembered.
 
 **Alternative Flows**
 
@@ -1277,7 +1330,7 @@ graph LR
 
 **Main Flow**
 
-1. The owner picks *Edit tags…* from a track's menu — its button, a right-click, or a long press.
+1. The owner picks *Edit tags…* from a track's menu — its ⋮ button or a right-click.
 2. The application reads the file's own tags and cover, and notes its size and time (`FR-TE-01`).
 3. The form shows title, artist, album artist, album, track number and total, disc number and total, year and genre as
    the file holds them, and its front cover with *Choose image…* and *Remove*.
@@ -1298,6 +1351,399 @@ graph LR
 | AF-05 | The file cannot be written | As UC-34 AF-07, for one file; the owner's edits stay in the form, and a file in use or that failed can be tried again. A file changed by another program since it was read offers *Reload*, which reads it again (`FR-TE-04`). |
 | AF-06 | On Android, permission to change audio files is refused | As UC-34 AF-08; nothing is written. |
 | AF-07 | The owner cancels | Nothing is written. |
+
+### UC-36: Browse and play by genre
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-36 |
+| **Name** | Browse and play by genre |
+| **Actors** | Owner |
+| **Description** | The owner opens a genre from a tab of its own, browses the artists, records and songs that carry it, and plays it — a record listed under every genre any of its tracks carries and opened whole, a genre played as only the tracks tagged with it. |
+| **Preconditions** | The catalog holds at least one entry. |
+| **Postconditions** | None. Where the owner left the genres area is remembered for as long as the application runs, apart from where they left the music area. |
+| **Requirements** | FR-CT-05, FR-CT-06, FR-CT-12, FR-CT-13, FR-CT-14, FR-CT-15, FR-CT-16, FR-CT-17, FR-CT-18, FR-CT-19, FR-UX-01 |
+
+**Main Flow**
+
+1. The owner selects *Genres* in the shell, between *Music* and *Queue*.
+2. The application derives the genres from the catalog (`BR-39`) and lists them
+   as rows, alphabetically and ignoring case, with *No genre* last. Each row
+   gives the genre's name, how many tracks are tagged with it and, where every
+   one of their lengths is known, how long they run, and carries a play and a
+   shuffle button (`FR-CT-12`).
+3. The owner selects a genre. A breadcrumb *Genres › Rock* appears, with the
+   same controls as the music area: a switch between *Artists*, *Albums* and
+   *Songs*, a shuffle button, and the rows or sleeves layout, which is the one
+   setting the music area uses (UC-11).
+4. In *Artists* the album artists with a record listed under the genre are
+   shown; the owner selects one and sees that artist's records under the genre,
+   and selects a record and sees all of its tracks in track order, including
+   those tagged with other genres (`BR-37`, `FR-CT-13`). Each crumb of
+   *Genres › Rock › Artist › Record* goes back to its level.
+5. In *Albums* the records listed under the genre are shown, each opened whole.
+   In *Songs* the tracks tagged with the genre are listed by title, as in the
+   music area.
+6. The owner plays. Play or shuffle on a genre row, and the shuffle button
+   inside a genre, queue only the tracks tagged with it, in a queue named after
+   the genre and, unshuffled, ordered by album artist, then record, then track
+   order. Play on an artist queues that artist's records listed under the
+   genre, whole, in the order shown. Play on a record plays the whole record,
+   and a track selected inside a record plays the record from there. A track
+   selected in *Songs* plays alone (`BR-38`, `FR-CT-14`, UC-13, UC-15).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | A track carries several genres | It is listed under each of them, and counted once in a genre it names twice. A value is split at `;`, `\|` and `,`, never at `/`, so *Hip-Hop/Rap* is one genre (`FR-CT-15`, `BR-39`). |
+| AF-02 | Two spellings differ in case or in surrounding spaces | They are one genre, shown in the spelling most tracks use (`FR-CT-16`). |
+| AF-03 | The owner opens *No genre* | The records with any untagged track are listed, each opened whole, and playing it plays only the untagged tracks (`FR-CT-17`, `BR-40`). |
+| AF-04 | An artist has tracks with no album name | Under a genre they are an untitled group that is not a record, holding only the tracks tagged with the genre — under *No genre*, only the untagged ones — and playing it plays those (`FR-CT-13`, `BR-40`). |
+| AF-05 | The library carries no genre tags at all | Only *No genre* is listed (`FR-CT-17`). |
+| AF-06 | The library is empty | The empty state of the music area says so, and points at the folders screen (UC-07 AF-01). |
+| AF-07 | A scan leaves a genre with nothing in it, or a level the owner is in empty | The owner is taken out to the nearest level that still has content, to the genres list where the genre no longer exists. A record or artist renamed by a changed tag is followed (`FR-CT-19`). |
+| AF-08 | An edit or a scan takes the open genre's last tag off the record the owner is in | The owner stays in the record, which is still in the library and is drawn whole from it, and playing it plays it whole. Going back up shows the genre without it (`FR-CT-19`). If the record carried the genre's last tag anywhere in the library, the genre no longer exists and the owner is returned to the genres list instead. |
+| AF-09 | The owner switches to another destination and back | The genre, view, artist and record are as they were left, and independent of the music area's (`FR-CT-12`). |
+| AF-10 | The owner searches while in the genres area | The same results as in the music area are shown, with the selector of UC-12. |
+| AF-11 | The system back gesture is used inside a genre | It clears a search first, then goes back one level — record, artist, genre — and from the genres list does whatever the platform does with it (`FR-CT-18`). |
+
+### UC-37: Edit the tags of several tracks at once
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-37 |
+| **Name** | Edit the tags of several tracks at once |
+| **Actors** | Owner, Local filesystem, Host platform |
+| **Description** | The owner opens one form over all of an album's or an artist's tracks, changes what they want, and only what they changed is written to each track. |
+| **Preconditions** | The library holds the album or artist, with more than one track. |
+| **Postconditions** | In each track Orpheus could write, exactly the fields the owner changed hold what they typed, and the library shows it. No other tag, and no track the owner was told is skipped, has changed. |
+| **Requirements** | FR-TE-05, FR-TE-06, FR-TE-07, FR-TE-08 |
+
+**Main Flow**
+
+1. The owner picks *Edit tags…* from an album's or an artist's menu — its ⋮ button, a right-click or a long press.
+2. The application reads each track's own tags and cover, and notes its size and time (`FR-TE-05`).
+3. The form shows artist, album artist, album, track total, disc number and total, year, genre and cover — what the
+   tracks share, and *mixed* where they differ — and names any track it will leave alone (`FR-TE-06`).
+4. The owner changes what they want; *Save* is offered once something changed and every number is valid.
+5. The owner presses *Save*. Each track is written with only the changed fields it can hold, against itself as read
+   (`FR-TE-07`), with a count of the progress.
+6. The form closes, the screen says how many songs were saved, and the library updates without a scan (`FR-TE-08`).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | Some tracks are not MP3 or FLAC, or cannot be changed safely | They are named before saving and left alone (`FR-TE-06`). |
+| AF-02 | No track can be changed | The form says why and offers nothing to save. |
+| AF-03 | The album or artist has one track | The one-track form opens (UC-35). |
+| AF-04 | The owner changes nothing, or a number is not valid | *Save* stays unavailable. |
+| AF-05 | A track has no track or disc number and the owner sets its total | That track keeps its total and is noted; its other changes are written. The form stays open and lists those songs. |
+| AF-06 | Some tracks cannot be written | The others stay written; each failed track is named with its reason, and those in use, failed or changed since read can be tried again (`FR-TE-08`). |
+| AF-07 | On Android, permission to change audio files is refused | As UC-34 AF-08; nothing is written. |
+| AF-08 | The owner cancels before saving | Nothing is written. |
+
+### UC-38: Select several songs and edit their tags
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-38 |
+| **Name** | Select several songs and edit their tags |
+| **Actors** | Owner, Local filesystem, Host platform |
+| **Description** | In a list of songs the owner picks several, and edits their tags in the one form of UC-37, however the songs are spread over albums and artists. |
+| **Preconditions** | A list of songs is on screen: all songs, the songs of an album or of a genre, or search results. |
+| **Postconditions** | Where the owner saved, the songs Orpheus could write hold exactly the fields the owner changed, as in UC-37, and the selection has ended. Where the owner stopped, cancelled or saved nothing, no tag has changed. Nothing has been played by the selecting. |
+| **Requirements** | FR-UX-11, FR-UX-12, FR-UX-13, FR-TE-09 |
+
+**Main Flow**
+
+1. The owner starts a selection on a song: touch and hold, Ctrl-click or Shift-click (`FR-UX-11`). The song is selected,
+   tick boxes take the place of the track numbers and covers, and a bar above the list shows *1 selected*, a way to
+   stop, and *Edit tags…*, with *Select all* while some songs are not picked.
+2. The owner adds songs: a tap, a click or a touch and hold on a song toggles it instead of playing it; Ctrl-click
+   toggles; Shift-click selects every song from the last one toggled to the one clicked. The bar shows the count.
+3. The owner picks *Edit tags…* in the bar, or right-clicks a selected song and picks *Edit tags of N songs…* in the
+   menu that opens (`FR-TE-09`).
+4. The form of UC-37 opens over exactly the selected songs, in the order of the list, and the owner goes on as there
+   (`FR-TE-05` … `FR-TE-08`). The selection stays while the form is open.
+5. The form closes with songs written; the selection ends, the list shows the new tags, and the library updates without
+   a scan.
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | One song is selected when the owner picks *Edit tags…* | The one-track form opens (UC-35). |
+| AF-02 | The owner presses Esc, or the ✕ in the bar, or the system Back on Android | The selection ends and nothing else changes; Back does this before it clears a search or goes up a level (`FR-UX-11`). |
+| AF-03 | The owner deselects the last selected song | The selection ends. |
+| AF-04 | The owner leaves the list — another destination, another album or genre, another search term or field | The selection ends; a selection belongs to one list only. |
+| AF-05 | A rescan after a save removes selected songs from the list | They drop out of the selection; if none remain, it ends. |
+| AF-06 | The owner right-clicks a song outside the selection | That song's own menu opens, as when nothing is selected. |
+| AF-07 | The owner presses a song's ⋮ button | That song's own menu opens, whether or not it is selected. |
+| AF-08 | The owner touches and holds an album or an artist | Its menu opens, as before (`FR-UX-12`). |
+| AF-09 | The owner cancels the form, or it writes no song | The selection stays, so the owner can adjust it. |
+| AF-10 | The owner taps a song when nothing is selected | It plays, as before. |
+| AF-11 | The bar is narrower than 480 logical pixels, as on a phone held upright | *Edit tags…* in it is an icon with a tooltip, so the count keeps its room (`FR-UX-13`). |
+
+### UC-39: Keep playlists
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-39 |
+| **Name** | Keep playlists |
+| **Actors** | Owner, Local filesystem, Host platform |
+| **Description** | The owner makes named playlists, adds songs to them from wherever they are listed, plays them in an order of their own, and renames, covers, exports and deletes them. |
+| **Preconditions** | None. Songs can be added once the library holds some. |
+| **Postconditions** | The playlists the owner left are stored in the application's own data and are there at the next launch, in the order the owner arranged them. No audio file, and nothing in a music folder, has been created, changed or removed; an export has written the one file the owner chose. |
+| **Requirements** | FR-PS-01 … FR-PS-13, FR-UX-01, FR-UX-13 |
+
+**Main Flow**
+
+1. The owner opens the Playlists destination. It lists the playlists, the most recently changed first, as rows or tiles,
+   each with its cover, name and number of songs (`FR-PS-07`); with none yet it says so and offers *New playlist*.
+2. The owner picks *New playlist*, gives it a name and confirms. It is stored and listed (`FR-PS-01`).
+3. Elsewhere, the owner picks *Add to playlist…* — on a song's menu, in the bar or the right-click menu of a
+   selection, or on an album's or an artist's ⋮ menu (`FR-PS-02`). A dialog lists the playlists, *New playlist…*
+   first, and the owner picks one.
+4. The songs go at the end of the playlist, in the order given, and a message says *Added N songs to X*.
+5. The owner opens a playlist. Its header shows the cover, the number of songs and their length, with *Play* and
+   *Shuffle*; below are its songs in the owner's order, each with a drag handle.
+6. The owner taps a song; the playlist plays from it, and the queue is named after the playlist (`FR-PS-08`). *Play*
+   starts at the first song, *Shuffle* plays them all in a random order.
+7. The owner drags a song's handle to another place; the order is stored at once (`FR-PS-05`).
+8. The owner picks *Remove from playlist* on a song's menu; that entry goes, and the song and its file stay
+   (`FR-PS-04`).
+9. From the playlist's menu — its ⋮ button, a right-click or a touch and hold — the owner picks *Rename…*,
+   *Choose cover…*, *Remove cover* (offered only while the playlist has a cover of its own), *Export to .m3u…* or
+   *Delete…* (`FR-PS-01`, `FR-PS-06`, `FR-PS-11`).
+10. *Rename…* asks for a name and stores it. *Choose cover…* asks for a JPEG or PNG and keeps a copy of it in the
+    application's own data for this playlist; *Remove cover* returns to the mosaic of up to four of its albums' covers.
+11. *Export to .m3u…* asks where to save `<name>.m3u` and writes the extended M3U there, naming the place when it is
+    done.
+12. *Delete…* asks *Delete X?* and says the songs stay in the library; on confirming, the playlist and its cover are
+    removed and the list is shown.
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | Some of the songs being added are already in the chosen playlist | *Already in X — add again?* is asked with *Add anyway*, *Skip those* and *Cancel*. *Add anyway* adds all of them, *Skip those* adds only the others, *Cancel* adds nothing (`FR-PS-03`). |
+| AF-02 | *Skip those* leaves nothing to add | Nothing is stored, and the message says *Nothing added*. |
+| AF-03 | The owner cancels the playlist dialog or the name dialog | Nothing is created and nothing is added. |
+| AF-04 | The name is blank | The dialog says to give the playlist a name and stays open; a name is trimmed, and may repeat another playlist's (`FR-PS-01`). |
+| AF-05 | An album or an artist is added | Its songs are gathered from the whole library, an album in track order and an artist in the order the artist is listed, not only those on screen (`FR-PS-02`). |
+| AF-06 | A song's file is no longer in the library — a drive is unplugged, a folder is unreachable | The song stays in the playlist, greyed and labelled *Missing* with what was saved of it. Tapping it does nothing, *Play* and *Shuffle* skip it, and the owner can select and remove it. When the file is back it is an ordinary song again (`FR-PS-09`). |
+| AF-07 | Every song in the playlist is missing, or it has none | *Play* and *Shuffle* are disabled, and an empty playlist says it has no songs yet. |
+| AF-08 | The library is still loading, or could not be read | The playlist shows the loading state or the error with a retry in place of its songs, so that no song is shown missing for want of an answer (`FR-PS-09`). |
+| AF-09 | The owner starts a selection in a playlist | Each entry is selected on its own, so a song that is in twice can be picked once; dragging is not offered; the bar offers *Remove from playlist*, *Add to playlist…* and *Edit tags…*, the last two over the songs the library holds, each once, in the playlist's order. Missing entries can be picked and removed (`FR-PS-10`). |
+| AF-10 | Back is used in a playlist | It ends a selection if there is one, and otherwise closes the playlist and shows the list (`FR-PS-07`). |
+| AF-11 | The playlist is deleted while it is open | The list is shown. |
+| AF-12 | The file picked as a cover is not a JPEG or a PNG | A message says to choose a JPEG or PNG image; the cover is unchanged. Cancelling the picker changes nothing. |
+| AF-13 | The owner cancels the save dialog of an export | Nothing is written and nothing is said. |
+| AF-14 | The export could not be written | A message says that the playlist could not be exported; the playlist is unchanged, and nothing else is written (`NFR-03`). |
+| AF-15 | The owner cancels *Delete…* | Nothing is removed. |
+| AF-16 | The playlists cannot be stored — a full disk, a locked file | A message says the playlists could not be saved; what is on screen and what is stored are as they were (`FR-PS-12`). |
+| AF-17 | The stored document cannot be read, or was written by another version | It is kept aside as `playlists.json.bad-<time>`, never overwritten, and the application starts with no playlists (`FR-PS-13`). |
+| AF-18 | The stored document can be neither read nor kept aside | The Playlists destination shows the error with a retry; no playlist can be created or changed, so nothing is written over the document (`FR-PS-13`). |
+| AF-19 | The selection's bar is narrower than 480 logical pixels, as on a phone held upright | *Edit tags…* in it is an icon with a tooltip (`FR-UX-13`). |
+| AF-20 | A scan runs, or a music folder cannot be reached | No playlist changes; songs whose files the scan no longer finds are shown as missing (AF-06). |
+
+### UC-40: Play the auto playlists
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-40 |
+| **Name** | Play the auto playlists |
+| **Actors** | Owner, Local filesystem |
+| **Description** | Orpheus keeps two playlists from what the owner listens to, *Favourites lately* and *All-time favourites*, at the top of the Playlists tab; the owner plays, shuffles, copies and exports them, and can hide them. |
+| **Preconditions** | None. They fill as songs are played (UC-26). |
+| **Postconditions** | Nothing is stored for them: they are worked out again each time. A copy the owner made is an ordinary playlist (UC-39), and an export has written the one file the owner chose. No audio file, and nothing in a music folder, has been created, changed or removed. |
+| **Requirements** | FR-PS-14 … FR-PS-21, FR-ST-16 … FR-ST-20, FR-UX-06 |
+
+**Main Flow**
+
+1. The owner opens the Playlists destination. With the preference on (UC-29), it starts with an *Auto playlists*
+   section holding *Favourites lately* and *All-time favourites*, as rows or tiles by the owner's layout choice, each
+   with its mosaic cover, its name and its number of songs; *Your playlists* follow (`FR-PS-14`, `FR-PS-20`).
+2. The owner opens *Favourites lately*. It holds up to 50 songs played in the last 30 days, the most plays in that time
+   first, the more recently played first among equals (`FR-PS-15`).
+3. The owner opens *All-time favourites*. It holds up to 50 songs, the most plays in all first, the more recently
+   played first among equals (`FR-PS-16`).
+4. Either opens as a playlist does, with *Play* and *Shuffle*, and the owner taps a song to play from it (UC-39,
+   `FR-PS-08`); the queue is named after the auto playlist. A song's own menu is on its ⋮ button, but there is no drag
+   handle and no *Remove from playlist*, and nothing to rename, to give a cover or to delete (`FR-PS-19`).
+5. From the playlist's menu — its ⋮ button, a right-click or a touch and hold, in the tab or in its own header — the
+   owner picks *Add to playlist…*, which puts all its songs at the end of a playlist the owner picks or of a new one
+   exactly as in UC-39 (AF-01 to AF-03 there apply), or *Export to .m3u…*, which asks where to save `<name>.m3u`, named
+   after the auto playlist, and writes it as UC-39 does (`FR-PS-11`).
+6. The owner starts a selection in it. Each song is picked by its file, and the bar offers *Add to playlist…* and
+   *Edit tags…* over the songs picked, as in a playlist (`FR-PS-19`).
+7. As the owner listens, both are worked out again by themselves when a play is recorded (`FR-PS-18`).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | Fewer than 10 songs have a play dated in the last 30 days — a new history, or one carried over from before plays were dated | *Favourites lately* holds the songs last played in the last 30 days, the most played in all first, and says *Getting to know your recent listening* under its header until there are enough (`FR-PS-15`). |
+| AF-02 | No song qualifies for *Favourites lately* | It says *Play some music and your recent favourites will show here*, with no note, and *Play* and *Shuffle* are disabled. |
+| AF-03 | No song has been played | *All-time favourites* says *Play some music and your favourites will show here* (`FR-PS-16`). |
+| AF-04 | A played song is no longer in the library — its file is gone or its drive is not there | It is left out of both, and is back when the library holds it again; the play history is not changed (`FR-PS-17`). |
+| AF-05 | The library is still loading, or could not be read | The section shows a line of loading in the first case and is not shown in the second, and no song is left out for want of an answer; the owner's playlists below are not held up by it (`FR-PS-17`, `FR-PS-20`). |
+| AF-06 | The owner has no playlists, or they cannot be read | The section is still shown. *Your playlists* says so in a line with *New playlist*, or shows the error with its retry under the section (`FR-PS-20`). |
+| AF-07 | The owner turns off *Show auto playlists* in the preferences | The section is not shown, and an auto playlist that is open closes to the list. The plays are still recorded, so turning it back on finds the lists as the listening has made them (`FR-PS-21`). |
+| AF-08 | A play is recorded while an auto playlist is open | It may change order or songs under the owner; a selection made in it keeps the songs it holds that are still in the list (`FR-PS-18`). |
+| AF-09 | The owner cancels the playlist dialog, the name dialog or the save dialog | As in UC-39 (AF-03, AF-13): nothing is created, added or written. |
+| AF-10 | The export could not be written | A message says that the playlist could not be exported; nothing else is written (`NFR-03`). |
+| AF-11 | The play history could not be read, or was set aside | There is nothing to rank, so both say they are empty; when it could not even be set aside, plays are not recorded for the rest of the run and the document is left as it was (UC-26 AF-09 to AF-11, `FR-ST-18`, `FR-ST-19`). |
+| AF-12 | The selection's bar is narrower than 480 logical pixels | *Edit tags…* in it is an icon with a tooltip (`FR-UX-13`). |
+| AF-13 | The owner picks *Back* in an auto playlist | It ends a selection if there is one, and otherwise closes the playlist and shows the list, as in UC-39 (AF-10). |
+
+---
+
+### UC-41: Export my data
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-41 |
+| **Name** | Export my data |
+| **Actors** | Owner, Local filesystem |
+| **Description** | The owner saves everything Orpheus knows about their music — the library, the playlists, the auto playlists, the play history and the statistics — to one JSON file, to analyse in any tool, to import elsewhere, or to restore the playlists and the play history from (UC-43). It is one of two exports: the backup of UC-42 also holds the playlists' covers and the preferences. |
+| **Preconditions** | None. |
+| **Postconditions** | One file exists where the owner chose. Nothing Orpheus holds has changed, no audio file or music folder has been touched, and nothing else has been written (`NFR-03`). Restoring from the file is UC-43. |
+| **Requirements** | FR-DX-01 … FR-DX-09 |
+
+**Main Flow**
+
+1. The owner opens the preferences (UC-29). Under *Your data* is *Export my data (JSON)…*.
+2. The owner picks it. The entry shows that it is working and cannot be picked again until it is done (`FR-DX-05`).
+3. Orpheus waits for the library, the playlists and the play history to load, then reads them (`FR-DX-05`).
+4. It builds the document — the songs, artists, albums, playlists, both auto playlists, the play history and the
+   statistics, in the layout documented in `docs/data-export.md` (`FR-DX-02`, `FR-DX-03`) — and encodes it off the
+   interface's thread, so the window does not freeze however large the library is (`FR-DX-08`).
+5. The save dialog asks where to save the file, suggesting `orpheus-data-<yyyy-MM-dd>.json` for today (`FR-DX-01`).
+6. The owner chooses a place. The file is written there, and *Exported to* and the place appear under the entry; when
+   the system gives no place to name, as with Android's document picker, it says *Exported* (`FR-DX-09`).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | The owner cancels the save dialog | Nothing is written and nothing is said (`FR-DX-01`). |
+| AF-02 | The library, the playlists or the play history is still loading when the owner picks the entry | The export waits for all three, with the entry showing progress, rather than save a section that is empty only because it has not loaded (`FR-DX-05`). |
+| AF-03 | The library fails to load | The export is refused: no save dialog is offered, and *Your library couldn't be read, so there's nothing to export* is shown under the entry (`FR-DX-06`). |
+| AF-04 | The playlists could not be read, or the play history could not be read in this run | The export completes. That section is empty, `problems` in the file says which section and why, and *Exported, but some data could not be read* is shown under the entry (`FR-DX-07`). |
+| AF-05 | A playlists or play history document was unreadable but has been kept aside and replaced by an empty one | It is not a source that could not be read: the export completes as usual and `problems` is empty (`FR-DX-07`, `FR-PS-13`, `FR-ST-18`). |
+| AF-06 | The file could not be written | *Couldn't export your data* is shown under the entry; nothing else is written (`FR-DX-09`, `NFR-03`). |
+| AF-07 | The owner turned off *Show auto playlists* | The auto playlists are in the file all the same: the preference decides what is shown, not what the owner's data is (`FR-DX-02`). |
+| AF-08 | A played song is no longer in the library, or a playlist holds one | It is in the file, with its path, and its reference to a song is `null` (`FR-DX-03`). |
+| AF-09 | The preferences are closed while the export runs | The export finishes and the file is written; the result has nowhere to be shown (`FR-DX-09`). |
+| AF-10 | The owner exports again | The last result is cleared as the new export starts (`FR-DX-09`). |
+| AF-11 | The library is being rebuilt — its stored catalog was refused, as another version's or because it could not be read, and the scan it is owed has not refilled it | The export completes with no songs, `problems` names `songs` and says the library is being rebuilt, and *Exported, but some data could not be read* is shown under the entry (`FR-DX-06`, `FR-DX-07`). A library never scanned, or scanned and holding no music, reads as empty and is not reported: an export with no songs and no problem means Orpheus found no music. |
+
+---
+
+### UC-42: Back up Orpheus
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-42 |
+| **Name** | Back up Orpheus |
+| **Actors** | Owner, Local filesystem |
+| **Description** | The owner saves what is needed to bring Orpheus back on this or another device — the data of UC-41, the playlists' cover pictures and the preferences, with the music folders — to one ZIP file. |
+| **Preconditions** | None. |
+| **Postconditions** | One file exists where the owner chose. Nothing Orpheus holds has changed, no audio file or music folder has been touched, and nothing else has been written (`NFR-03`). Bringing the data back is UC-43. |
+| **Requirements** | FR-BK-01 … FR-BK-06 |
+
+**Main Flow**
+
+1. The owner opens the preferences (UC-29). Under *Your data* are *Export my data (JSON)…* (UC-41) and *Back up Orpheus
+   (ZIP)…*, each with a line saying what it is for, and *About these exports*, which compares what the two hold
+   (`FR-BK-04`).
+2. The owner picks *Back up Orpheus (ZIP)…*. The entry shows that it is working and cannot be picked again until it is
+   done (`FR-BK-05`).
+3. Orpheus waits for the library, the playlists and the play history to load, then reads them, the cover of every
+   playlist that has one, and the preferences (`FR-BK-05`).
+4. It builds the ZIP — `backup.json`, `data.json`, `preferences.json` and the covers, in the layout documented in
+   `docs/data-export.md` (`FR-BK-02`, `FR-BK-03`) — off the interface's thread, so the window does not freeze however
+   large the library is (`FR-BK-05`).
+5. The save dialog asks where to save the file, suggesting `orpheus-backup-<yyyy-MM-dd>.zip` for today (`FR-BK-01`).
+6. The owner chooses a place. The file is written there, and *Backed up to* and the place appear under the entry; when
+   the system gives no place to name, as with Android's document picker, it says *Backed up* (`FR-BK-06`).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | The owner cancels the save dialog | Nothing is written and nothing is said (`FR-BK-01`). |
+| AF-02 | The library, the playlists or the play history is still loading when the owner picks the entry | The backup waits for all three, with the entry showing progress (`FR-BK-05`). |
+| AF-03 | The library fails to load | The backup is refused: no save dialog is offered, and *Your library couldn't be read, so there's nothing to back up* is shown under the entry (`FR-BK-06`). |
+| AF-04 | The playlists could not be read, or the play history could not be read in this run | The backup completes. That section of `data.json` is empty, its `problems` says which section and why, and *Backed up, but some data could not be read* is shown under the entry. A restore will not offer that part (UC-43 AF-05; `FR-BK-06`, `FR-BK-12`). |
+| AF-05 | A playlist's cover picture cannot be read | The backup completes without that picture, the playlist is in it all the same, and *Backed up, but some data could not be read* is shown under the entry (`FR-BK-06`). A playlist whose picture is simply gone has nothing to save and is not a problem. |
+| AF-06 | The file could not be written | *Couldn't back up Orpheus* is shown under the entry; nothing else is written (`FR-BK-06`, `NFR-03`). |
+| AF-07 | The preferences are closed while the backup runs | The backup finishes and the file is written; the result has nowhere to be shown. |
+| AF-08 | The owner backs up again | The last result is cleared as the new backup starts. |
+| AF-09 | The owner turned off *Show auto playlists* | The auto playlists are in `data.json` all the same, and the preference is in `preferences.json` (`FR-BK-02`). |
+
+---
+
+### UC-43: Restore from a backup
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-43 |
+| **Name** | Restore from a backup |
+| **Actors** | Owner, Local filesystem |
+| **Description** | The owner brings back the playlists, the play history and the preferences from a backup ZIP, or the playlists and the play history from an exported JSON, on this device or another, choosing for each whether to merge, skip or replace. |
+| **Preconditions** | None. A device whose music has been copied over is the usual case, but the music need not be there yet. |
+| **Postconditions** | Each part the owner chose to restore, and could, is written whole, and each other part is as it was. The auto playlists and the statistics follow the new history. The music folders are as the owner left them in the first stage. No audio file has been touched (`NFR-03`, `FR-BK-20`). |
+| **Requirements** | FR-BK-07 … FR-BK-20 |
+
+**Main Flow**
+
+1. The owner opens the preferences (UC-29) and picks *Restore from a backup…* under *Your data*. A file dialog asks for
+   a `.zip` or a `.json` (`FR-BK-07`).
+2. Orpheus reads the file off the interface's thread and checks that it is a backup it can read (`FR-BK-08`). Nothing is
+   written. The restore screen opens (`FR-BK-09`).
+3. **Your music** (for a ZIP). The screen shows the music folders the backup names, each *Found on this device* or *Not
+   found*, and this device's folders. A device with no folders starts with the backup's folders that are found on it,
+   chosen but not yet applied. The owner may take a folder out, or add one with *Choose folders…*; the set shown becomes
+   the whole set (`FR-BK-10`).
+4. The owner presses *Continue*. A changed set is applied now, and the library is scanned, with progress; with no
+   change it goes on at once (`FR-BK-10`).
+5. **What to restore.** The screen shows what the file holds — when it was made, how many playlists, how many songs with
+   plays, how many playlist covers, whether the preferences are in it — and for the playlists, the play history and the
+   preferences a choice of *Merge*, *Skip* or *Replace*, each *Merge* to begin with, and a line on what the chosen one
+   does (`FR-BK-11`).
+6. The owner presses *Restore*. The playlists, then the play history, then the preferences are written, each as the
+   owner chose (`FR-BK-13` … `FR-BK-18`).
+7. A summary says what was restored and, under *Couldn't restore*, what was not and why. The owner closes it
+   (`FR-BK-19`).
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | The owner cancels the file dialog | Nothing happens (`FR-BK-07`). |
+| AF-02 | The file is not an Orpheus backup | *This isn't an Orpheus backup* is shown, and nothing is written (`FR-BK-08`). |
+| AF-03 | The file is a backup from a newer Orpheus than this one reads | *This backup is from a newer Orpheus — update first* is shown, and nothing is written (`FR-BK-08`). |
+| AF-04 | The file is an exported JSON | The first stage is skipped, since the file names no folders, and no scan runs before the choices. The preferences are *Not in this file*, and playlists restored from it have no covers (`FR-BK-08`, `FR-BK-12`). |
+| AF-05 | The backup could not read its playlists, or its play history, when it was made | That part is *Not in this backup*, cannot be chosen, and is not restored: an empty section is not the owner's data, and replacing theirs with it would lose it. A song list that could not be read only means fewer songs to match by (`FR-BK-12`). |
+| AF-06 | A ZIP has no readable `preferences.json` | The rest is restored, and the preferences are *Not in this file* (`FR-BK-08`, `FR-BK-12`). |
+| AF-07 | A backup folder is *Not found* on this device | The owner chooses the folders where the music is, or goes on without; songs that cannot be found keep the backup's path and wait for the file to turn up (`FR-BK-10`, `FR-BK-13`). |
+| AF-08 | The owner removes every folder | The screen warns that no songs can be matched, and the restore goes on if they continue (`FR-BK-10`). |
+| AF-09 | The owner chooses *Merge* | Nothing here is lost. Playlists are added or given the entries and cover they lack; each song's play count is the higher, its last play the later and its dated plays the two together; preferences still at their defaults take the backup's (`FR-BK-14` … `FR-BK-16`). |
+| AF-10 | The owner chooses *Skip* | Playlists and songs the backup holds that are wholly new are added, and for the preferences nothing changes (`FR-BK-14` … `FR-BK-16`). |
+| AF-11 | The owner chooses *Replace* | The screen first says what it removes — how many playlists, how many songs' play counts, all the settings — and the part is put in place of what is here, even when the backup's is empty. The covers of the playlists removed are deleted with them (`FR-BK-11`, `FR-BK-14` … `FR-BK-16`). |
+| AF-12 | What this device holds of a part could not be read | The screen says so under that part, and the part is refused with *this part couldn't be read here, so it was left alone* rather than written over (`FR-BK-12`, `FR-BK-18`). |
+| AF-13 | A part cannot be written | It is reported under *Couldn't restore* as *this part couldn't be saved, so nothing of it changed*; the parts already written stay, and the others are still tried (`FR-BK-18`, `FR-BK-19`). |
+| AF-14 | A playlist is restored but its cover picture cannot be stored, or the backup's is larger than 20 MB or cannot be read | The playlist is there without it, and the summary names it (`FR-BK-02`, `FR-BK-18`, `FR-BK-19`). |
+| AF-15 | A preference is applied but cannot be saved | It applies until Orpheus closes, and the summary says so (`FR-BK-19`, UC-29 AF-01). |
+| AF-16 | A song in the backup is not in the library | It is matched by its path and then by its tags and length, and when neither finds exactly one song it keeps the backup's path; the summary counts those among the history's songs (`FR-BK-13`, `FR-BK-19`). |
+| AF-17 | The owner cancels in the first stage before *Continue*, or in the second stage | Nothing is written. The folders *Continue* changed stay as they were set, and the screen says so before the owner cancels (`FR-BK-09`, `FR-BK-10`). |
+| AF-18 | The owner tries to leave while the library is scanned or the parts are written | It cannot be left: each part is whole or untouched, and the owner is owed the summary of what was written (`FR-BK-09`). |
+| AF-19 | A restore is already under way | Asking again answers with the one under way (`FR-BK-09`). |
+| AF-20 | Something unforeseen stops the restore before the choices show, after *Continue* changed the music folders | *Something went wrong while preparing the restore. Nothing was restored.* is shown with a note that the music folders were changed in the last step and stay as they are now, and the owner closes the screen (`FR-BK-10`). |
 
 ---
 
@@ -1330,15 +1776,23 @@ graph LR
 | UC-23 Step over a bad file | FR-PL-14, FR-PL-15 |
 | UC-24 Play in the background | FR-BG-01, FR-BG-02, FR-BG-05, FR-BG-09, FR-BG-10 |
 | UC-25 Control from outside | FR-BG-03, FR-BG-04, FR-BG-06, FR-BG-07, FR-BG-08 |
-| UC-26 Count a play | FR-ST-01 … FR-ST-07 |
-| UC-27 See what you listen to | FR-ST-08 … FR-ST-15, FR-UX-03 |
+| UC-26 Count a play | FR-ST-01 … FR-ST-07, FR-ST-16 … FR-ST-19 |
+| UC-27 See what you listen to | FR-ST-08 … FR-ST-15, FR-ST-20, FR-UX-03 |
 | UC-28 Navigate the shell | FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-07 |
-| UC-29 Manage preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18 |
+| UC-29 Manage preferences | FR-UX-04, FR-UX-05, FR-UX-06, FR-PL-18, FR-LB-18, FR-PS-21, FR-DX-01, FR-BK-01, FR-BK-07 |
 | UC-30 Read the words | FR-LY-01, FR-LY-02, FR-LY-03, FR-LY-07 … FR-LY-10, FR-LY-12 |
 | UC-31 Follow and jump | FR-LY-04, FR-LY-05, FR-LY-06, FR-LY-11 |
 | UC-32 See the music move | FR-VZ-01 … FR-VZ-11 |
 | UC-34 Autofill a record's tags | FR-AF-01 … FR-AF-08 |
 | UC-35 Edit a track's tags by hand | FR-TE-01 … FR-TE-04 |
+| UC-36 Browse and play by genre | FR-CT-05, FR-CT-06, FR-CT-12 … FR-CT-19, FR-UX-01 |
+| UC-37 Edit the tags of several tracks at once | FR-TE-05 … FR-TE-08 |
+| UC-38 Select several songs and edit their tags | FR-UX-11, FR-UX-12, FR-UX-13, FR-TE-09 |
+| UC-39 Keep playlists | FR-PS-01 … FR-PS-13, FR-UX-01, FR-UX-13 |
+| UC-40 Play the auto playlists | FR-PS-14 … FR-PS-21, FR-ST-16 … FR-ST-20, FR-UX-06 |
+| UC-41 Export my data | FR-DX-01 … FR-DX-09 |
+| UC-42 Back up Orpheus | FR-BK-01 … FR-BK-06 |
+| UC-43 Restore from a backup | FR-BK-07 … FR-BK-20 |
 
 ## 4. State diagrams
 

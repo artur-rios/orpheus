@@ -20,6 +20,7 @@ class InMemorySettingsStore implements SettingsStore {
     bool rescansAtStartup = true,
     bool fetchesLyricsOnline = true,
     bool checksForUpdatesOnStartup = true,
+    bool showsAutoPlaylists = true,
     String? skippedUpdateVersion,
     double volume = 1,
     Map<String, String>? values,
@@ -31,6 +32,7 @@ class InMemorySettingsStore implements SettingsStore {
     _rescansAtStartup = rescansAtStartup;
     _fetchesLyricsOnline = fetchesLyricsOnline;
     _checksForUpdatesOnStartup = checksForUpdatesOnStartup;
+    _showsAutoPlaylists = showsAutoPlaylists;
     _skippedUpdateVersion = skippedUpdateVersion;
     _volume = volume;
   }
@@ -42,6 +44,7 @@ class InMemorySettingsStore implements SettingsStore {
   late bool _rescansAtStartup;
   late bool _fetchesLyricsOnline;
   late bool _checksForUpdatesOnStartup;
+  late bool _showsAutoPlaylists;
   late String? _skippedUpdateVersion;
   late double _volume;
   final Map<String, String> _values;
@@ -92,6 +95,13 @@ class InMemorySettingsStore implements SettingsStore {
   @override
   Future<void> setChecksForUpdatesOnStartup(bool value) async =>
       _checksForUpdatesOnStartup = value;
+
+  @override
+  bool get showsAutoPlaylists => _showsAutoPlaylists;
+
+  @override
+  Future<void> setShowsAutoPlaylists(bool value) async =>
+      _showsAutoPlaylists = value;
 
   @override
   String? get skippedUpdateVersion => _skippedUpdateVersion;

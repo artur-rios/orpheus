@@ -50,8 +50,13 @@ class InMemoryCatalogStore implements CatalogStore {
   /// a different thing from "this is what a scan wrote".
   void seed(MusicCatalog catalog) => _catalog = catalog;
 
+  /// What a read waits on before it answers, or `null` to answer at once —
+  /// how a test holds the library in its loading state.
+  Completer<void>? readGate;
+
   @override
   Future<MusicCatalog> read() async {
+    await readGate?.future;
     if (failOnRead) throw StateError('the catalog could not be read');
 
     return _catalog;
@@ -233,9 +238,14 @@ class FakeLibraryAccess implements LibraryAccess {
   /// How many times writing was asked for.
   int writeRequests = 0;
 
+  /// What a request to write throws instead of answering, where a test wants
+  /// the platform to fail.
+  Error? writeError;
+
   @override
   Future<LibraryAccessDecision> requestWrite() async {
     writeRequests++;
+    if (writeError case final error?) throw error;
 
     return writeDecision;
   }
@@ -282,11 +292,24 @@ class InMemoryPlayHistoryStore implements PlayHistoryStore {
   /// How many times the history was written.
   int writes = 0;
 
+  /// When set, [read] throws it: a history that could not be read.
+  Exception? failRead;
+
+  /// When set, [write] waits for it before storing anything: a disk that
+  /// takes its time.
+  Completer<void>? writeGate;
+
   @override
-  Future<PlayHistory> read() async => history;
+  Future<PlayHistory> read() async {
+    final failure = failRead;
+    if (failure != null) throw failure;
+
+    return history;
+  }
 
   @override
   Future<void> write(PlayHistory history) async {
+    await writeGate?.future;
     writes++;
     this.history = history;
   }
@@ -409,6 +432,9 @@ class UnwritableSettingsStore extends InMemorySettingsStore {
 
   @override
   Future<void> setFetchesLyricsOnline(bool value) async => _refuse();
+
+  @override
+  Future<void> setShowsAutoPlaylists(bool value) async => _refuse();
 
   @override
   Future<void> setVolume(double value) async => _refuse();

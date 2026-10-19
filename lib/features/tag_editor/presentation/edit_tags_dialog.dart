@@ -11,11 +11,11 @@ import '../../../core/theme/breakpoints.dart';
 import '../../autofill/domain/autofill_field.dart';
 import '../../autofill/domain/tag_writer.dart';
 import '../../autofill/presentation/autofill_field_names.dart';
-import '../../library/domain/library_access.dart';
 import '../../library/domain/music_entry.dart';
 import '../../playback/presentation/music_display_name.dart';
 import '../application/tag_edit_controller.dart';
 import '../domain/tag_edits.dart';
+import 'tag_edit_messages.dart';
 
 /// The form one track's tags are edited in by hand.
 ///
@@ -242,23 +242,11 @@ class _EditTagsDialogState extends ConsumerState<EditTagsDialog> {
         ],
         if (state.outcome case final outcome?) ...[
           gap,
-          Text(_outcomeMessage(l10n, outcome), style: error),
+          Text(writeOutcomeMessage(l10n, outcome), style: error),
         ],
         if (state.refusal case final refusal?) ...[
           gap,
-          Text(l10n.autofillAccessRefused, style: error),
-          if (refusal == LibraryAccessDecision.deniedPermanently)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: () => unawaited(
-                  ref
-                      .read(libraryAccessControllerProvider.notifier)
-                      .openSettings(),
-                ),
-                child: Text(l10n.autofillOpenSettings),
-              ),
-            ),
+          TagEditAccessRefusal(refusal: refusal),
         ],
       ],
     );
@@ -380,14 +368,4 @@ class _EditTagsDialogState extends ConsumerState<EditTagsDialog> {
         ),
     ];
   }
-
-  String _outcomeMessage(AppLocalizations l10n, WriteOutcome outcome) =>
-      switch (outcome) {
-        WriteOutcome.changedSinceRead => l10n.autofillOutcomeChanged,
-        WriteOutcome.inUse => l10n.autofillOutcomeInUse,
-        WriteOutcome.denied => l10n.autofillOutcomeDenied,
-        // A kind of file Orpheus writes, whose tag the editor refused.
-        WriteOutcome.unsupported => l10n.autofillUnsafeTags,
-        _ => l10n.autofillOutcomeFailed,
-      };
 }

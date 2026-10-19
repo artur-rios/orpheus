@@ -114,6 +114,8 @@ extension ShellDestinationPresentation on ShellDestination {
   /// The icon in the navigation panel.
   IconData get icon => switch (this) {
     ShellDestination.music => Icons.library_music_outlined,
+    ShellDestination.genres => Icons.category_outlined,
+    ShellDestination.playlists => Icons.playlist_play_outlined,
     ShellDestination.queue => Icons.queue_music_outlined,
     ShellDestination.folders => Icons.folder_outlined,
   };
@@ -121,6 +123,8 @@ extension ShellDestinationPresentation on ShellDestination {
   /// The icon shown for the selected destination.
   IconData get selectedIcon => switch (this) {
     ShellDestination.music => Icons.library_music,
+    ShellDestination.genres => Icons.category,
+    ShellDestination.playlists => Icons.playlist_play,
     ShellDestination.queue => Icons.queue_music,
     ShellDestination.folders => Icons.folder,
   };
@@ -128,6 +132,8 @@ extension ShellDestinationPresentation on ShellDestination {
   /// The localized label, in the panel and as the content area's heading.
   String label(AppLocalizations l10n) => switch (this) {
     ShellDestination.music => l10n.destinationMusic,
+    ShellDestination.genres => l10n.destinationGenres,
+    ShellDestination.playlists => l10n.playlistTab,
     ShellDestination.queue => l10n.destinationQueue,
     ShellDestination.folders => l10n.destinationFolders,
   };

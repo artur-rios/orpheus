@@ -19,6 +19,7 @@ of each and no chance of the two drifting apart.
 | [System Requirements](https://github.com/artur-rios/orpheus/blob/main/docs/requirements/System%20Requirements%20Document.md) | The `FR-<AREA>-xx` and `NFR-xx` requirements, the data model, and traceability |
 | [Use Case Specification](https://github.com/artur-rios/orpheus/blob/main/docs/requirements/Use%20Case%20Specification%20Document.md) | The `UC-xx` use cases, their flows, and their `AF-xx` alternatives |
 | [Business Rules](https://github.com/artur-rios/orpheus/blob/main/docs/initial/Business%20Rules.md) | The domain entities and the `BR-xx` rules |
+| [Data export](https://github.com/artur-rios/orpheus/blob/main/docs/data-export.md) | The layout of the file *Export my data (JSON)…* writes and of the ZIP *Back up Orpheus (ZIP)…* writes: every field, how songs are referenced, how a restore reads them, and how they are versioned |
 
 ## How it is built and checked
 

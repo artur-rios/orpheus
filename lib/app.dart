@@ -53,8 +53,9 @@ class OrpheusApp extends ConsumerWidget {
   );
 }
 
-/// The shell, with the system back gesture wired to the music area's own
-/// navigation.
+/// The shell, with the system back gesture wired to the navigation of
+/// whichever library area is showing — Music's, Genres' own, or the open
+/// playlist's.
 ///
 /// On Android, back is how an owner leaves a record — there is no breadcrumb
 /// wide enough to be worth showing on a phone, and a back gesture that closed
@@ -68,20 +69,48 @@ class _ShellWithBack extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final destination = ref.watch(shellControllerProvider);
     final browse = ref.watch(musicBrowseControllerProvider);
+    final genre = ref.watch(genreBrowseControllerProvider);
+    // Open and still there: a playlist deleted while it was open leaves its
+    // id behind, and the tab shows the list of them then — so there is no
+    // level for back to climb, and a press spent closing an id nobody can see
+    // would look like it did nothing.
+    final inPlaylist =
+        destination == ShellDestination.playlists &&
+        ref.watch(openPlaylistProvider) != null;
     // The same test the shell uses to decide results are showing: a single
     // character left in the field shows the listing, and a back press that
     // spent itself clearing an invisible term would look like it did nothing.
     final searching = isSearchable(ref.watch(searchTermProvider));
 
+    // A selection only lives while its list is on screen, so an active one is
+    // normally a visible one — and the first thing back ends. (A reload in
+    // flight can keep one a moment after its list has gone; back ending it
+    // then is harmless.)
+    final selecting = ref.watch(songSelectionProvider).isActive;
+
     final canGoUp =
+        selecting ||
         searching ||
         (destination == ShellDestination.music &&
-            (browse.inAlbum || browse.inArtist));
+            (browse.inAlbum || browse.inArtist)) ||
+        // Inside a genre at all, not only inside a drill: the list of genres
+        // is a level above the genre's own top, and back is how a phone gets
+        // there.
+        (destination == ShellDestination.genres && genre.inGenre) ||
+        inPlaylist;
 
     return PopScope(
       canPop: !canGoUp,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
+
+        // Ending the selection leaves the list where it is: the album is
+        // still open and the results are still showing.
+        if (selecting) {
+          ref.read(songSelectionProvider.notifier).clear();
+
+          return;
+        }
 
         // A search covers whatever area is behind it, so clearing it is the
         // first thing back does — the owner is looking at results, and what
@@ -92,7 +121,15 @@ class _ShellWithBack extends ConsumerWidget {
           return;
         }
 
-        ref.read(musicBrowseControllerProvider.notifier).back();
+        // The back of the area that is showing: each keeps its own place, and
+        // stepping out of a record under Rock must not move Music.
+        if (destination == ShellDestination.genres) {
+          ref.read(genreBrowseControllerProvider.notifier).back();
+        } else if (destination == ShellDestination.playlists) {
+          ref.read(playlistBrowseProvider.notifier).close();
+        } else {
+          ref.read(musicBrowseControllerProvider.notifier).back();
+        }
       },
       child: const MediaSessionNamesScope(child: ShellScreen()),
     );

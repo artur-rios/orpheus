@@ -72,6 +72,14 @@ abstract interface class SettingsStore {
   /// Records [value] for the next launch.
   Future<void> setChecksForUpdatesOnStartup(bool value);
 
+  /// Whether the Playlists tab offers the auto playlists — *Favourites
+  /// lately* and *All-time favourites* — or `true` when the owner has not
+  /// said.
+  bool get showsAutoPlaylists;
+
+  /// Records [value] for the next launch.
+  Future<void> setShowsAutoPlaylists(bool value);
+
   /// A version the owner said not to ask about again, or `null` for none.
   ///
   /// What keeps "not now" from meaning "ask me every launch for ever". It

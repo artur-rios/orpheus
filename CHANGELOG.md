@@ -7,6 +7,128 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-19
+
+### Added
+
+- Browse and play by genre. A new *Genres* tab, between Music and Queue, lists every genre in the library with its
+  number of tracks and their length, and a *No genre* group last. Open one to browse the artists, records and songs
+  that carry it, as rows or sleeves, with a breadcrumb back out. A record is listed under every genre any of its
+  tracks carries and opens whole; playing a genre, or shuffling it, plays only the tracks tagged with it, and playing
+  an artist inside a genre plays that artist's records listed under it. A track with several genres (`Rock; Pop`) is
+  under each, genres are matched ignoring case and spaces, and the tab remembers where you were apart from Music.
+- A search selector. Under the results, choose *All*, *Songs*, *Artists*, *Albums* or *Genres* to match the term
+  against only that kind of tag — a search for *Rock* under *Songs* finds titles, not tracks tagged Rock. The choice is
+  kept while Orpheus runs and is *All* again at the next launch; results stay a list of tracks. Genres are now
+  searched too, ranked after records.
+- Edit the tags of a whole album or artist at once. From an album's or an artist's ⋮ menu — or a right-click or a long
+  press — choose *Edit tags…* to change the artist, album artist, album, track total, disc number and total, year and
+  genre of every song in it, and to replace its cover or remove it. A field the songs disagree on shows as mixed and is
+  left alone unless you type in it; title and track number are not offered for more than one song. Only the fields you
+  change are written, each song measured against its own file. MP3 and FLAC files are written; any other format is
+  listed before you save and skipped, and a song that cannot be written is named with its reason while the others stay
+  written, with *Try again* for those in use, failed, or changed since they were read. An album or artist with one song
+  opens the one-track editor.
+- Select several songs. In any list of songs — all of them, inside an album or a genre, or search results —
+  touch and hold a song, or Ctrl-click or Shift-click it, to start a selection. Tick boxes take the place of the
+  track number or cover, a tap picks a song instead of playing it, and Shift-click picks a stretch. A bar above the
+  list shows how many are selected, with *Select all*, a ✕ to stop and *Edit tags…*; a right-click on a selected song
+  offers the same action as *Edit tags of N songs…*. Esc, ✕, the system Back on Android, or leaving the list ends the selection, and so
+  does a save that wrote songs.
+- Edit the tags of the selected songs together, even from different albums and artists: the same form as for an album
+  or an artist, over exactly those songs. One selected song opens the one-track editor.
+- Playlists. A new *Playlists* tab, after Genres, lists them, the most recently changed first, as rows or tiles, with
+  *New playlist* at the top. Each playlist's menu — its ⋮ button, a right-click or a touch and hold — has *Rename…*,
+  *Choose cover…*, *Remove cover* (only once it has a cover of your own), *Export to .m3u…* and *Delete…*, which asks
+  first and never touches a song. The cover is a JPEG or PNG of your own, or else a mosaic of up to four of its albums'
+  covers.
+- Add to a playlist. *Add to playlist…* is on a song's menu, in the bar and the right-click menu of a selection, and on
+  an album's and an artist's ⋮ menu. Pick a playlist, or *New playlist…* first in the list; the songs go at the end, and
+  a message says *Added N songs to X*. Songs a playlist already holds are asked about — *Add anyway*, *Skip those* or
+  *Cancel* — and a playlist may hold a song more than once.
+- Open a playlist to *Play* or *Shuffle* it, or tap a song to play from there. Drag a song's handle to reorder, and use
+  *Remove from playlist* on a song's menu or on a selection, which here counts each copy of a song on its own and also
+  offers *Add to playlist…* and *Edit tags…*. Back ends a selection, then closes the playlist. A song whose file the
+  library no longer has stays in the playlist, greyed out and labelled *Missing*, and is skipped when it plays, so an
+  unplugged drive does not empty a playlist.
+- Export a playlist to `.m3u`. *Export to .m3u…* writes an extended M3U in UTF-8 to the file you choose, and nothing
+  else; the name is made safe for Windows.
+- Playlists are kept in `playlists.json` in Orpheus's own data, never in your music folders, and every change is written
+  atomically. A document Orpheus cannot read, or that another version wrote, is kept aside as
+  `playlists.json.bad-<time>` and never overwritten; if it cannot be set aside, the Playlists tab shows an error and
+  nothing is saved over it.
+- Auto playlists. An *Auto playlists* section at the top of the Playlists tab, above *Your playlists*, holds two
+  playlists Orpheus keeps from what you listen to: *Favourites lately*, the songs you have played most in the last 30
+  days, and *All-time favourites*, the songs you have played most ever. Each holds up to 50 songs, most plays first and
+  the more recently played first among equals, and a song the library does not hold is left out. Until at least 10
+  songs have a play recorded with its date in the last 30 days, *Favourites lately* is the songs played in the last 30
+  days by their total plays and says *Getting to know your recent listening*. They fill themselves as you listen. Open
+  one to *Play* or *Shuffle* it, tap a song to play from there, or select songs to *Add to playlist…* or
+  *Edit tags…*; its menu has *Add to playlist…*, which copies every song into a playlist of your own, and
+  *Export to .m3u…*. They cannot be reordered, edited, renamed or deleted, and are never written to `playlists.json`.
+- *Show auto playlists* in the preferences, on by default. Off, the section is hidden and an open auto playlist closes;
+  your plays are still recorded, so turning it back on finds the lists as your listening has made them.
+- Each play is now recorded with its date, and a song keeps the dates of its plays from the last 90 days. That is what
+  *Favourites lately* is worked out from; the statistics screen shows the same numbers as before.
+- Export my data. *Export my data (JSON)…*, under *Your data* in the preferences, saves your library, playlists, both
+  auto playlists, play history and statistics to one JSON file, in a place you choose; the suggested name is
+  `orpheus-data-<yyyy-MM-dd>.json`. Songs are listed with their path, tags and length, the playlists with the details
+  saved for each song, and the play history with songs the library no longer holds. It waits for the library, the
+  playlists and the play history to load and does not freeze the window while it builds the file. It only reads: the one
+  thing it writes is the file you chose. If the playlists or the play history cannot be read, or the library is being
+  rebuilt after an upgrade or because its catalog could not be read, that section is empty, the file's `problems` says
+  why, and Orpheus says *Exported, but some data could not be read*; if the library fails to load, nothing is
+  exported. The result is shown under the button. The layout is documented and versioned in `docs/data-export.md`. It
+  holds no cover images, audio or preferences; *Restore from a backup…* can read it back, as below.
+- Back up and restore. *Back up Orpheus (ZIP)…*, under *Your data*, saves one ZIP, suggested as
+  `orpheus-backup-<yyyy-MM-dd>.zip`, that holds the data of *Export my data (JSON)…* exactly as it writes it, the cover
+  picture of every playlist that has one, and your preferences with your music folders; the update you chose to skip is
+  left out. *About these exports* shows what each file holds, and each says in a line what it is for. Like the export,
+  a backup waits for the library, the playlists and the play history, does not freeze the window, only reads, and says
+  *Backed up, but some data could not be read* when a source or a cover picture could not be; the layout is documented
+  and versioned in `docs/data-export.md`.
+- *Restore from a backup…*, under *Your data*, reads a backup ZIP or an exported JSON, and says *This isn't an Orpheus
+  backup* or, for a file from a newer Orpheus, *update first*. For a ZIP it first shows the music folders the backup
+  names, each found on this device or not, and yours: *Choose folders…* sets the whole set, and *Continue* applies it,
+  which changes your music folders now, and scans the library with progress; cancelling later keeps them. Then it shows
+  what the file holds and, separately for the playlists, the play history and the preferences, offers *Merge*, *Skip* or
+  *Replace*, *Merge* to begin with. *Merge* never loses anything here: playlists are told apart by name and get the
+  songs and cover they lack, each song keeps the higher play count, the later last play and the dated plays of both, and
+  a preference still at its default takes the backup's. *Skip* adds only what is wholly new. *Replace* says first
+  what it removes. Songs are matched to your library by path, with a folder moved from the backup's one music folder to yours,
+  and then by title, artist, album and length within 2 seconds when exactly one song answers; one that cannot be matched
+  keeps the backup's path. A part the backup could not read is not offered, a part this device could not read is left
+  alone, each part is written whole or not at all, and a part that fails does not stop the others. A summary says what
+  was restored and what was not, including a playlist whose cover picture was too large (over 20 MB) to read, and a
+  cover picture over that size is not accepted when you choose one. If
+  something unexpected stops a restore after the music folders were changed, the screen says they stay changed. Your
+  music files are never changed. From a JSON, the preferences and the covers are not restored, and it says so.
+
+### Changed
+
+- The first launch of this version scans the library once more, even with *Re-scan the library at every launch*
+  turned off, because the catalog now keeps every genre a file holds and not only the first.
+- A genre containing a `/` is now one genre in MP3 files, as in every other format: *Hip-Hop/Rap* is no longer read
+  as *Hip-Hop* and *Rap*. An MP3's ID3v2.4 genre frame now keeps every value it holds, and numeric references such
+  as `(17)` are still read as the genre they name. Genres are split at `;`, `|` and `,`. An MP4 file with several
+  genre atoms still keeps only one.
+- A track with several genres now counts toward each of them in the statistics, and a genre's share on the story
+  card is of all plays, so the shares can add up to more than 100%.
+- The album row's autofill button moved into its new ⋮ menu, beside *Edit tags…*.
+- Touch and hold on a song now selects it instead of opening its menu, which is on its ⋮ button and a right-click.
+  Touch and hold on an album or an artist still opens its menu.
+- On a phone, *Edit tags…* in a selection's bar is an icon with a tooltip, where the bar is narrower than 480 logical
+  pixels, so the count keeps its room. The bar's other actions are icons at any width.
+- The play history, `play-history.json`, is now version 2, and an existing history is migrated: every song keeps its
+  count and its last-played date, and it is never reset. The first time a version-1 history is read, a copy is kept
+  as `play-history.json.v1`. An earlier release does not read it, but if you install one you can restore it by hand,
+  by renaming it to `play-history.json`.
+- A play history Orpheus cannot read — not UTF-8 or not JSON, not a play history, or written by another version — is
+  no longer started over and overwritten: it is kept aside as `play-history.json.bad-<time>`, and a history with a
+  row or date that is not one has the original copied aside under that name before the rest is kept. If it cannot be
+  kept aside, no plays are recorded until the next start, so that nothing is written over it; playback is not
+  affected.
+
 ## [1.4.0] - 2026-10-13
 
 ### Added
@@ -193,7 +315,8 @@ A pre-release built from the `diagnose/android-usb-folder` branch to diagnose fo
 - Release downloads: a Windows installer, a portable Windows archive, a Linux installer and an Android APK, with
   `SHA256SUMS.txt`.
 
-[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/artur-rios/orpheus/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/artur-rios/orpheus/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/artur-rios/orpheus/compare/v1.2.1...v1.3.0
 [1.2.2-beta.1]: https://github.com/artur-rios/orpheus/compare/v1.2.1...v1.2.2-beta.1

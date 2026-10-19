@@ -40,6 +40,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get destinationMusic => 'Músicas';
 
   @override
+  String get destinationGenres => 'Gêneros';
+
+  @override
   String get destinationQueue => 'Fila';
 
   @override
@@ -60,6 +63,21 @@ class AppLocalizationsPt extends AppLocalizations {
   String searchEmpty(String term) {
     return 'Nada na biblioteca corresponde a “$term”.';
   }
+
+  @override
+  String get searchFieldAll => 'Tudo';
+
+  @override
+  String get searchFieldSongs => 'Faixas';
+
+  @override
+  String get searchFieldArtists => 'Artistas';
+
+  @override
+  String get searchFieldAlbums => 'Álbuns';
+
+  @override
+  String get searchFieldGenres => 'Gêneros';
 
   @override
   String get settingsTitle => 'Preferências';
@@ -166,6 +184,20 @@ class AppLocalizationsPt extends AppLocalizations {
       zero: 'Nenhuma faixa',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get genreUnknown => 'Sem gênero';
+
+  @override
+  String get genrePlay => 'Reproduzir o gênero';
+
+  @override
+  String get genreShuffle => 'Embaralhar o gênero';
+
+  @override
+  String genreRowSummary(String tracks, String length) {
+    return '$tracks · $length';
   }
 
   @override
@@ -836,4 +868,766 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tagEditSaved => 'Tags salvas';
+
+  @override
+  String tagEditManySubtitle(String label, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count faixas',
+      one: '1 faixa',
+    );
+    return '$label · $_temp0';
+  }
+
+  @override
+  String tagEditManyReading(int done, int total) {
+    return 'Lendo $done de $total…';
+  }
+
+  @override
+  String tagEditManySaving(int done, int total) {
+    return 'Salvando $done de $total…';
+  }
+
+  @override
+  String get tagEditManyMixed =>
+      'Variado — deixe em branco para manter o de cada faixa';
+
+  @override
+  String get tagEditManyMixedCovers => 'Capas diferentes';
+
+  @override
+  String get tagEditManyOneAtATime =>
+      'Título e número da faixa são editados uma faixa por vez.';
+
+  @override
+  String tagEditManySkipped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count faixas não podem ser alteradas e ficarão como estão',
+      one: '1 faixa não pode ser alterada e ficará como está',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagEditManySkippedFormat => 'Não é um arquivo MP3 ou FLAC';
+
+  @override
+  String get tagEditManySkippedUnsafe =>
+      'As tags dela não podem ser alteradas com segurança';
+
+  @override
+  String tagEditManyPartly(int written, int failed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      written,
+      locale: localeName,
+      other: '$written faixas',
+      one: '1 faixa',
+      zero: 'nenhuma faixa',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      failed,
+      locale: localeName,
+      other: '$failed não puderam ser alteradas:',
+      one: '1 não pôde ser alterada:',
+    );
+    return 'Salvo em $_temp0. $_temp1';
+  }
+
+  @override
+  String tagEditManySaved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tags salvas em $count faixas',
+      one: 'Tags salvas em 1 faixa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagEditManyTrackTotalLeft =>
+      'O total de faixas dela ficou como estava: ela não tem número de faixa';
+
+  @override
+  String get tagEditManyDiscTotalLeft =>
+      'O total de discos dela ficou como estava: ela não tem número de disco';
+
+  @override
+  String get musicGroupActions => 'Mais ações';
+
+  @override
+  String musicSelectionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count selecionadas',
+      one: '1 selecionada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get musicSelectionAll => 'Selecionar tudo';
+
+  @override
+  String get musicSelectionStop => 'Parar de selecionar';
+
+  @override
+  String musicSelectionSelect(String title) {
+    return 'Selecionar $title';
+  }
+
+  @override
+  String musicSelectionEditTags(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Editar tags de $count faixas…',
+      one: 'Editar tags de 1 faixa…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get musicSelectionLabel => 'Faixas selecionadas';
+
+  @override
+  String get playlistTab => 'Playlists';
+
+  @override
+  String get playlistNew => 'Nova playlist';
+
+  @override
+  String get playlistNameLabel => 'Nome';
+
+  @override
+  String get playlistNameRequired => 'Dê um nome à playlist';
+
+  @override
+  String get playlistCreate => 'Criar';
+
+  @override
+  String playlistSongCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count faixas',
+      one: '1 faixa',
+      zero: 'Nenhuma faixa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get playlistEmpty => 'Nenhuma playlist ainda';
+
+  @override
+  String get playlistActions => 'Ações da playlist';
+
+  @override
+  String get playlistBackToList => 'Todas as playlists';
+
+  @override
+  String get playlistCoverLabel => 'Capa da playlist';
+
+  @override
+  String get playlistRename => 'Renomear…';
+
+  @override
+  String get playlistRenameTitle => 'Renomear playlist';
+
+  @override
+  String get playlistRenameConfirm => 'Renomear';
+
+  @override
+  String get playlistChooseCover => 'Escolher capa…';
+
+  @override
+  String get playlistRemoveCover => 'Remover capa';
+
+  @override
+  String get playlistCoverNotImage =>
+      'Escolha uma imagem JPEG ou PNG para a capa';
+
+  @override
+  String get playlistCoverTooLarge =>
+      'Essa imagem tem mais de 20 MB, grande demais para um backup';
+
+  @override
+  String get playlistExport => 'Exportar para .m3u…';
+
+  @override
+  String playlistExportSaved(String path) {
+    return 'Salvo em $path';
+  }
+
+  @override
+  String get playlistExported => 'Playlist exportada';
+
+  @override
+  String playlistExportFailed(String name) {
+    return 'Não foi possível exportar $name';
+  }
+
+  @override
+  String get playlistDelete => 'Excluir…';
+
+  @override
+  String playlistDeleteTitle(String name) {
+    return 'Excluir $name?';
+  }
+
+  @override
+  String get playlistDeleteBody => 'As faixas continuam na sua biblioteca.';
+
+  @override
+  String get playlistDeleteConfirm => 'Excluir';
+
+  @override
+  String get playlistSaveFailed => 'Não foi possível salvar as playlists';
+
+  @override
+  String get playlistShuffle => 'Embaralhar';
+
+  @override
+  String playlistSummary(String songs, String length) {
+    return '$songs · $length';
+  }
+
+  @override
+  String get playlistNoSongs => 'Nenhuma faixa nesta playlist ainda';
+
+  @override
+  String get playlistMissing => 'Não encontrada';
+
+  @override
+  String playlistMissingBy(String artist) {
+    return 'Não encontrada · $artist';
+  }
+
+  @override
+  String get playlistRemoveFrom => 'Remover da playlist';
+
+  @override
+  String get playlistReorder => 'Arraste para reordenar';
+
+  @override
+  String get playlistAddTo => 'Adicionar à playlist…';
+
+  @override
+  String get playlistAddToTitle => 'Adicionar à playlist';
+
+  @override
+  String get playlistAddToNew => 'Nova playlist…';
+
+  @override
+  String playlistAdded(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count faixas adicionadas a $name',
+      one: '1 faixa adicionada a $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get playlistNothingAdded => 'Nada foi adicionado';
+
+  @override
+  String playlistDuplicateTitle(String name) {
+    return 'Já está em $name — adicionar de novo?';
+  }
+
+  @override
+  String get playlistAddAnyway => 'Adicionar mesmo assim';
+
+  @override
+  String get playlistSkipThose => 'Pular essas';
+
+  @override
+  String get autoPlaylistSection => 'Playlists automáticas';
+
+  @override
+  String get autoPlaylistYours => 'Suas playlists';
+
+  @override
+  String get autoPlaylistLately => 'Favoritas do momento';
+
+  @override
+  String get autoPlaylistAllTime => 'Favoritas de todos os tempos';
+
+  @override
+  String get autoPlaylistFallbackNote => 'Conhecendo o que você tem ouvido';
+
+  @override
+  String get autoPlaylistLatelyEmpty =>
+      'Ouça algumas músicas e suas favoritas do momento vão aparecer aqui';
+
+  @override
+  String get autoPlaylistAllTimeEmpty =>
+      'Ouça algumas músicas e suas favoritas vão aparecer aqui';
+
+  @override
+  String get autoPlaylistShow => 'Mostrar playlists automáticas';
+
+  @override
+  String get autoPlaylistShowDetail =>
+      'Favoritas do momento e Favoritas de todos os tempos, no topo de Playlists. O que você ouve continua sendo contado enquanto elas estão ocultas.';
+
+  @override
+  String get dataExportHeading => 'Seus dados';
+
+  @override
+  String get dataExportAction => 'Exportar meus dados (JSON)…';
+
+  @override
+  String dataExportSaved(String path) {
+    return 'Exportado para $path';
+  }
+
+  @override
+  String get dataExported => 'Exportado';
+
+  @override
+  String get dataExportPartial =>
+      'Exportado, mas alguns dados não puderam ser lidos';
+
+  @override
+  String get dataExportFailed => 'Não foi possível exportar seus dados';
+
+  @override
+  String get dataExportLibraryFailed =>
+      'Sua biblioteca não pôde ser lida, então não há nada para exportar';
+
+  @override
+  String get dataExportExplanation =>
+      'Para ver seus dados em outras ferramentas ou importá-los em outro lugar.';
+
+  @override
+  String get backupAction => 'Fazer backup do Orpheus (ZIP)…';
+
+  @override
+  String get backupExplanation =>
+      'Para restaurar o Orpheus neste ou em outro dispositivo: seus dados, capas de playlists e preferências.';
+
+  @override
+  String backupSaved(String path) {
+    return 'Backup salvo em $path';
+  }
+
+  @override
+  String get backedUp => 'Backup feito';
+
+  @override
+  String get backupPartial =>
+      'Backup feito, mas alguns dados não puderam ser lidos';
+
+  @override
+  String get backupFailed => 'Não foi possível fazer o backup do Orpheus';
+
+  @override
+  String get backupLibraryFailed =>
+      'Sua biblioteca não pôde ser lida, então não há nada para incluir no backup';
+
+  @override
+  String get backupAboutAction => 'Sobre estas exportações';
+
+  @override
+  String get backupAboutTitle => 'Sobre estas exportações';
+
+  @override
+  String get backupAboutColumnJson => 'Exportar meus dados (JSON)';
+
+  @override
+  String get backupAboutColumnZip => 'Fazer backup do Orpheus (ZIP)';
+
+  @override
+  String get backupAboutFor => 'Para';
+
+  @override
+  String get backupAboutForJson =>
+      'Ver seus dados em outras ferramentas, importar em outro lugar';
+
+  @override
+  String get backupAboutForZip =>
+      'Restaurar o Orpheus neste ou em outro dispositivo';
+
+  @override
+  String get backupAboutSongs => 'Músicas, artistas, álbuns (como lista)';
+
+  @override
+  String get backupAboutPlaylists => 'Playlists';
+
+  @override
+  String get backupAboutAutoPlaylists =>
+      'Playlists automáticas (como estão agora)';
+
+  @override
+  String get backupAboutHistory => 'Histórico de reproduções e estatísticas';
+
+  @override
+  String get backupAboutCovers => 'Imagens de capa das playlists';
+
+  @override
+  String get backupAboutPreferences => 'Preferências (incl. pastas de música)';
+
+  @override
+  String get backupAboutMusicFiles => 'Seus arquivos de música';
+
+  @override
+  String get backupAboutIncluded => 'Incluído';
+
+  @override
+  String get backupAboutNotIncluded => 'Não incluído';
+
+  @override
+  String get restoreAction => 'Restaurar de um backup…';
+
+  @override
+  String get restoreExplanation =>
+      'Traga de volta playlists, histórico de reproduções e preferências de um backup ZIP ou de um JSON exportado.';
+
+  @override
+  String get restoreTitle => 'Restaurar de um backup';
+
+  @override
+  String get restoreFailedNotABackup =>
+      'Este arquivo não é um backup do Orpheus';
+
+  @override
+  String get restoreFailedNewer =>
+      'Este backup é de uma versão mais nova do Orpheus — atualize primeiro';
+
+  @override
+  String get restoreFailedUnexpected =>
+      'Algo deu errado ao preparar a restauração. Nada foi restaurado.';
+
+  @override
+  String get restoreFoldersTitle => 'Sua música';
+
+  @override
+  String get restoreFoldersIntro =>
+      'As músicas de um backup são comparadas com a sua biblioteca, então sua música precisa estar onde o Orpheus a procura.';
+
+  @override
+  String get restoreBackupFolders => 'Pastas no backup';
+
+  @override
+  String get restoreBackupFoldersNone => 'O backup não cita nenhuma pasta.';
+
+  @override
+  String get restoreFolderFound => 'Encontrada neste dispositivo';
+
+  @override
+  String get restoreFolderNotFound => 'Não encontrada';
+
+  @override
+  String get restoreDeviceFolders => 'Pastas de música neste dispositivo';
+
+  @override
+  String get restoreDeviceFoldersNone => 'Nenhuma ainda';
+
+  @override
+  String get restoreFoldersStaged => 'Muda quando você continuar';
+
+  @override
+  String restoreRemoveFolder(String folder) {
+    return 'Remover $folder';
+  }
+
+  @override
+  String get restoreChooseFolders => 'Escolher pastas…';
+
+  @override
+  String get restoreFoldersNote =>
+      'Continuar muda suas pastas de música agora e examina sua biblioteca. Se você cancelar depois, as pastas ficam como você as definiu.';
+
+  @override
+  String get restoreContinue => 'Continuar';
+
+  @override
+  String get restoreScanning => 'Examinando sua música…';
+
+  @override
+  String get restoreChoicesTitle => 'O que restaurar';
+
+  @override
+  String restoreBackupFrom(String date) {
+    return 'Backup de $date';
+  }
+
+  @override
+  String get restoreBackupUndated => 'Backup';
+
+  @override
+  String restoreHoldsPlaylists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count playlists',
+      one: '1 playlist',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreHoldsSongs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count faixas com reproduções',
+      one: '1 faixa com reproduções',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreHoldsCovers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count capas de playlist',
+      one: '1 capa de playlist',
+      zero: 'Nenhuma capa de playlist',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get restoreHoldsPreferences => 'Preferências incluídas';
+
+  @override
+  String get restoreHoldsNoPreferences => 'Sem preferências';
+
+  @override
+  String get restorePartPlaylists => 'Playlists';
+
+  @override
+  String get restorePartHistory => 'Histórico de reproduções';
+
+  @override
+  String get restorePartPreferences => 'Preferências';
+
+  @override
+  String get restoreMerge => 'Mesclar';
+
+  @override
+  String get restoreSkip => 'Ignorar';
+
+  @override
+  String get restoreReplace => 'Substituir';
+
+  @override
+  String get restorePlaylistsMerge =>
+      'Adiciona as playlists do backup que não existem aqui e as faixas que as suas de mesmo nome não têm.';
+
+  @override
+  String get restorePlaylistsSkip =>
+      'Adiciona só as playlists do backup cujo nome não existe aqui.';
+
+  @override
+  String get restorePlaylistsReplace =>
+      'Remove suas playlists e usa as do backup, com as capas.';
+
+  @override
+  String get restoreHistoryMerge =>
+      'Mantém a maior contagem e a data mais recente de cada faixa, e adiciona o restante.';
+
+  @override
+  String get restoreHistorySkip =>
+      'Adiciona só as faixas sem histórico de reproduções aqui.';
+
+  @override
+  String get restoreHistoryReplace =>
+      'Troca o seu histórico de reproduções pelo do backup.';
+
+  @override
+  String get restorePreferencesMerge =>
+      'Aplica as configurações do backup só onde as suas ainda são as padrão.';
+
+  @override
+  String get restorePreferencesSkip =>
+      'Não muda nenhuma das suas configurações.';
+
+  @override
+  String get restorePreferencesReplace =>
+      'Aplica todas as configurações do backup, inclusive volume e idioma.';
+
+  @override
+  String get restoreNotInBackup => 'Não está neste backup';
+
+  @override
+  String get restoreNotInFile => 'Não está neste arquivo';
+
+  @override
+  String restoreReplacePlaylists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Substitui as suas $count playlists',
+      one: 'Substitui a sua 1 playlist',
+      zero: 'Você não tem playlists para substituir',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restoreReplaceHistory(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Substitui as contagens de $count faixas',
+      one: 'Substitui as contagens de 1 faixa',
+      zero: 'Você não tem contagens para substituir',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get restoreReplacePreferences =>
+      'Substitui todas as suas configurações pelas do backup';
+
+  @override
+  String get restoreUnreadablePlaylists =>
+      'Não foi possível ler as suas playlists aqui, então esta parte não será restaurada.';
+
+  @override
+  String get restoreUnreadableHistory =>
+      'Não foi possível ler o seu histórico de reproduções aqui, então esta parte não será restaurada.';
+
+  @override
+  String get restoreScanFailed =>
+      'Não foi possível examinar sua música, então algumas faixas do backup podem não ser encontradas na sua biblioteca.';
+
+  @override
+  String get restoreFoldersKept =>
+      'Suas pastas de música foram mudadas na etapa anterior. Cancelar mantém as pastas como estão agora.';
+
+  @override
+  String get restoreFoldersKeptFailed =>
+      'Suas pastas de música foram mudadas na etapa anterior e continuam como estão agora.';
+
+  @override
+  String get restoreRestore => 'Restaurar';
+
+  @override
+  String get restoreRestoring => 'Restaurando…';
+
+  @override
+  String get restoreDoneTitle => 'Restauração concluída';
+
+  @override
+  String get restoreDoneRestored => 'Restaurado';
+
+  @override
+  String get restoreDoneRefused => 'Não foi possível restaurar';
+
+  @override
+  String restoreDonePlaylists(int added, int merged) {
+    return 'Playlists: $added adicionadas, $merged mescladas';
+  }
+
+  @override
+  String restoreDonePlaylistsReplaced(int replaced, int added) {
+    String _temp0 = intl.Intl.pluralLogic(
+      replaced,
+      locale: localeName,
+      other: 'as suas $replaced playlists foram trocadas',
+      one: 'a sua playlist foi trocada',
+    );
+    return 'Playlists: $_temp0 por $added do backup';
+  }
+
+  @override
+  String get restoreDonePlaylistsNothing => 'Playlists: nada a adicionar';
+
+  @override
+  String restoreDoneHistory(int songs) {
+    String _temp0 = intl.Intl.pluralLogic(
+      songs,
+      locale: localeName,
+      other: '$songs faixas',
+      one: '1 faixa',
+    );
+    return 'Histórico de reproduções de $_temp0';
+  }
+
+  @override
+  String restoreDoneHistoryMissing(int songs, int missing) {
+    String _temp0 = intl.Intl.pluralLogic(
+      songs,
+      locale: localeName,
+      other: '$songs faixas',
+      one: '1 faixa',
+    );
+    return 'Histórico de reproduções de $_temp0 ($missing fora da sua biblioteca)';
+  }
+
+  @override
+  String get restoreDoneHistoryNothing =>
+      'Histórico de reproduções: nenhuma faixa a adicionar';
+
+  @override
+  String get restoreDonePreferences => 'Preferências aplicadas';
+
+  @override
+  String get restoreDonePreferencesNone => 'Preferências: nada a mudar';
+
+  @override
+  String get restoreDonePreferencesUnsaved =>
+      'Algumas preferências não puderam ser salvas e valem só até o Orpheus fechar';
+
+  @override
+  String restoreDoneCoverFailures(String names) {
+    return 'Estas playlists voltaram, mas as capas não puderam ser salvas: $names';
+  }
+
+  @override
+  String restoreRefusedLine(String part, String reason) {
+    return '$part: $reason';
+  }
+
+  @override
+  String get restoreReasonNotInBackup =>
+      'o backup não conseguiu ler esta parte quando foi feito';
+
+  @override
+  String get restoreReasonNotInFile => 'este arquivo não tem esta parte';
+
+  @override
+  String get restoreReasonUnreadableHere =>
+      'esta parte não pôde ser lida aqui, então foi deixada como estava';
+
+  @override
+  String get restoreReasonNotWritten =>
+      'esta parte não pôde ser salva, então nada dela mudou';
+
+  @override
+  String get restoreFoldersAllRemoved =>
+      'Todas as suas pastas de música serão removidas, então nenhuma faixa poderá ser reconhecida.';
+
+  @override
+  String restoreDoneSkipped(String part) {
+    return '$part: você escolheu ignorar';
+  }
+
+  @override
+  String restoreDonePlaylistsEmptied(int replaced) {
+    String _temp0 = intl.Intl.pluralLogic(
+      replaced,
+      locale: localeName,
+      other: 'as suas $replaced playlists foram removidas',
+      one: 'a sua playlist foi removida',
+    );
+    return 'Playlists: $_temp0; o backup não tinha nenhuma';
+  }
+
+  @override
+  String get restoreDoneHistoryEmptied =>
+      'Histórico de reproduções substituído; o backup não tinha reproduções';
 }

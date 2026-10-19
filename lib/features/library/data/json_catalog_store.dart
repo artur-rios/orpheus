@@ -34,7 +34,11 @@ class JsonCatalogStore implements CatalogStore {
   /// A catalog written by a version that recorded different fields is
   /// discarded rather than half-read: it costs one re-scan, and the
   /// alternative is a library that is subtly wrong in ways nobody can see.
-  static const int documentVersion = 1;
+  ///
+  /// Version 2 replaced a row's single `genre` with a `genres` list; a
+  /// version-1 catalog holds only the first genre of each file, and the
+  /// re-scan is what recovers the rest.
+  static const int documentVersion = 2;
 
   /// The file's name inside [directory].
   static const String fileName = 'catalog.json';
@@ -63,13 +67,17 @@ class JsonCatalogStore implements CatalogStore {
       return MusicCatalog(
         entries: document.entries ?? const [],
         scannedAt: document.scannedAt,
+        isStale: document.isStale,
       );
     } on Object catch (error, trace) {
       // Broad by intent, as everywhere a stored document is read: a catalog
-      // nobody can decode is a catalog nobody has, and the answer to that is
-      // an empty library and a re-scan, not a launch that fails.
+      // nobody can decode is a library that has to be rebuilt, not a launch
+      // that fails. Stale rather than empty, because a document that exists
+      // and cannot be read is not a library that was never scanned: startup
+      // owes it a scan whatever the owner chose, and an export or a backup
+      // made meanwhile must not present it as an owner with no music.
       _log.warning('the catalog could not be read; re-scanning', error, trace);
-      return MusicCatalog.empty;
+      return MusicCatalog(entries: const [], isStale: true);
     }
   }
 
@@ -105,7 +113,7 @@ class JsonCatalogStore implements CatalogStore {
       if (metadata.artist != null) 'artist': metadata.artist,
       if (metadata.albumArtist != null) 'albumArtist': metadata.albumArtist,
       if (metadata.album != null) 'album': metadata.album,
-      if (metadata.genre != null) 'genre': metadata.genre,
+      if (metadata.genres.isNotEmpty) 'genres': metadata.genres,
       if (metadata.track != null) 'track': metadata.track,
       if (metadata.trackTotal != null) 'trackTotal': metadata.trackTotal,
       if (metadata.disc != null) 'disc': metadata.disc,
@@ -131,7 +139,11 @@ class JsonCatalogStore implements CatalogStore {
         artist: row['artist'] as String?,
         albumArtist: row['albumArtist'] as String?,
         album: row['album'] as String?,
-        genre: row['genre'] as String?,
+        genres: [
+          if (row['genres'] case final List<dynamic> genres)
+            for (final genre in genres)
+              if (genre is String) genre,
+        ],
         track: row['track'] as int?,
         trackTotal: row['trackTotal'] as int?,
         disc: row['disc'] as int?,
@@ -149,10 +161,16 @@ class JsonCatalogStore implements CatalogStore {
 ///
 /// A plain object because it crosses an isolate boundary. The [note] carries
 /// the one thing the parse knows and the caller cannot work out for itself —
-/// that the document was written by another version — so that it is logged on
-/// the isolate that has the logger rather than on the one that has the file.
+/// that the document was refused, as another version's or as not a catalog —
+/// so that it is logged on the isolate that has the logger rather than on the
+/// one that has the file.
 class _CatalogDocument {
-  const _CatalogDocument({this.entries, this.scannedAt, this.note});
+  const _CatalogDocument({
+    this.entries,
+    this.scannedAt,
+    this.note,
+    this.isStale = false,
+  });
 
   /// Every track the document holds, or `null` when it holds none.
   final List<MusicEntry>? entries;
@@ -162,25 +180,37 @@ class _CatalogDocument {
 
   /// What is worth saying about a document that yielded nothing.
   final String? note;
+
+  /// Whether the document was refused, as another version's or as not a
+  /// catalog at all — see [MusicCatalog.isStale].
+  final bool isStale;
 }
+
+/// What a document that decodes but is not a catalog yields: the same as one
+/// that does not decode.
+const _CatalogDocument _unreadable = _CatalogDocument(
+  note: 'the catalog is not a document of tracks; re-scanning',
+  isStale: true,
+);
 
 /// Reads and decodes the document at [path].
 ///
 /// Runs on an isolate of its own — see [JsonCatalogStore.read]. It throws
-/// rather than reporting a failure, and the caller turns that into an empty
-/// library: an isolate that dies takes its error back across the boundary.
+/// rather than reporting a failure, and the caller turns that into a library
+/// to rebuild: an isolate that dies takes its error back across the boundary.
 _CatalogDocument _parse(String path) {
   final decoded = jsonDecode(File(path).readAsStringSync());
-  if (decoded is! Map<String, dynamic>) return const _CatalogDocument();
+  if (decoded is! Map<String, dynamic>) return _unreadable;
   if (decoded['version'] != JsonCatalogStore.documentVersion) {
     return const _CatalogDocument(
       note: 'the catalog was written by another version; re-scanning',
+      isStale: true,
     );
   }
 
   final scannedAt = decoded['scannedAt'];
   final tracks = decoded['tracks'];
-  if (tracks is! List) return const _CatalogDocument();
+  if (tracks is! List) return _unreadable;
 
   return _CatalogDocument(
     // Re-derived on read rather than stored: it is a conclusion about the

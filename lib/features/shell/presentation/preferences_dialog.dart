@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../data_export/presentation/your_data_section.dart';
 
 /// The preferences.
 ///
@@ -104,6 +105,23 @@ class PreferencesDialog extends ConsumerWidget {
                 onChanged: (value) =>
                     unawaited(controller.setRescansAtStartup(value)),
               ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: preferences.showsAutoPlaylists,
+                title: Text(l10n.autoPlaylistShow),
+                // A subtitle for what the switch does not do: hidden, the
+                // auto playlists are still being kept, so turning them back on
+                // finds them where the owner's listening has taken them.
+                subtitle: Text(
+                  l10n.autoPlaylistShowDetail,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                isThreeLine: true,
+                onChanged: (value) =>
+                    unawaited(controller.setShowsAutoPlaylists(value)),
+              ),
 
               const SizedBox(height: AppSpacing.lg),
               _Heading(text: l10n.settingsLyrics),
@@ -161,6 +179,8 @@ class PreferencesDialog extends ConsumerWidget {
                 onChanged: (value) => unawaited(controller.setVolume(value)),
               ),
 
+              // With the preferences it describes, above the entry that is
+              // not one of them.
               if (preferences.unsaved) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Text(
@@ -170,6 +190,9 @@ class PreferencesDialog extends ConsumerWidget {
                   ),
                 ),
               ],
+
+              const SizedBox(height: AppSpacing.lg),
+              const YourDataSection(),
             ],
           ),
         ),

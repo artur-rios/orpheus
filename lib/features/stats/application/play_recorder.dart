@@ -16,6 +16,12 @@ import '../domain/play_history.dart';
 /// going up, and stopping the music to report that a statistic went unrecorded
 /// would be a worse failure than the missing statistic.
 ///
+/// **A history that could not be read is never written over.** When the
+/// store cannot read it — the file could not be opened, or could not be
+/// understood and then could not be set aside — this run holds an empty
+/// history and records nothing: writing one that knew only this run's plays
+/// would replace years of them. The next start tries again.
+///
 /// **Writes are serialized.** The player calls this without waiting — a track
 /// crossing its threshold must not stall on a file write — so two records can
 /// be in flight at once. Chained rather than concurrent, because two
@@ -35,13 +41,51 @@ class PlayRecorder {
 
   Future<PlayHistory>? _loaded;
   Future<void> _writes = Future<void>.value();
+  final StreamController<PlayHistory> _changes =
+      StreamController<PlayHistory>.broadcast();
+
+  /// Whether the store could not be read this run, which stops every write.
+  bool _readFailed = false;
+
+  /// Whether the store could not be read this run — [current] is then an empty
+  /// history standing in for one that exists, which anyone offering the owner
+  /// their data has to say rather than present as the whole of it.
+  ///
+  /// Settled by the first [current]: `false` until the history has been asked
+  /// for.
+  bool get readFailed => _readFailed;
 
   /// Everything recorded so far.
   ///
   /// Read from the store once and held: the document is small, this object
   /// outlives every screen, and re-reading it per play would be a file read
-  /// per track.
-  Future<PlayHistory> current() => _loaded ??= store.read();
+  /// per track. Never an error: a history that could not be read is an empty
+  /// one, for this run.
+  Future<PlayHistory> current() => _loaded ??= _read();
+
+  /// The history after each play is recorded, the whole of it each time.
+  ///
+  /// Only the changes: what was there before the first is [current]. Not
+  /// heard when a play could not be recorded, because then nothing changed.
+  Stream<PlayHistory> get changes => _changes.stream;
+
+  /// Stops telling anyone about changes.
+  void dispose() => unawaited(_changes.close());
+
+  Future<PlayHistory> _read() async {
+    try {
+      return await store.read();
+    } on Object catch (error) {
+      _readFailed = true;
+      _log.severe(
+        'the play history could not be read; no plays will be recorded '
+        'until the next start',
+        error,
+      );
+
+      return PlayHistory.empty;
+    }
+  }
 
   /// Records one play of [path].
   ///
@@ -53,13 +97,60 @@ class PlayRecorder {
     return _writes;
   }
 
+  /// Puts what [plan] makes of the history in place of everything recorded:
+  /// what a restore from a backup writes.
+  ///
+  /// Queued with the plays, and [plan] is given the history as it is when
+  /// this write's turn comes, not as it was when this was called: a play
+  /// queued before it is in what [plan] is given rather than written over
+  /// afterwards, and one recorded after it lands on what [plan] made. A
+  /// [plan] that answers the history it was given changes nothing, and
+  /// nothing is written. Written first and only then held and announced, the
+  /// other way round from a play: a restore reports what it did, and what it
+  /// reports has to be what is on disk.
+  ///
+  /// Unlike a play, this throws — a [StateError] when the history could not
+  /// be read this run, since writing over it would replace a history nobody
+  /// has seen, whatever [plan] throws, and whatever the store throws when it
+  /// cannot write. Either way nothing changes. A failure does not hold up the
+  /// plays behind it.
+  Future<void> replaceHistory(PlayHistory Function(PlayHistory current) plan) {
+    final replaced = _writes.then((_) => _replace(plan));
+    _writes = replaced.then((_) {}, onError: (_) {});
+
+    return replaced;
+  }
+
+  Future<void> _replace(PlayHistory Function(PlayHistory current) plan) async {
+    final held = await current();
+    if (_readFailed) {
+      throw StateError(
+        'The play history could not be read, so it is not replaced',
+      );
+    }
+
+    final history = plan(held);
+    if (identical(history, held)) return;
+
+    await store.write(history);
+    _loaded = Future<PlayHistory>.value(history);
+    if (!_changes.isClosed) _changes.add(history);
+  }
+
   Future<void> _record(String path) async {
     try {
-      final history = (await current()).recording(path, clock());
+      final held = await current();
+      if (_readFailed) return;
+
+      final now = clock();
+      // Trimmed as the store will write it, so what is held is what is on
+      // disk and a run that never restarts holds no more than the window.
+      final history = held.recording(path, now).trimmedTo(now);
       // Held before the write, not after: the in-memory history is what the
       // statistics screen reads, and a play the owner just earned should be
       // there whether or not the disk cooperated.
       _loaded = Future<PlayHistory>.value(history);
+      if (!_changes.isClosed) _changes.add(history);
 
       await store.write(history);
     } on Object catch (error) {

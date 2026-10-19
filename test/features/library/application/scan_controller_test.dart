@@ -497,4 +497,94 @@ void main() {
       expect(access.requests, 0);
     },
   );
+
+  group('the scan startup runs', () {
+    Harness startingWith({
+      required bool rescansAtStartup,
+      required MusicCatalog stored,
+      required ScriptedScanner scanner,
+    }) {
+      final harness = Harness(
+        scanner: scanner,
+        settings: InMemorySettingsStore(
+          libraryFolders: const ['/music'],
+          rescansAtStartup: rescansAtStartup,
+          values: {
+            // Recorded beside the document, as every scan since the first
+            // has: the stale flag has to survive the library taking the
+            // later of the two moments.
+            MusicLibraryController.lastScanSettingsKey: DateTime.utc(
+              2026,
+              9,
+            ).toIso8601String(),
+          },
+        ),
+      );
+      harness.catalogs.seed(stored);
+
+      return harness;
+    }
+
+    test(
+      'GivenReScanAtLaunchIsOffAndTheCatalogWasStale_WhenTheApplicationStarts_ThenItScansAnyway',
+      () async {
+        // The document another version wrote was refused, and the library is
+        // empty until a scan refills it. An owner who turned the launch scan
+        // off used to upgrade into an empty library and stay there.
+        final scanner = ScriptedScanner([
+          ScanCompleted(catalog: scanned, report: report),
+        ]);
+        final harness = startingWith(
+          rescansAtStartup: false,
+          stored: MusicCatalog(entries: const [], isStale: true),
+          scanner: scanner,
+        );
+
+        await harness.read(scanControllerProvider.notifier).scanAtStartup();
+
+        expect(scanner.requests, [
+          ['/music'],
+        ]);
+        expect((await harness.library()).entries, hasLength(1));
+      },
+    );
+
+    test(
+      'GivenReScanAtLaunchIsOffAndTheCatalogIsCurrent_WhenTheApplicationStarts_ThenNothingIsScanned',
+      () async {
+        final scanner = ScriptedScanner([
+          ScanCompleted(catalog: scanned, report: report),
+        ]);
+        final harness = startingWith(
+          rescansAtStartup: false,
+          stored: scanned,
+          scanner: scanner,
+        );
+
+        await harness.read(scanControllerProvider.notifier).scanAtStartup();
+
+        expect(scanner.requests, isEmpty);
+      },
+    );
+
+    test(
+      'GivenReScanAtLaunchIsOn_WhenTheApplicationStarts_ThenItScans',
+      () async {
+        final scanner = ScriptedScanner([
+          ScanCompleted(catalog: scanned, report: report),
+        ]);
+        final harness = startingWith(
+          rescansAtStartup: true,
+          stored: scanned,
+          scanner: scanner,
+        );
+
+        await harness.read(scanControllerProvider.notifier).scanAtStartup();
+
+        expect(scanner.requests, [
+          ['/music'],
+        ]);
+      },
+    );
+  });
 }

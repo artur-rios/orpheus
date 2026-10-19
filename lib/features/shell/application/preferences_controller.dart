@@ -13,6 +13,7 @@ class PreferencesState {
     required this.rescansAtStartup,
     required this.fetchesLyricsOnline,
     required this.checksForUpdatesOnStartup,
+    required this.showsAutoPlaylists,
     required this.volume,
     this.locale,
     this.unsaved = false,
@@ -36,6 +37,9 @@ class PreferencesState {
   /// Whether the application asks for a newer release when it starts.
   final bool checksForUpdatesOnStartup;
 
+  /// Whether the Playlists tab offers the auto playlists.
+  final bool showsAutoPlaylists;
+
   /// How loud playback is, 0 to 1.
   final double volume;
 
@@ -55,6 +59,7 @@ class PreferencesState {
     bool? rescansAtStartup,
     bool? fetchesLyricsOnline,
     bool? checksForUpdatesOnStartup,
+    bool? showsAutoPlaylists,
     double? volume,
     bool? unsaved,
   }) => PreferencesState(
@@ -65,6 +70,7 @@ class PreferencesState {
     fetchesLyricsOnline: fetchesLyricsOnline ?? this.fetchesLyricsOnline,
     checksForUpdatesOnStartup:
         checksForUpdatesOnStartup ?? this.checksForUpdatesOnStartup,
+    showsAutoPlaylists: showsAutoPlaylists ?? this.showsAutoPlaylists,
     volume: volume ?? this.volume,
     unsaved: unsaved ?? this.unsaved,
   );
@@ -85,6 +91,7 @@ class PreferencesController extends Notifier<PreferencesState> {
       rescansAtStartup: settings.rescansAtStartup,
       fetchesLyricsOnline: settings.fetchesLyricsOnline,
       checksForUpdatesOnStartup: settings.checksForUpdatesOnStartup,
+      showsAutoPlaylists: settings.showsAutoPlaylists,
       volume: settings.volume,
     );
   }
@@ -134,6 +141,17 @@ class PreferencesController extends Notifier<PreferencesState> {
       await settings.setChecksForUpdatesOnStartup(value);
       if (!value) await settings.setSkippedUpdateVersion(null);
     });
+  }
+
+  /// Applies [value].
+  ///
+  /// What the auto playlists provider watches: it answers no playlists while
+  /// this is off, which is also what closes an open one.
+  Future<void> setShowsAutoPlaylists(bool value) async {
+    state = state.copyWith(showsAutoPlaylists: value, unsaved: false);
+    await _write(
+      () => ref.read(settingsStoreProvider).setShowsAutoPlaylists(value),
+    );
   }
 
   /// Applies [value], and re-asks for the words of whatever is open.

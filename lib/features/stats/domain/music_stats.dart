@@ -1,5 +1,5 @@
+import '../../library/domain/genres.dart';
 import '../../library/domain/music_catalog.dart';
-import '../../library/domain/music_entry.dart';
 import '../../library/domain/music_grouping.dart';
 import 'play_history.dart';
 
@@ -102,6 +102,12 @@ const int rankingLength = 10;
 /// 4. **A track is a file.** Counted by its path and only *labelled* by its
 ///    title: five records that each open with an "Intro" are five tracks, not
 ///    one that was played five times as often as anything else.
+/// 5. **A track counts toward every genre it carries.** Once for each, by
+///    [genreKey], so `Rock` and `rock` are one line named the way most of the
+///    library spells it — the same name the Genres tab shows. Because a play
+///    lands in several genres, a genre's share is of *all* plays rather than of
+///    the genres' own sum: the shares may add up to more than a whole, and that
+///    is the truth of a track that is two things at once.
 MusicStats musicStatsFrom({
   required PlayHistory history,
   required MusicCatalog catalog,
@@ -118,6 +124,7 @@ MusicStats musicStatsFrom({
   // something they never played.
   final albums = <(String album, String? artist), int>{};
   final genres = <String, int>{};
+  final genreNames = genreNamesIn(catalog.entries);
   var untagged = 0;
 
   for (final played in history.tracks.values) {
@@ -131,15 +138,22 @@ MusicStats musicStatsFrom({
 
     final artist = entry?.albumArtist;
     final album = entry?.album;
-    // Through the same trimming rule every other tag in the application
-    // reads by, so a genre of three spaces is absent here too.
-    final genre = trimmedOrNull(entry?.metadata.genre);
+    // By key, through the same rule every other genre in the application is
+    // matched by, so a genre of three spaces is absent here too. A set, so a
+    // track is credited once to a genre it somehow lists twice.
+    final entryGenres = <String>{
+      for (final raw in entry?.genres ?? const <String>[])
+        if (genreKey(raw) case final key when key.isNotEmpty) key,
+    };
 
     // Only a file the catalog holds can be said to lack tags. One it no
     // longer holds — moved, deleted, or a library that would not load — has
     // nothing to correct, and counting it would send an owner looking for
     // tags on files that are not there.
-    if (entry != null && artist == null && album == null && genre == null) {
+    if (entry != null &&
+        artist == null &&
+        album == null &&
+        entryGenres.isEmpty) {
       untagged++;
     }
 
@@ -149,7 +163,7 @@ MusicStats musicStatsFrom({
     if (album != null) {
       albums.update((album, artist), (e) => e + plays, ifAbsent: () => plays);
     }
-    if (genre != null) {
+    for (final genre in entryGenres) {
       genres.update(genre, (e) => e + plays, ifAbsent: () => plays);
     }
   }
@@ -160,7 +174,14 @@ MusicStats musicStatsFrom({
     tracks: _rankedBy(tracks, limit, (path) => trackNames[path]!),
     artists: _ranked(artists, limit),
     albums: _rankedBy(albums, limit, (record) => record.$1),
-    genres: _ranked(genres, limit),
+    genres: _rankedBy(
+      genres,
+      limit,
+      (key) => genreNames[key] ?? key,
+      // Every play, not the genres' own sum: a track in two genres is in the
+      // sum twice.
+      total: history.totalPlays,
+    ),
     untaggedTracks: untagged,
   );
 }
@@ -181,22 +202,28 @@ List<RankedPlays> _ranked(Map<String, int> counts, int limit) =>
 /// [byName], which is the case-insensitive comparison the listings order by:
 /// ranking `Blue` above `abbey road` because capitals sort first is the kind of
 /// order nobody reading a chart is expecting.
+///
+/// A line's share is of [total], which is the sum of every line's plays unless
+/// the caller says otherwise — as the genres do, since a play counted toward
+/// two genres is in their sum twice.
 List<RankedPlays> _rankedBy<K>(
   Map<K, int> counts,
   int limit,
-  String Function(K key) nameOf,
-) {
+  String Function(K key) nameOf, {
+  int? total,
+}) {
   // The whole ranking's plays, before it is cut to [limit]: a share of the
   // top ten alone is a share of the ten, and overstates the leader by however
   // much the rest of the library was played.
-  final total = counts.values.fold<int>(0, (sum, plays) => sum + plays);
+  final whole =
+      total ?? counts.values.fold<int>(0, (sum, plays) => sum + plays);
 
   final lines = [
     for (final entry in counts.entries)
       RankedPlays(
         name: nameOf(entry.key),
         plays: entry.value,
-        share: total == 0 ? 0 : entry.value / total,
+        share: whole == 0 ? 0 : entry.value / whole,
       ),
   ]..sort((a, b) {
     final byPlays = b.plays.compareTo(a.plays);

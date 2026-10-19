@@ -8,7 +8,9 @@
 /// A feature adds its gateway here and changes nothing else.
 library;
 
+import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -19,6 +21,13 @@ import '../../features/autofill/data/audio_metadata_tag_writer.dart';
 import '../../features/autofill/data/musicbrainz_source.dart';
 import '../../features/autofill/domain/metadata_source.dart';
 import '../../features/autofill/domain/tag_writer.dart';
+import '../../features/data_export/application/backup_controller.dart';
+import '../../features/data_export/application/data_export_controller.dart';
+import '../../features/data_export/application/restore_controller.dart';
+import '../../features/data_export/data/file_picker_file_opener.dart';
+import '../../features/data_export/domain/backup.dart';
+import '../../features/data_export/domain/data_export.dart';
+import '../../features/data_export/domain/file_opener.dart';
 import '../../features/library/application/library_folders_controller.dart';
 import '../../features/library/application/music_library_controller.dart';
 import '../../features/library/application/scan_controller.dart';
@@ -43,9 +52,11 @@ import '../../features/lyrics/domain/lyrics_source.dart';
 import '../../features/lyrics/domain/remote_lyrics_source.dart';
 import '../../features/playback/application/album_art_controller.dart';
 import '../../features/playback/application/audio_playback_controller.dart';
+import '../../features/playback/application/genre_browse_controller.dart';
 import '../../features/playback/application/media_session_controller.dart';
 import '../../features/playback/application/music_browse_controller.dart';
 import '../../features/playback/application/music_layout_controller.dart';
+import '../../features/playback/application/song_selection_controller.dart';
 import '../../features/playback/application/track_energy_controller.dart';
 import '../../features/playback/data/file_energy_store.dart';
 import '../../features/playback/data/file_track_probe.dart';
@@ -58,19 +69,32 @@ import '../../features/playback/domain/media_player.dart';
 import '../../features/playback/domain/media_session.dart';
 import '../../features/playback/domain/music_layout.dart';
 import '../../features/playback/domain/playback_position_store.dart';
+import '../../features/playback/domain/song_selection.dart';
 import '../../features/playback/domain/track_analysis.dart';
 import '../../features/playback/domain/track_energy.dart';
 import '../../features/playback/domain/track_probe.dart';
+import '../../features/playlists/application/playlist_browse_controller.dart';
+import '../../features/playlists/application/playlists_controller.dart';
+import '../../features/playlists/data/file_picker_file_saver.dart';
+import '../../features/playlists/data/file_playlist_cover_store.dart';
+import '../../features/playlists/data/json_playlist_store.dart';
+import '../../features/playlists/domain/auto_playlists.dart';
+import '../../features/playlists/domain/file_saver.dart';
+import '../../features/playlists/domain/playlist.dart';
+import '../../features/playlists/domain/playlist_cover_store.dart';
+import '../../features/playlists/domain/playlist_store.dart';
 import '../../features/shell/application/preferences_controller.dart';
 import '../../features/shell/application/shell_controller.dart';
 import '../../features/shell/domain/shell_destination.dart';
 import '../../features/stats/application/music_stats_controller.dart';
+import '../../features/stats/application/play_history_controller.dart';
 import '../../features/stats/application/play_recorder.dart';
 import '../../features/stats/data/json_play_history_store.dart';
 import '../../features/stats/data/platform_story_share.dart';
 import '../../features/stats/domain/music_stats.dart';
 import '../../features/stats/domain/play_history.dart';
 import '../../features/stats/domain/story_share.dart';
+import '../../features/tag_editor/application/many_tag_edit_controller.dart';
 import '../../features/tag_editor/application/tag_edit_controller.dart';
 import '../../features/tag_editor/data/file_picker_cover_picker.dart';
 import '../../features/tag_editor/data/io_file_stamps.dart';
@@ -112,6 +136,19 @@ final hostPlatformProvider = Provider<HostPlatform>(
 
 /// The clock, so that a test can pin what "now" is.
 final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
+/// Where the ids of new things come from, so that a test can name them.
+///
+/// Random rather than counted: an id has to stay unique across runs and
+/// devices, and no counter survives both. 128 bits as hexadecimal, from the
+/// operating system's source.
+final idGeneratorProvider = Provider<String Function()>((ref) {
+  final random = Random.secure();
+  return () => [
+    for (var i = 0; i < 16; i++)
+      random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+  ].join();
+});
 
 /// Where a shuffle gets its randomness.
 ///
@@ -196,6 +233,17 @@ final tagEditControllerProvider =
       isAutoDispose: true,
     );
 
+/// Reads several tracks' tags, and writes what the owner changed in all of
+/// them.
+///
+/// Auto-disposed, as [tagEditControllerProvider] is: a closed dialog is a
+/// forgotten edit, but a save already confirmed is finished.
+final manyTagEditControllerProvider =
+    NotifierProvider<ManyTagEditController, ManyTagEditState>(
+      ManyTagEditController.new,
+      isAutoDispose: true,
+    );
+
 /// Where a fetched sheet is written, so it is found locally next time.
 final lyricsSidecarProvider = Provider<LyricsSidecar>(
   (ref) => const FileLyricsSidecar(),
@@ -264,21 +312,228 @@ final playbackPositionsProvider = Provider<PlaybackPositionStore>(
 );
 
 /// Where the play history is kept.
+///
+/// On the application's clock, which is what its dates are trimmed against.
 final playHistoryStoreProvider = Provider<PlayHistoryStore>(
-  (ref) => JsonPlayHistoryStore(ref.watch(appDirectoriesProvider).support),
+  (ref) => JsonPlayHistoryStore(
+    ref.watch(appDirectoriesProvider).support,
+    clock: ref.watch(clockProvider),
+  ),
 );
+
+/// Where the playlists are kept.
+final playlistStoreProvider = Provider<PlaylistStore>(
+  (ref) => JsonPlaylistStore(ref.watch(appDirectoriesProvider).support),
+);
+
+/// Where the pictures chosen as playlist covers are kept.
+final playlistCoverStoreProvider = Provider<PlaylistCoverStore>(
+  (ref) => FilePlaylistCoverStore(ref.watch(appDirectoriesProvider).support),
+);
+
+/// The platform's save dialog, for a playlist exported to a file.
+final fileSaverProvider = Provider<FileSaver>(
+  (ref) => const FilePickerFileSaver(),
+);
+
+/// Exports the owner's data to a file; its state is whether one is running.
+final dataExportControllerProvider =
+    NotifierProvider<DataExportController, bool>(DataExportController.new);
+
+/// How the export document is built and encoded: off the UI isolate.
+///
+/// Overridden in every test by a direct call, because an isolate's answer does
+/// not reach a widget test's fake time.
+final dataExportEncoderProvider =
+    Provider<Future<Uint8List> Function(ExportSources sources)>(
+      (ref) => encodeOffTheUiIsolate,
+    );
+
+/// Backs Orpheus up to a ZIP; its state is whether one is running.
+final backupControllerProvider = NotifierProvider<BackupController, bool>(
+  BackupController.new,
+);
+
+/// How the backup ZIP is built and encoded: off the UI isolate.
+///
+/// Overridden in every test by a direct call, for the reason the export's is.
+final backupEncoderProvider =
+    Provider<Future<Uint8List> Function(BackupSources sources)>(
+      (ref) => encodeBackupOffTheUiIsolate,
+    );
+
+/// The platform's open dialog, for the file a restore is read from.
+final fileOpenerProvider = Provider<FileOpener>(
+  (ref) => const FilePickerFileOpener(),
+);
+
+/// How a picked file is read as a backup: off the UI isolate.
+///
+/// Overridden in every test by a direct call, for the reason the export's
+/// encoder is.
+final backupReaderProvider =
+    Provider<Future<BackupContents> Function(Uint8List bytes)>(
+      (ref) => readBackupOffTheUiIsolate,
+    );
+
+/// Whether a folder of the given name exists on this device, which is what a
+/// restore says about each of the backup's music folders.
+///
+/// Overridden in every test: no test looks at the developer's own folders.
+final folderExistsProvider = Provider<bool Function(String folder)>(
+  (ref) =>
+      (folder) => Directory(folder).existsSync(),
+);
+
+/// Restores Orpheus from a backup; its state is where the restore is.
+final restoreControllerProvider =
+    NotifierProvider<RestoreController, RestoreState>(RestoreController.new);
+
+/// The playlists.
+///
+/// Not retried when the store cannot be read: that failure is a document that
+/// could not be set aside, which asking again does not mend, and a retry would
+/// only delay the error that every change must report.
+final playlistsControllerProvider =
+    AsyncNotifierProvider<PlaylistsController, List<Playlist>>(
+      PlaylistsController.new,
+      retry: (_, _) => null,
+    );
+
+/// Which playlist is open, or `null` for the list of them.
+final playlistBrowseProvider =
+    NotifierProvider<PlaylistBrowseController, String?>(
+      PlaylistBrowseController.new,
+    );
+
+/// The playlist that is open, as it is now, or `null` when none is.
+///
+/// The open id read against the playlists: an id that names none — the
+/// playlist was deleted while it was open — is none open, and so is any id
+/// while the playlists are still being read. The one answer to "is a playlist
+/// open", for the tab that shows it and the Back that closes it alike.
+///
+/// An auto playlist's id is read against [autoPlaylistsProvider] instead, and
+/// only that: it opens whatever became of the owner's playlists, and it reads
+/// as none open while the auto playlists are hidden — turning them off closes
+/// the one that was open.
+final openPlaylistProvider = Provider<Playlist?>((ref) {
+  final open = ref.watch(playlistBrowseProvider);
+  if (open == null) return null;
+
+  final playlists = isAutoPlaylistId(open)
+      ? ref.watch(autoPlaylistsProvider).value ?? const <Playlist>[]
+      : ref.watch(playlistsControllerProvider).value ?? const <Playlist>[];
+  for (final playlist in playlists) {
+    if (playlist.id == open) return playlist;
+  }
+
+  return null;
+});
+
+/// The auto playlists — *Favourites lately* and *All-time favourites* — as
+/// playlists to show, computed from the play history, the library and the
+/// clock.
+///
+/// Empty while the *Show auto playlists* preference is off (and then neither
+/// the history nor the library is waited for), loading until both the history
+/// and the library have loaded — a song is present only in a catalog that has
+/// loaded — and an error where the library could not be read. Recomputed
+/// whenever a play is recorded, the library changes or the preference does;
+/// there is no timer, so the 30-day window moves on at the next of those.
+///
+/// The playlists carry ids ([autoLatelyId], [autoAllTimeId]) and **no names**:
+/// a provider has no `BuildContext` to localise one with, so the views map the
+/// id to the name. See [autoPlaylists].
+final autoPlaylistsProvider = Provider<AsyncValue<List<Playlist>>>((ref) {
+  final shown = ref.watch(
+    preferencesControllerProvider.select((state) => state.showsAutoPlaylists),
+  );
+  if (!shown) return const AsyncData(<Playlist>[]);
+
+  final history = ref.watch(playHistoryProvider);
+  final catalog = ref.watch(musicLibraryControllerProvider);
+  if (catalog.hasError) {
+    return AsyncError(catalog.error!, catalog.stackTrace ?? StackTrace.empty);
+  }
+  if (history.hasError) {
+    return AsyncError(history.error!, history.stackTrace ?? StackTrace.empty);
+  }
+  if (!history.hasValue || !catalog.hasValue) return const AsyncLoading();
+
+  return AsyncData(
+    autoPlaylists(
+      history.requireValue,
+      catalog.requireValue.byPath,
+      ref.read(clockProvider)(),
+    ),
+  );
+});
+
+/// Whether *Favourites lately* is ranked on the weaker evidence of when songs
+/// were last played, because too few have dated plays — when it says so under
+/// its header (see [AutoList.isFallback]).
+///
+/// Worked out beside [autoPlaylistsProvider], from the same history, library
+/// and clock, rather than carried on its playlists: a [Playlist] has nowhere to
+/// hold it. `false` whenever that provider has no playlists to show.
+final autoLatelyIsFallbackProvider = Provider<bool>((ref) {
+  final shown = ref.watch(
+    preferencesControllerProvider.select((state) => state.showsAutoPlaylists),
+  );
+  if (!shown) return false;
+
+  final history = ref.watch(playHistoryProvider);
+  final catalog = ref.watch(musicLibraryControllerProvider);
+  if (history.hasError || catalog.hasError) return false;
+  if (!history.hasValue || !catalog.hasValue) return false;
+
+  return favouritesLately(
+    history.requireValue,
+    catalog.requireValue.byPath,
+    ref.read(clockProvider)(),
+  ).isFallback;
+});
+
+/// The picture the owner chose as a playlist's cover, or `null` for none.
+///
+/// Keyed by the playlist's id *and* the time it last changed. The file is
+/// named by the id alone, so a second picture chosen for the same playlist
+/// would come under a key already read and never be read again; choosing one
+/// changes the playlist, which moves the time. Auto-disposed, as the album
+/// sleeves are.
+final playlistCoverProvider =
+    FutureProvider.family<Uint8List?, ({String id, DateTime modifiedAt})>(
+      (ref, key) => ref.read(playlistCoverStoreProvider).read(key.id),
+      isAutoDispose: true,
+    );
 
 /// What counts a play, and what has been counted.
 ///
 /// One for the application: the player writes to it and the statistics screen
 /// reads from it, and a second one would be a screen showing a total the last
 /// play is missing from.
-final playRecorderProvider = Provider<PlayRecorder>(
-  (ref) => PlayRecorder(
+final playRecorderProvider = Provider<PlayRecorder>((ref) {
+  final recorder = PlayRecorder(
     store: ref.watch(playHistoryStoreProvider),
     clock: ref.watch(clockProvider),
-  ),
-);
+  );
+  ref.onDispose(recorder.dispose);
+
+  return recorder;
+});
+
+/// The play history as it is now, updated after each play is recorded.
+///
+/// An [AsyncNotifier] over [playRecorderProvider] (see
+/// [PlayHistoryController]), for what follows the owner's listening — the
+/// auto playlists. Not auto-disposed: it is the recorder's history, which
+/// outlives every screen. The statistics screen does not watch it; it reads
+/// the recorder once per opening, as it always has.
+final playHistoryProvider =
+    AsyncNotifierProvider<PlayHistoryController, PlayHistory>(
+      PlayHistoryController.new,
+    );
 
 /// The folders the library is built from.
 final libraryFoldersControllerProvider =
@@ -340,6 +595,12 @@ final musicStatsControllerProvider =
 final musicBrowseControllerProvider =
     NotifierProvider<MusicBrowseController, MusicBrowseState>(
       MusicBrowseController.new,
+    );
+
+/// Where in Genres the owner is, apart from where they are in Music.
+final genreBrowseControllerProvider =
+    NotifierProvider<GenreBrowseController, GenreBrowseState>(
+      GenreBrowseController.new,
     );
 
 /// Rows or tiles.
@@ -413,10 +674,22 @@ final lyricsVisibilityProvider =
 final shellControllerProvider =
     NotifierProvider<ShellController, ShellDestination>(ShellController.new);
 
+/// The songs the owner has picked in a list.
+final songSelectionProvider =
+    NotifierProvider<SongSelectionController, SongSelection>(
+      SongSelectionController.new,
+    );
+
 /// What the owner has typed into the search field.
 final searchTermProvider = NotifierProvider<SearchTermController, String>(
   SearchTermController.new,
 );
+
+/// What the search term is matched against.
+final searchFieldProvider =
+    NotifierProvider<SearchFieldController, SearchField>(
+      SearchFieldController.new,
+    );
 
 /// The preferences.
 final preferencesControllerProvider =

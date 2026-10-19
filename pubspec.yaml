@@ -1,7 +1,7 @@
 name: orpheus
 description: "A cross-platform music player for Windows, Linux and Android."
 publish_to: "none"
-version: 1.4.0+8
+version: 1.5.0+9
 
 environment:
   sdk: ^3.13.2
@@ -26,6 +26,10 @@ dependencies:
   # Tags and embedded cover art, in pure Dart. Pure Dart matters here: it is
   # the one component that would otherwise need a native build per target, and
   # a reader that cannot run in a test is a reader whose parsing nobody checks.
+  #
+  # lib/features/library/data/id3_genres.dart imports the package's private
+  # src/constants/id3_genres.dart for its ID3v1 genre table, which no release
+  # promises to keep: an upgrade must check that file is still there.
   audio_metadata_reader: ^1.8.0
 
   # Where the catalog, the settings and the cover cache live on each platform.
@@ -33,7 +37,7 @@ dependencies:
   path_provider: ^2.1.6
 
   # The local settings store: library folders, layout, theme, resume positions.
-  shared_preferences: ^2.5.5
+  shared_preferences: ^2.5.6
 
   # The lyrics lookup. `http` rather than a bare `HttpClient` from dart:io for
   # one reason that matters to this project more than convenience: its
@@ -93,6 +97,12 @@ dependencies:
   # The desktop window: the minimum size, and the geometry that is restored
   # between runs. Desktop-only by nature, and guarded as such at every call.
   window_manager: ^0.5.2
+
+  # The backup file: a ZIP holding the exported data, the playlist covers and
+  # the preferences, written and read in pure Dart so the format is exercised
+  # by tests on every target. Already in the tree as somebody else's transitive
+  # dependency; named here because the backup format now depends on it directly.
+  archive: ^4.2.0
 
 dev_dependencies:
   flutter_test:

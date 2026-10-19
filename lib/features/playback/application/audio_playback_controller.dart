@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/di/providers.dart';
 import '../../library/domain/audio_file.dart';
 import '../../library/domain/music_catalog.dart';
+import '../../library/domain/music_entry.dart';
 import '../../library/domain/music_grouping.dart';
 import '../../stats/domain/play_threshold.dart';
 import '../domain/media_player.dart';
@@ -214,12 +215,29 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
   ///
   /// [shuffled] plays the same tracks in an order nobody chose: the record,
   /// out of order, which is the one thing a shuffle is for.
-  Future<void> playAlbum(AudioFile file, {bool shuffled = false}) =>
-      _playGrouped(file, _GroupKind.album, shuffled: shuffled);
+  ///
+  /// [within] narrows what the record is gathered from, for a screen that
+  /// lists only some of the library's tracks — an untitled group opened under
+  /// a genre holds only that genre's tracks, and playing it must not queue the
+  /// rest. `null` gathers from the whole library.
+  Future<void> playAlbum(
+    AudioFile file, {
+    bool shuffled = false,
+    List<MusicEntry>? within,
+  }) =>
+      _playGrouped(file, _GroupKind.album, shuffled: shuffled, within: within);
 
   /// Plays everything by [file]'s artist.
-  Future<void> playArtist(AudioFile file, {bool shuffled = false}) =>
-      _playGrouped(file, _GroupKind.artist, shuffled: shuffled);
+  ///
+  /// [within] is read as [playAlbum] reads it: under a genre, "play this
+  /// artist" queues the artist's tracks that screen lists, not their whole
+  /// catalogue.
+  Future<void> playArtist(
+    AudioFile file, {
+    bool shuffled = false,
+    List<MusicEntry>? within,
+  }) =>
+      _playGrouped(file, _GroupKind.artist, shuffled: shuffled, within: within);
 
   /// Plays [tracks] in the order given, as the queue called [name].
   ///
@@ -470,11 +488,18 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
     }
   }
 
-  /// Builds and plays an album or artist queue.
+  /// Builds and plays an album or artist queue, gathered from [within] where
+  /// given and from the library otherwise.
+  ///
+  /// The library is still read when [within] is given: it is what says which
+  /// record [file] belongs to, and whether it is a file the library holds at
+  /// all. Only the gathering is narrowed — and only while [within] holds
+  /// [file]; see the comment where it is gathered.
   Future<void> _playGrouped(
     AudioFile file,
     _GroupKind kind, {
     bool shuffled = false,
+    List<MusicEntry>? within,
   }) async {
     state = state.copyWith(stage: AudioStage.starting);
 
@@ -499,8 +524,6 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
       return;
     }
 
-    final entries = library.entries;
-
     // A file the library does not hold is a file with no record around it —
     // played from a queue whose tracks have since been re-scanned away, say.
     // It queues alone, and it is checked here rather than left to the grouping
@@ -509,12 +532,24 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
     // answers — the stranger is one file, and the group is the group.
     final entry = library.entryAt(file.path);
 
-    final gathered = entry == null
+    List<AudioFile> gatherFrom(List<MusicEntry> entries) => entry == null
         ? [file]
         : switch (kind) {
             _GroupKind.album => albumOf(entry, entries),
             _GroupKind.artist => artistOf(entry, entries),
           };
+
+    // A [within] that does not hold [file] is not the screen the owner pressed
+    // play on: a record that lost the genre's tag while it stayed open is still
+    // drawn, whole, from the library, and what they see is the whole record. So
+    // that case gathers from the library exactly as if [within] were null.
+    // Gathering from what [within] holds instead would queue nothing, or a
+    // queue without the track they picked, which would start a different one.
+    var gathered = gatherFrom(within ?? library.entries);
+    if (within != null &&
+        !gathered.any((candidate) => candidate.path == file.path)) {
+      gathered = gatherFrom(library.entries);
+    }
     final tracks = shuffled ? _shuffled(gathered) : gathered;
 
     // Never the file name: an absent tag is carried as `null` rather than

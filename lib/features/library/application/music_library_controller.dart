@@ -36,7 +36,11 @@ class MusicLibraryController extends AsyncNotifier<MusicCatalog> {
 
     return scannedAt == stored.scannedAt
         ? stored
-        : MusicCatalog(entries: stored.entries, scannedAt: scannedAt);
+        : MusicCatalog(
+            entries: stored.entries,
+            scannedAt: scannedAt,
+            isStale: stored.isStale,
+          );
   }
 
   /// Replaces the library with what a scan found.

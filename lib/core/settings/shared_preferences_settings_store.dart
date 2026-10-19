@@ -39,6 +39,9 @@ class SharedPreferencesSettingsStore implements SettingsStore {
   /// The key the startup update check is stored under.
   static const String checksForUpdatesOnStartupKey = 'checksForUpdatesOnStartup';
 
+  /// The key the auto playlists preference is stored under.
+  static const String showsAutoPlaylistsKey = 'showsAutoPlaylists';
+
   /// The key a skipped version is stored under.
   static const String skippedUpdateVersionKey = 'skippedUpdateVersion';
 
@@ -120,6 +123,14 @@ class SharedPreferencesSettingsStore implements SettingsStore {
   @override
   Future<void> setChecksForUpdatesOnStartup(bool value) =>
       _preferences.setBool(checksForUpdatesOnStartupKey, value);
+
+  @override
+  bool get showsAutoPlaylists =>
+      _preferences.getBool(showsAutoPlaylistsKey) ?? true;
+
+  @override
+  Future<void> setShowsAutoPlaylists(bool value) =>
+      _preferences.setBool(showsAutoPlaylistsKey, value);
 
   @override
   String? get skippedUpdateVersion =>

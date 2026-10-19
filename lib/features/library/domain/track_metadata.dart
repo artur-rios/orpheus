@@ -11,7 +11,7 @@ class TrackMetadata {
     this.artist,
     this.albumArtist,
     this.album,
-    this.genre,
+    this.genres = const [],
     this.track,
     this.trackTotal,
     this.disc,
@@ -41,8 +41,13 @@ class TrackMetadata {
   /// The record it belongs to.
   final String? album;
 
-  /// Its genre, where the file names one.
-  final String? genre;
+  /// Every genre the file names, in the order it names them, split at the
+  /// separators the library recognises and without repeats.
+  ///
+  /// Empty where the file names none. A list rather than a nullable string
+  /// because a file can carry several, and keeping only the first made a
+  /// track vanish from every genre but one.
+  final List<String> genres;
 
   /// Its position on the record.
   final int? track;
@@ -73,7 +78,7 @@ class TrackMetadata {
     String? artist,
     String? albumArtist,
     String? album,
-    String? genre,
+    List<String>? genres,
     int? track,
     int? trackTotal,
     int? disc,
@@ -85,7 +90,7 @@ class TrackMetadata {
     artist: artist ?? this.artist,
     albumArtist: albumArtist ?? this.albumArtist,
     album: album ?? this.album,
-    genre: genre ?? this.genre,
+    genres: genres ?? this.genres,
     track: track ?? this.track,
     trackTotal: trackTotal ?? this.trackTotal,
     disc: disc ?? this.disc,

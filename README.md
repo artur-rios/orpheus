@@ -13,7 +13,7 @@ result in a file beside its own settings.
 
 > **Status:** complete and tested — the unit and widget suite green and
 > `flutter analyze` clean. Every use case in the [specifications](#specifications),
-> UC-01 to UC-35, is implemented — see the [roadmap](#roadmap). All three
+> UC-01 to UC-43, is implemented — see the [roadmap](#roadmap). All three
 > release builds and the Windows installer are produced and verified by CI on
 > every pull request. It runs on Linux, Windows and Android: the fixes released
 > since 1.0.0 came from running it on a Windows machine and an Android phone.
@@ -23,8 +23,10 @@ result in a file beside its own settings.
 - **Reads a library from folders you choose.** Register one or more folders and
   Orpheus walks them, reads the tags out of every audio file, and pulls out the
   cover art. Nothing is indexed that you did not point it at.
-- **Browses by artist, album and song**, in rows or as a wall of sleeves, with a
-  breadcrumb back out of whatever you drilled into.
+- **Browses by artist, album, song and genre**, in rows or as a wall of sleeves,
+  with a breadcrumb back out of whatever you drilled into. Genres have a tab of
+  their own: a record is listed under every genre its tracks carry and opens
+  whole, while playing a genre plays only the tracks tagged with it.
 - **Plays a track, a record, an artist, or everything shuffled**, with a queue
   you can see and jump around in, repeat, and a resume point per track.
 - **Shows what is playing everywhere** — a persistent bar across the bottom, and
@@ -55,9 +57,59 @@ result in a file beside its own settings.
   *Edit tags…*: the form holds what the file says — title, artist, album
   artist, album, track and disc numbers and totals, year, genre and the cover,
   which you can replace with a JPEG or PNG or remove. Only what you change is
-  written, and the library updates by itself.
-- **Searches** across titles, artists and albums, ranked so a match at the start
-  of a title comes above one buried in the middle of something else.
+  written, and the library updates by itself. Or, from an album's or an
+  artist's ⋮ menu, the shared tags of all its songs at once; fields they
+  disagree on show as mixed and are left alone unless you type in them.
+- **Selects several songs.** In any list of songs — all of them, inside an
+  album or a genre, or search results — touch and hold one, or Ctrl-click or
+  Shift-click it, and tick boxes appear: tap to add or remove songs instead of
+  playing them, Shift-click to take a stretch, *Select all* for the lot. A bar
+  shows how many are picked, and *Edit tags…* — in it, or *Edit tags of N
+  songs…* on a right-click — opens the same form for exactly those songs,
+  wherever they come from. Esc, ✕, Back or leaving the list ends it. A song's
+  own menu is on its ⋮ button.
+- **Keeps playlists.** *Add to playlist…* on a song's menu, on a selection, or
+  on an album's or an artist's ⋮ menu puts songs at the end of a playlist, or of
+  a new one, and asks first about any it already holds. The Playlists tab lists
+  them, newest change first, as rows or tiles; open one to play it, shuffle it,
+  tap a song to play from there, drag the handles to reorder, and remove songs.
+  Each has a cover of your own or a mosaic of its albums', can be renamed,
+  exported to `.m3u`, and deleted — the songs stay. A song whose file has gone
+  stays in the playlist, greyed out and skipped, so an unplugged drive empties
+  nothing. Playlists live in Orpheus's own data, never in your music folders.
+- **Keeps two playlists for you.** At the top of the Playlists tab, *Favourites
+  lately* holds what you have played most in the last 30 days and *All-time
+  favourites* what you have played most ever, up to 50 songs each, the more
+  recently played first among equals. Until enough recent listening has been
+  recorded, *Favourites lately* is the songs played in the last 30 days by
+  their total plays, and says it is getting to know you. They fill themselves
+  as you listen. You can play, shuffle, export to `.m3u`, and copy them into a
+  playlist of your own with *Add to playlist…*, but not reorder or edit them.
+  *Show auto playlists* in the preferences hides them; your plays are still
+  counted.
+- **Exports your data.** *Preferences → Your data → Export my data (JSON)…*
+  saves your library, playlists, both auto playlists, play history and
+  statistics to one JSON file, where you choose, to read in any tool. It only
+  reads: the one thing it writes is that file. If the playlists or the history
+  cannot be read, the file says so and the export tells you it is partial. The
+  layout is documented in [`docs/data-export.md`](docs/data-export.md).
+- **Backs up and restores Orpheus.** *Back up Orpheus (ZIP)…*, beside it, saves
+  that data together with your playlists' cover pictures and your preferences,
+  music folders included, to one ZIP; *About these exports* shows what each
+  file holds. *Restore from a backup…* reads the ZIP, or an exported JSON, on
+  this device or another. For a ZIP it first shows the music folders the backup
+  names and lets you point Orpheus at the music, then scans the library so the
+  backup's songs can be matched by path, and by their tags and length when the
+  path differs. Then you choose, for the playlists, the play history and the
+  preferences separately, *Merge*, *Skip* or *Replace* — *Merge* to begin
+  with, which never loses what is here, and *Replace* says what it removes
+  first. A part the backup could not read is not offered, and a part this
+  device could not read is not written over. Each part is written whole or not
+  at all, and a summary says what was restored. Your music files are never
+  touched.
+- **Searches** across titles, artists, albums and genres — all together, or
+  one kind at a time with a selector — ranked so a match at the start of a
+  title comes above one buried in the middle of something else.
 - **Says what you actually listen to** — total plays, and the most played
   tracks, artists, records and genres, counted from your own listening and
   nobody else's.
@@ -111,6 +163,7 @@ detail.
 | [Vision Document](docs/requirements/Vision%20Document.md) | Stakeholders, positioning, and the `F-xx` features. |
 | [System Requirements Document](docs/requirements/System%20Requirements%20Document.md) | The `FR-<AREA>-xx` and `NFR-xx` requirements, the data model, and traceability. |
 | [Use Case Specification Document](docs/requirements/Use%20Case%20Specification%20Document.md) | The `UC-xx` use cases, their flows, and their `AF-xx` alternatives. |
+| [Data export](docs/data-export.md) | The layout of the file *Export my data (JSON)…* writes and of the ZIP *Back up Orpheus (ZIP)…* writes, field by field, how a restore reads them, and the versioning rules. |
 | [Development Workflow Document](docs/requirements/Development%20Workflow%20Document.md) | The normative branch pattern, issue lifecycle, and Definition of Done. |
 | [Testing Specification Document](docs/requirements/Testing%20Specification%20Document.md) | How tests are written, named, and run. |
 | [Technology Stack Document](docs/requirements/Technology%20Stack%20Document.md) | The single source of truth for every technology and version. |
@@ -481,14 +534,26 @@ not written, and on Windows the track playing may be refused as in use.
   a `SYLT` frame whose times are counted in MPEG frames rather than milliseconds
   is declined rather than approximated: turning those into a position needs the
   frame rate of the audio behind them, and this reads headers, not streams.
-- **No playlists.** Queues are built from a track, a record, an artist, or the
-  whole library shuffled. There is nothing to save and name yet.
+- **Playlists are made by hand and cannot be imported.** A playlist holds the
+  songs you added, in the order you left them; it can be exported to `.m3u`, but
+  an `.m3u` cannot be read back in. The two auto playlists fill themselves and
+  are the only ones that do: there is no other kind, and no setting for their
+  size or window.
+- **A restore brings back your data, not your music.** The songs come from your
+  music files and a scan, so a restore needs the music to be on the device; it
+  matches the backup's songs to what the scan found, and a song it cannot match
+  keeps its old path until the file turns up. The backup holds no audio, and
+  not the update you chose to skip. You choose *Merge*, *Skip* or *Replace* for
+  the playlists, the play history and the preferences as three parts, not for
+  one playlist at a time, and there is no scheduled or cloud backup. Orpheus
+  reads only its own backups and exports; a backup from a newer Orpheus is
+  refused, and other programs' formats are not read.
 - **The statistics are all-time, with no windows.** "This month" is a control, a
   parameter, and a second set of numbers to explain, and none of it is worth
   adding before anyone has read the first set. The history stores a count per
-  file rather than a row per play, which is what keeps it proportional to the
-  number of tracks ever played — and which is what a time window would have to
-  undo.
+  file, and the dates of its plays only for the last 90 days — just enough for
+  *Favourites lately* — which is what keeps it proportional to the number of
+  tracks ever played rather than the number of plays.
 - **The rankings are only as good as the tags.** A library where the same artist
   is spelled two ways ranks as two artists, and nothing here can tell that from
   two artists who really exist.
@@ -511,10 +576,11 @@ not written, and on Windows the track playing may be refused as in use.
 ## Roadmap
 
 Nine milestones covering thirty-four issues: one foundation issue plus one
-issue per use case from UC-01 to UC-33. UC-34 and UC-35 came after the backlog
-was filed and have no milestone; they are listed after M-09. Milestones are
-dependency-ordered — no milestone depends on a later one, and every milestone
-after `M-01` depends on it.
+issue per use case from UC-01 to UC-33. UC-34, UC-35, UC-36, UC-37, UC-38,
+UC-39, UC-40, UC-41, UC-42 and UC-43 came after the backlog was filed and have
+no milestone; they are listed after M-09.
+Milestones are dependency-ordered — no milestone depends on a later one, and
+every milestone after `M-01` depends on it.
 
 The live view is the [project board](https://github.com/users/artur-rios/projects/13)
 and GitHub's own milestone pages; the counts here are as of the last update to
@@ -615,14 +681,22 @@ Built, tested and specified, and merged.
 | --- | --- | --- |
 | [#33](https://github.com/artur-rios/orpheus/issues/33) | UC-32 — See the music move — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
-### After the backlog — Autofill
+### After the backlog — Tags and genres
 
-Built, tested and specified, and merged. UC-34 has no issue, so the use case itself is linked.
+Built, tested and specified, and merged. UC-34, UC-36, UC-37, UC-38, UC-39, UC-40, UC-41, UC-42 and UC-43 have no issue, so the use case itself is linked.
 
 | Issue | Work | Spec |
 | --- | --- | --- |
 | [UC-34](docs/requirements/Use%20Case%20Specification%20Document.md#uc-34-autofill-a-records-tags) | UC-34 — Autofill a record's tags — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [#53](https://github.com/artur-rios/orpheus/issues/53) | UC-35 — Edit a track's tags by hand — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-36](docs/requirements/Use%20Case%20Specification%20Document.md#uc-36-browse-and-play-by-genre) | UC-36 — Browse and play by genre — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-37](docs/requirements/Use%20Case%20Specification%20Document.md#uc-37-edit-the-tags-of-several-tracks-at-once) | UC-37 — Edit the tags of several tracks at once — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-38](docs/requirements/Use%20Case%20Specification%20Document.md#uc-38-select-several-songs-and-edit-their-tags) | UC-38 — Select several songs and edit their tags — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-39](docs/requirements/Use%20Case%20Specification%20Document.md#uc-39-keep-playlists) | UC-39 — Keep playlists — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-40](docs/requirements/Use%20Case%20Specification%20Document.md#uc-40-play-the-auto-playlists) | UC-40 — Play the auto playlists — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-41](docs/requirements/Use%20Case%20Specification%20Document.md#uc-41-export-my-data) | UC-41 — Export my data — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-42](docs/requirements/Use%20Case%20Specification%20Document.md#uc-42-back-up-orpheus) | UC-42 — Back up Orpheus — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-43](docs/requirements/Use%20Case%20Specification%20Document.md#uc-43-restore-from-a-backup) | UC-43 — Restore from a backup — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
 ## Changelog
 

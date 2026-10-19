@@ -199,6 +199,23 @@ class ScanController extends Notifier<ScanState> {
     }
   }
 
+  /// The scan the application starts for itself, once the first frame is up.
+  ///
+  /// Runs when the owner asked for a scan at every launch, and also when the
+  /// stored catalog was refused ([MusicCatalog.isStale])
+  /// whatever they asked: that library is empty until a scan refills it, and
+  /// the one-time re-scan an upgrade promises is this one. The preference is
+  /// checked first so that, with it on, the scan starts exactly as early as it
+  /// always has rather than after the library is read.
+  Future<void> scanAtStartup() async {
+    if (!ref.read(preferencesControllerProvider).rescansAtStartup) {
+      final stored = await ref.read(musicLibraryControllerProvider.future);
+      if (!stored.isStale) return;
+    }
+
+    await scan();
+  }
+
   /// Scans again because files under the library were just changed by this
   /// application — an autofill writing tags.
   ///

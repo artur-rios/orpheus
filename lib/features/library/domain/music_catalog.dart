@@ -10,7 +10,7 @@ import 'track_metadata.dart';
 /// tags, and every screen in the music area needs all of it to group by.
 class MusicCatalog {
   /// Creates a catalog over [entries].
-  MusicCatalog({required this.entries, this.scannedAt});
+  MusicCatalog({required this.entries, this.scannedAt, this.isStale = false});
 
   /// The catalog of a library that has never been scanned.
   static final MusicCatalog empty = MusicCatalog(entries: const []);
@@ -22,6 +22,16 @@ class MusicCatalog {
   /// When the scan that produced this ran, or `null` for a catalog that was
   /// never scanned.
   final DateTime? scannedAt;
+
+  /// Whether this was read from a document that was refused: another
+  /// version's, or one that cannot be read at all.
+  ///
+  /// Such a catalog holds nothing, and the library is owed a scan whatever the
+  /// owner chose about scanning at launch: one who turned that off would
+  /// otherwise upgrade into an empty library and stay in it until they scanned
+  /// by hand. A missing document is not stale — a library never scanned is the
+  /// owner's to scan — and neither is anything a scan produced.
+  final bool isStale;
 
   /// Whether the library holds nothing.
   bool get isEmpty => entries.isEmpty;
