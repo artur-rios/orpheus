@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
@@ -72,7 +74,7 @@ void main() {
       'GivenDataPreferencesAndTwoCovers_WhenWrittenAndRead_ThenAllReturn',
       () {
         final covers = {
-          'p1': Uint8List.fromList([1, 2, 3]),
+          'p1': Uint8List.fromList([0xFF, 0xD8, 0xFF, 3]),
           'p2': Uint8List.fromList([255, 216, 255, 0]),
         };
 
@@ -93,6 +95,117 @@ void main() {
       },
     );
 
+    test('GivenACoverOverTheLimit_WhenRead_ThenItIsSkippedAndNamed', () {
+      final back = readBackup(
+        encodeBackupZip(
+          data: data(),
+          preferences: preferences,
+          covers: {
+            'big': Uint8List(maxBackupCoverBytes + 1),
+            'small': Uint8List.fromList([0xFF, 0xD8, 0xFF, 3]),
+          },
+          createdAt: createdAt,
+        ),
+      );
+
+      expect(back.covers.keys, ['small']);
+      expect(back.skippedCovers, {'big'});
+    });
+
+    test('GivenACoverAtTheLimit_WhenRead_ThenItIsKept', () {
+      final back = readBackup(
+        encodeBackupZip(
+          data: data(),
+          preferences: preferences,
+          covers: {
+            'exact': Uint8List(maxBackupCoverBytes)..setAll(0, [0xFF, 0xD8, 0xFF]),
+          },
+          createdAt: createdAt,
+        ),
+      );
+
+      expect(back.covers['exact'], hasLength(maxBackupCoverBytes));
+      expect(back.skippedCovers, isEmpty);
+    });
+
+    test('GivenACoverWhoseHeaderUnderstatesItsSize_WhenRead_ThenItIsSkipped', () {
+      // A header can say less than the entry holds.
+      final archive = ZipDecoder().decodeBytes(
+        encodeBackupZip(
+          data: data(),
+          preferences: preferences,
+          covers: const {},
+          createdAt: createdAt,
+        ),
+      )..add(ArchiveFile('covers/liar', 10, Uint8List(maxBackupCoverBytes + 1)));
+
+      final back = readBackup(ZipEncoder().encodeBytes(archive));
+
+      expect(back.covers, isEmpty);
+      expect(back.skippedCovers, {'liar'});
+    });
+
+    test('GivenACoverWhoseHeaderDeclaresTooMuch_WhenRead_ThenItIsSkipped', () {
+      final archive = ZipDecoder().decodeBytes(
+        encodeBackupZip(
+          data: data(),
+          preferences: preferences,
+          covers: const {},
+          createdAt: createdAt,
+        ),
+      )..add(ArchiveFile('covers/big', maxBackupCoverBytes + 1, [1, 2, 3]));
+
+      final back = readBackup(ZipEncoder().encodeBytes(archive));
+
+      expect(back.covers, isEmpty);
+      expect(back.skippedCovers, {'big'});
+    });
+
+    test('GivenACoverWithACorruptDeflateStream_WhenRead_ThenItIsSkippedAndTheRestIsKept', () {
+      final bytes = encodeBackupZip(
+        data: data(),
+        preferences: preferences,
+        covers: {
+          'bad': Uint8List.fromList([for (var i = 0; i < 400; i++) i % 7]),
+          'good': Uint8List.fromList([0xFF, 0xD8, 0xFF, 3]),
+        },
+        createdAt: createdAt,
+      );
+      // The entry's compressed bytes follow its name in the local header.
+      final name = utf8.encode('covers/bad');
+      var at = 0;
+      while (!_startsWith(bytes, name, at)) {
+        at++;
+      }
+      for (var i = 0; i < 8; i++) {
+        bytes[at + name.length + i] = 0xff;
+      }
+
+      final back = readBackup(bytes);
+
+      expect(back.covers.keys, ['good']);
+      expect(back.skippedCovers, {'bad'});
+      expect(back.data, data());
+    });
+
+    test('GivenAStoredEntryThatIsNotAPicture_WhenRead_ThenItIsSkipped', () {
+      // What an entry in a method this reader does not know comes out as:
+      // stored, with bytes that are still compressed.
+      final archive = ZipDecoder().decodeBytes(
+        encodeBackupZip(
+          data: data(),
+          preferences: preferences,
+          covers: const {},
+          createdAt: createdAt,
+        ),
+      )..add(ArchiveFile.noCompress('covers/junk', 3, [1, 2, 3]));
+
+      final back = readBackup(ZipEncoder().encodeBytes(archive));
+
+      expect(back.covers, isEmpty);
+      expect(back.skippedCovers, {'junk'});
+    });
+
     test('GivenNoCovers_WhenWrittenAndRead_ThenThereAreNone', () {
       final back = readBackup(
         encodeBackupZip(
@@ -104,6 +217,7 @@ void main() {
       );
 
       expect(back.covers, isEmpty);
+      expect(back.skippedCovers, isEmpty);
       expect(back.preferences, preferences);
     });
 
@@ -153,6 +267,64 @@ void main() {
 
       expect(text, endsWith('\n'));
       expect(text, contains('\n  "format": "orpheus-data"'));
+    });
+  });
+
+  group('inflating a cover within the limit', () {
+    // Raw deflate, as a ZIP stores it, of [input] fed [times] over without
+    // ever holding the whole of it, cut into pieces of 1 KB.
+    List<Uint8List> deflated(Uint8List input, {int times = 1}) {
+      late Uint8List all;
+      final encoder = ZLibCodec(raw: true).encoder.startChunkedConversion(
+        ByteConversionSink.withCallback(
+          (bytes) => all = Uint8List.fromList(bytes),
+        ),
+      );
+      for (var i = 0; i < times; i++) {
+        encoder.add(input);
+      }
+      encoder.close();
+
+      return [
+        for (var at = 0; at < all.length; at += 1024)
+          Uint8List.sublistView(all, at, min(at + 1024, all.length)),
+      ];
+    }
+
+    test('GivenAStreamWithinTheLimit_WhenInflated_ThenEveryByteComesBack', () {
+      // Random, so it does not compress and spans many pieces.
+      final random = Random(7);
+      final original = Uint8List.fromList([
+        for (var i = 0; i < 200 * 1024; i++) random.nextInt(256),
+      ]);
+      final pieces = deflated(original);
+      expect(pieces.length, greaterThan(64));
+
+      final bytes = inflateRawWithin(pieces, original.length);
+
+      expect(bytes, original);
+    });
+
+    test('GivenAStreamThatInflatesPastTheLimit_WhenInflated_ThenItAbortsEarlyAndAnswersNull', () {
+      // Three times the limit in zeros, fed from one reused 1 MB buffer.
+      final pieces = deflated(
+        Uint8List(1024 * 1024),
+        times: 3 * maxBackupCoverBytes ~/ (1024 * 1024),
+      );
+      var read = 0;
+
+      final bytes = inflateRawWithin(
+        pieces.map((piece) {
+          read++;
+
+          return piece;
+        }),
+        maxBackupCoverBytes,
+      );
+
+      expect(bytes, isNull);
+      // Stopped about a third of the way through, not after inflating it all.
+      expect(read, lessThan(pieces.length * 2 ~/ 3));
     });
   });
 
@@ -292,4 +464,15 @@ void main() {
       expect((failure! as NewerBackupVersion).version, 2);
     });
   });
+}
+
+bool _startsWith(Uint8List bytes, List<int> prefix, int at) {
+  if (at + prefix.length > bytes.length) {
+    throw StateError('the name is not in the file');
+  }
+  for (var i = 0; i < prefix.length; i++) {
+    if (bytes[at + i] != prefix[i]) return false;
+  }
+
+  return true;
 }

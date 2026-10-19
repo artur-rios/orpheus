@@ -6,6 +6,7 @@ import 'package:logging/logging.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
+import '../../data_export/domain/backup.dart';
 import '../../shell/presentation/confirmation_dialog.dart';
 import '../../tag_editor/domain/tag_edits.dart';
 import '../domain/auto_playlists.dart';
@@ -136,6 +137,15 @@ class PlaylistMenu extends ConsumerWidget {
     if (!isSupportedCover(bytes)) {
       messenger.showSnackBar(
         SnackBar(content: Text(l10n.playlistCoverNotImage)),
+      );
+
+      return;
+    }
+    // A picture a backup would not read back: refused here, so that Orpheus
+    // never makes a backup it cannot restore in full.
+    if (bytes.length > maxBackupCoverBytes) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.playlistCoverTooLarge)),
       );
 
       return;

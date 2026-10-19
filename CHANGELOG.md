@@ -74,11 +74,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   saved for each song, and the play history with songs the library no longer holds. It waits for the library, the
   playlists and the play history to load and does not freeze the window while it builds the file. It only reads: the one
   thing it writes is the file you chose. If the playlists or the play history cannot be read, or the library is being
-  rebuilt after an upgrade, that section is empty, the file's `problems` says why, and Orpheus says *Exported, but some
-  data could not be read*; if the library fails to load, nothing is exported, and a catalog that cannot be read counts
-  as an empty library, which a rescan rebuilds. The result is shown under the button. The layout is documented and versioned in
-  `docs/data-export.md`. It holds no cover images, audio or preferences; *Restore from a backup…* can read it back, as
-  below.
+  rebuilt after an upgrade or because its catalog could not be read, that section is empty, the file's `problems` says
+  why, and Orpheus says *Exported, but some data could not be read*; if the library fails to load, nothing is
+  exported. The result is shown under the button. The layout is documented and versioned in `docs/data-export.md`. It
+  holds no cover images, audio or preferences; *Restore from a backup…* can read it back, as below.
 - Back up and restore. *Back up Orpheus (ZIP)…*, under *Your data*, saves one ZIP, suggested as
   `orpheus-backup-<yyyy-MM-dd>.zip`, that holds the data of *Export my data (JSON)…* exactly as it writes it, the cover
   picture of every playlist that has one, and your preferences with your music folders; the update you chose to skip is
@@ -98,8 +97,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   and then by title, artist, album and length within 2 seconds when exactly one song answers; one that cannot be matched
   keeps the backup's path. A part the backup could not read is not offered, a part this device could not read is left
   alone, each part is written whole or not at all, and a part that fails does not stop the others. A summary says what
-  was restored and what was not. Your music files are never changed. From a JSON, the preferences and the covers are not
-  restored, and it says so.
+  was restored and what was not, including a playlist whose cover picture was too large (over 20 MB) to read, and a
+  cover picture over that size is not accepted when you choose one. If
+  something unexpected stops a restore after the music folders were changed, the screen says they stay changed. Your
+  music files are never changed. From a JSON, the preferences and the covers are not restored, and it says so.
 
 ### Changed
 

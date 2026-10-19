@@ -199,7 +199,9 @@ class RestoreState {
   final List<String>? stagedFolders;
 
   /// Whether stage 1 changed this device's music folders. A cancel after it
-  /// keeps them, and the library has been scanned with them.
+  /// keeps them, and the library has been scanned with them. Kept at
+  /// [RestoreStage.failed] too, when something unforeseen stopped the restore
+  /// after it.
   final bool foldersChanged;
 
   /// Whether the library could not be scanned in stage 1 — the scan failed,
@@ -328,8 +330,9 @@ class RestoreSummary {
   /// How the preferences went.
   final PartResult preferences;
 
-  /// The names of the playlists restored whose cover could not be written:
-  /// the playlist is there, its picture is not.
+  /// The names of the playlists restored whose cover could not be written, or
+  /// that the backup holds too large to read: the playlist is there, its
+  /// picture is not.
   final List<String> coverFailures;
 }
 
@@ -557,12 +560,23 @@ class RestoreController extends Notifier<RestoreState> {
   /// Something unforeseen stopped the restore before anything of the data was
   /// written: [RestoreStage.failed], which the screen can be closed from,
   /// rather than a screen left busy with no way out.
-  void _failUnexpectedly(int session, Object error, StackTrace stack) {
+  ///
+  /// [foldersChanged] is kept in the failed state: stage 1 may already have
+  /// changed the music folders, which stay, and the screen says so.
+  void _failUnexpectedly(
+    int session,
+    Object error,
+    StackTrace stack, {
+    bool foldersChanged = false,
+  }) {
     _log.severe('the restore could not be prepared', error, stack);
     if (session != _session) return;
 
     _forget();
-    state = const RestoreState(stage: RestoreStage.failed);
+    state = RestoreState(
+      stage: RestoreStage.failed,
+      foldersChanged: foldersChanged,
+    );
   }
 
   void _forget() {
@@ -586,7 +600,7 @@ class RestoreController extends Notifier<RestoreState> {
         scanFailed: scanFailed,
       );
     } on Object catch (error, stack) {
-      _failUnexpectedly(session, error, stack);
+      _failUnexpectedly(session, error, stack, foldersChanged: foldersChanged);
     }
   }
 
@@ -654,8 +668,8 @@ class RestoreController extends Notifier<RestoreState> {
   }
 
   /// Whether the library has to be scanned before songs can be matched
-  /// against it: it has folders, and holds nothing or another version's
-  /// leftovers.
+  /// against it: it has folders, and holds nothing or is stale — another
+  /// version's, or one that could not be read.
   Future<bool> _libraryWantsScan() async {
     if (ref.read(libraryFoldersControllerProvider).isEmpty) return false;
 
@@ -845,7 +859,9 @@ class RestoreController extends Notifier<RestoreState> {
       ),
       [
         for (final playlist in outcome.playlists)
-          if (failed.contains(playlist.id)) playlist.name,
+          if (failed.contains(playlist.id) ||
+              outcome.coversLost.contains(playlist.id))
+            playlist.name,
       ],
     );
   }

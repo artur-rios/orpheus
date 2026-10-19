@@ -168,6 +168,7 @@ class PlaylistsOutcome {
     required this.added,
     required this.merged,
     required this.replaced,
+    this.coversLost = const {},
   });
 
   /// Every playlist there will be, to be written as one list.
@@ -176,6 +177,11 @@ class PlaylistsOutcome {
   /// The covers to write, by the id of the playlist on this device they
   /// belong to.
   final Map<String, Uint8List> coversToWrite;
+
+  /// The ids, on this device, of the playlists restored without the cover the
+  /// backup holds for them, because it was too large to read
+  /// ([BackupContents.skippedCovers]).
+  final Set<String> coversLost;
 
   /// How many playlists the backup adds.
   final int added;
@@ -200,9 +206,12 @@ class PlaylistsOutcome {
 ///
 /// Every playlist added gets an id from [newId], as does every entry added,
 /// because a backup's id may be one already used here; its cover is written
-/// under the new id. A cover is looked up only by the id of a playlist the
-/// data document names. An entry's song is matched with [matcher]; one that
-/// is not found keeps the backup's path and the details it was saved with.
+/// under the new id. A playlist whose cover the backup holds but was too large
+/// to read is restored without it, and is named in
+/// [PlaylistsOutcome.coversLost] — unless the playlist here keeps a cover of
+/// its own. A cover is looked up only by the id of a playlist the data
+/// document names. An entry's song is matched with [matcher]; one that is not
+/// found keeps the backup's path and the details it was saved with.
 ///
 /// When the backup could not read its playlists ([unreadableParts]), [current]
 /// is answered as it is, whatever [choice] says: an empty section is not the
@@ -227,11 +236,13 @@ PlaylistsOutcome restorePlaylists(
 
   final saved = _savedPlaylists(backup.data, matcher);
   final covers = <String, Uint8List>{};
+  final coversLost = <String>{};
 
   Playlist created(_SavedPlaylist playlist) {
     final id = newId();
     final cover = backup.covers[playlist.id];
     if (cover != null) covers[id] = cover;
+    if (backup.skippedCovers.contains(playlist.id)) coversLost.add(id);
 
     return Playlist(
       id: id,
@@ -247,6 +258,7 @@ PlaylistsOutcome restorePlaylists(
     return PlaylistsOutcome(
       playlists: [for (final playlist in saved) created(playlist)],
       coversToWrite: covers,
+      coversLost: coversLost,
       added: saved.length,
       merged: 0,
       replaced: current.length,
@@ -284,6 +296,14 @@ PlaylistsOutcome restorePlaylists(
     if (cover != null && target.coverId == null) {
       covers[target.id] = cover;
       target = target.withCover(target.id, now);
+      // An earlier backup playlist of this name lost its cover; this one's
+      // is what the playlist has now.
+      coversLost.remove(target.id);
+    }
+    // Named whether or not the playlist changed otherwise: a playlist that
+    // already held every song still has no cover for want of the backup's.
+    if (backup.skippedCovers.contains(playlist.id) && target.coverId == null) {
+      coversLost.add(target.id);
     }
 
     if (identical(target, before)) continue;
@@ -294,6 +314,7 @@ PlaylistsOutcome restorePlaylists(
   return PlaylistsOutcome(
     playlists: playlists,
     coversToWrite: covers,
+    coversLost: coversLost,
     added: added,
     merged: mergedInto.length,
     replaced: 0,

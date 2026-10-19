@@ -403,6 +403,102 @@ void main() {
         expect(outcome.coversToWrite, isEmpty);
       });
 
+      test('GivenAnAddedPlaylistsCoverTooLargeToRead_WhenMerged_ThenItIsAddedWithoutAndNamedAsLost', () {
+        final backup = backupWith(
+          playlists: [savedPlaylist('p1', 'Road trip')],
+          skippedCovers: {'p1'},
+        );
+
+        final outcome = restore(const [], backup, RestoreChoice.merge);
+
+        expect(outcome.playlists.single.coverId, isNull);
+        expect(outcome.coversToWrite, isEmpty);
+        expect(outcome.coversLost, {'new1'});
+      });
+
+      test('GivenAMergedPlaylistsCoverTooLargeToRead_WhenMerged_ThenItIsNamedAsLost', () {
+        final here = playlist('h1', 'Mix', modifiedAt: earlier, const []);
+        final backup = backupWith(
+          playlists: [
+            savedPlaylist(
+              'p1',
+              'Mix',
+              entries: [savedEntry('/library/zzz-b.flac')],
+            ),
+          ],
+          skippedCovers: {'p1'},
+        );
+
+        final outcome = restore([here], backup, RestoreChoice.merge);
+
+        expect(outcome.merged, 1);
+        expect(outcome.coversLost, {'h1'});
+      });
+
+      test('GivenAnUnchangedPlaylistWithNoCover_WhenTheBackupsIsTooLarge_ThenItIsStillNamedAsLost', () {
+        final here = playlist('h1', 'Mix', modifiedAt: earlier, [
+          const PlaylistEntry(id: 'e1', path: '/library/zzz-b.flac'),
+        ]);
+        final backup = backupWith(
+          playlists: [
+            savedPlaylist(
+              'p1',
+              'Mix',
+              entries: [savedEntry('/library/zzz-b.flac')],
+            ),
+          ],
+          skippedCovers: {'p1'},
+        );
+
+        final outcome = restore([here], backup, RestoreChoice.merge);
+
+        expect(outcome.merged, 0);
+        expect(outcome.playlists, [here]);
+        expect(outcome.coversLost, {'h1'});
+      });
+
+      test('GivenTwoBackupPlaylistsOfOneName_WhenTheSecondsCoverIsGiven_ThenTheFirstsLossIsNotReported', () {
+        final here = playlist('h1', 'Mix', modifiedAt: earlier, const []);
+        final backup = backupWith(
+          playlists: [
+            savedPlaylist('p1', 'Mix'),
+            savedPlaylist('p2', 'Mix'),
+          ],
+          covers: {'p2': cover},
+          skippedCovers: {'p1'},
+        );
+
+        final outcome = restore([here], backup, RestoreChoice.merge);
+
+        expect(outcome.playlists.single.coverId, 'h1');
+        expect(outcome.coversToWrite, {'h1': cover});
+        expect(outcome.coversLost, isEmpty);
+      });
+
+      test('GivenAPlaylistThatKeepsItsOwnCover_WhenTheBackupsIsTooLarge_ThenNothingIsLost', () {
+        final here = playlist(
+          'h1',
+          'Mix',
+          modifiedAt: earlier,
+          coverId: 'h1',
+          const [],
+        );
+        final backup = backupWith(
+          playlists: [
+            savedPlaylist(
+              'p1',
+              'Mix',
+              entries: [savedEntry('/library/zzz-b.flac')],
+            ),
+          ],
+          skippedCovers: {'p1'},
+        );
+
+        final outcome = restore([here], backup, RestoreChoice.merge);
+
+        expect(outcome.coversLost, isEmpty);
+      });
+
       test('GivenACoverNoPlaylistNames_WhenMerged_ThenItIsIgnored', () {
         final backup = backupWith(
           playlists: [savedPlaylist('p1', 'Road trip')],
@@ -1147,6 +1243,7 @@ BackupContents backupWith({
   List<Map<String, Object?>> history = const [],
   List<Map<String, Object?>> problems = const [],
   Map<String, Uint8List> covers = const {},
+  Set<String> skippedCovers = const {},
 }) => BackupContents(
   data: {
     'format': 'orpheus-data',
@@ -1158,6 +1255,7 @@ BackupContents backupWith({
   },
   preferences: null,
   covers: covers,
+  skippedCovers: skippedCovers,
   createdAt: DateTime.utc(2026, 10, 19),
   isFullBackup: true,
 );

@@ -102,7 +102,7 @@ void main() {
     data: dataOf(problems: problems),
     preferences: preferencesWith(folders),
     covers: {
-      'b2': Uint8List.fromList([4, 2]),
+      'b2': Uint8List.fromList([0xFF, 0xD8, 0xFF, 2]),
     },
     createdAt: made,
   );
@@ -1020,6 +1020,36 @@ void main() {
 
         expect(find.byType(RestoreScreen), findsNothing);
         expect(harness.playlistStore.writes, 0);
+        // No folder was changed, so there is no note about them.
+        expect(find.textContaining('music folders were changed'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'GivenTheFoldersWereChanged_WhenTheRestoreCannotBePrepared_ThenTheScreenSaysTheyStay',
+      (tester) async {
+        final harness = build(
+          picker: FakeFolderPicker('/new'),
+          overrides: [
+            playRecorderProvider.overrideWithValue(_UnreadyRecorder(now)),
+          ],
+        );
+        await start(tester, harness, zip());
+        await tapText(tester, 'Choose folders…');
+        await toChoices(tester);
+
+        expect(
+          find.textContaining('Something went wrong while preparing'),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            'Your music folders were changed in the last step, and they '
+            'stay as they are now.',
+          ),
+          findsOneWidget,
+        );
+        expect(harness.settings.libraryFolders, ['/music', '/new']);
       },
     );
   });
@@ -1172,6 +1202,28 @@ void main() {
           find.text('Preferências: você escolheu ignorar'),
           findsOneWidget,
         );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'GivenAFailedRestoreAfterTheFoldersChanged_WhenShownOnAPhone_ThenNothingOverflows',
+      (tester) async {
+        final harness = build(
+          picker: FakeFolderPicker('/new'),
+          overrides: [
+            playRecorderProvider.overrideWithValue(_UnreadyRecorder(now)),
+          ],
+        );
+        await start(tester, harness, zip(), window: phone, locale: pt);
+        await tapText(tester, 'Escolher pastas…');
+        await toChoices(tester, label: 'Continuar');
+
+        expect(
+          find.textContaining('Suas pastas de música foram mudadas'),
+          findsOneWidget,
+        );
+        expect(find.text('Fechar'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:flutter/foundation.dart';
 
+import '../../tag_editor/domain/tag_edits.dart';
 import '../domain/backup.dart';
 import '../domain/data_export.dart';
 
@@ -84,30 +87,136 @@ BackupContents _readZip(Uint8List bytes) {
   final data = _object(dataBytes);
   checkDataDocument(data);
 
+  final (:covers, :skipped) = _covers(archive);
+
   return BackupContents(
     data: data,
     preferences: _preferences(archive.findFile(backupPreferencesFile)),
-    covers: _covers(archive),
+    covers: covers,
+    skippedCovers: skipped,
     createdAt: _time(manifest['createdAt']),
     isFullBackup: true,
   );
 }
 
 /// The covers in [archive] by playlist id: each file directly under
-/// `covers/`, however its bytes turn out to be stored.
-Map<String, Uint8List> _covers(Archive archive) {
+/// `covers/`, and the ids of those left out.
+///
+/// A cover is left out when it weighs more than [maxBackupCoverBytes]
+/// uncompressed, or when it cannot be read: a damaged stream, or bytes that
+/// are not a JPEG or a PNG — which is how an entry in a compression this
+/// reader does not know comes out, since the ZIP reader takes it for stored.
+/// One bad cover is passed over and the rest of the backup is read.
+///
+/// The weight is judged three ways, because the header that declares it is
+/// the file's word and no more. An entry declaring too much is not read. A
+/// stored entry is as large as its bytes, which are checked before they are
+/// copied. A deflated entry is inflated by [inflateRawWithin], which stops at
+/// the limit, so one whose header lies about its size never grows past it in
+/// memory.
+({Map<String, Uint8List> covers, Set<String> skipped}) _covers(
+  Archive archive,
+) {
   final covers = <String, Uint8List>{};
+  final skipped = <String>{};
   for (final file in archive.files) {
     if (!file.isFile || !file.name.startsWith(backupCoversFolder)) continue;
 
     final id = file.name.substring(backupCoversFolder.length);
-    final bytes = file.readBytes();
-    if (id.isEmpty || id.contains('/') || bytes == null) continue;
+    if (id.isEmpty || id.contains('/')) continue;
+    final content = file.rawContent;
+    if (content == null) continue;
 
-    covers[id] = bytes;
+    Uint8List? bytes;
+    try {
+      bytes = _coverBytes(file, content);
+    } on Object {
+      bytes = null;
+    }
+
+    if (bytes == null || !isSupportedCover(bytes)) {
+      skipped.add(id);
+    } else {
+      covers[id] = bytes;
+    }
   }
 
-  return covers;
+  return (covers: covers, skipped: skipped);
+}
+
+/// The bytes of the cover [file], or `null` when it is over the limit or is
+/// stored in a way a backup is not written in.
+Uint8List? _coverBytes(ArchiveFile file, FileContent content) {
+  if (file.size > maxBackupCoverBytes) return null;
+
+  // The entry as the ZIP holds it, still compressed.
+  final raw = content.getStream(decompress: false);
+  switch (file.compression) {
+    case CompressionType.none:
+      return raw.length > maxBackupCoverBytes ? null : raw.toUint8List();
+    case CompressionType.deflate:
+      return inflateRawWithin(_pieces(raw), maxBackupCoverBytes);
+    case CompressionType.bzip2 || null:
+      return null;
+  }
+}
+
+/// [stream] in pieces of 64 KB, read as they are asked for.
+Iterable<Uint8List> _pieces(InputStream stream) sync* {
+  const size = 64 * 1024;
+  while (!stream.isEOS) {
+    yield stream.readBytes(size).toUint8List();
+  }
+}
+
+/// The raw deflate stream made of [compressed], inflated, or `null` once it
+/// has produced more than [limit] bytes.
+///
+/// Fed piece by piece into a decoder whose output is counted as it comes, so
+/// the work stops at the limit rather than after the whole stream has been
+/// inflated: a few kilobytes can stand for gigabytes, and the size a ZIP
+/// declares for an entry says nothing about it. Throws a [FormatException]
+/// for a stream that is damaged or ends early.
+@visibleForTesting
+Uint8List? inflateRawWithin(Iterable<Uint8List> compressed, int limit) {
+  final output = BytesBuilder(copy: false);
+  final decoder = ZLibCodec(
+    raw: true,
+  ).decoder.startChunkedConversion(_LimitedSink(output, limit));
+
+  try {
+    for (final piece in compressed) {
+      decoder.add(piece);
+    }
+    decoder.close();
+  } on _OverTheLimit {
+    return null;
+  }
+
+  return output.takeBytes();
+}
+
+/// Thrown by [_LimitedSink] to stop an inflate that has passed its limit.
+class _OverTheLimit implements Exception {
+  const _OverTheLimit();
+}
+
+/// Collects what a decoder produces, and refuses more than [limit] bytes.
+class _LimitedSink implements Sink<List<int>> {
+  _LimitedSink(this._output, this._limit);
+
+  final BytesBuilder _output;
+  final int _limit;
+
+  @override
+  void add(List<int> data) {
+    if (_output.length + data.length > _limit) throw const _OverTheLimit();
+
+    _output.add(data);
+  }
+
+  @override
+  void close() {}
 }
 
 /// The preferences in [file], or `null` when it is absent or not a document.

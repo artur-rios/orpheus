@@ -1724,6 +1724,12 @@ abstract class AppLocalizations {
   /// **'Choose a JPEG or PNG image for the cover'**
   String get playlistCoverNotImage;
 
+  /// Shown when the picture chosen as a playlist's cover weighs more than 20 MB, which a backup would not read back; nothing is changed.
+  ///
+  /// In en, this message translates to:
+  /// **'That picture is over 20 MB, too large for a backup'**
+  String get playlistCoverTooLarge;
+
   /// The playlist menu item that saves the playlist as an .m3u file where the owner chooses.
   ///
   /// In en, this message translates to:
@@ -2420,6 +2426,12 @@ abstract class AppLocalizations {
   /// **'Your music folders were changed in the last step. Cancelling keeps your music folders as they are now.'**
   String get restoreFoldersKept;
 
+  /// A note on the restore screen when something unforeseen stopped the restore after the first stage had changed the music folders: closing does not put them back.
+  ///
+  /// In en, this message translates to:
+  /// **'Your music folders were changed in the last step, and they stay as they are now.'**
+  String get restoreFoldersKeptFailed;
+
   /// The button that writes the chosen parts of a restore.
   ///
   /// In en, this message translates to:
@@ -2504,7 +2516,7 @@ abstract class AppLocalizations {
   /// **'Some preferences couldn\'t be saved and last only until Orpheus closes'**
   String get restoreDonePreferencesUnsaved;
 
-  /// A line of the restore summary: playlists restored whose cover picture could not be written; their names follow.
+  /// A line of the restore summary: playlists restored whose cover picture could not be written, or was left out of the backup as too large to read; their names follow.
   ///
   /// In en, this message translates to:
   /// **'These playlists are back, but their cover pictures couldn\'t be saved: {names}'**

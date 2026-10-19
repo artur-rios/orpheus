@@ -23,7 +23,8 @@ class MusicCatalog {
   /// never scanned.
   final DateTime? scannedAt;
 
-  /// Whether this was read from a document another version wrote, and refused.
+  /// Whether this was read from a document that was refused: another
+  /// version's, or one that cannot be read at all.
   ///
   /// Such a catalog holds nothing, and the library is owed a scan whatever the
   /// owner chose about scanning at launch: one who turned that off would

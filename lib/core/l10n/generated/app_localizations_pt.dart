@@ -1054,6 +1054,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Escolha uma imagem JPEG ou PNG para a capa';
 
   @override
+  String get playlistCoverTooLarge =>
+      'Essa imagem tem mais de 20 MB, grande demais para um backup';
+
+  @override
   String get playlistExport => 'Exportar para .m3u…';
 
   @override
@@ -1503,6 +1507,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get restoreFoldersKept =>
       'Suas pastas de música foram mudadas na etapa anterior. Cancelar mantém as pastas como estão agora.';
+
+  @override
+  String get restoreFoldersKeptFailed =>
+      'Suas pastas de música foram mudadas na etapa anterior e continuam como estão agora.';
 
   @override
   String get restoreRestore => 'Restaurar';

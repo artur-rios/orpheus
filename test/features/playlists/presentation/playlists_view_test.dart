@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
+import 'package:orpheus/features/data_export/domain/backup.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/playback/domain/music_layout.dart';
 import 'package:orpheus/features/playback/presentation/album_art.dart';
@@ -442,6 +443,26 @@ void main() {
 
         expect(
           find.text('Choose a JPEG or PNG image for the cover'),
+          findsOneWidget,
+        );
+        expect(harness.playlistCovers.covers, isEmpty);
+        expect(harness.playlistStore.playlists.single.coverId, isNull);
+      },
+    );
+
+    testWidgets(
+      'GivenAPlaylist_WhenAPictureOverTheBackupLimitIsChosen_ThenItIsRefusedAndNothingIsStored',
+      (tester) async {
+        final harness = await show(tester, playlists: [roadTrip]);
+        // A real PNG followed by padding, so only its size is wrong.
+        harness.coverPicker.next = Uint8List(maxBackupCoverBytes + 1)
+          ..setAll(0, base64Decode(onePixelPng));
+
+        await openMenuOf(tester, 'Road trip');
+        await choose(tester, 'Choose cover…');
+
+        expect(
+          find.text('That picture is over 20 MB, too large for a backup'),
           findsOneWidget,
         );
         expect(harness.playlistCovers.covers, isEmpty);

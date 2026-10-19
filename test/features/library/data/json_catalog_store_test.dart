@@ -68,11 +68,39 @@ void main() {
   test(
     'GivenACatalogThatWillNotParse_WhenItIsRead_ThenTheLibraryIsEmptyAndTheLaunchGoesOn',
     () async {
-      // A catalog nobody can decode is a catalog nobody has, and the answer to
-      // that is an empty library and a re-scan, not a launch that fails.
+      // A catalog nobody can decode reads as empty and stale, and the answer
+      // to that is a re-scan, not a launch that fails.
       File(store.path).writeAsStringSync('{ this is not json');
 
       expect((await store.read()).isEmpty, isTrue);
+    },
+  );
+
+  test(
+    'GivenACatalogThatWillNotParse_WhenItIsRead_ThenItIsReportedAsStale',
+    () async {
+      // Not told apart from a library that was never scanned, it would be
+      // exported and backed up as the owner having no music, and startup would
+      // leave it empty for an owner who turned the scan at launch off.
+      File(store.path).writeAsStringSync('{ this is not json');
+
+      expect((await store.read()).isStale, isTrue);
+    },
+  );
+
+  test(
+    'GivenACatalogThatIsNotADocumentOfTracks_WhenItIsRead_ThenItIsReportedAsStale',
+    () async {
+      File(store.path).writeAsStringSync('[1, 2, 3]');
+      expect((await store.read()).isStale, isTrue);
+
+      File(store.path).writeAsStringSync(
+        jsonEncode({
+          'version': JsonCatalogStore.documentVersion,
+          'tracks': 'nope',
+        }),
+      );
+      expect((await store.read()).isStale, isTrue);
     },
   );
 
