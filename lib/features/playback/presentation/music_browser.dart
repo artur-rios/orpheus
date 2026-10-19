@@ -257,32 +257,58 @@ class _List extends StatelessWidget {
   Object get _selectionScope =>
       (selectionPlace, state.view, state.artist, state.album, state.inAlbum);
 
+  /// Where this list keeps how far it is scrolled: one place for every list
+  /// the owner can be in, rows and tiles apart.
+  ///
+  /// Each list is built afresh as the owner drills in and out, and a new list
+  /// starts at the top. Keyed like this, it starts instead where the last
+  /// list of the same name was left — which is what lets an owner open an
+  /// artist halfway down the Artists, come back by the breadcrumb, and carry
+  /// on from where they were rather than from A.
+  Key get _scrollKey => PageStorageKey<Object>((
+    selectionPlace,
+    state.view,
+    state.artist,
+    state.album,
+    state.inArtist,
+    state.inAlbum,
+    layout,
+  ));
+
   @override
   Widget build(BuildContext context) => switch (state) {
     MusicBrowseState(inAlbum: true) => MusicTrackList(
+      key: _scrollKey,
       entries: _recordTracks(),
       numbered: true,
       selectionScope: _selectionScope,
     ),
     MusicBrowseState(view: MusicView.artists, inArtist: true) => MusicGroupList(
+      key: _scrollKey,
       groups: albumsOfArtist(state.artist, library),
       kind: MusicGroupKind.album,
       layout: layout,
     ),
     MusicBrowseState(view: MusicView.artists) => MusicGroupList(
+      key: _scrollKey,
       groups: artistsIn(library),
       kind: MusicGroupKind.artist,
       layout: layout,
+      indexed: true,
     ),
     MusicBrowseState(view: MusicView.albums) => MusicGroupList(
+      key: _scrollKey,
       groups: albumsIn(library),
       kind: MusicGroupKind.album,
       layout: layout,
+      indexed: true,
     ),
     MusicBrowseState(view: MusicView.songs) => MusicTrackList(
+      key: _scrollKey,
       entries: songs,
       numbered: false,
       selectionScope: _selectionScope,
+      indexed: true,
     ),
   };
 }

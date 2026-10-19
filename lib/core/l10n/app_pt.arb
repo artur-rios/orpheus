@@ -186,6 +186,15 @@
   "@musicBreadcrumbRoot": {
     "description": "The first crumb, which returns to the top of the current view."
   },
+  "musicJumpToLetter": "Ir para a letra {letter}",
+  "@musicJumpToLetter": {
+    "description": "What a screen reader says for one letter of the strip beside a long list, which jumps the list to the first name under that letter.",
+    "placeholders": {
+      "letter": {
+        "type": "String"
+      }
+    }
+  },
   "musicUnknownArtist": "Artista desconhecido",
   "@musicUnknownArtist": {
     "description": "What an artist with no tag is called."
