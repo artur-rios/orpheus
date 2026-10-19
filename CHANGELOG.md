@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- A track whose lyrics had been saved beside it as a `.lrc` file plays again. Since the words were saved, opening it
+  skipped it as a track that could not be played, and its energy could not be measured either.
+
 ## [1.5.0] - 2026-10-19
 
 ### Added
