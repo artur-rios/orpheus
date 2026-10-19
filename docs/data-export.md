@@ -88,7 +88,7 @@ tags Orpheus keeps; there is no disc total, because the library does not hold on
 | `path` | string | no | The file's absolute path on the machine that made the export. |
 | `title` | string | yes | The title tag. |
 | `artist` | string | yes | The artist (performer) tag. |
-| `albumArtist` | string | yes | The album artist tag as the file carries it, trimmed. It is not filled in from `artist`; `albums[].albumArtist` is. |
+| `albumArtist` | string | yes | The album artist tag as the file carries it, trimmed. It is not filled in from anything else; `albums[].albumArtist` is. |
 | `album` | string | yes | The album tag. |
 | `trackNumber` | integer | yes | The track number. |
 | `trackTotal` | integer | yes | How many tracks the album has, when the file says. |
@@ -99,13 +99,14 @@ tags Orpheus keeps; there is no disc total, because the library does not hold on
 
 ### Artists
 
-One object per artist, alphabetically, with the songs that have no artist last. Songs are grouped by their album artist,
-and by their artist when they have no album artist, as the Artists list does.
+One object per artist, alphabetically, with the songs that have no artist last.
+Songs are grouped by their album artist, as the Artists list does: the file's own album artist tag, else what the rest
+of its album says, else the song's artist.
 
 | Field | Type | Nullable | Meaning |
 | --- | --- | --- | --- |
 | `name` | string | yes | The artist; `null` for the group of songs with no artist. |
-| `songs` | array of string | no | `songs[].id` of the artist's songs, album by album, each in track order. |
+| `songs` | array of string | no | `songs[].id` of the artist's songs, album by album, in the order the Albums list shows the albums, each album in track order. |
 
 ### Albums
 
@@ -115,7 +116,7 @@ artist, so two artists' records of the same name are two albums.
 | Field | Type | Nullable | Meaning |
 | --- | --- | --- | --- |
 | `title` | string | yes | The album; `null` for the group of songs with no album. |
-| `albumArtist` | string | yes | The album's artist: the album artist tag, or the artist when there is none; `null` when neither is set. |
+| `albumArtist` | string | yes | The album's artist, worked out as for the artists above: the file's album artist tag, else what the rest of the album says, else the song's artist; `null` when none is set. |
 | `year` | integer | yes | The year, when every song on the album agrees on it; otherwise `null`. |
 | `songs` | array of string | no | `songs[].id` of the album's songs, in track order. |
 
@@ -178,7 +179,7 @@ What the statistics screen shows, worked out from the play history against the l
 | --- | --- | --- | --- |
 | `totalPlays` | integer | no | Every play counted. |
 | `distinctTracks` | integer | no | How many different files they came from. |
-| `untaggedTracks` | integer | no | How many played files carry no artist, album or genre tag. |
+| `untaggedTracks` | integer | no | How many played files the library holds that carry no artist, album or genre tag; a played file the library no longer holds is not counted. |
 | `topTracks` | array of ranked line | no | The ten most played tracks, most first. A track with no title, or no longer in the library, is named by its file name. |
 | `topArtists` | array of ranked line | no | The ten most played artists. |
 | `topAlbums` | array of ranked line | no | The ten most played albums. |
