@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -213,7 +214,7 @@ void main() {
         await recorder.record('/library/a.flac');
         final writesBefore = store.writes;
 
-        await recorder.replaceHistory(restored);
+        await recorder.replaceHistory((_) => restored);
         await pumpEventQueue();
 
         expect(store.writes, writesBefore + 1);
@@ -231,10 +232,54 @@ void main() {
 
         await Future.wait([
           recorder.record('/library/a.flac'),
-          recorder.replaceHistory(restored),
+          recorder.replaceHistory((_) => restored),
         ]);
 
         expect(store.history, same(restored));
+      },
+    );
+
+    test(
+      'GivenAPlayQueuedBehindAWrite_WhenTheHistoryIsReplaced_ThenThePlanStartsFromItAndItIsKept',
+      () async {
+        // A restore works its history out from the one there is when its turn
+        // comes, not when it asked: a play still waiting to be written would
+        // otherwise be written over.
+        final store = InMemoryPlayHistoryStore();
+        final recorder = recorderOver(store);
+        final gate = store.writeGate = Completer<void>();
+        final first = recorder.record('/library/a.flac');
+        final second = recorder.record('/library/b.flac');
+        final seen = <PlayHistory>[];
+
+        final replaced = recorder.replaceHistory((current) {
+          seen.add(current);
+
+          return PlayHistory(tracks: {...current.tracks, ...restored.tracks});
+        });
+        gate.complete();
+        await Future.wait([first, second, replaced]);
+
+        expect(seen.single.tracks.keys, ['/library/a.flac', '/library/b.flac']);
+        expect(store.history.tracks.keys, [
+          '/library/a.flac',
+          '/library/b.flac',
+          '/library/r.flac',
+        ]);
+      },
+    );
+
+    test(
+      'GivenAPlanThatAnswersTheHistoryItWasGiven_WhenTheHistoryIsReplaced_ThenNothingIsWritten',
+      () async {
+        final store = InMemoryPlayHistoryStore();
+        final recorder = recorderOver(store);
+        await recorder.record('/library/a.flac');
+        final writesBefore = store.writes;
+
+        await recorder.replaceHistory((current) => current);
+
+        expect(store.writes, writesBefore);
       },
     );
 
@@ -247,7 +292,7 @@ void main() {
         final subscription = recorder.changes.listen(heard.add);
         addTearDown(subscription.cancel);
 
-        await expectLater(recorder.replaceHistory(restored), throwsStateError);
+        await expectLater(recorder.replaceHistory((_) => restored), throwsStateError);
         await pumpEventQueue();
 
         expect(store.writes, 0);
@@ -267,7 +312,7 @@ void main() {
         final subscription = recorder.changes.listen(heard.add);
         addTearDown(subscription.cancel);
 
-        await expectLater(recorder.replaceHistory(restored), throwsStateError);
+        await expectLater(recorder.replaceHistory((_) => restored), throwsStateError);
         await pumpEventQueue();
 
         expect(heard, isEmpty);
@@ -282,7 +327,7 @@ void main() {
         final recorder = PlayRecorder(store: store, clock: () => now);
         store.failNextWrite = true;
 
-        await expectLater(recorder.replaceHistory(restored), throwsStateError);
+        await expectLater(recorder.replaceHistory((_) => restored), throwsStateError);
         await recorder.record('/library/a.flac');
 
         expect(store.history.tracks['/library/a.flac']!.plays, 1);

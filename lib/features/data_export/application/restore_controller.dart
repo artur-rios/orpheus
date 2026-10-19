@@ -8,7 +8,6 @@ import 'package:logging/logging.dart';
 
 import '../../../core/di/providers.dart';
 import '../../library/domain/music_entry.dart';
-import '../../playlists/domain/playlist.dart';
 import '../data/zip_backup_codec.dart';
 import '../domain/backup.dart';
 import '../domain/restore_plan.dart';
@@ -747,9 +746,8 @@ class RestoreController extends Notifier<RestoreState> {
   ) async {
     if (disabled != null) return (PartRefused(disabled), const <String>[]);
 
-    final List<Playlist> current;
     try {
-      current = await ref.read(playlistsControllerProvider.future);
+      await ref.read(playlistsControllerProvider.future);
     } on Object catch (error) {
       _log.warning('the playlists here could not be read', error);
 
@@ -759,29 +757,28 @@ class RestoreController extends Notifier<RestoreState> {
       );
     }
 
-    final outcome = restorePlaylists(
-      current,
-      backup,
-      matcher,
-      choice,
-      newId: ref.read(idGeneratorProvider),
-      now: now,
-    );
-    final result = PlaylistsRestored(
-      added: outcome.added,
-      merged: outcome.merged,
-      replaced: outcome.replaced,
-    );
-    // Nothing added, changed or removed is nothing to write.
-    if (outcome.added + outcome.merged + outcome.replaced == 0) {
-      return (result, const <String>[]);
-    }
-
+    // Worked out in the write's own turn, from the playlists as they are
+    // then: a change the owner made just before is built on, not written
+    // over.
+    final playlists = ref.read(playlistsControllerProvider.notifier);
+    PlaylistsOutcome? planned;
     final Set<String> failed;
     try {
-      failed = await ref
-          .read(playlistsControllerProvider.notifier)
-          .replaceAll(outcome.playlists, outcome.coversToWrite);
+      failed = await playlists.replaceAll((before) {
+        final outcome = planned = restorePlaylists(
+          before,
+          backup,
+          matcher,
+          choice,
+          newId: ref.read(idGeneratorProvider),
+          now: now,
+        );
+
+        // Nothing added, changed or removed is nothing to write.
+        return outcome.added + outcome.merged + outcome.replaced == 0
+            ? (playlists: before, covers: const <String, Uint8List>{})
+            : (playlists: outcome.playlists, covers: outcome.coversToWrite);
+      });
     } on Object catch (error) {
       _log.warning('the restored playlists could not be written', error);
 
@@ -791,8 +788,14 @@ class RestoreController extends Notifier<RestoreState> {
       );
     }
 
+    final outcome = planned!;
+
     return (
-      result,
+      PlaylistsRestored(
+        added: outcome.added,
+        merged: outcome.merged,
+        replaced: outcome.replaced,
+      ),
       [
         for (final playlist in outcome.playlists)
           if (failed.contains(playlist.id)) playlist.name,
@@ -811,29 +814,43 @@ class RestoreController extends Notifier<RestoreState> {
     if (disabled != null) return PartRefused(disabled);
 
     final recorder = ref.read(playRecorderProvider);
-    final current = await recorder.current();
+    await recorder.current();
     if (recorder.readFailed) {
       return const PartRefused(RestoreRefusal.unreadableHere);
     }
 
-    final outcome = restoreHistory(current, backup, matcher, choice, now);
-    final result = HistoryRestored(
-      songs: outcome.songs,
-      notInLibrary: outcome.notInLibrary,
-    );
-    // A *Replace* with nothing in the backup still empties the history here:
-    // that is what the owner chose, having been shown what it replaces.
-    if (choice != RestoreChoice.replace && outcome.songs == 0) return result;
-
+    // Worked out in the write's own turn, from the history as it is then: a
+    // play still waiting to be written is built on, not written over.
+    HistoryOutcome? planned;
     try {
-      await recorder.replaceHistory(outcome.history);
+      await recorder.replaceHistory((current) {
+        final outcome = planned = restoreHistory(
+          current,
+          backup,
+          matcher,
+          choice,
+          now,
+        );
+
+        // A *Replace* with nothing in the backup still empties the history
+        // here: that is what the owner chose, having been shown what it
+        // replaces. Otherwise no song applied is nothing to write.
+        return choice != RestoreChoice.replace && outcome.songs == 0
+            ? current
+            : outcome.history;
+      });
     } on Object catch (error) {
       _log.warning('the restored play history could not be written', error);
 
       return PartRefused(RestoreRefusal.notWritten, error: error);
     }
 
-    return result;
+    final outcome = planned!;
+
+    return HistoryRestored(
+      songs: outcome.songs,
+      notInLibrary: outcome.notInLibrary,
+    );
   }
 
   /// The preferences, applied through the same setters the Preferences use.

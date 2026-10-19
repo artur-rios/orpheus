@@ -158,8 +158,14 @@ class PlaylistsController extends AsyncNotifier<List<Playlist>> {
     await _deleteCover(playlistId);
   });
 
-  /// Puts [playlists] in place of every playlist there is, and gives each
-  /// playlist in [covers] its picture: what a restore from a backup writes.
+  /// Puts the playlists [plan] makes of the stored ones in place of every
+  /// playlist there is, and gives each playlist in its covers that picture:
+  /// what a restore from a backup writes.
+  ///
+  /// [plan] is given the playlists as they are when this change's turn comes,
+  /// not as they were when it was asked for, so a change queued ahead of it
+  /// is built on rather than written over. A plan that answers the list it
+  /// was given changes nothing, and nothing is written.
   ///
   /// The list is one write, so it lands whole or not at all; only once it is
   /// stored are the pictures written, each under its playlist's id. A picture
@@ -168,14 +174,19 @@ class PlaylistsController extends AsyncNotifier<List<Playlist>> {
   /// of the playlists no longer in the list are deleted after, as [delete]
   /// deletes one.
   ///
-  /// Throws a [StateError] while the stored playlists could not be read, and
-  /// whatever the store throws when the list could not be written; nothing
-  /// changes either way.
+  /// Throws a [StateError] while the stored playlists could not be read,
+  /// whatever [plan] throws, and whatever the store throws when the list could
+  /// not be written; nothing changes either way.
   Future<Set<String>> replaceAll(
-    List<Playlist> playlists,
-    Map<String, Uint8List> covers,
+    ({List<Playlist> playlists, Map<String, Uint8List> covers}) Function(
+      List<Playlist> before,
+    )
+    plan,
   ) => _serialised(() async {
     final before = await _loaded();
+    final (:playlists, :covers) = plan(before);
+    if (identical(playlists, before)) return <String>{};
+
     await _commit([...playlists]);
 
     final store = ref.read(playlistCoverStoreProvider);

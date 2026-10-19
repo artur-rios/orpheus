@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -735,6 +736,30 @@ void main() {
       expect(summary.coverFailures, ['Theirs']);
       expect(summary.playlists, isA<PlaylistsRestored>());
     });
+
+    test(
+      'GivenAPlayRecordedWhileTheHistoryIsRestored_WhenBothLand_ThenThePlayIsKept',
+      () async {
+        final songC = entry(id: 'c', title: 'Gamma', artist: 'Cy', album: 'Two');
+        final harness = build(device: [songC]);
+        final controller = await atChoices(harness, zip());
+        final recorder = harness.read(playRecorderProvider);
+        final gate = harness.plays.writeGate = Completer<void>();
+        // One play waiting on the disk, and one queued behind it.
+        final first = recorder.record(songA.file.path);
+        final second = recorder.record(songC.file.path);
+
+        final restoring = controller.restore();
+        await pumpEventQueue();
+        gate.complete();
+        await Future.wait([first, second, restoring]);
+
+        final tracks = harness.plays.history.tracks;
+        expect(tracks[songC.file.path]!.plays, 1);
+        expect(tracks[songA.file.path]!.plays, 6);
+        expect(tracks[songB.file.path]!.plays, 4);
+      },
+    );
 
     test(
       'GivenARestoreUnderWay_WhenAskedAgain_ThenTheOneUnderWayIsAnswered',

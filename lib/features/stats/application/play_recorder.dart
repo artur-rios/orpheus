@@ -97,33 +97,40 @@ class PlayRecorder {
     return _writes;
   }
 
-  /// Puts [history] in place of everything recorded: what a restore from a
-  /// backup writes.
+  /// Puts what [plan] makes of the history in place of everything recorded:
+  /// what a restore from a backup writes.
   ///
-  /// Queued with the plays, so a play recorded before it is not written over
-  /// it afterwards, and one recorded after it lands on it. Written first and
-  /// only then held and announced, the other way round from a play: a
-  /// restore reports what it did, and what it reports has to be what is on
-  /// disk.
+  /// Queued with the plays, and [plan] is given the history as it is when
+  /// this write's turn comes, not as it was when this was called: a play
+  /// queued before it is in what [plan] is given rather than written over
+  /// afterwards, and one recorded after it lands on what [plan] made. A
+  /// [plan] that answers the history it was given changes nothing, and
+  /// nothing is written. Written first and only then held and announced, the
+  /// other way round from a play: a restore reports what it did, and what it
+  /// reports has to be what is on disk.
   ///
   /// Unlike a play, this throws — a [StateError] when the history could not
   /// be read this run, since writing over it would replace a history nobody
-  /// has seen, and whatever the store throws when it cannot write. Either way
-  /// nothing changes. A failure does not hold up the plays behind it.
-  Future<void> replaceHistory(PlayHistory history) {
-    final replaced = _writes.then((_) => _replace(history));
+  /// has seen, whatever [plan] throws, and whatever the store throws when it
+  /// cannot write. Either way nothing changes. A failure does not hold up the
+  /// plays behind it.
+  Future<void> replaceHistory(PlayHistory Function(PlayHistory current) plan) {
+    final replaced = _writes.then((_) => _replace(plan));
     _writes = replaced.then((_) {}, onError: (_) {});
 
     return replaced;
   }
 
-  Future<void> _replace(PlayHistory history) async {
-    await current();
+  Future<void> _replace(PlayHistory Function(PlayHistory current) plan) async {
+    final held = await current();
     if (_readFailed) {
       throw StateError(
         'The play history could not be read, so it is not replaced',
       );
     }
+
+    final history = plan(held);
+    if (identical(history, held)) return;
 
     await store.write(history);
     _loaded = Future<PlayHistory>.value(history);

@@ -476,7 +476,9 @@ void main() {
         final controller = await controllerOf(harness);
         final next = [stored('p', name: 'One'), stored('q', name: 'Two')];
 
-        final failed = await controller.replaceAll(next, const {});
+        final failed = await controller.replaceAll(
+          (_) => (playlists: next, covers: const {}),
+        );
 
         expect(failed, isEmpty);
         expect(harness.playlistStore.writes, 1);
@@ -491,9 +493,12 @@ void main() {
         final harness = harnessOver();
         final controller = await controllerOf(harness);
 
-        await controller.replaceAll([stored('q', coverId: 'q')], {
-          'q': picture,
-        });
+        await controller.replaceAll(
+          (_) => (
+            playlists: [stored('q', coverId: 'q')],
+            covers: {'q': picture},
+          ),
+        );
 
         expect(harness.playlistCovers.covers, {'q': picture});
       },
@@ -512,9 +517,12 @@ void main() {
         harness.playlistCovers.covers['k'] = picture;
         final controller = await controllerOf(harness);
 
-        await controller.replaceAll([stored('k', name: 'Kept', coverId: 'k')], {
-          'n': picture,
-        });
+        await controller.replaceAll(
+          (_) => (
+            playlists: [stored('k', name: 'Kept', coverId: 'k')],
+            covers: {'n': picture},
+          ),
+        );
 
         expect(harness.playlistCovers.deleted, ['p']);
         expect(harness.playlistCovers.covers.keys, unorderedEquals(['k', 'n']));
@@ -529,10 +537,9 @@ void main() {
         final controller = await controllerOf(harness);
         final next = [stored('q', coverId: 'q'), stored('r', coverId: 'r')];
 
-        final failed = await controller.replaceAll(next, {
-          'q': picture,
-          'r': picture,
-        });
+        final failed = await controller.replaceAll(
+          (_) => (playlists: next, covers: {'q': picture, 'r': picture}),
+        );
 
         expect(failed, {'q'});
         expect(harness.playlistStore.playlists, next);
@@ -549,13 +556,67 @@ void main() {
         harness.playlistStore.failNextWrite = Exception('disk full');
 
         await expectLater(
-          controller.replaceAll(const [], {'n': picture}),
+          controller.replaceAll(
+            (_) => (playlists: const [], covers: {'n': picture}),
+          ),
           throwsException,
         );
 
         expect(harness.playlistCovers.covers.keys, ['p']);
         expect(harness.playlistCovers.deleted, isEmpty);
         expect(harness.read(playlistsControllerProvider).value, hasLength(1));
+      },
+    );
+  });
+
+  group('replaceAll, queued', () {
+    test(
+      'GivenAChangeQueuedAhead_WhenThePlaylistsAreReplaced_ThenThePlanStartsFromIt',
+      () async {
+        // A restore works its list out from the one there is when its turn
+        // comes, not when it asked: a change still waiting to be written
+        // would otherwise be written over.
+        final harness = harnessOver(playlists: [stored('p', name: 'One')]);
+        final controller = await controllerOf(harness);
+        harness.playlistStore.holdWrites = true;
+        final created = controller.create('Two');
+        final seen = <List<Playlist>>[];
+
+        final replaced = controller.replaceAll((before) {
+          seen.add(before);
+
+          return (
+            playlists: [...before, stored('q', name: 'Three')],
+            covers: const {},
+          );
+        });
+        await pumpEventQueue();
+        harness.playlistStore.heldWrites.removeAt(0).complete();
+        await created;
+        await pumpEventQueue();
+        harness.playlistStore.heldWrites.removeAt(0).complete();
+        await replaced;
+
+        expect([for (final p in seen.single) p.name], ['One', 'Two']);
+        expect(
+          [for (final p in harness.playlistStore.playlists) p.name],
+          ['One', 'Two', 'Three'],
+        );
+      },
+    );
+
+    test(
+      'GivenAPlanThatAnswersTheListItWasGiven_WhenReplaced_ThenNothingIsWritten',
+      () async {
+        final harness = harnessOver(playlists: [stored('p')]);
+        final controller = await controllerOf(harness);
+
+        final failed = await controller.replaceAll(
+          (before) => (playlists: before, covers: const {}),
+        );
+
+        expect(failed, isEmpty);
+        expect(harness.playlistStore.writes, 0);
       },
     );
   });
@@ -762,8 +823,10 @@ void main() {
       'removeCover': (controller) => controller.removeCover('p'),
       'delete': (controller) => controller.delete('p'),
       'replaceAll': (controller) => controller.replaceAll(
-        [stored('p', coverId: 'p')],
-        {'p': Uint8List.fromList([1])},
+        (_) => (
+          playlists: [stored('p', coverId: 'p')],
+          covers: {'p': Uint8List.fromList([1])},
+        ),
       ),
     };
 
