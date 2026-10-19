@@ -413,6 +413,9 @@ over.
 - **A data JSON** has no preferences, so that part is not offered (*Not in this file*), and no covers, so playlists
   restored from it have none.
 
+If something unforeseen stops a restore after the first stage has changed the music folders, the screen says so and that
+the folders stay as they are now; nothing of the data was written.
+
 A restore never changes a music file. It changes the music *folders* only when the owner, in the first stage, chooses a
 different set: that set becomes the whole set, a folder not chosen is taken out of the library, and nothing on disk is
 touched. The first stage is shown for a ZIP only, since a data JSON names no folders.

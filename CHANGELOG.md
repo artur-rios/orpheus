@@ -97,8 +97,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   and then by title, artist, album and length within 2 seconds when exactly one song answers; one that cannot be matched
   keeps the backup's path. A part the backup could not read is not offered, a part this device could not read is left
   alone, each part is written whole or not at all, and a part that fails does not stop the others. A summary says what
-  was restored and what was not. Your music files are never changed. From a JSON, the preferences and the covers are not
-  restored, and it says so.
+  was restored and what was not, including a playlist whose cover picture was too large (over 20 MB) to read. If
+  something unexpected stops a restore after the music folders were changed, the screen says they stay changed. Your
+  music files are never changed. From a JSON, the preferences and the covers are not restored, and it says so.
 
 ### Changed
 

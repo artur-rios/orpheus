@@ -1743,6 +1743,7 @@ graph LR
 | AF-17 | The owner cancels in the first stage before *Continue*, or in the second stage | Nothing is written. The folders *Continue* changed stay as they were set, and the screen says so before the owner cancels (`FR-BK-09`, `FR-BK-10`). |
 | AF-18 | The owner tries to leave while the library is scanned or the parts are written | It cannot be left: each part is whole or untouched, and the owner is owed the summary of what was written (`FR-BK-09`). |
 | AF-19 | A restore is already under way | Asking again answers with the one under way (`FR-BK-09`). |
+| AF-20 | Something unforeseen stops the restore before the choices show, after *Continue* changed the music folders | *Something went wrong while preparing the restore. Nothing was restored.* is shown with a note that the music folders were changed in the last step and stay as they are now, and the owner closes the screen (`FR-BK-10`). |
 
 ---
 
