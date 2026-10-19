@@ -1921,6 +1921,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Favourites lately and All-time favourites, at the top of Playlists. Your plays are still counted while they are hidden.'**
   String get autoPlaylistShowDetail;
+
+  /// The heading over the section of the preferences that exports the owner's data.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data'**
+  String get dataExportHeading;
+
+  /// The preferences entry that saves everything Orpheus knows about the owner's music to a JSON file where they choose.
+  ///
+  /// In en, this message translates to:
+  /// **'Export my data…'**
+  String get dataExportAction;
+
+  /// Shown once the owner's data has been exported, naming the file it was saved as.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported to {path}'**
+  String dataExportSaved(String path);
+
+  /// Shown once the owner's data has been exported to a place the system gives no file path for, such as Android's document provider.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported'**
+  String get dataExported;
+
+  /// Shown when the owner's data was exported but one of its sources, such as the playlists or the play history, could not be read; the file says which.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported, but some data could not be read'**
+  String get dataExportPartial;
+
+  /// Shown when the file holding the owner's data could not be saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t export your data'**
+  String get dataExportFailed;
+
+  /// Shown when the owner's data is not exported because the library could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Your library couldn\'t be read, so there\'s nothing to export'**
+  String get dataExportLibraryFailed;
 }
 
 class _AppLocalizationsDelegate

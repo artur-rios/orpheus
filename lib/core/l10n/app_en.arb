@@ -1467,5 +1467,38 @@
   "autoPlaylistShowDetail": "Favourites lately and All-time favourites, at the top of Playlists. Your plays are still counted while they are hidden.",
   "@autoPlaylistShowDetail": {
     "description": "The line under the Show auto playlists preference: what it shows, and that turning it off does not stop plays being recorded."
+  },
+  "dataExportHeading": "Your data",
+  "@dataExportHeading": {
+    "description": "The heading over the section of the preferences that exports the owner's data."
+  },
+  "dataExportAction": "Export my data…",
+  "@dataExportAction": {
+    "description": "The preferences entry that saves everything Orpheus knows about the owner's music to a JSON file where they choose."
+  },
+  "dataExportSaved": "Exported to {path}",
+  "@dataExportSaved": {
+    "description": "Shown once the owner's data has been exported, naming the file it was saved as.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "dataExported": "Exported",
+  "@dataExported": {
+    "description": "Shown once the owner's data has been exported to a place the system gives no file path for, such as Android's document provider."
+  },
+  "dataExportPartial": "Exported, but some data could not be read",
+  "@dataExportPartial": {
+    "description": "Shown when the owner's data was exported but one of its sources, such as the playlists or the play history, could not be read; the file says which."
+  },
+  "dataExportFailed": "Couldn't export your data",
+  "@dataExportFailed": {
+    "description": "Shown when the file holding the owner's data could not be saved."
+  },
+  "dataExportLibraryFailed": "Your library couldn't be read, so there's nothing to export",
+  "@dataExportLibraryFailed": {
+    "description": "Shown when the owner's data is not exported because the library could not be read."
   }
 }

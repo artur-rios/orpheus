@@ -47,6 +47,14 @@ class PlayRecorder {
   /// Whether the store could not be read this run, which stops every write.
   bool _readFailed = false;
 
+  /// Whether the store could not be read this run — [current] is then an empty
+  /// history standing in for one that exists, which anyone offering the owner
+  /// their data has to say rather than present as the whole of it.
+  ///
+  /// Settled by the first [current]: `false` until the history has been asked
+  /// for.
+  bool get readFailed => _readFailed;
+
   /// Everything recorded so far.
   ///
   /// Read from the store once and held: the document is small, this object

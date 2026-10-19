@@ -292,8 +292,16 @@ class InMemoryPlayHistoryStore implements PlayHistoryStore {
   /// How many times the history was written.
   int writes = 0;
 
+  /// When set, [read] throws it: a history that could not be read.
+  Exception? failRead;
+
   @override
-  Future<PlayHistory> read() async => history;
+  Future<PlayHistory> read() async {
+    final failure = failRead;
+    if (failure != null) throw failure;
+
+    return history;
+  }
 
   @override
   Future<void> write(PlayHistory history) async {
