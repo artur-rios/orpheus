@@ -207,10 +207,11 @@ class PlaylistsOutcome {
 /// Every playlist added gets an id from [newId], as does every entry added,
 /// because a backup's id may be one already used here; its cover is written
 /// under the new id. A playlist whose cover the backup holds but was too large
-/// to read is added or merged without it, and is named in
-/// [PlaylistsOutcome.coversLost]. A cover is looked up only by the id of a playlist the
-/// data document names. An entry's song is matched with [matcher]; one that
-/// is not found keeps the backup's path and the details it was saved with.
+/// to read is restored without it, and is named in
+/// [PlaylistsOutcome.coversLost] — unless the playlist here keeps a cover of
+/// its own. A cover is looked up only by the id of a playlist the data
+/// document names. An entry's song is matched with [matcher]; one that is not
+/// found keeps the backup's path and the details it was saved with.
 ///
 /// When the backup could not read its playlists ([unreadableParts]), [current]
 /// is answered as it is, whatever [choice] says: an empty section is not the
@@ -295,12 +296,17 @@ PlaylistsOutcome restorePlaylists(
     if (cover != null && target.coverId == null) {
       covers[target.id] = cover;
       target = target.withCover(target.id, now);
+      // An earlier backup playlist of this name lost its cover; this one's
+      // is what the playlist has now.
+      coversLost.remove(target.id);
     }
-
-    if (identical(target, before)) continue;
+    // Named whether or not the playlist changed otherwise: a playlist that
+    // already held every song still has no cover for want of the backup's.
     if (backup.skippedCovers.contains(playlist.id) && target.coverId == null) {
       coversLost.add(target.id);
     }
+
+    if (identical(target, before)) continue;
     playlists[index] = target;
     mergedInto.add(targetId);
   }

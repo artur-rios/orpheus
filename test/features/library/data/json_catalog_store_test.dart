@@ -68,8 +68,8 @@ void main() {
   test(
     'GivenACatalogThatWillNotParse_WhenItIsRead_ThenTheLibraryIsEmptyAndTheLaunchGoesOn',
     () async {
-      // A catalog nobody can decode is a catalog nobody has, and the answer to
-      // that is an empty library and a re-scan, not a launch that fails.
+      // A catalog nobody can decode reads as empty and stale, and the answer
+      // to that is a re-scan, not a launch that fails.
       File(store.path).writeAsStringSync('{ this is not json');
 
       expect((await store.read()).isEmpty, isTrue);

@@ -668,8 +668,8 @@ class RestoreController extends Notifier<RestoreState> {
   }
 
   /// Whether the library has to be scanned before songs can be matched
-  /// against it: it has folders, and holds nothing or another version's
-  /// leftovers.
+  /// against it: it has folders, and holds nothing or is stale — another
+  /// version's, or one that could not be read.
   Future<bool> _libraryWantsScan() async {
     if (ref.read(libraryFoldersControllerProvider).isEmpty) return false;
 

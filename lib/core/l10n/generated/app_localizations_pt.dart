@@ -1054,6 +1054,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Escolha uma imagem JPEG ou PNG para a capa';
 
   @override
+  String get playlistCoverTooLarge =>
+      'Essa imagem tem mais de 20 MB, grande demais para um backup';
+
+  @override
   String get playlistExport => 'Exportar para .m3u…';
 
   @override

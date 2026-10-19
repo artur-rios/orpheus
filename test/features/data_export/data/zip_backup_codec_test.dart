@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
@@ -141,6 +143,49 @@ void main() {
       expect(back.skippedCovers, {'liar'});
     });
 
+    test('GivenACoverWhoseHeaderDeclaresTooMuch_WhenRead_ThenItIsSkipped', () {
+      final archive = ZipDecoder().decodeBytes(
+        encodeBackupZip(
+          data: data(),
+          preferences: preferences,
+          covers: const {},
+          createdAt: createdAt,
+        ),
+      )..add(ArchiveFile('covers/big', maxBackupCoverBytes + 1, [1, 2, 3]));
+
+      final back = readBackup(ZipEncoder().encodeBytes(archive));
+
+      expect(back.covers, isEmpty);
+      expect(back.skippedCovers, {'big'});
+    });
+
+    test('GivenACoverWithACorruptDeflateStream_WhenRead_ThenItIsSkippedAndTheRestIsKept', () {
+      final bytes = encodeBackupZip(
+        data: data(),
+        preferences: preferences,
+        covers: {
+          'bad': Uint8List.fromList([for (var i = 0; i < 400; i++) i % 7]),
+          'good': Uint8List.fromList([1, 2, 3]),
+        },
+        createdAt: createdAt,
+      );
+      // The entry's compressed bytes follow its name in the local header.
+      final name = utf8.encode('covers/bad');
+      var at = 0;
+      while (!_startsWith(bytes, name, at)) {
+        at++;
+      }
+      for (var i = 0; i < 8; i++) {
+        bytes[at + name.length + i] = 0xff;
+      }
+
+      final back = readBackup(bytes);
+
+      expect(back.covers.keys, ['good']);
+      expect(back.skippedCovers, {'bad'});
+      expect(back.data, data());
+    });
+
     test('GivenNoCovers_WhenWrittenAndRead_ThenThereAreNone', () {
       final back = readBackup(
         encodeBackupZip(
@@ -202,6 +247,44 @@ void main() {
 
       expect(text, endsWith('\n'));
       expect(text, contains('\n  "format": "orpheus-data"'));
+    });
+  });
+
+  group('inflating a cover within the limit', () {
+    // Raw deflate, as a ZIP stores it, cut into pieces of 1 KB.
+    List<Uint8List> deflated(int length) {
+      final all = Uint8List.fromList(
+        ZLibCodec(raw: true).encode(Uint8List(length)),
+      );
+
+      return [
+        for (var at = 0; at < all.length; at += 1024)
+          Uint8List.sublistView(all, at, min(at + 1024, all.length)),
+      ];
+    }
+
+    test('GivenAStreamWithinTheLimit_WhenInflated_ThenAllTheBytesComeBack', () {
+      final bytes = inflateRawWithin(deflated(5000), 5000);
+
+      expect(bytes, hasLength(5000));
+    });
+
+    test('GivenAStreamThatInflatesPastTheLimit_WhenInflated_ThenItAbortsEarlyAndAnswersNull', () {
+      final pieces = deflated(100 * 1024 * 1024);
+      var read = 0;
+
+      final bytes = inflateRawWithin(
+        pieces.map((piece) {
+          read++;
+
+          return piece;
+        }),
+        maxBackupCoverBytes,
+      );
+
+      expect(bytes, isNull);
+      // Stopped near a fifth of the way through, not after inflating it all.
+      expect(read, lessThan(pieces.length ~/ 2));
     });
   });
 
@@ -341,4 +424,15 @@ void main() {
       expect((failure! as NewerBackupVersion).version, 2);
     });
   });
+}
+
+bool _startsWith(Uint8List bytes, List<int> prefix, int at) {
+  if (at + prefix.length > bytes.length) {
+    throw StateError('the name is not in the file');
+  }
+  for (var i = 0; i < prefix.length; i++) {
+    if (bytes[at + i] != prefix[i]) return false;
+  }
+
+  return true;
 }

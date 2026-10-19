@@ -221,7 +221,7 @@ it aside, as a `.bad-` file next to its data. If the library fails to load, ther
 written at all.
 
 A `catalog.json` that cannot be read at all is treated like one another version wrote: the library is reported as being
-rebuilt (`songs` in `problems`) and a scan refills it. Only a missing `catalog.json`, a library never scanned, reads as
+rebuilt (`songs` in `problems`) and a scan refills it. A library never scanned, or scanned and holding no music, reads as
 an empty library, so an export with no songs and no problem means Orpheus found no music.
 
 When `problems` is not empty, Orpheus tells you so after the export: *Exported, but some data could not be read*.
@@ -262,7 +262,7 @@ covers/<playlistId>
 | `backup.json` | What the ZIP is: its `format`, the version of its layout, when it was made, and the other files in it. Described [below](#backupjson). |
 | `data.json` | The data export document described on this page, exactly as *Export my data (JSON)…* writes it: same keys, same order, same `formatVersion`. It has its own `format`, `orpheus-data`. |
 | `preferences.json` | The owner's preferences, described [below](#preferencesjson). |
-| `covers/<playlistId>` | One file for each playlist that has a cover of its own, holding the picture's bytes as Orpheus keeps them, with no extension. `<playlistId>` is the `id` of that playlist in `data.json`'s `playlists`. A playlist whose picture cannot be read is left out, and the backup is reported as partial. A restore reads no cover larger than 20 MB (20 × 1024 × 1024 bytes, uncompressed), judged by the size the ZIP declares for the entry and again by the bytes it yields; the playlist is restored without it and named among those whose cover could not be saved. |
+| `covers/<playlistId>` | One file for each playlist that has a cover of its own, holding the picture's bytes as Orpheus keeps them, with no extension. `<playlistId>` is the `id` of that playlist in `data.json`'s `playlists`. A playlist whose picture cannot be read is left out, and the backup is reported as partial. A restore reads no cover larger than 20 MB (20 × 1024 × 1024 bytes, uncompressed): an entry declaring more is not read, and a deflated one is inflated only up to that size, whatever it declares, so a header that understates the size does not make it larger in memory. A cover over the limit, or one that cannot be read, is left out; the playlist is restored without it and named among those whose cover could not be saved. Orpheus does not accept a picture over 20 MB as a playlist's cover, so a backup it makes does not hold one. |
 
 Nothing else is in the ZIP: not your music files, not the library's own cover cache (a scan makes it again), and not the
 update version you chose to skip, which is a fact about one device.
@@ -348,8 +348,9 @@ freezing the window, and shows what it holds before anything is written.
 - A **backup ZIP** needs a `backup.json` whose `format` is `orpheus-backup` and a `data.json` whose `format` is
   `orpheus-data`, each with a `formatVersion` that is a whole number from 1 up to the one this release reads.
   `preferences.json` and `covers/` are optional: without a readable `preferences.json` the backup restores everything
-  else, and a cover with no playlist of that `id` in `data.json` is ignored, as is one larger than 20 MB. Files in the ZIP that this page does not
-  name are ignored.
+  else, and a cover with no playlist of that `id` in `data.json` is ignored. A cover larger than 20 MB, or one that
+  cannot be read, is left out and its playlist is named in the restore's summary. Files in the ZIP that this page does
+  not name are ignored.
 - A **data JSON** needs a `format` of `orpheus-data` and a supported `formatVersion`. It holds no preferences, covers or
   music folders, so none of those is restored from it.
 - Anything else shows *This isn't an Orpheus backup*, and a `formatVersion` higher than this release reads shows *This

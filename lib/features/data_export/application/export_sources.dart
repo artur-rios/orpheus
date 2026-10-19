@@ -29,9 +29,10 @@ Future<ExportSources?> gatherExportSources(Ref ref) async {
   if (catalog == null) return null;
 
   final problems = <ExportProblem>[];
-  // A catalog another version wrote reads as empty until the scan the upgrade
-  // owes has refilled it, and an export made in that window would present the
-  // empty library as the owner's data.
+  // A catalog another version wrote, or one that cannot be read at all, reads
+  // as empty and stale until the scan it is owed has refilled it, and an
+  // export made in that window would present the empty library as the owner's
+  // data.
   if (catalog.isStale) {
     problems.add(
       const ExportProblem(

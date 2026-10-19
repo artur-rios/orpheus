@@ -1295,6 +1295,10 @@
   "@playlistCoverNotImage": {
     "description": "Shown when the file chosen as a playlist's cover is not a JPEG or PNG image; nothing is changed."
   },
+  "playlistCoverTooLarge": "That picture is over 20 MB, too large for a backup",
+  "@playlistCoverTooLarge": {
+    "description": "Shown when the picture chosen as a playlist's cover weighs more than 20 MB, which a backup would not read back; nothing is changed."
+  },
   "playlistExport": "Export to .m3u…",
   "@playlistExport": {
     "description": "The playlist menu item that saves the playlist as an .m3u file where the owner chooses."
@@ -1936,7 +1940,7 @@
   },
   "restoreDoneCoverFailures": "These playlists are back, but their cover pictures couldn't be saved: {names}",
   "@restoreDoneCoverFailures": {
-    "description": "A line of the restore summary: playlists restored whose cover picture could not be written; their names follow.",
+    "description": "A line of the restore summary: playlists restored whose cover picture could not be written, or was left out of the backup as too large to read; their names follow.",
     "placeholders": {
       "names": {
         "type": "String"

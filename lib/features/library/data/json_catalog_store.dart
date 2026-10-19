@@ -161,8 +161,9 @@ class JsonCatalogStore implements CatalogStore {
 ///
 /// A plain object because it crosses an isolate boundary. The [note] carries
 /// the one thing the parse knows and the caller cannot work out for itself —
-/// that the document was written by another version — so that it is logged on
-/// the isolate that has the logger rather than on the one that has the file.
+/// that the document was refused, as another version's or as not a catalog —
+/// so that it is logged on the isolate that has the logger rather than on the
+/// one that has the file.
 class _CatalogDocument {
   const _CatalogDocument({
     this.entries,

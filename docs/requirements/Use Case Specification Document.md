@@ -1639,7 +1639,7 @@ graph LR
 | AF-08 | A played song is no longer in the library, or a playlist holds one | It is in the file, with its path, and its reference to a song is `null` (`FR-DX-03`). |
 | AF-09 | The preferences are closed while the export runs | The export finishes and the file is written; the result has nowhere to be shown (`FR-DX-09`). |
 | AF-10 | The owner exports again | The last result is cleared as the new export starts (`FR-DX-09`). |
-| AF-11 | The library is being rebuilt — its stored catalog was refused, as another version's or because it could not be read, and the scan it is owed has not refilled it | The export completes with no songs, `problems` names `songs` and says the library is being rebuilt, and *Exported, but some data could not be read* is shown under the entry (`FR-DX-06`, `FR-DX-07`). Only a library never scanned reads as empty and is not reported: an export with no songs and no problem means Orpheus found no music. |
+| AF-11 | The library is being rebuilt — its stored catalog was refused, as another version's or because it could not be read, and the scan it is owed has not refilled it | The export completes with no songs, `problems` names `songs` and says the library is being rebuilt, and *Exported, but some data could not be read* is shown under the entry (`FR-DX-06`, `FR-DX-07`). A library never scanned, or scanned and holding no music, reads as empty and is not reported: an export with no songs and no problem means Orpheus found no music. |
 
 ---
 
@@ -1737,7 +1737,7 @@ graph LR
 | AF-11 | The owner chooses *Replace* | The screen first says what it removes — how many playlists, how many songs' play counts, all the settings — and the part is put in place of what is here, even when the backup's is empty. The covers of the playlists removed are deleted with them (`FR-BK-11`, `FR-BK-14` … `FR-BK-16`). |
 | AF-12 | What this device holds of a part could not be read | The screen says so under that part, and the part is refused with *this part couldn't be read here, so it was left alone* rather than written over (`FR-BK-12`, `FR-BK-18`). |
 | AF-13 | A part cannot be written | It is reported under *Couldn't restore* as *this part couldn't be saved, so nothing of it changed*; the parts already written stay, and the others are still tried (`FR-BK-18`, `FR-BK-19`). |
-| AF-14 | A playlist is restored but its cover picture cannot be stored, or the backup's is larger than 20 MB | The playlist is there without it, and the summary names it (`FR-BK-02`, `FR-BK-18`, `FR-BK-19`). |
+| AF-14 | A playlist is restored but its cover picture cannot be stored, or the backup's is larger than 20 MB or cannot be read | The playlist is there without it, and the summary names it (`FR-BK-02`, `FR-BK-18`, `FR-BK-19`). |
 | AF-15 | A preference is applied but cannot be saved | It applies until Orpheus closes, and the summary says so (`FR-BK-19`, UC-29 AF-01). |
 | AF-16 | A song in the backup is not in the library | It is matched by its path and then by its tags and length, and when neither finds exactly one song it keeps the backup's path; the summary counts those among the history's songs (`FR-BK-13`, `FR-BK-19`). |
 | AF-17 | The owner cancels in the first stage before *Continue*, or in the second stage | Nothing is written. The folders *Continue* changed stay as they were set, and the screen says so before the owner cancels (`FR-BK-09`, `FR-BK-10`). |
