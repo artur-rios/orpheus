@@ -372,6 +372,58 @@ void main() {
         expect([for (final e in songs) e.title], ['alpha', 'Bravo', null]);
       },
     );
+
+    test(
+      'GivenATitleStartingWithAnAccentedLetter_WhenSongsAreListed_ThenItIsAmongThePlainLetter',
+      () {
+        final songs = songsIn([
+          entry(id: '1', title: 'Fado'),
+          entry(id: '2', title: 'Évora'),
+          entry(id: '3', title: 'Dança'),
+        ]);
+
+        expect([for (final e in songs) e.title], ['Dança', 'Évora', 'Fado']);
+      },
+    );
+  });
+
+  group('byName', () {
+    test(
+      'GivenAnAccentedName_WhenItIsCompared_ThenItSortsWithThePlainLetterNotAfterZ',
+      () {
+        final names = ['Zappa', 'Ângela Rô Rô', 'Bowie', 'Édith Piaf', 'Elis']
+          ..sort(byName);
+
+        expect(names, ['Ângela Rô Rô', 'Bowie', 'Édith Piaf', 'Elis', 'Zappa']);
+      },
+    );
+
+    test(
+      'GivenAnAccentInsideAName_WhenItIsCompared_ThenItIsReadAsThePlainLetter',
+      () {
+        final names = ['Bjorn', 'Björk', 'Bjoa']..sort(byName);
+
+        expect(names, ['Bjoa', 'Björk', 'Bjorn']);
+      },
+    );
+
+    test(
+      'GivenNamesThatDifferOnlyByAnAccent_WhenTheyAreCompared_ThenThePlainOneComesFirstEitherWay',
+      () {
+        // Not a tie: a tie leaves the order to the sort, which is not stable,
+        // and the two names would swap places between rebuilds.
+        expect(byName('Edith', 'Édith'), lessThan(0));
+        expect(byName('Édith', 'Edith'), greaterThan(0));
+      },
+    );
+
+    test(
+      'GivenNamesThatDifferOnlyByCase_WhenTheyAreCompared_ThenItIsStillATie',
+      () {
+        // The callers break this tie themselves, with plain compareTo.
+        expect(byName('rock', 'Rock'), 0);
+      },
+    );
   });
 
   group('MusicGroup', () {

@@ -87,6 +87,23 @@ void main() {
     },
   );
 
+  test(
+    'GivenEquallyGoodMatches_WhenTheLibraryIsSearched_ThenTheyAreByTitleWithAccentsReadAsPlainLetters',
+    () {
+      // The order Songs uses, so an accented title is not left after Z.
+      final elis = [
+        entry(id: '1', title: 'Zingaro', artist: 'Elis Regina'),
+        entry(id: '2', title: 'Águas de Março', artist: 'Elis Regina'),
+        entry(id: '3', title: 'Bala com Bala', artist: 'Elis Regina'),
+      ];
+
+      expect(
+        [for (final e in matchesIn(elis, 'elis')) e.title],
+        ['Águas de Março', 'Bala com Bala', 'Zingaro'],
+      );
+    },
+  );
+
   group('narrowed to one kind of tag', () {
     final taggedRock = entry(id: '5', title: 'Plain', genres: ['Rock']);
 

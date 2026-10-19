@@ -1,3 +1,5 @@
+import 'name_folding.dart';
+
 /// The letter every name that does not start with A to Z is filed under:
 /// digits, punctuation, and scripts other than the Latin one.
 const String indexOther = '#';
@@ -13,44 +15,13 @@ final List<String> indexLetters = List.unmodifiable([
   for (var code = 0x41; code <= 0x5A; code++) String.fromCharCode(code),
 ]);
 
-/// The accented Latin letters, each followed by the plain letter it is filed
-/// under. Upper case only: a name is upper-cased before it is looked up.
-///
-/// Spelled out rather than worked out from Unicode decomposition, which Dart
-/// does not offer without a package: the letters a music library actually
-/// starts with are these, and an unlisted one falls under [indexOther] rather
-/// than under a wrong letter.
-const String _accented =
-    'ÀAÁAÂAÃAÄAÅAĀAĂAĄA'
-    'ÇCĆCĈCĊCČC'
-    'ĎDĐD'
-    'ÈEÉEÊEËEĒEĔEĖEĘEĚE'
-    'ĜGĞGĠGĢG'
-    'ĤHĦH'
-    'ÌIÍIÎIÏIĨIĪIĬIĮIİI'
-    'ĴJ'
-    'ĶK'
-    'ĹLĻLĽLĿLŁL'
-    'ÑNŃNŅNŇN'
-    'ÒOÓOÔOÕOÖOØOŌOŎOŐO'
-    'ŔRŖRŘR'
-    'ŚSŜSŞSŠS'
-    'ŢTŤTŦT'
-    'ÙUÚUÛUÜUŨUŪUŬUŮUŰUŲU'
-    'ŴW'
-    'ÝYŸYŶY'
-    'ŹZŻZŽZ';
-
-final Map<String, String> _plain = {
-  for (var i = 0; i < _accented.length; i += 2) _accented[i]: _accented[i + 1],
-};
-
 /// The letter of [indexLetters] that [name] is filed under, or `null` for a
 /// name that is absent or blank.
 ///
 /// By its first character that is not a space, upper-cased, with any accent
-/// dropped: *Édith Piaf* is under E, which is where an owner looks for her.
-/// Anything that is then not A to Z is under [indexOther].
+/// dropped ([foldAccents]): *Édith Piaf* is under E, which is where an
+/// owner looks for her, and where the list sorts her. Anything that is then
+/// not A to Z is under [indexOther].
 ///
 /// `null` rather than [indexOther] for the absent name: the untagged group is
 /// listed last, under a name the presentation chose, and filing it under a
@@ -59,8 +30,9 @@ String? indexLetterOf(String? name) {
   final trimmed = name?.trimLeft();
   if (trimmed == null || trimmed.isEmpty) return null;
 
-  final first = String.fromCharCode(trimmed.runes.first).toUpperCase();
-  final letter = _plain[first] ?? first;
+  final letter = foldAccents(
+    String.fromCharCode(trimmed.runes.first),
+  ).toUpperCase();
   final code = letter.codeUnitAt(0);
 
   return letter.length == 1 && code >= 0x41 && code <= 0x5A
@@ -72,9 +44,9 @@ String? indexLetterOf(String? name) {
 /// are listed: the position of the first name filed under it.
 ///
 /// A letter with no name under it is absent. The first appearance wins where
-/// a letter comes back further down — an accented name, which sorts after Z,
-/// does not move the letter away from the block of names the owner sees
-/// under it.
+/// a letter comes back further down — in a list ordered some other way than
+/// by name, a stray name does not move the letter away from the block of
+/// names the owner sees under it.
 Map<String, int> firstIndexByLetter(Iterable<String?> names) {
   final starts = <String, int>{};
   var index = 0;

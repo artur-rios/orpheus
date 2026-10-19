@@ -6,6 +6,7 @@ import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../library/domain/music_catalog.dart';
 import '../../library/domain/music_entry.dart';
+import '../../library/domain/music_grouping.dart';
 import '../../shell/application/shell_controller.dart';
 import '../../shell/presentation/async_state_view.dart';
 import 'music_rows.dart';
@@ -142,10 +143,9 @@ List<MusicEntry> matchesIn(
     if (byRank != 0) return byRank;
 
     // A stable second key, so two equally good matches do not swap places
-    // between one keystroke and the next.
-    return (a.$2.title ?? '').toLowerCase().compareTo(
-      (b.$2.title ?? '').toLowerCase(),
-    );
+    // between one keystroke and the next — by title, in the order Songs
+    // lists them.
+    return byName(a.$2.title, b.$2.title);
   });
 
   return [for (final (_, entry) in scored) entry];

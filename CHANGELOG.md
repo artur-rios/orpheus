@@ -18,6 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Coming back to Artists, Albums or Songs by the breadcrumb returns to where you had scrolled, instead of the top.
   Each view, and rows and sleeves, keep their own place while Orpheus runs, including when switching between views.
+- Names with accents sort with their plain letter. *Ângela* is among the As and *Édith* among the Es in Artists,
+  Albums, Songs, Genres and the rankings, rather than after Z. Equally good search results follow the same order.
 
 ## [1.5.1] - 2026-10-19
 
