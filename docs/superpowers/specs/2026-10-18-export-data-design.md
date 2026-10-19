@@ -64,7 +64,7 @@ type and whether it may be absent, and an example. Top level:
 
 - **songs** — one per catalog entry, in the library's song order: `id` (a reference used only inside this file —
   `s1`, `s2`, … in song order *(my call)*; a restore matches songs by `path` and tags, never by `id`), `path`, `title`, `artist`, `albumArtist`, `album`,
-  `trackNumber`, `trackTotal`, `discNumber`, `discTotal`, `year`, `genres` (array), `durationMs`. Absent tags are
+  `trackNumber`, `trackTotal`, `discNumber`, `year`, `genres` (array), `durationMs` (the catalog holds no disc total). Absent tags are
   `null`, never omitted *(my call: stable columns for tools)*. Fields the catalog does not hold (e.g. totals, if
   `TrackMetadata` lacks them) are left out of the schema rather than always null — the builder checks `TrackMetadata`
   and documents exactly what is there.
