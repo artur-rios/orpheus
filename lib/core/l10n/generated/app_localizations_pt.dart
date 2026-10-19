@@ -1300,6 +1300,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Este backup é de uma versão mais nova do Orpheus — atualize primeiro';
 
   @override
+  String get restoreFailedUnexpected =>
+      'Algo deu errado ao preparar a restauração. Nada foi restaurado.';
+
+  @override
   String get restoreFoldersTitle => 'Sua música';
 
   @override

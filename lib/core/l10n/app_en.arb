@@ -1622,6 +1622,10 @@
   "@restoreFailedNewer": {
     "description": "Shown on the restore screen when the picked file was made by a newer version of Orpheus than the one running."
   },
+  "restoreFailedUnexpected": "Something went wrong while preparing the restore. Nothing was restored.",
+  "@restoreFailedUnexpected": {
+    "description": "Shown on the restore screen when something unforeseen stopped the restore before any of the data was written; the music folders a first stage applied stay."
+  },
   "restoreFoldersTitle": "Your music",
   "@restoreFoldersTitle": {
     "description": "The title of the first stage of a restore, which is about where the music is on this device."

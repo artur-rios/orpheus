@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
@@ -16,6 +17,7 @@ import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/library/domain/music_grouping.dart';
 import 'package:orpheus/features/playlists/domain/playlist.dart';
+import 'package:orpheus/features/stats/application/play_recorder.dart';
 import 'package:orpheus/features/stats/domain/play_history.dart';
 
 import '../../../support/entries.dart';
@@ -132,6 +134,7 @@ void main() {
     Set<String> existing = const {'/music'},
     List<MusicEntry>? scanned,
     InMemorySettingsStore? settings,
+    List<Override> overrides = const [],
   }) {
     final harness = Harness(
       library: deviceLibrary ? [...library, ...device] : const [],
@@ -158,6 +161,7 @@ void main() {
           ),
         ),
       ]),
+      overrides: overrides,
     );
     harness.playlistCovers.covers['m'] = Uint8List.fromList([1]);
     harness.plays.history = history ?? ownHistory;
@@ -762,4 +766,102 @@ void main() {
       expect(harness.settings.libraryFolders, ['/new']);
     });
   });
+
+  group('something unforeseen', () {
+    test(
+      'GivenAPartThatThrows_WhenRestored_ThenItEndsDoneWithWhatWasWrittenAndTheRestNotWritten',
+      () async {
+        final settings = _VolumeUnreadable(
+          themeMode: ThemeMode.dark,
+          libraryFolders: const ['/music'],
+        );
+        final harness = build(settings: settings);
+        final controller = await atChoices(harness, zip());
+        // The preferences are read only once the playlists and the history
+        // are written.
+        settings.failVolume = true;
+
+        final summary = await controller.restore();
+
+        expect(stateOf(harness).stage, RestoreStage.done);
+        expect(stateOf(harness).summary, same(summary));
+        expect(summary.playlists, isA<PlaylistsRestored>());
+        expect(namesIn(harness), ['Mine', 'Theirs']);
+        expect(summary.history, isA<HistoryRestored>());
+        expect(harness.plays.writes, 1);
+        expect(
+          (summary.preferences as PartRefused).reason,
+          RestoreRefusal.notWritten,
+        );
+        expect(harness.settings.themeMode, ThemeMode.dark);
+        expect(harness.settings.opensPlayerOnPlay, isTrue);
+
+        controller.cancel();
+        expect(stateOf(harness).stage, RestoreStage.idle);
+      },
+    );
+
+    test(
+      'GivenTheChoicesCannotBePrepared_WhenContinuing_ThenItFailsWithAWayOut',
+      () async {
+        final harness = build(
+          overrides: [
+            playRecorderProvider.overrideWithValue(_UnreadyRecorder(now)),
+          ],
+        );
+        harness.fileOpener.next = zip();
+        final controller = restorer(harness);
+        await controller.pick();
+
+        await controller.continueToChoices();
+
+        expect(stateOf(harness).stage, RestoreStage.failed);
+        expect(stateOf(harness).failure, isNull);
+        expectNothingWritten(harness);
+        controller.cancel();
+        expect(stateOf(harness).stage, RestoreStage.idle);
+      },
+    );
+
+    test(
+      'GivenTheChoicesCannotBePrepared_WhenADataJsonIsPicked_ThenItFailsWithAWayOut',
+      () async {
+        final harness = build(
+          overrides: [
+            playRecorderProvider.overrideWithValue(_UnreadyRecorder(now)),
+          ],
+        );
+        harness.fileOpener.next = json();
+
+        await restorer(harness).pick();
+
+        expect(stateOf(harness).stage, RestoreStage.failed);
+        expect(stateOf(harness).failure, isNull);
+        expectNothingWritten(harness);
+      },
+    );
+  });
+}
+
+/// Settings whose volume cannot be read once [failVolume] is set: something
+/// a restore does not expect to go wrong.
+class _VolumeUnreadable extends InMemorySettingsStore {
+  _VolumeUnreadable({super.themeMode, super.libraryFolders});
+
+  bool failVolume = false;
+
+  @override
+  double get volume =>
+      failVolume ? throw StateError('the volume could not be read') : super.volume;
+}
+
+/// A recorder that cannot answer what it holds: something a restore does not
+/// expect to go wrong.
+class _UnreadyRecorder extends PlayRecorder {
+  _UnreadyRecorder(DateTime now)
+    : super(store: InMemoryPlayHistoryStore(), clock: () => now);
+
+  @override
+  Future<PlayHistory> current() =>
+      Future.error(StateError('the history is not there'));
 }

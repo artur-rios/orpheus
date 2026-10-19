@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
@@ -20,6 +21,7 @@ import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/library/domain/music_grouping.dart';
 import 'package:orpheus/features/playlists/domain/playlist.dart';
 import 'package:orpheus/features/shell/presentation/preferences_dialog.dart';
+import 'package:orpheus/features/stats/application/play_recorder.dart';
 import 'package:orpheus/features/stats/domain/play_history.dart';
 
 import '../../../support/entries.dart';
@@ -132,6 +134,7 @@ void main() {
     FakeFolderPicker? picker,
     bool emptyLibrary = false,
     InMemorySettingsStore? settings,
+    List<Override> overrides = const [],
   }) {
     final harness = Harness(
       library: emptyLibrary ? const [] : library,
@@ -161,6 +164,7 @@ void main() {
               ),
             ),
           ]),
+      overrides: overrides,
     );
     harness.plays.history = ownHistory;
 
@@ -957,6 +961,32 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'GivenARestoreThatCannotBePrepared_WhenPicked_ThenTheScreenSaysSoAndCloses',
+      (tester) async {
+        final harness = build(
+          overrides: [
+            playRecorderProvider.overrideWithValue(_UnreadyRecorder(now)),
+          ],
+        );
+        await start(tester, harness, json());
+
+        expect(
+          find.text(
+            'Something went wrong while preparing the restore. Nothing was '
+            'restored.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Restore'), findsNothing);
+
+        await tapText(tester, 'Close');
+
+        expect(find.byType(RestoreScreen), findsNothing);
+        expect(harness.playlistStore.writes, 0);
+      },
+    );
   });
 
   group('at 360dp in Portuguese', () {
@@ -1119,4 +1149,15 @@ class _OpenPreferences extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// A recorder that cannot answer what it holds: something a restore does not
+/// expect to go wrong.
+class _UnreadyRecorder extends PlayRecorder {
+  _UnreadyRecorder(DateTime now)
+    : super(store: InMemoryPlayHistoryStore(), clock: () => now);
+
+  @override
+  Future<PlayHistory> current() =>
+      Future.error(StateError('the history is not there'));
 }

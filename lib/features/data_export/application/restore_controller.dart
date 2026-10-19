@@ -52,7 +52,8 @@ enum RestoreStage {
   /// The restore has finished; [RestoreState.summary] says how it went.
   done,
 
-  /// The file could not be read as a backup; [RestoreState.failure] says why.
+  /// The file could not be read as a backup, or the restore could not be
+  /// prepared; [RestoreState.failure] says why. Nothing was restored.
   failed,
 }
 
@@ -177,7 +178,8 @@ class RestoreState {
   /// Where the restore is.
   final RestoreStage stage;
 
-  /// Why the file was not read, at [RestoreStage.failed].
+  /// Why the file was not read, at [RestoreStage.failed]; `null` there when
+  /// something unforeseen stopped the restore before anything was written.
   final BackupReadFailure? failure;
 
   /// What the file holds, once it has been read.
@@ -403,6 +405,18 @@ class RestoreController extends Notifier<RestoreState> {
     }
     if (session != _session) return;
 
+    try {
+      _show(backup);
+    } on Object catch (error, stack) {
+      _failUnexpectedly(session, error, stack);
+      return;
+    }
+    if (!backup.isFullBackup) await _toChoices(session, foldersChanged: false);
+  }
+
+  /// Shows what [backup] holds: its folders for a ZIP, or, for a data JSON,
+  /// the reading on its way to the choices.
+  void _show(BackupContents backup) {
     _backup = backup;
     final overview = BackupOverview.of(backup);
     final exists = ref.read(folderExistsProvider);
@@ -429,7 +443,6 @@ class RestoreController extends Notifier<RestoreState> {
           ? List.unmodifiable(here)
           : null,
     );
-    if (!backup.isFullBackup) await _toChoices(session, foldersChanged: false);
   }
 
   /// Stages [folders] as this device's music folders, all of them: a folder
@@ -484,9 +497,12 @@ class RestoreController extends Notifier<RestoreState> {
   /// preferences — and answers how each went.
   ///
   /// One at a time: asking again while one runs answers with the one under
-  /// way. Never throws once under way; a part that could not be restored is
-  /// a [PartRefused] in the summary. Throws a [StateError] when called before
-  /// the choices are shown.
+  /// way. Never throws once under way, and always ends at
+  /// [RestoreStage.done]: a part that could not be restored is a
+  /// [PartRefused] in the summary, and should something unforeseen stop the
+  /// restore part way, every part not yet written is
+  /// [RestoreRefusal.notWritten] and the ones before it say how they went.
+  /// Throws a [StateError] when called before the choices are shown.
   Future<RestoreSummary> restore() {
     final running = _restoring;
     if (running != null) return running;
@@ -523,13 +539,34 @@ class RestoreController extends Notifier<RestoreState> {
   void _fail(BackupReadFailure failure) =>
       state = RestoreState(stage: RestoreStage.failed, failure: failure);
 
+  /// Something unforeseen stopped the restore before anything of the data was
+  /// written: [RestoreStage.failed], which the screen can be closed from,
+  /// rather than a screen left busy with no way out.
+  void _failUnexpectedly(int session, Object error, StackTrace stack) {
+    _log.severe('the restore could not be prepared', error, stack);
+    if (session != _session) return;
+
+    _forget();
+    state = const RestoreState(stage: RestoreStage.failed);
+  }
+
   void _forget() {
     _backup = null;
     _matcher = null;
   }
 
   /// Builds the matcher over the library as it is now and shows the choices.
+  ///
+  /// Never throws: anything unforeseen is [RestoreStage.failed].
   Future<void> _toChoices(int session, {required bool foldersChanged}) async {
+    try {
+      await _showChoices(session, foldersChanged: foldersChanged);
+    } on Object catch (error, stack) {
+      _failUnexpectedly(session, error, stack);
+    }
+  }
+
+  Future<void> _showChoices(int session, {required bool foldersChanged}) async {
     final backup = _backup;
     if (backup == null) return;
 
@@ -646,39 +683,58 @@ class RestoreController extends Notifier<RestoreState> {
     return recorder.readFailed ? null : history.tracks.length;
   }
 
+  /// The parts, in order. Never throws: each part answers how it went, and
+  /// should anything unforeseen stop the run, the parts that answered keep
+  /// their answer and every other one was not written.
   Future<RestoreSummary> _restore() async {
-    final backup = _backup!;
-    final matcher = _matcher!;
-    final choices = state.choices;
-    final disabled = state.disabled;
-    final now = ref.read(clockProvider)();
+    PartResult? playlists;
+    var coverFailures = const <String>[];
+    PartResult? history;
+    PartResult? preferences;
+    try {
+      final backup = _backup!;
+      final matcher = _matcher!;
+      final choices = state.choices;
+      final disabled = state.disabled;
+      final now = ref.read(clockProvider)();
 
-    final (playlists, coverFailures) = await _restorePlaylists(
-      backup,
-      matcher,
-      choices[RestorePart.playlists]!,
-      disabled[RestorePart.playlists],
-      now,
-    );
-    final history = await _restoreHistory(
-      backup,
-      matcher,
-      choices[RestorePart.history]!,
-      disabled[RestorePart.history],
-      now,
-    );
-    final preferences = await _restorePreferences(
-      backup,
-      choices[RestorePart.preferences]!,
-      disabled[RestorePart.preferences],
-    );
+      (playlists, coverFailures) = await _restorePlaylists(
+        backup,
+        matcher,
+        choices[RestorePart.playlists]!,
+        disabled[RestorePart.playlists],
+        now,
+      );
+      history = await _restoreHistory(
+        backup,
+        matcher,
+        choices[RestorePart.history]!,
+        disabled[RestorePart.history],
+        now,
+      );
+      preferences = await _restorePreferences(
+        backup,
+        choices[RestorePart.preferences]!,
+        disabled[RestorePart.preferences],
+      );
 
-    return RestoreSummary(
-      playlists: playlists,
-      history: history,
-      preferences: preferences,
-      coverFailures: coverFailures,
-    );
+      return RestoreSummary(
+        playlists: playlists,
+        history: history,
+        preferences: preferences,
+        coverFailures: coverFailures,
+      );
+    } on Object catch (error, stack) {
+      _log.severe('the restore stopped part way', error, stack);
+      final unwritten = PartRefused(RestoreRefusal.notWritten, error: error);
+
+      return RestoreSummary(
+        playlists: playlists ?? unwritten,
+        history: history ?? unwritten,
+        preferences: preferences ?? unwritten,
+        coverFailures: coverFailures,
+      );
+    }
   }
 
   /// The playlists, written as one list, then their covers.

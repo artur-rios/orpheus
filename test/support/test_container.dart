@@ -65,6 +65,7 @@ class Harness {
     FakeFileOpener? fileOpener,
     Set<String>? existingFolders,
     String Function()? idGenerator,
+    List<Override> overrides = const [],
   }) : player = FakeMediaPlayer(),
        storyShare = storyShare ?? RecordingStoryShare(),
        releases = releases ?? ScriptedReleaseSource(),
@@ -172,6 +173,9 @@ class Harness {
         appShutdownProvider.overrideWithValue(shutdown),
         storyShareProvider.overrideWithValue(this.storyShare),
         runningVersionProvider.overrideWithValue(_runningVersion),
+        // Whatever else a test binds to a double of its own: a provider not
+        // bound above, so that no provider is overridden twice.
+        ...overrides,
       ],
     );
 

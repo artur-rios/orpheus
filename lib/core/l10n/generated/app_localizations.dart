@@ -2138,6 +2138,12 @@ abstract class AppLocalizations {
   /// **'This backup is from a newer Orpheus — update first'**
   String get restoreFailedNewer;
 
+  /// Shown on the restore screen when something unforeseen stopped the restore before any of the data was written; the music folders a first stage applied stay.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong while preparing the restore. Nothing was restored.'**
+  String get restoreFailedUnexpected;
+
   /// The title of the first stage of a restore, which is about where the music is on this device.
   ///
   /// In en, this message translates to:

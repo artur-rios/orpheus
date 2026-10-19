@@ -98,7 +98,8 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
         l10n.restoreTitle,
         Text(switch (state.failure) {
           NewerBackupVersion() => l10n.restoreFailedNewer,
-          _ => l10n.restoreFailedNotABackup,
+          NotABackup() => l10n.restoreFailedNotABackup,
+          null => l10n.restoreFailedUnexpected,
         }),
         [FilledButton(onPressed: _close, child: Text(l10n.close))],
       ),
