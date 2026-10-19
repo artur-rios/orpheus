@@ -337,6 +337,25 @@ void main() {
         expect(outcome.playlists, [here]);
       });
 
+      test('GivenNothingNew_WhenMerged_ThenItIsNotCountedAsMerged', () {
+        final here = playlist('h1', 'Mix', modifiedAt: earlier, [
+          const PlaylistEntry(id: 'e1', path: '/library/zzz-b.flac'),
+        ]);
+        final backup = backupWith(
+          playlists: [
+            savedPlaylist(
+              'p1',
+              'Mix',
+              entries: [savedEntry('/library/zzz-b.flac')],
+            ),
+          ],
+        );
+
+        final outcome = restore([here], backup, RestoreChoice.merge);
+
+        expect((outcome.added, outcome.merged, outcome.replaced), (0, 0, 0));
+      });
+
       test('GivenAnAddedPlaylistsCover_WhenMerged_ThenItIsUnderTheNewId', () {
         final backup = backupWith(
           playlists: [savedPlaylist('p1', 'Road trip')],
@@ -468,6 +487,31 @@ void main() {
         expect((outcome.added, outcome.merged, outcome.replaced), (1, 0, 2));
       });
     });
+
+    group('unreadable', () {
+      test('GivenUnreadablePlaylists_WhenReplaced_ThenTheOnesHereStay', () {
+        final here = [playlist('h1', 'Mix', modifiedAt: earlier, const [])];
+        final backup = backupWith(
+          playlists: [savedPlaylist('p1', 'Road trip')],
+          covers: {'p1': cover},
+          problems: [
+            {'section': 'playlists', 'message': 'unreadable'},
+          ],
+        );
+
+        for (final choice in RestoreChoice.values) {
+          final outcome = restore(here, backup, choice);
+
+          expect(outcome.playlists, here, reason: choice.name);
+          expect(outcome.coversToWrite, isEmpty, reason: choice.name);
+          expect(
+            (outcome.added, outcome.merged, outcome.replaced),
+            (0, 0, 0),
+            reason: choice.name,
+          );
+        }
+      });
+    });
   });
 
   group('restoreHistory', () {
@@ -481,6 +525,8 @@ void main() {
     final weekAgo = now.subtract(const Duration(days: 7));
     final yesterday = now.subtract(const Duration(days: 1));
     final longAgo = now.subtract(const Duration(days: 91));
+    final longerAgo = now.subtract(const Duration(days: 120));
+    final twoWeeksAgo = now.subtract(const Duration(days: 14));
 
     HistoryOutcome restore(
       PlayHistory current,
@@ -660,6 +706,94 @@ void main() {
         expect(outcome.history.tracks['/old/gone.mp3']!.plays, 6);
         expect((outcome.songs, outcome.notInLibrary), (2, 1));
       });
+
+      test('GivenDisjointDatedPlays_WhenMerged_ThenEveryDateIsAPlay', () {
+        final current = historyOf([
+          TrackPlays(
+            path: '/library/zzz-b.flac',
+            plays: 2,
+            lastPlayedAt: weekAgo,
+            recent: [monthAgo, weekAgo],
+          ),
+        ]);
+        final backup = backupWith(
+          history: [
+            played(
+              '/library/zzz-b.flac',
+              plays: 2,
+              lastPlayedAt: yesterday,
+              recent: [twoWeeksAgo, yesterday],
+            ),
+          ],
+        );
+
+        final outcome = restore(current, backup, RestoreChoice.merge);
+
+        expect(outcome.history.tracks['/library/zzz-b.flac']!.plays, 4);
+      });
+
+      test(
+        'GivenDatesOlderThan90Days_WhenMerged_ThenTheyDoNotRaiseTheCount',
+        () {
+          final current = historyOf([
+            TrackPlays(
+              path: '/library/zzz-b.flac',
+              plays: 2,
+              lastPlayedAt: weekAgo,
+              recent: [longAgo, weekAgo],
+            ),
+          ]);
+          final backup = backupWith(
+            history: [
+              played(
+                '/library/zzz-b.flac',
+                plays: 2,
+                lastPlayedAt: yesterday,
+                recent: [longerAgo, yesterday],
+              ),
+            ],
+          );
+
+          final outcome = restore(current, backup, RestoreChoice.merge);
+
+          final track = outcome.history.tracks['/library/zzz-b.flac']!;
+          expect(track.plays, 2);
+          expect(track.recent, [weekAgo, yesterday]);
+        },
+      );
+
+      test('GivenTwoBackupRecordsOfOneSong_WhenRestored_ThenTheyAreOne', () {
+        final backup = backupWith(
+          songs: [alphaSong(id: 's1', durationMs: 185000)],
+          history: [
+            played(
+              '/library/zzz-a.flac',
+              plays: 1,
+              lastPlayedAt: weekAgo,
+              recent: [weekAgo],
+            ),
+            played(
+              '/elsewhere/alpha.mp3',
+              songId: 's1',
+              plays: 1,
+              lastPlayedAt: yesterday,
+              recent: [yesterday],
+            ),
+          ],
+        );
+
+        final outcome = restore(
+          PlayHistory.empty,
+          backup,
+          RestoreChoice.replace,
+        );
+
+        final track = outcome.history.tracks['/library/zzz-a.flac']!;
+        expect(outcome.history.tracks.keys, {'/library/zzz-a.flac'});
+        expect((track.plays, track.lastPlayedAt), (2, yesterday));
+        expect(track.recent, [weekAgo, yesterday]);
+        expect((outcome.songs, outcome.notInLibrary), (1, 0));
+      });
     });
 
     group('skip', () {
@@ -723,6 +857,37 @@ void main() {
         expect((track.plays, track.lastPlayedAt), (3, weekAgo));
         expect(track.recent, [weekAgo]);
         expect((outcome.songs, outcome.notInLibrary), (1, 0));
+      });
+    });
+
+    group('unreadable', () {
+      test('GivenAnUnreadableHistory_WhenRestored_ThenTheOneHereStays', () {
+        final current = historyOf([
+          TrackPlays(
+            path: '/library/zzz-b.flac',
+            plays: 9,
+            lastPlayedAt: yesterday,
+          ),
+        ]);
+        final backup = backupWith(
+          history: [
+            played('/library/zzz-c.flac', plays: 3, lastPlayedAt: weekAgo),
+          ],
+          problems: [
+            {'section': 'playHistory', 'message': 'unreadable'},
+          ],
+        );
+
+        for (final choice in RestoreChoice.values) {
+          final outcome = restore(current, backup, choice);
+
+          expect(outcome.history, same(current), reason: choice.name);
+          expect(
+            (outcome.songs, outcome.notInLibrary),
+            (0, 0),
+            reason: choice.name,
+          );
+        }
       });
     });
   });

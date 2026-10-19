@@ -23,7 +23,13 @@ const Duration _lengthTolerance = Duration(seconds: 2);
 
 /// The data document's sections a restore can refuse, when the backup could
 /// not read them.
-const Set<String> _restorableSections = {'playlists', 'playHistory'};
+const Set<String> _restorableSections = {_playlistsSection, _historySection};
+
+/// The data document's section holding the playlists.
+const String _playlistsSection = 'playlists';
+
+/// The data document's section holding the play history.
+const String _historySection = 'playHistory';
 
 /// Finds the library song a backup's song is.
 ///
@@ -174,7 +180,8 @@ class PlaylistsOutcome {
   /// How many playlists the backup adds.
   final int added;
 
-  /// How many playlists here the backup's were merged into.
+  /// How many playlists here a backup's playlist changed, by giving them
+  /// entries or a cover; one that already held everything is not counted.
   final int merged;
 
   /// How many playlists here are removed, for a [RestoreChoice.replace].
@@ -196,6 +203,10 @@ class PlaylistsOutcome {
 /// under the new id. A cover is looked up only by the id of a playlist the
 /// data document names. An entry's song is matched with [matcher]; one that
 /// is not found keeps the backup's path and the details it was saved with.
+///
+/// When the backup could not read its playlists ([unreadableParts]), [current]
+/// is answered as it is, whatever [choice] says: an empty section is not the
+/// owner's playlists, and replacing with it would wipe theirs.
 PlaylistsOutcome restorePlaylists(
   List<Playlist> current,
   BackupContents backup,
@@ -204,6 +215,16 @@ PlaylistsOutcome restorePlaylists(
   required String Function() newId,
   required DateTime now,
 }) {
+  if (unreadableParts(backup).contains(_playlistsSection)) {
+    return PlaylistsOutcome(
+      playlists: current,
+      coversToWrite: const {},
+      added: 0,
+      merged: 0,
+      replaced: 0,
+    );
+  }
+
   final saved = _savedPlaylists(backup.data, matcher);
   final covers = <String, Uint8List>{};
 
@@ -249,7 +270,8 @@ PlaylistsOutcome restorePlaylists(
       current.where((here) => here.name == playlist.name),
     ).first.id;
     final index = playlists.indexWhere((here) => here.id == targetId);
-    var target = playlists[index];
+    final before = playlists[index];
+    var target = before;
 
     final held = target.pathsIn();
     final appended = [
@@ -264,6 +286,7 @@ PlaylistsOutcome restorePlaylists(
       target = target.withCover(target.id, now);
     }
 
+    if (identical(target, before)) continue;
     playlists[index] = target;
     mergedInto.add(targetId);
   }
@@ -329,7 +352,7 @@ List<_SavedPlaylist> _savedPlaylists(
   final songs = _songsById(data);
 
   return [
-    for (final playlist in _objects(data['playlists']))
+    for (final playlist in _objects(data[_playlistsSection]))
       if (validPlaylistName(_string(playlist['name']) ?? '') case final name?)
         _SavedPlaylist(
           id: _string(playlist['id']),
@@ -374,11 +397,16 @@ class HistoryOutcome {
 ///
 /// Each backup song is matched with [matcher], and its plays go to the
 /// library song's path; one that is not found keeps the backup's path.
-/// [RestoreChoice.merge] takes, per song, the higher count, the later last
-/// play and every dated play either side has, and adds the songs only the
-/// backup has; [RestoreChoice.skip] only adds those; [RestoreChoice.replace]
-/// puts the backup's history in place of this one. Dates of plays more than
-/// [recentPlaysKept] before [now] are dropped.
+/// [RestoreChoice.merge] takes, per song, the later last play, every dated
+/// play either side has and the higher count — raised to the number of those
+/// dates within [recentPlaysKept], when that is more — and adds the songs only
+/// the backup has; [RestoreChoice.skip] only adds those;
+/// [RestoreChoice.replace] puts the backup's history in place of this one.
+/// Two backup records that turn out to be one song are combined the same way.
+/// Dates of plays more than [recentPlaysKept] before [now] are dropped.
+///
+/// When the backup could not read its play history ([unreadableParts]),
+/// [current] is answered as it is, whatever [choice] says.
 HistoryOutcome restoreHistory(
   PlayHistory current,
   BackupContents backup,
@@ -386,11 +414,16 @@ HistoryOutcome restoreHistory(
   RestoreChoice choice,
   DateTime now,
 ) {
+  if (unreadableParts(backup).contains(_historySection)) {
+    return HistoryOutcome(history: current, songs: 0, notInLibrary: 0);
+  }
+
+  final cutoff = now.subtract(recentPlaysKept);
   final songs = _songsById(backup.data);
   final restored = <String, TrackPlays>{};
   final unmatched = <String>{};
 
-  for (final played in _objects(backup.data['playHistory'])) {
+  for (final played in _objects(backup.data[_historySection])) {
     final path = _string(played['path']);
     final plays = played['plays'];
     final lastPlayedAt = _time(played['lastPlayedAt']);
@@ -407,7 +440,9 @@ HistoryOutcome restoreHistory(
       recent: _dates(played['recentPlays']),
     );
     final before = restored[target];
-    restored[target] = before == null ? track : _combined(before, track);
+    restored[target] = before == null
+        ? track
+        : _combined(before, track, cutoff);
   }
 
   final tracks = choice == RestoreChoice.replace
@@ -419,7 +454,7 @@ HistoryOutcome restoreHistory(
     final here = tracks[path];
     if (here != null && choice == RestoreChoice.skip) continue;
 
-    tracks[path] = here == null ? track : _combined(here, track);
+    tracks[path] = here == null ? track : _combined(here, track, cutoff);
     applied++;
     if (unmatched.contains(path)) notInLibrary++;
   }
@@ -431,17 +466,21 @@ HistoryOutcome restoreHistory(
   );
 }
 
-/// [a] and [b], one song's two records, as one: the higher count, the later
-/// last play and every dated play of either, once.
-TrackPlays _combined(TrackPlays a, TrackPlays b) {
+/// [a] and [b], one song's two records, as one: the later last play, every
+/// dated play of either from [cutoff] on, once, and the higher count — never
+/// fewer than those dates, since each of them is a play.
+///
+/// The dates before [cutoff] are dropped before they are counted, so plays
+/// the history would not keep the dates of cannot raise the count.
+TrackPlays _combined(TrackPlays a, TrackPlays b, DateTime cutoff) {
   final dates = {
     for (final at in [...a.recent, ...b.recent])
-      at.toUtc().microsecondsSinceEpoch,
+      if (!at.isBefore(cutoff)) at.toUtc().microsecondsSinceEpoch,
   }.toList()..sort();
 
   return TrackPlays(
     path: a.path,
-    plays: math.max(a.plays, b.plays),
+    plays: math.max(math.max(a.plays, b.plays), dates.length),
     lastPlayedAt: b.lastPlayedAt.isAfter(a.lastPlayedAt)
         ? b.lastPlayedAt
         : a.lastPlayedAt,
