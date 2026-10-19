@@ -1,7 +1,7 @@
 name: orpheus
 description: "A cross-platform music player for Windows, Linux and Android."
 publish_to: "none"
-version: 1.5.0+9
+version: 1.5.1+10
 
 environment:
   sdk: ^3.13.2
