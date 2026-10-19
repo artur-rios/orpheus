@@ -150,6 +150,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get musicBreadcrumbRoot => 'Biblioteca';
 
   @override
+  String musicJumpToLetter(String letter) {
+    return 'Ir para a letra $letter';
+  }
+
+  @override
   String get musicUnknownArtist => 'Artista desconhecido';
 
   @override

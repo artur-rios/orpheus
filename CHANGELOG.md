@@ -7,6 +7,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-19
+
+### Added
+
+- A letter bar beside Artists, Albums and Songs. Tap a letter, or drag along the bar, to jump to the first name under
+  it; a large letter follows your finger while you drag. Names starting with a digit or symbol are under *#*, accents
+  are ignored (*Édith* is under E), and letters with nothing under them are dimmed. It works with rows and sleeves
+  alike, and under a genre too. Artist and album rows now keep their name to one line.
+
+### Fixed
+
+- Coming back to Artists, Albums or Songs by the breadcrumb returns to where you had scrolled, instead of the top.
+  Each view, and rows and sleeves, keep their own place while Orpheus runs, including when switching between views.
+- Names with accents sort with their plain letter. *Ângela* is among the As and *Édith* among the Es in Artists,
+  Albums, Songs, Genres and the rankings, rather than after Z. Equally good search results follow the same order.
+
 ## [1.5.1] - 2026-10-19
 
 ### Fixed
@@ -322,7 +338,8 @@ A pre-release built from the `diagnose/android-usb-folder` branch to diagnose fo
 - Release downloads: a Windows installer, a portable Windows archive, a Linux installer and an Android APK, with
   `SHA256SUMS.txt`.
 
-[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/artur-rios/orpheus/compare/v1.5.1...v1.6.0
 [1.5.1]: https://github.com/artur-rios/orpheus/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/artur-rios/orpheus/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/artur-rios/orpheus/compare/v1.3.0...v1.4.0

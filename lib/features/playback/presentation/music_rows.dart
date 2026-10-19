@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +18,7 @@ import '../application/audio_playback_controller.dart';
 import '../application/song_selection_controller.dart';
 import '../domain/music_layout.dart';
 import 'album_art.dart';
+import 'letter_bar.dart';
 import 'music_display_name.dart';
 import 'music_scope.dart';
 
@@ -32,6 +34,7 @@ class MusicGroupList extends ConsumerWidget {
     required this.groups,
     required this.kind,
     this.layout = MusicLayout.list,
+    this.indexed = false,
     super.key,
   });
 
@@ -44,11 +47,37 @@ class MusicGroupList extends ConsumerWidget {
   /// Rows or tiles.
   final MusicLayout layout;
 
+  /// Whether a [LetterBar] stands beside the list.
+  ///
+  /// For the whole library's artists and albums, which run to hundreds; not
+  /// for one artist's records, which fit on a screen or two and are not in an
+  /// order a letter would help with.
+  final bool indexed;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) => switch (layout) {
-    MusicLayout.grid => _GroupGrid(groups: groups, kind: kind),
-    MusicLayout.list => _GroupRows(groups: groups, kind: kind),
-  };
+  Widget build(BuildContext context, WidgetRef ref) {
+    Widget list(ScrollController? controller) => switch (layout) {
+      MusicLayout.grid => _GroupGrid(
+        groups: groups,
+        kind: kind,
+        scroll: controller,
+      ),
+      MusicLayout.list => _GroupRows(
+        groups: groups,
+        kind: kind,
+        scroll: controller,
+      ),
+    };
+
+    if (!indexed) return list(null);
+
+    return LetterIndexedScroll(
+      names: [for (final group in groups) group.name],
+      columnsFor: layout == MusicLayout.grid ? _GroupGrid.columnsFor : null,
+      rowSpacing: layout == MusicLayout.grid ? _GroupGrid.spacing : 0,
+      builder: (context, controller) => list(controller),
+    );
+  }
 }
 
 /// The rows.
@@ -57,10 +86,17 @@ class MusicGroupList extends ConsumerWidget {
 /// of the library, and that applies to a list of albums exactly as it applies
 /// to a list of tracks.
 class _GroupRows extends ConsumerWidget {
-  const _GroupRows({required this.groups, required this.kind});
+  const _GroupRows({
+    required this.groups,
+    required this.kind,
+    required this.scroll,
+  });
 
   final List<MusicGroup> groups;
   final MusicGroupKind kind;
+
+  /// What scrolls the list, or `null` for its own.
+  final ScrollController? scroll;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -68,6 +104,7 @@ class _GroupRows extends ConsumerWidget {
     final controller = musicNavigatorOf(context, ref);
 
     return ListView.builder(
+      controller: scroll,
       itemCount: groups.length,
       itemBuilder: (context, index) {
         final group = groups[index];
@@ -85,11 +122,20 @@ class _GroupRows extends ConsumerWidget {
           kind: kind,
           builder: (context, menu) => ListTile(
             leading: _GroupArt(group: group, kind: kind, side: 44),
-            title: Text(musicGroupName(group, l10n, kind: kind)),
+            // One line apiece, so every row is the same height: a long name
+            // wrapping onto a second line would make one row taller than the
+            // rest, and the letter bar's jump relies on them all matching.
+            title: Text(
+              musicGroupName(group, l10n, kind: kind),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             subtitle: Text(
               kind == MusicGroupKind.album
                   ? artist ?? l10n.musicUnknownArtist
                   : l10n.musicTrackCount(group.entries.length),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             trailing: _GroupActions(group: group, kind: kind, menu: menu),
             // Drilling in rather than playing: playing a whole artist or
@@ -111,13 +157,28 @@ class _GroupRows extends ConsumerWidget {
 /// sleeve they would recognise across a room, and a name under it is the
 /// caption, not the subject.
 class _GroupGrid extends ConsumerWidget {
-  const _GroupGrid({required this.groups, required this.kind});
+  const _GroupGrid({
+    required this.groups,
+    required this.kind,
+    required this.scroll,
+  });
 
   final List<MusicGroup> groups;
   final MusicGroupKind kind;
 
+  /// What scrolls the list, or `null` for its own.
+  final ScrollController? scroll;
+
   /// How wide a tile may grow before the grid takes another column.
   static const double _extent = 200;
+
+  /// The gap between two tiles, across and down.
+  static const double spacing = AppSpacing.sm;
+
+  /// How many tiles share a row at [width] — the count
+  /// [SliverGridDelegateWithMaxCrossAxisExtent] arrives at for this grid.
+  static int columnsFor(double width) =>
+      math.max(1, (width / (_extent + spacing)).ceil());
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -126,13 +187,14 @@ class _GroupGrid extends ConsumerWidget {
     final controller = musicNavigatorOf(context, ref);
 
     return GridView.builder(
+      controller: scroll,
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: _extent,
         // Taller than it is wide: the picture is square, and the caption and
         // its controls live in what is left.
         childAspectRatio: 3 / 4,
-        mainAxisSpacing: AppSpacing.sm,
-        crossAxisSpacing: AppSpacing.sm,
+        mainAxisSpacing: spacing,
+        crossAxisSpacing: spacing,
       ),
       itemCount: groups.length,
       itemBuilder: (context, index) {
@@ -449,6 +511,7 @@ class MusicTrackList extends ConsumerStatefulWidget {
     required this.numbered,
     required this.selectionScope,
     this.emptyMessage,
+    this.indexed = false,
     super.key,
   });
 
@@ -473,6 +536,12 @@ class MusicTrackList extends ConsumerStatefulWidget {
 
   /// What to say when there is nothing to show, or `null` to show nothing.
   final String? emptyMessage;
+
+  /// Whether a [LetterBar] stands beside the rows, filed by title.
+  ///
+  /// For Songs, which is the whole library in title order; not for a record,
+  /// whose tracks are in the order they are played.
+  final bool indexed;
 
   @override
   ConsumerState<MusicTrackList> createState() => _MusicTrackListState();
@@ -688,6 +757,60 @@ class _MusicTrackListState extends ConsumerState<MusicTrackList> {
               .length
         : 0;
 
+    // The rows, scrolled by the letter bar's controller where there is one.
+    Widget rows(ScrollController? scroll) => ListView.builder(
+      controller: scroll,
+      itemCount: entries.length,
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        final path = entry.file.path;
+        final performer = _performerOf(entry, l10n);
+        final title = musicTitleOf(entry, l10n);
+        final isPicked = selecting && selection.paths.contains(path);
+
+        return MusicRowMenu(
+          entry: entry,
+          // A right-click on a picked song is about the picked
+          // songs; on any other it is about that song alone.
+          selection: isPicked
+              ? (count: picked, editTags: () => unawaited(_editSelected()))
+              : null,
+          selectionItems: [
+            MenuItemButton(
+              leadingIcon: const Icon(Icons.playlist_add),
+              onPressed: () => unawaited(_addSelected()),
+              child: Text(l10n.playlistAddTo),
+            ),
+          ],
+          child: SongTile(
+            title: title,
+            subtitle: performer,
+            duration: entry.duration,
+            picked: selecting ? isPicked : null,
+            // Through the row's own logic, so Shift draws a range
+            // from a tick box as it does from a row.
+            onTicked: () => _tap(entry, selecting: selecting),
+            leading: widget.numbered
+                ? SizedBox(
+                    width: AppSpacing.xl,
+                    child: Text(
+                      entry.metadata.track?.toString() ?? '',
+                      textAlign: TextAlign.end,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                : AlbumArt(coverId: entry.metadata.coverId, side: 44),
+            onTap: () => _tap(entry, selecting: selecting),
+            // Touch and hold picks songs; the song's own menu is on
+            // its ⋮ button and a right-click.
+            onLongPress: () => controller.toggle(scope, path),
+          ),
+        );
+      },
+    );
+
     return CallbackShortcuts(
       bindings: {
         if (selecting)
@@ -717,60 +840,12 @@ class _MusicTrackListState extends ConsumerState<MusicTrackList> {
               // Keyed so the rows, and how far they are scrolled, survive the
               // bar arriving above them.
               key: const ValueKey('rows'),
-              child: ListView.builder(
-                itemCount: entries.length,
-                itemBuilder: (context, index) {
-                  final entry = entries[index];
-                  final path = entry.file.path;
-                  final performer = _performerOf(entry, l10n);
-                  final title = musicTitleOf(entry, l10n);
-                  final isPicked = selecting && selection.paths.contains(path);
-
-                  return MusicRowMenu(
-                    entry: entry,
-                    // A right-click on a picked song is about the picked
-                    // songs; on any other it is about that song alone.
-                    selection: isPicked
-                        ? (
-                            count: picked,
-                            editTags: () => unawaited(_editSelected()),
-                          )
-                        : null,
-                    selectionItems: [
-                      MenuItemButton(
-                        leadingIcon: const Icon(Icons.playlist_add),
-                        onPressed: () => unawaited(_addSelected()),
-                        child: Text(l10n.playlistAddTo),
-                      ),
-                    ],
-                    child: SongTile(
-                      title: title,
-                      subtitle: performer,
-                      duration: entry.duration,
-                      picked: selecting ? isPicked : null,
-                      // Through the row's own logic, so Shift draws a range
-                      // from a tick box as it does from a row.
-                      onTicked: () => _tap(entry, selecting: selecting),
-                      leading: widget.numbered
-                          ? SizedBox(
-                              width: AppSpacing.xl,
-                              child: Text(
-                                entry.metadata.track?.toString() ?? '',
-                                textAlign: TextAlign.end,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            )
-                          : AlbumArt(coverId: entry.metadata.coverId, side: 44),
-                      onTap: () => _tap(entry, selecting: selecting),
-                      // Touch and hold picks songs; the song's own menu is on
-                      // its ⋮ button and a right-click.
-                      onLongPress: () => controller.toggle(scope, path),
-                    ),
-                  );
-                },
-              ),
+              child: widget.indexed
+                  ? LetterIndexedScroll(
+                      names: [for (final entry in entries) entry.title],
+                      builder: (context, scroll) => rows(scroll),
+                    )
+                  : rows(null),
             ),
           ],
         ),

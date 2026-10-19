@@ -362,6 +362,12 @@ abstract class AppLocalizations {
   /// **'Library'**
   String get musicBreadcrumbRoot;
 
+  /// What a screen reader says for one letter of the strip beside a long list, which jumps the list to the first name under that letter.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to letter {letter}'**
+  String musicJumpToLetter(String letter);
+
   /// What an artist with no tag is called.
   ///
   /// In en, this message translates to:
