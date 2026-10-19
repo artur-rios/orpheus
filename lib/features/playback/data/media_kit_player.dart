@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:media_kit/media_kit.dart' as mk;
 
 import '../domain/media_player.dart';
+import 'mpv_track_only.dart';
 
 /// [MediaPlayer] over media_kit.
 ///
@@ -88,6 +89,10 @@ class MediaKitPlayer implements MediaPlayer {
   /// nothing else.
   bool _failedThisFile = false;
 
+  /// The engine told to leave the files beside a track alone, once, before
+  /// the first file is opened; see [keepToTheTrack].
+  late final Future<void> _keptToTheTrack = keepToTheTrack(_player);
+
   @override
   Stream<PlaybackStatus> get status => _statuses.stream;
 
@@ -101,6 +106,7 @@ class MediaKitPlayer implements MediaPlayer {
     _failedThisFile = false;
     _update(const PlaybackStatus(isPlaying: true));
 
+    await _keptToTheTrack;
     await _player.open(mk.Media(path));
     if (startAt > Duration.zero) await _player.seek(startAt);
   }

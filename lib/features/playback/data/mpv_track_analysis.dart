@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 
 import '../domain/track_analysis.dart';
 import '../domain/track_energy.dart';
+import 'mpv_track_only.dart';
 import 'wav_samples.dart';
 
 /// [TrackAnalysis] that decodes the track with libmpv and transforms it here.
@@ -134,6 +135,9 @@ class MpvTrackAnalysis implements TrackAnalysis {
       // second instead of four minutes.
       await engine.setProperty('untimed', 'yes');
       await engine.setProperty('video', 'no');
+      // A saved `.lrc` beside the track would otherwise end the decode on the
+      // error stream below before a sample was written.
+      await keepToTheTrack(player);
 
       subscriptions.addAll([
         player.stream.completed.listen((completed) {
