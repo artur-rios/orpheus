@@ -102,7 +102,7 @@ void main() {
     data: dataOf(problems: problems),
     preferences: preferencesWith(folders),
     covers: {
-      'b2': Uint8List.fromList([4, 2]),
+      'b2': Uint8List.fromList([0xFF, 0xD8, 0xFF, 2]),
     },
     createdAt: made,
   );

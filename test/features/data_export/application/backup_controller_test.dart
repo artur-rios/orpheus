@@ -51,7 +51,7 @@ void main() {
     },
   );
 
-  final coverBytes = Uint8List.fromList([1, 2, 3, 4]);
+  final coverBytes = Uint8List.fromList([0xFF, 0xD8, 0xFF, 4]);
 
   Harness build({
     List<Playlist> playlists = const [],

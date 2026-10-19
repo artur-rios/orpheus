@@ -3,7 +3,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:flutter/foundation.dart';
 
+import '../../tag_editor/domain/tag_edits.dart';
 import '../domain/backup.dart';
 import '../domain/data_export.dart';
 
@@ -101,9 +103,10 @@ BackupContents _readZip(Uint8List bytes) {
 /// `covers/`, and the ids of those left out.
 ///
 /// A cover is left out when it weighs more than [maxBackupCoverBytes]
-/// uncompressed, or when it cannot be read: a damaged stream, a compression
-/// other than the two a backup is written with. One bad cover is passed over
-/// and the rest of the backup is read.
+/// uncompressed, or when it cannot be read: a damaged stream, or bytes that
+/// are not a JPEG or a PNG — which is how an entry in a compression this
+/// reader does not know comes out, since the ZIP reader takes it for stored.
+/// One bad cover is passed over and the rest of the backup is read.
 ///
 /// The weight is judged three ways, because the header that declares it is
 /// the file's word and no more. An entry declaring too much is not read. A
@@ -131,7 +134,7 @@ BackupContents _readZip(Uint8List bytes) {
       bytes = null;
     }
 
-    if (bytes == null) {
+    if (bytes == null || !isSupportedCover(bytes)) {
       skipped.add(id);
     } else {
       covers[id] = bytes;
@@ -174,6 +177,7 @@ Iterable<Uint8List> _pieces(InputStream stream) sync* {
 /// inflated: a few kilobytes can stand for gigabytes, and the size a ZIP
 /// declares for an entry says nothing about it. Throws a [FormatException]
 /// for a stream that is damaged or ends early.
+@visibleForTesting
 Uint8List? inflateRawWithin(Iterable<Uint8List> compressed, int limit) {
   final output = BytesBuilder(copy: false);
   final decoder = ZLibCodec(

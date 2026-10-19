@@ -74,7 +74,7 @@ void main() {
       'GivenDataPreferencesAndTwoCovers_WhenWrittenAndRead_ThenAllReturn',
       () {
         final covers = {
-          'p1': Uint8List.fromList([1, 2, 3]),
+          'p1': Uint8List.fromList([0xFF, 0xD8, 0xFF, 3]),
           'p2': Uint8List.fromList([255, 216, 255, 0]),
         };
 
@@ -102,7 +102,7 @@ void main() {
           preferences: preferences,
           covers: {
             'big': Uint8List(maxBackupCoverBytes + 1),
-            'small': Uint8List.fromList([1, 2, 3]),
+            'small': Uint8List.fromList([0xFF, 0xD8, 0xFF, 3]),
           },
           createdAt: createdAt,
         ),
@@ -117,7 +117,9 @@ void main() {
         encodeBackupZip(
           data: data(),
           preferences: preferences,
-          covers: {'exact': Uint8List(maxBackupCoverBytes)},
+          covers: {
+            'exact': Uint8List(maxBackupCoverBytes)..setAll(0, [0xFF, 0xD8, 0xFF]),
+          },
           createdAt: createdAt,
         ),
       );
@@ -165,7 +167,7 @@ void main() {
         preferences: preferences,
         covers: {
           'bad': Uint8List.fromList([for (var i = 0; i < 400; i++) i % 7]),
-          'good': Uint8List.fromList([1, 2, 3]),
+          'good': Uint8List.fromList([0xFF, 0xD8, 0xFF, 3]),
         },
         createdAt: createdAt,
       );
@@ -184,6 +186,24 @@ void main() {
       expect(back.covers.keys, ['good']);
       expect(back.skippedCovers, {'bad'});
       expect(back.data, data());
+    });
+
+    test('GivenAStoredEntryThatIsNotAPicture_WhenRead_ThenItIsSkipped', () {
+      // What an entry in a method this reader does not know comes out as:
+      // stored, with bytes that are still compressed.
+      final archive = ZipDecoder().decodeBytes(
+        encodeBackupZip(
+          data: data(),
+          preferences: preferences,
+          covers: const {},
+          createdAt: createdAt,
+        ),
+      )..add(ArchiveFile.noCompress('covers/junk', 3, [1, 2, 3]));
+
+      final back = readBackup(ZipEncoder().encodeBytes(archive));
+
+      expect(back.covers, isEmpty);
+      expect(back.skippedCovers, {'junk'});
     });
 
     test('GivenNoCovers_WhenWrittenAndRead_ThenThereAreNone', () {
@@ -251,11 +271,19 @@ void main() {
   });
 
   group('inflating a cover within the limit', () {
-    // Raw deflate, as a ZIP stores it, cut into pieces of 1 KB.
-    List<Uint8List> deflated(int length) {
-      final all = Uint8List.fromList(
-        ZLibCodec(raw: true).encode(Uint8List(length)),
+    // Raw deflate, as a ZIP stores it, of [input] fed [times] over without
+    // ever holding the whole of it, cut into pieces of 1 KB.
+    List<Uint8List> deflated(Uint8List input, {int times = 1}) {
+      late Uint8List all;
+      final encoder = ZLibCodec(raw: true).encoder.startChunkedConversion(
+        ByteConversionSink.withCallback(
+          (bytes) => all = Uint8List.fromList(bytes),
+        ),
       );
+      for (var i = 0; i < times; i++) {
+        encoder.add(input);
+      }
+      encoder.close();
 
       return [
         for (var at = 0; at < all.length; at += 1024)
@@ -263,14 +291,26 @@ void main() {
       ];
     }
 
-    test('GivenAStreamWithinTheLimit_WhenInflated_ThenAllTheBytesComeBack', () {
-      final bytes = inflateRawWithin(deflated(5000), 5000);
+    test('GivenAStreamWithinTheLimit_WhenInflated_ThenEveryByteComesBack', () {
+      // Random, so it does not compress and spans many pieces.
+      final random = Random(7);
+      final original = Uint8List.fromList([
+        for (var i = 0; i < 200 * 1024; i++) random.nextInt(256),
+      ]);
+      final pieces = deflated(original);
+      expect(pieces.length, greaterThan(64));
 
-      expect(bytes, hasLength(5000));
+      final bytes = inflateRawWithin(pieces, original.length);
+
+      expect(bytes, original);
     });
 
     test('GivenAStreamThatInflatesPastTheLimit_WhenInflated_ThenItAbortsEarlyAndAnswersNull', () {
-      final pieces = deflated(100 * 1024 * 1024);
+      // Three times the limit in zeros, fed from one reused 1 MB buffer.
+      final pieces = deflated(
+        Uint8List(1024 * 1024),
+        times: 3 * maxBackupCoverBytes ~/ (1024 * 1024),
+      );
       var read = 0;
 
       final bytes = inflateRawWithin(
@@ -283,8 +323,8 @@ void main() {
       );
 
       expect(bytes, isNull);
-      // Stopped near a fifth of the way through, not after inflating it all.
-      expect(read, lessThan(pieces.length ~/ 2));
+      // Stopped about a third of the way through, not after inflating it all.
+      expect(read, lessThan(pieces.length * 2 ~/ 3));
     });
   });
 

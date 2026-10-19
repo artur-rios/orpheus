@@ -37,7 +37,8 @@ void main() {
   final songB = entry(id: 'b', title: 'Beta', artist: 'Ann', album: 'One');
   final library = [songA, songB];
 
-  final picture = Uint8List.fromList([4, 2]);
+  // Starts like a JPEG, as a cover a restore keeps must.
+  final picture = Uint8List.fromList([0xFF, 0xD8, 0xFF, 2]);
 
   PlaylistEntry entryOf(String id, MusicEntry song) =>
       PlaylistEntry(id: id, path: song.file.path, title: song.title);
