@@ -300,7 +300,7 @@ package that is published, pre-releases included, because Android reads it as `v
 `flutter.versionCode` in `android/app/build.gradle.kts` — and an update whose code did not rise is not an update as far
 as the platform is concerned.
 
-**The next release's build number must be 9 or higher.** `1.4.0` shipped as build 8, after `v1.2.2-beta.1` had shipped
+**The next release's build number must be 10 or higher.** `1.5.0` shipped as build 9, after `v1.2.2-beta.1` had shipped
 an APK built as `1.2.2+6` from the `diagnose/android-usb-folder` branch, and a phone that installed it holds
 `versionCode` 6.
 
