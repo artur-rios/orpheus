@@ -1584,4 +1584,22 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get restoreReasonNotWritten =>
       'esta parte não pôde ser salva, então nada dela mudou';
+
+  @override
+  String get restoreFoldersAllRemoved =>
+      'Todas as suas pastas de música serão removidas, então nenhuma faixa poderá ser reconhecida.';
+
+  @override
+  String restoreDoneSkipped(String part) {
+    return '$part: você escolheu ignorar';
+  }
+
+  @override
+  String restoreDonePlaylistsEmptied(int replaced) {
+    return 'Playlists: suas $replaced foram removidas; o backup não tinha nenhuma';
+  }
+
+  @override
+  String get restoreDoneHistoryEmptied =>
+      'Histórico de reproduções substituído; o backup não tinha reproduções';
 }

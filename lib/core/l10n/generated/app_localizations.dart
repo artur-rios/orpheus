@@ -2527,6 +2527,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'this part couldn\'t be saved, so nothing of it changed'**
   String get restoreReasonNotWritten;
+
+  /// Shown at the first stage of a restore when the set of music folders chosen is empty while this device has folders: continuing removes them all.
+  ///
+  /// In en, this message translates to:
+  /// **'All your music folders will be removed, so no songs can be matched.'**
+  String get restoreFoldersAllRemoved;
+
+  /// A line of the restore summary: the owner chose to skip this part and it added nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'{part}: you chose to skip it'**
+  String restoreDoneSkipped(String part);
+
+  /// A line of the restore summary for a Replace of the playlists with a backup that holds none: how many were removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Playlists: removed your {replaced}; the backup had none'**
+  String restoreDonePlaylistsEmptied(int replaced);
+
+  /// A line of the restore summary for a Replace of the play history with a backup that holds no plays: the history here is now empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Play history replaced; the backup had no plays'**
+  String get restoreDoneHistoryEmptied;
 }
 
 class _AppLocalizationsDelegate

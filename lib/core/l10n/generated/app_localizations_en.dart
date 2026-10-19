@@ -1573,4 +1573,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get restoreReasonNotWritten =>
       'this part couldn\'t be saved, so nothing of it changed';
+
+  @override
+  String get restoreFoldersAllRemoved =>
+      'All your music folders will be removed, so no songs can be matched.';
+
+  @override
+  String restoreDoneSkipped(String part) {
+    return '$part: you chose to skip it';
+  }
+
+  @override
+  String restoreDonePlaylistsEmptied(int replaced) {
+    return 'Playlists: removed your $replaced; the backup had none';
+  }
+
+  @override
+  String get restoreDoneHistoryEmptied =>
+      'Play history replaced; the backup had no plays';
 }

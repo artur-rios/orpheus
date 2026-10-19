@@ -1958,5 +1958,31 @@
   "restoreReasonNotWritten": "this part couldn't be saved, so nothing of it changed",
   "@restoreReasonNotWritten": {
     "description": "Why a part was not restored: writing it failed and what was there is as it was."
+  },
+  "restoreFoldersAllRemoved": "All your music folders will be removed, so no songs can be matched.",
+  "@restoreFoldersAllRemoved": {
+    "description": "Shown at the first stage of a restore when the set of music folders chosen is empty while this device has folders: continuing removes them all."
+  },
+  "restoreDoneSkipped": "{part}: you chose to skip it",
+  "@restoreDoneSkipped": {
+    "description": "A line of the restore summary: the owner chose to skip this part and it added nothing.",
+    "placeholders": {
+      "part": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreDonePlaylistsEmptied": "Playlists: removed your {replaced}; the backup had none",
+  "@restoreDonePlaylistsEmptied": {
+    "description": "A line of the restore summary for a Replace of the playlists with a backup that holds none: how many were removed.",
+    "placeholders": {
+      "replaced": {
+        "type": "int"
+      }
+    }
+  },
+  "restoreDoneHistoryEmptied": "Play history replaced; the backup had no plays",
+  "@restoreDoneHistoryEmptied": {
+    "description": "A line of the restore summary for a Replace of the play history with a backup that holds no plays: the history here is now empty."
   }
 }

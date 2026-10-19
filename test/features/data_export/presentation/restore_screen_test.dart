@@ -103,6 +103,21 @@ void main() {
     createdAt: made,
   );
 
+  // A backup that holds no playlist and no play.
+  Uint8List emptyZip() => encodeBackupZip(
+    data: buildDataExport(
+      ExportSources(
+        songs: library,
+        playlists: const [],
+        history: PlayHistory.empty,
+        now: made,
+      ),
+    ),
+    preferences: preferencesWith(const ['/music']),
+    covers: const {},
+    createdAt: made,
+  );
+
   Uint8List json() => encodeDataExport(dataOf());
 
   // The owner's own data: a playlist called as one of the backup's, plays of
@@ -116,6 +131,7 @@ void main() {
     LibraryScanner? scanner,
     FakeFolderPicker? picker,
     bool emptyLibrary = false,
+    InMemorySettingsStore? settings,
   }) {
     final harness = Harness(
       library: emptyLibrary ? const [] : library,
@@ -123,10 +139,12 @@ void main() {
       now: now,
       existingFolders: {...existing},
       picker: picker,
-      settings: InMemorySettingsStore(
-        themeMode: ThemeMode.dark,
-        libraryFolders: folders,
-      ),
+      settings:
+          settings ??
+          InMemorySettingsStore(
+            themeMode: ThemeMode.dark,
+            libraryFolders: folders,
+          ),
       scanner:
           scanner ??
           ScriptedScanner([
@@ -378,6 +396,26 @@ void main() {
 
         expect(find.text('None yet'), findsOneWidget);
         expect(find.text('Changes when you continue'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'GivenEveryFolderIsRemoved_WhenTheSetIsEmpty_ThenItWarnsThatNoSongsCanBeMatched',
+      (tester) async {
+        await start(tester, build(), zip());
+        expect(find.textContaining('All your music folders'), findsNothing);
+
+        await tester.tap(find.byTooltip('Remove /music'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(
+            'All your music folders will be removed, so no songs can be '
+            'matched.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('None yet'), findsNothing);
       },
     );
 
@@ -734,6 +772,110 @@ void main() {
     );
 
     testWidgets(
+      'GivenReplaceWithABackupThatHoldsNothing_WhenRestored_ThenTheSummarySaysWhatWasEmptied',
+      (tester) async {
+        final harness = build();
+        await start(tester, harness, emptyZip());
+        await toChoices(tester);
+        await choose(tester, 'playlists', 'Replace');
+        await choose(tester, 'history', 'Replace');
+
+        await tapText(tester, 'Restore');
+
+        expect(harness.plays.history.tracks, isEmpty);
+        expect(harness.playlistStore.playlists, isEmpty);
+        expect(
+          find.text('Playlists: removed your 1; the backup had none'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Play history replaced; the backup had no plays'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('nothing to add'), findsNothing);
+        expect(find.textContaining('no songs to add'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'GivenSkipForEveryPart_WhenRestoredWithNothingNew_ThenEachLineSaysItWasSkipped',
+      (tester) async {
+        await start(tester, build(), emptyZip());
+        await toChoices(tester);
+        await choose(tester, 'playlists', 'Skip');
+        await choose(tester, 'history', 'Skip');
+        await choose(tester, 'preferences', 'Skip');
+
+        await tapText(tester, 'Restore');
+
+        expect(find.text('Playlists: you chose to skip it'), findsOneWidget);
+        expect(find.text('Play history: you chose to skip it'), findsOneWidget);
+        expect(find.text('Preferences: you chose to skip it'), findsOneWidget);
+        expect(find.textContaining('nothing'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'GivenACoverThatCouldNotBeSaved_WhenRestored_ThenItsLineHasTheWarningIconAndTheOthersTheCheck',
+      (tester) async {
+        final harness = build();
+        harness.playlistCovers.unwritable.addAll([
+          for (var i = 1; i < 10; i++) 'id-$i',
+        ]);
+        await start(tester, harness, zip());
+        await toChoices(tester);
+
+        await tapText(tester, 'Restore');
+
+        Finder iconBeside(String text, IconData icon) => find.descendant(
+          of: find.ancestor(
+            of: find.textContaining(text),
+            matching: find.byType(Row),
+          ),
+          matching: find.byIcon(icon),
+        );
+        expect(
+          iconBeside('their cover pictures', Icons.warning_amber_outlined),
+          findsOneWidget,
+        );
+        expect(
+          iconBeside('Playlists: 1 added', Icons.check_circle_outline),
+          findsOneWidget,
+        );
+        expect(
+          iconBeside('their cover pictures', Icons.check_circle_outline),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'GivenPreferencesThatCouldNotBeSaved_WhenRestored_ThenTheirLineHasTheWarningIcon',
+      (tester) async {
+        final harness = build(
+          settings: UnwritableSettingsStore(libraryFolders: const ['/music']),
+        );
+        await start(tester, harness, zip());
+        await toChoices(tester);
+
+        await tapText(tester, 'Restore');
+
+        final line = find.text(
+          "Some preferences couldn't be saved and last only until Orpheus "
+          'closes',
+        );
+        expect(line, findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.ancestor(of: line, matching: find.byType(Row)).first,
+            matching: find.byIcon(Icons.warning_amber_outlined),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
       'GivenARestoreUnderWay_WhenItRuns_ThenProgressIsShownAndTheScreenCannotBeLeft',
       (tester) async {
         final harness = build();
@@ -888,6 +1030,34 @@ void main() {
         expect(find.text('Não foi possível restaurar'), findsOneWidget);
         expect(
           find.textContaining('Playlists: esta parte não pôde ser lida aqui'),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'GivenTheNewWarningsAndLines_WhenShownOnAPhone_ThenNothingOverflows',
+      (tester) async {
+        final harness = build();
+        await start(tester, harness, emptyZip(), window: phone, locale: pt);
+        await tester.tap(find.byTooltip('Remover /music'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Todas as suas pastas'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        await toChoices(tester, label: 'Continuar');
+        await choose(tester, 'playlists', 'Substituir');
+        await choose(tester, 'history', 'Substituir');
+        await choose(tester, 'preferences', 'Ignorar');
+        await tapText(tester, 'Restaurar');
+
+        expect(
+          find.textContaining('o backup não tinha nenhuma'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Preferências: você escolheu ignorar'),
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);

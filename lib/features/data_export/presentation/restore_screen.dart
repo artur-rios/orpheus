@@ -140,7 +140,7 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
         l10n.restoreDoneTitle,
         state.summary == null
             ? const SizedBox.shrink()
-            : _SummaryView(summary: state.summary!),
+            : _SummaryView(summary: state.summary!, choices: state.choices),
         [FilledButton(onPressed: _close, child: Text(l10n.close))],
       ),
       RestoreStage.idle || RestoreStage.reading => (
@@ -232,7 +232,26 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
           key: const ValueKey('restore-device-folders'),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (folders.isEmpty)
+            if (folders.isEmpty && state.deviceFolders.isNotEmpty)
+              // Taking every folder out leaves nothing to match songs against.
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.warning_amber_outlined,
+                    size: 20,
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      l10n.restoreFoldersAllRemoved,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                  ),
+                ],
+              )
+            else if (folders.isEmpty)
               Text(l10n.restoreDeviceFoldersNone)
             else
               for (final folder in folders)
@@ -583,16 +602,21 @@ class _Progress extends ConsumerWidget {
 
 /// How a restore went: what was restored, then what could not be, and why.
 class _SummaryView extends StatelessWidget {
-  const _SummaryView({required this.summary});
+  const _SummaryView({required this.summary, required this.choices});
 
   final RestoreSummary summary;
+
+  /// What the owner chose for each part, which tells a *Skip* that added
+  /// nothing from a *Replace* that emptied what was here.
+  final Map<RestorePart, RestoreChoice> choices;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
-    final restored = <String>[];
+    // A line is a success unless it says something went only partly right.
+    final restored = <({String text, bool warning})>[];
     final refused = <String>[];
 
     void say(RestorePart part, PartResult result) {
@@ -607,36 +631,58 @@ class _SummaryView extends StatelessWidget {
             }),
           );
         case PlaylistsRestored(:final added, :final merged, :final replaced):
-          restored.add(
-            replaced > 0
+          final choice = choices[RestorePart.playlists];
+          restored.add((
+            text: replaced > 0 && added == 0
+                ? l10n.restoreDonePlaylistsEmptied(replaced)
+                : replaced > 0
                 ? l10n.restoreDonePlaylistsReplaced(replaced, added)
-                : added + merged == 0
-                ? l10n.restoreDonePlaylistsNothing
-                : l10n.restoreDonePlaylists(added, merged),
-          );
+                : added + merged > 0
+                ? l10n.restoreDonePlaylists(added, merged)
+                : choice == RestoreChoice.skip
+                ? l10n.restoreDoneSkipped(_partName(l10n, part))
+                : l10n.restoreDonePlaylistsNothing,
+            warning: false,
+          ));
         case HistoryRestored(:final songs, :final notInLibrary):
-          restored.add(
-            songs == 0
-                ? l10n.restoreDoneHistoryNothing
-                : notInLibrary > 0
+          final choice = choices[RestorePart.history];
+          restored.add((
+            text: songs > 0 && notInLibrary > 0
                 ? l10n.restoreDoneHistoryMissing(songs, notInLibrary)
-                : l10n.restoreDoneHistory(songs),
-          );
+                : songs > 0
+                ? l10n.restoreDoneHistory(songs)
+                : choice == RestoreChoice.replace
+                // The history here was emptied, which is what was chosen.
+                ? l10n.restoreDoneHistoryEmptied
+                : choice == RestoreChoice.skip
+                ? l10n.restoreDoneSkipped(_partName(l10n, part))
+                : l10n.restoreDoneHistoryNothing,
+            warning: false,
+          ));
         case PreferencesRestored(:final changed, :final unsaved):
-          restored.add(
-            changed
+          restored.add((
+            text: changed
                 ? l10n.restoreDonePreferences
+                : choices[RestorePart.preferences] == RestoreChoice.skip
+                ? l10n.restoreDoneSkipped(_partName(l10n, part))
                 : l10n.restoreDonePreferencesNone,
-          );
-          if (unsaved) restored.add(l10n.restoreDonePreferencesUnsaved);
+            warning: false,
+          ));
+          if (unsaved) {
+            restored.add((
+              text: l10n.restoreDonePreferencesUnsaved,
+              warning: true,
+            ));
+          }
       }
     }
 
     say(RestorePart.playlists, summary.playlists);
     if (summary.coverFailures.isNotEmpty) {
-      restored.add(
-        l10n.restoreDoneCoverFailures(summary.coverFailures.join(', ')),
-      );
+      restored.add((
+        text: l10n.restoreDoneCoverFailures(summary.coverFailures.join(', ')),
+        warning: true,
+      ));
     }
     say(RestorePart.history, summary.history);
     say(RestorePart.preferences, summary.preferences);
@@ -661,8 +707,20 @@ class _SummaryView extends StatelessWidget {
         children: [
           if (restored.isNotEmpty) ...[
             Text(l10n.restoreDoneRestored, style: theme.textTheme.titleSmall),
-            for (final text in restored)
-              line(text, Icons.check_circle_outline, theme.colorScheme.primary),
+            for (final (:text, :warning) in restored)
+              // A picture or a setting that did not stick is not the check
+              // mark the rest of the lines earned.
+              warning
+                  ? line(
+                      text,
+                      Icons.warning_amber_outlined,
+                      theme.colorScheme.error,
+                    )
+                  : line(
+                      text,
+                      Icons.check_circle_outline,
+                      theme.colorScheme.primary,
+                    ),
           ],
           if (refused.isNotEmpty) ...[
             if (restored.isNotEmpty) const SizedBox(height: AppSpacing.md),
