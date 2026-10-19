@@ -214,13 +214,15 @@ the export pretending there is nothing there: a partial file you know about is b
 The `playlists` source is a problem when the playlists could not be read; `playHistory` when the play history could not
 be read in this run. When the play history is unreadable, `autoPlaylists` and `statistics` come out empty too, because
 they are worked out from it. `songs` is a problem when the library is being rebuilt: after an upgrade Orpheus refuses
-the catalog an older version wrote and scans again, and until that scan has refilled it the library is empty. A
+the catalog an older version wrote, and a catalog that cannot be read at all is refused the same way, and it scans
+again; until that scan has refilled it the library is empty. A
 playlists or history file that was set aside as unreadable and replaced by an empty one is not a problem: Orpheus kept
 it aside, as a `.bad-` file next to its data. If the library fails to load, there is nothing worth saving, so no file is
 written at all.
 
-A `catalog.json` that cannot be read at all reads as an empty library (a rescan rebuilds it), and the export cannot tell
-that apart from a library with no music. So an export with no songs and no problem means Orpheus found no music.
+A `catalog.json` that cannot be read at all is treated like one another version wrote: the library is reported as being
+rebuilt (`songs` in `problems`) and a scan refills it. Only a missing `catalog.json`, a library never scanned, reads as
+an empty library, so an export with no songs and no problem means Orpheus found no music.
 
 When `problems` is not empty, Orpheus tells you so after the export: *Exported, but some data could not be read*.
 

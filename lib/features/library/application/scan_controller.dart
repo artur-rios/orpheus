@@ -202,7 +202,7 @@ class ScanController extends Notifier<ScanState> {
   /// The scan the application starts for itself, once the first frame is up.
   ///
   /// Runs when the owner asked for a scan at every launch, and also when the
-  /// stored catalog was refused as another version's ([MusicCatalog.isStale])
+  /// stored catalog was refused ([MusicCatalog.isStale])
   /// whatever they asked: that library is empty until a scan refills it, and
   /// the one-time re-scan an upgrade promises is this one. The preference is
   /// checked first so that, with it on, the scan starts exactly as early as it

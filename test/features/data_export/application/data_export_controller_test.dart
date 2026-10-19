@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/features/data_export/application/data_export_controller.dart';
 import 'package:orpheus/features/data_export/domain/data_export.dart';
+import 'package:orpheus/features/library/data/json_catalog_store.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_grouping.dart';
 import 'package:orpheus/features/playlists/domain/file_saver.dart';
@@ -140,6 +141,20 @@ void main() {
     expect(problems.single['message'], contains('being rebuilt'));
     // The sources that could be read are all there.
     expect(document['playHistory'], hasLength(1));
+  });
+
+  test('GivenTheCatalogCannotBeDecoded_WhenTheDataIsExported_ThenTheDocumentSaysTheLibraryIsBeingRebuilt', () async {
+    final directory = await Directory.systemTemp.createTemp('orpheus-catalog');
+    addTearDown(() => directory.delete(recursive: true));
+    final store = JsonCatalogStore(directory.path);
+    File(store.path).writeAsStringSync('{ this is not json');
+    final harness = build();
+    harness.catalogs.seed(await store.read());
+
+    final result = await exporter(harness).export();
+
+    expect(result.outcome, DataExportOutcome.savedWithProblems);
+    expect(problemSections(savedDocument(harness)), ['songs']);
   });
 
   test('GivenALibraryThatNeverHeldAnything_WhenTheDataIsExported_ThenNoProblemIsReported', () async {

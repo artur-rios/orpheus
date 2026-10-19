@@ -74,9 +74,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   saved for each song, and the play history with songs the library no longer holds. It waits for the library, the
   playlists and the play history to load and does not freeze the window while it builds the file. It only reads: the one
   thing it writes is the file you chose. If the playlists or the play history cannot be read, or the library is being
-  rebuilt after an upgrade, that section is empty, the file's `problems` says why, and Orpheus says *Exported, but some
-  data could not be read*; if the library fails to load, nothing is exported, and a catalog that cannot be read counts
-  as an empty library, which a rescan rebuilds. The result is shown under the button. The layout is documented and versioned in
+  rebuilt after an upgrade or because its catalog could not be read, that section is empty, the file's `problems` says
+  why, and Orpheus says *Exported, but some data could not be read*; if the library fails to load, nothing is exported. The result is shown under the button. The layout is documented and versioned in
   `docs/data-export.md`. It holds no cover images, audio or preferences; *Restore from a backup…* can read it back, as
   below.
 - Back up and restore. *Back up Orpheus (ZIP)…*, under *Your data*, saves one ZIP, suggested as

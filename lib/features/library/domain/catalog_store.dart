@@ -10,11 +10,12 @@ abstract interface class CatalogStore {
   /// The catalog last written, or [MusicCatalog.empty] where there is none.
   ///
   /// Never throws for a document that will not parse: a catalog nobody can
-  /// read is a catalog nobody has, and the answer to that is an empty library
-  /// and a re-scan, not a launch that fails.
+  /// read is a library to rebuild, not a launch that fails.
   ///
-  /// A document written by another version comes back empty and
-  /// [MusicCatalog.isStale], which is what makes startup scan it.
+  /// A document written by another version, or one that cannot be read at all,
+  /// comes back empty and [MusicCatalog.isStale], which is what makes startup
+  /// scan it and what an export or a backup reports as the library being
+  /// rebuilt. Only a missing document is [MusicCatalog.empty] and not stale.
   Future<MusicCatalog> read();
 
   /// Writes [catalog] as the whole document.

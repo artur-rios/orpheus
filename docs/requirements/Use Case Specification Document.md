@@ -1639,7 +1639,7 @@ graph LR
 | AF-08 | A played song is no longer in the library, or a playlist holds one | It is in the file, with its path, and its reference to a song is `null` (`FR-DX-03`). |
 | AF-09 | The preferences are closed while the export runs | The export finishes and the file is written; the result has nowhere to be shown (`FR-DX-09`). |
 | AF-10 | The owner exports again | The last result is cleared as the new export starts (`FR-DX-09`). |
-| AF-11 | The library is being rebuilt — its stored catalog was refused as another version's and the scan it is owed has not refilled it | The export completes with no songs, `problems` names `songs` and says the library is being rebuilt, and *Exported, but some data could not be read* is shown under the entry (`FR-DX-06`, `FR-DX-07`). A catalog document that cannot be read reads as an empty library and is not reported: an export with no songs and no problem means Orpheus found no music. |
+| AF-11 | The library is being rebuilt — its stored catalog was refused, as another version's or because it could not be read, and the scan it is owed has not refilled it | The export completes with no songs, `problems` names `songs` and says the library is being rebuilt, and *Exported, but some data could not be read* is shown under the entry (`FR-DX-06`, `FR-DX-07`). Only a library never scanned reads as empty and is not reported: an export with no songs and no problem means Orpheus found no music. |
 
 ---
 
