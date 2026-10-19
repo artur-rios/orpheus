@@ -2420,6 +2420,12 @@ abstract class AppLocalizations {
   /// **'Your music folders were changed in the last step. Cancelling keeps your music folders as they are now.'**
   String get restoreFoldersKept;
 
+  /// A note on the restore screen when something unforeseen stopped the restore after the first stage had changed the music folders: closing does not put them back.
+  ///
+  /// In en, this message translates to:
+  /// **'Your music folders were changed in the last step, and they stay as they are now.'**
+  String get restoreFoldersKeptFailed;
+
   /// The button that writes the chosen parts of a restore.
   ///
   /// In en, this message translates to:

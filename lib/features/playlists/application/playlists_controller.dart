@@ -179,7 +179,9 @@ class PlaylistsController extends AsyncNotifier<List<Playlist>> {
   ///
   /// Throws a [StateError] while the stored playlists could not be read,
   /// whatever [plan] throws, and whatever the store throws when the list could
-  /// not be written; nothing changes either way.
+  /// not be written. The stored list is then as it was, and so are the
+  /// pictures it names, except that a picture stored over one it already
+  /// named stays replaced: the old file is not put back.
   Future<Set<String>> replaceAll(
     ({List<Playlist> playlists, Map<String, Uint8List> covers}) Function(
       List<Playlist> before,

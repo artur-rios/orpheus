@@ -1505,6 +1505,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Suas pastas de música foram mudadas na etapa anterior. Cancelar mantém as pastas como estão agora.';
 
   @override
+  String get restoreFoldersKeptFailed =>
+      'Suas pastas de música foram mudadas na etapa anterior e continuam como estão agora.';
+
+  @override
   String get restoreRestore => 'Restaurar';
 
   @override

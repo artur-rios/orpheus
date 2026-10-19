@@ -1845,6 +1845,10 @@
   "@restoreFoldersKept": {
     "description": "A note at the second stage of a restore, shown when the first stage changed the music folders: cancelling does not put them back."
   },
+  "restoreFoldersKeptFailed": "Your music folders were changed in the last step, and they stay as they are now.",
+  "@restoreFoldersKeptFailed": {
+    "description": "A note on the restore screen when something unforeseen stopped the restore after the first stage had changed the music folders: closing does not put them back."
+  },
   "restoreRestore": "Restore",
   "@restoreRestore": {
     "description": "The button that writes the chosen parts of a restore."

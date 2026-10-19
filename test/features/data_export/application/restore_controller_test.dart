@@ -934,6 +934,24 @@ void main() {
       },
     );
 
+    test('GivenTheFoldersWereChanged_WhenTheChoicesCannotBePrepared_ThenItFailsAndRemembersTheFolders', () async {
+      final harness = build(
+        overrides: [
+          playRecorderProvider.overrideWithValue(_UnreadyRecorder(now)),
+        ],
+      );
+      harness.fileOpener.next = zip();
+      final controller = restorer(harness);
+      await controller.pick();
+      controller.chooseFolders(['/new']);
+
+      await controller.continueToChoices();
+
+      expect(stateOf(harness).stage, RestoreStage.failed);
+      expect(stateOf(harness).foldersChanged, isTrue);
+      expect(harness.settings.libraryFolders, ['/new']);
+    });
+
     test('GivenTheChoicesCannotBePrepared_WhenADataJsonIsPicked_ThenItFailsWithAWayOut', () async {
       final harness = build(
         overrides: [

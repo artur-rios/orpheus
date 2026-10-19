@@ -1495,6 +1495,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your music folders were changed in the last step. Cancelling keeps your music folders as they are now.';
 
   @override
+  String get restoreFoldersKeptFailed =>
+      'Your music folders were changed in the last step, and they stay as they are now.';
+
+  @override
   String get restoreRestore => 'Restore';
 
   @override

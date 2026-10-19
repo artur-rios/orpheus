@@ -96,11 +96,7 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
     ) = switch (state.stage) {
       RestoreStage.failed => (
         l10n.restoreTitle,
-        Text(switch (state.failure) {
-          NewerBackupVersion() => l10n.restoreFailedNewer,
-          NotABackup() => l10n.restoreFailedNotABackup,
-          null => l10n.restoreFailedUnexpected,
-        }),
+        _failedBody(l10n, state),
         [FilledButton(onPressed: _close, child: Text(l10n.close))],
       ),
       RestoreStage.folders => (
@@ -293,6 +289,33 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+      ],
+    );
+  }
+
+  /// Why the restore stopped and, when stage 1 had already changed the music
+  /// folders, that they stay changed.
+  Widget _failedBody(AppLocalizations l10n, RestoreState state) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(switch (state.failure) {
+          NewerBackupVersion() => l10n.restoreFailedNewer,
+          NotABackup() => l10n.restoreFailedNotABackup,
+          null => l10n.restoreFailedUnexpected,
+        }),
+        if (state.foldersChanged) ...[
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            l10n.restoreFoldersKeptFailed,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ],
     );
   }
