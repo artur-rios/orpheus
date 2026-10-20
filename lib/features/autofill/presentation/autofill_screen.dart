@@ -24,6 +24,8 @@ class AutofillScreen extends ConsumerStatefulWidget {
     required this.entries,
     required this.fields,
     required this.kind,
+    this.matchAgainst,
+    this.onWritten,
     super.key,
   });
 
@@ -36,16 +38,32 @@ class AutofillScreen extends ConsumerStatefulWidget {
   /// A record or a lone track.
   final AutofillKind kind;
 
+  /// The whole record [entries] belong to, where they are only some of it: the
+  /// record is matched as a whole and only [entries] are proposed changes.
+  final List<MusicEntry>? matchAgainst;
+
+  /// Called once when the writing finishes with at least one file written.
+  final void Function()? onWritten;
+
   @override
   ConsumerState<AutofillScreen> createState() => _AutofillScreenState();
 }
 
 class _AutofillScreenState extends ConsumerState<AutofillScreen> {
   final TextEditingController _query = TextEditingController();
+  bool _notified = false;
 
   @override
   void initState() {
     super.initState();
+    // Once, though a retry can finish a second time.
+    ref.listenManual(autofillControllerProvider, (_, next) {
+      if (_notified || next.stage != AutofillStage.finished) return;
+      if (!next.outcomes.values.contains(WriteOutcome.written)) return;
+
+      _notified = true;
+      widget.onWritten?.call();
+    });
     // After the first frame, so the controller is being watched — kept alive —
     // before the lookup starts.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -53,7 +71,12 @@ class _AutofillScreenState extends ConsumerState<AutofillScreen> {
       unawaited(
         ref
             .read(autofillControllerProvider.notifier)
-            .start(widget.entries, widget.fields, kind: widget.kind),
+            .start(
+              widget.entries,
+              widget.fields,
+              kind: widget.kind,
+              matchAgainst: widget.matchAgainst,
+            ),
       );
     });
   }

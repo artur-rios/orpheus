@@ -636,4 +636,28 @@ void main() {
       expect(find.text(record[1].file.name), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'GivenOnWritten_WhenTheWriteFinishesWithAFileWritten_ThenItIsCalledOnce',
+    (tester) async {
+      final harness = harnessFor();
+      var calls = 0;
+      await tester.pumpHarness(
+        harness,
+        AutofillScreen(
+          entries: record,
+          fields: const {AutofillField.artist},
+          kind: AutofillKind.record,
+          onWritten: () => calls++,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(calls, 0);
+
+      await tester.tap(find.text('Write 2 changes to 2 files'));
+      await tester.pumpAndSettle();
+
+      expect(calls, 1);
+    },
+  );
 }
