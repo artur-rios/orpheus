@@ -96,7 +96,8 @@ No permission, manifest or CI change (the batch uses the access UC-34 already as
 - A **confident** record with changes is written at once, through the same writer, the same `expected`
   (changed-since-read) check and the playing-file-last order within the record. A confident record with no changes
   is *already right*.
-- A **doubtful** record is kept with what was found (candidates, the release, the proposals), nothing written.
+- A **doubtful** record is kept with the release proposed and the reason, nothing written; its proposals are not
+  kept, since its review looks the record up again (and a cover in each would hold every picture in memory).
 - A record whose search answers nothing is *not found*; one whose lookup fails `unreachable` or `rateLimited` is
   retried once after the record that follows, then reported as *could not be looked up*; `malformed` is *failed*. Three records in a row unreachable pause
   the batch with *MusicBrainz could not be reached* and *Try again* / *Stop* (so a lost connection does not burn
@@ -121,14 +122,15 @@ A **record** is confident only when all of these hold for the best-ranked releas
 4. **every song of the batch in that record** is assigned a track, and for each, the track's title normalised
    **equals** the song's title (a song with no title is never confident), and where the song has a track number (and
    a disc number) it equals the track's;
-5. **for a record only partly in the batch**, no proposed change touches album or album artist — the library groups
-   albums by the exact pair of strings, so writing them to three songs of twelve would split the album in two
-   unreviewed. Such a record is doubtful with the reason *would split the album*. *(My call.)*
+5. **for a record some of whose songs will not be written** — songs of the album left out of the batch, of a format
+   no tag is written to, or whose tags cannot be changed safely — no proposed change touches album or album artist:
+   the library groups albums by the exact pair of strings, so writing them to some of its songs would split the
+   album in two unreviewed. Such a record is doubtful with the reason *would split the album*. *(My call.)*
 
 Songs that do not decide confidence: a song that cannot hold one of the chosen fields (`notWritable`) is written for
 the rest, as UC-34 does; a song blocked as a whole (`blockedBecause` `unwritableFormat` or `unsafeTags` — an MP3 or
 FLAC whose tags Orpheus cannot change safely) is counted as *not writable*, and the rest of its record is judged and
-written without it. `noMatch` is rule 4. *(My call.)*
+written without it — except that rule 5 still counts it, since it keeps the old album. `noMatch` is rule 4. *(My call.)*
 
 A **lone track** is confident only when the best recording's title and artist credit, normalised, equal the song's,
 its length is within 3 seconds of the song's (unknown length → doubtful), and the release it is filed under is
