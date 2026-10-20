@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
@@ -170,6 +171,22 @@ void main() {
     for (final query in harness.metadata.releaseQueries) query.album,
   ];
 
+  const artistAndCover = {AutofillField.artist, AutofillField.cover};
+  final oldCover = Uint8List.fromList([9, 9, 9]);
+  final newCover = Uint8List.fromList([1, 2, 3]);
+
+  /// [tags] with [oldCover] embedded, which a chosen cover replaces.
+  FileTags withOldCover(FileTags tags) =>
+      FileTags(writable: tags.writable, values: tags.values, cover: oldCover);
+
+  /// Every picture [outcome] still holds on to, old or new.
+  List<Uint8List> coverBytesIn(UnitOutcome outcome) => [
+    for (final proposal in outcome.proposals)
+      for (final change in proposal.changes)
+        for (final value in [change.before, change.after])
+          if (value is Uint8List) value,
+  ];
+
   test(
     'GivenAConfidentAndADoubtfulRecord_WhenRun_ThenOnlyTheConfidentIsWritten',
     () async {
@@ -198,7 +215,7 @@ void main() {
       ]);
       expect(state.outcomes[1].doubt?.reason, DoubtReason.notOfficial);
       expect(state.outcomes[1].release?.id, 'rel-Beta');
-      expect(state.outcomes[1].proposals, hasLength(2));
+      expect(state.outcomes[1].proposals, isEmpty);
       expect(state.updated, 1);
       expect(state.needYou, 1);
       expect(state.done, 2);
@@ -634,6 +651,102 @@ void main() {
       alpha[1].file.path: WriteOutcome.written,
     });
   });
+
+  test(
+    'GivenAnUpdatedUnitWithACover_WhenRun_ThenItsOutcomeHoldsNoCoverBytes',
+    () async {
+      final alpha = albumOf('Alpha');
+      final harness = harnessFor(alpha);
+      harness.metadata.covers = {'rel-Alpha': newCover};
+      for (final song in alpha) {
+        harness.tagWriter.files[song.file.path] = withOldCover(misspelt(song));
+      }
+
+      await run(harness, planBatch(alpha, alpha), fields: artistAndCover);
+
+      final outcome = stateOf(harness).outcomes.single;
+      expect(outcome.kind, UnitOutcomeKind.updated);
+      expect(harness.tagWriter.writes.first.$2[AutofillField.cover], newCover);
+      expect(coverBytesIn(outcome), isEmpty);
+    },
+  );
+
+  test(
+    'GivenADoubtfulUnitWithACover_WhenRun_ThenItsOutcomeHoldsNoCoverBytes',
+    () async {
+      final alpha = albumOf('Alpha');
+      final harness = harnessFor(
+        alpha,
+        releases: {'Alpha': releaseOf('Alpha', status: 'Bootleg')},
+      );
+      harness.metadata.covers = {'rel-Alpha': newCover};
+      for (final song in alpha) {
+        harness.tagWriter.files[song.file.path] = withOldCover(misspelt(song));
+      }
+
+      await run(harness, planBatch(alpha, alpha), fields: artistAndCover);
+
+      final outcome = stateOf(harness).outcomes.single;
+      expect(outcome.kind, UnitOutcomeKind.doubtful);
+      expect(outcome.release?.id, 'rel-Alpha');
+      expect(coverBytesIn(outcome), isEmpty);
+    },
+  );
+
+  test(
+    'GivenABlockedSongInADoubtfulRecord_WhenRun_ThenItIsStillNotWritable',
+    () async {
+      final alpha = albumOf('Alpha', count: 3);
+      final harness = harnessFor(
+        alpha,
+        releases: {'Alpha': releaseOf('Alpha', count: 3, status: 'Bootleg')},
+      );
+      harness.tagWriter.unreadable.add(alpha[1].file.path);
+
+      await run(harness, planBatch(alpha, alpha));
+
+      final state = stateOf(harness);
+      expect(state.outcomes.single.kind, UnitOutcomeKind.doubtful);
+      expect(state.notWritableSongs.map((s) => s.file.path), [
+        alpha[1].file.path,
+      ]);
+    },
+  );
+
+  test(
+    'GivenAnInUseFileWithACover_WhenRetryFailed_ThenItIsRewrittenWithTheCover',
+    () async {
+      final alpha = albumOf('Alpha');
+      final harness = harnessFor(alpha);
+      harness.metadata.covers = {'rel-Alpha': newCover};
+      for (final song in alpha) {
+        harness.tagWriter.files[song.file.path] = withOldCover(misspelt(song));
+      }
+      final busy = alpha.first.file.path;
+      harness.tagWriter.refusals[busy] = WriteOutcome.inUse;
+      await run(harness, planBatch(alpha, alpha), fields: artistAndCover);
+      // Only the file to write again is kept: the written one's pictures are
+      // let go.
+      expect(
+        stateOf(harness).outcomes.single.proposals
+            .map((proposal) => proposal.entry.file.path),
+        [busy],
+      );
+
+      harness.tagWriter.refusals.clear();
+      await controllerOf(harness).retryFailed();
+
+      final (path, values) = harness.tagWriter.writes.last;
+      expect(path, busy);
+      expect(values, {
+        AutofillField.artist: 'Radiohead',
+        AutofillField.cover: newCover,
+      });
+      final outcome = stateOf(harness).outcomes.single;
+      expect(outcome.writes[busy], WriteOutcome.written);
+      expect(coverBytesIn(outcome), isEmpty);
+    },
+  );
 
   test('GivenANewBatchStartedMidRetry_WhenTheRetryFinishes_ThenTheNewBatchIsUntouched', () async {
     final alpha = albumOf('Alpha');

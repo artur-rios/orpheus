@@ -72,6 +72,7 @@ class UnitOutcome {
     this.doubt,
     this.release,
     this.proposals = const [],
+    this.blocked = const [],
     this.writes = const {},
     this.reviewed = false,
     this.coverUnavailable = false,
@@ -89,8 +90,18 @@ class UnitOutcome {
   /// The release proposed from, where one was found.
   final ReleaseCandidate? release;
 
-  /// What was written, or would be: every song of the unit, changed or not.
+  /// The proposals of the files whose write can be tried again: those that
+  /// were in use or failed.
+  ///
+  /// Nothing else is kept once the unit is decided — a chosen cover puts two
+  /// pictures in every proposal, which a whole library's worth would not fit
+  /// in memory. A doubtful unit keeps none: its review looks the record up
+  /// again.
   final List<FileProposal> proposals;
+
+  /// The songs of the unit that its proposals blocked as a whole, because no
+  /// tag can be written to them safely.
+  final List<MusicEntry> blocked;
 
   /// How each written file went, by path, including the ones that were not.
   final Map<String, WriteOutcome> writes;
@@ -104,18 +115,13 @@ class UnitOutcome {
 
   /// The songs of this unit no tag can be written to safely, which its
   /// writes leave out.
-  Iterable<MusicEntry> get blockedSongs => kind == UnitOutcomeKind.notWritable
-      ? unit.songs
-      : [
-          for (final proposal in proposals)
-            if (proposal.blockedBecause == ProposalBlock.unwritableFormat ||
-                proposal.blockedBecause == ProposalBlock.unsafeTags)
-              proposal.entry,
-        ];
+  Iterable<MusicEntry> get blockedSongs =>
+      kind == UnitOutcomeKind.notWritable ? unit.songs : blocked;
 
   /// A copy with the given changes.
   UnitOutcome copyWith({
     UnitOutcomeKind? kind,
+    List<FileProposal>? proposals,
     Map<String, WriteOutcome>? writes,
     bool? reviewed,
   }) => UnitOutcome(
@@ -123,7 +129,8 @@ class UnitOutcome {
     kind: kind ?? this.kind,
     doubt: doubt,
     release: release,
-    proposals: proposals,
+    proposals: proposals ?? this.proposals,
+    blocked: blocked,
     writes: writes ?? this.writes,
     reviewed: reviewed ?? this.reviewed,
     coverUnavailable: coverUnavailable,
@@ -520,13 +527,19 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
     }
 
     final (:confidence, :release, :proposals, :coverUnavailable) = found;
+    final blocked = [
+      for (final proposal in proposals)
+        if (proposal.blockedBecause == ProposalBlock.unwritableFormat ||
+            proposal.blockedBecause == ProposalBlock.unsafeTags)
+          proposal.entry,
+    ];
     if (confidence is Doubtful) {
       return UnitOutcome(
         unit: unit,
         kind: UnitOutcomeKind.doubtful,
         doubt: confidence,
         release: release,
-        proposals: proposals,
+        blocked: blocked,
         coverUnavailable: coverUnavailable,
       );
     }
@@ -540,7 +553,7 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
         unit: unit,
         kind: UnitOutcomeKind.alreadyRight,
         release: release,
-        proposals: proposals,
+        blocked: blocked,
         coverUnavailable: coverUnavailable,
       );
     }
@@ -552,11 +565,22 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
       unit: unit,
       kind: _writtenOrFailed(writes),
       release: release,
-      proposals: proposals,
+      proposals: _toRetry(changed, writes),
+      blocked: blocked,
       writes: writes,
       coverUnavailable: coverUnavailable,
     );
   }
+
+  /// The proposals of [proposals] whose file [writes] says can be written
+  /// again: all a retry needs, and all that is kept.
+  static List<FileProposal> _toRetry(
+    List<FileProposal> proposals,
+    Map<String, WriteOutcome> writes,
+  ) => [
+    for (final proposal in proposals)
+      if (_retryable(writes[proposal.entry.file.path])) proposal,
+  ];
 
   /// [UnitOutcomeKind.updated] where [writes] reached at least one file, and
   /// [UnitOutcomeKind.failed] where every one was refused.
@@ -720,6 +744,7 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
         final merged = {...outcome.writes, ...writes};
         outcomes[i] = outcome.copyWith(
           kind: _writtenOrFailed(merged),
+          proposals: _toRetry(outcome.proposals, merged),
           writes: merged,
         );
         state = state.copyWith(outcomes: _listed());
