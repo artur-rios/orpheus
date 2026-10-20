@@ -7,6 +7,7 @@ import '../../../core/di/providers.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/breakpoints.dart';
+import '../../autofill/presentation/batch_autofill_launcher.dart';
 import '../../library/domain/music_catalog.dart';
 import '../../library/domain/music_grouping.dart';
 import '../../shell/domain/shell_destination.dart';
@@ -48,6 +49,14 @@ class MusicLibraryView extends ConsumerWidget {
             .playEverythingShuffled(label: l10n.audioShuffleAllLabel),
       ),
       shuffleTooltip: l10n.audioShuffleAll,
+      // The whole library, read when it is pressed: what shuffle plays.
+      onAutofill: () => unawaited(
+        startBatchAutofill(
+          context,
+          ref,
+          ref.read(musicLibraryControllerProvider).value?.entries ?? const [],
+        ),
+      ),
       selectionPlace: 'music',
       // Only the list waits on the library: the controls and the breadcrumb
       // stay above its loading, failure and empty states.

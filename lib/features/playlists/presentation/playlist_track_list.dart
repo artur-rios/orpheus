@@ -8,6 +8,7 @@ import 'package:logging/logging.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../autofill/presentation/batch_autofill_launcher.dart';
 import '../../library/domain/music_entry.dart';
 import '../../playback/application/song_selection_controller.dart';
 import '../../playback/presentation/album_art.dart';
@@ -281,6 +282,14 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
     _tickedSongs(ref.read(songSelectionProvider).paths),
   );
 
+  /// Autofills the ticked songs the library has: one as UC-34's lone track,
+  /// several as a batch. The selection is kept, as in [_addTicked].
+  Future<void> _autofillTicked() => startBatchAutofill(
+    context,
+    ref,
+    _tickedSongs(ref.read(songSelectionProvider).paths),
+  );
+
   /// A row dropped by its handle at [to], the place it now holds: shown
   /// there at once, and stored.
   ///
@@ -476,6 +485,15 @@ class _PlaylistTrackListState extends ConsumerState<PlaylistTrackList> {
                       icon: const Icon(Icons.playlist_remove),
                       onPressed: () => unawaited(_removeTicked()),
                     ),
+                  // Only songs the library has can be tagged, as for
+                  // *Edit tags…*.
+                  IconButton(
+                    tooltip: l10n.autofillAction,
+                    icon: const Icon(Icons.auto_fix_high_outlined),
+                    onPressed: tickedSongs.isEmpty
+                        ? null
+                        : () => unawaited(_autofillTicked()),
+                  ),
                   IconButton(
                     tooltip: l10n.playlistAddTo,
                     icon: const Icon(Icons.playlist_add),
