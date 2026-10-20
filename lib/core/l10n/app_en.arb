@@ -1050,6 +1050,245 @@
   "@autofillOpenSettings": {
     "description": "The button that opens the system settings where write access can be granted."
   },
+  "autofillBatchConfirmTitle": "Autofill {songs, plural, =1{1 song} other{{songs} songs}}?",
+  "@autofillBatchConfirmTitle": {
+    "description": "The title of the question that asks the owner to confirm an autofill of many songs; the placeholder is how many songs.",
+    "placeholders": {
+      "songs": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillBatchConfirmBody": "{records, plural, =1{1 record} other{{records} records}}, about {minutes, plural, =1{1 minute} other{{minutes} minutes}}. Records that clearly match MusicBrainz are written without asking, replacing their current tags; the others are kept for you to check.",
+  "@autofillBatchConfirmBody": {
+    "description": "The body of the question that asks the owner to confirm an autofill of many songs: how many records (albums, or lone tracks) will be looked up, roughly how long it takes, and what happens to them.",
+    "placeholders": {
+      "records": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillBatchConfirmSkipped": "{count, plural, =1{1 song can't be changed and will be skipped.} other{{count} songs can't be changed and will be skipped.}}",
+  "@autofillBatchConfirmSkipped": {
+    "description": "A sentence added to the autofill confirmation when some of the chosen songs are of a kind Orpheus cannot write; the placeholder is how many.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillBatchStart": "Start",
+  "@autofillBatchStart": {
+    "description": "The button that confirms and starts an autofill of many songs."
+  },
+  "autofillBatchReplaceTitle": "Start a new autofill?",
+  "@autofillBatchReplaceTitle": {
+    "description": "The title of the question asked when a new batch autofill is started while a finished one still has records waiting for the owner."
+  },
+  "autofillBatchReplaceBody": "{count, plural, =1{The record waiting for you will be forgotten.} other{The {count} records waiting for you will be forgotten.}}",
+  "@autofillBatchReplaceBody": {
+    "description": "The body of the question asked when a new batch autofill replaces a finished one; the placeholder is how many records were waiting for the owner.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillBatchReplaceConfirm": "Start new",
+  "@autofillBatchReplaceConfirm": {
+    "description": "The button that forgets the records waiting for the owner and starts a new batch autofill."
+  },
+  "autofillBatchTitle": "Autofill",
+  "@autofillBatchTitle": {
+    "description": "The title of the screen that follows an autofill of many songs."
+  },
+  "autofillBatchProgress": "{total, plural, =1{Looking up {done} of 1 record} other{Looking up {done} of {total} records}}",
+  "@autofillBatchProgress": {
+    "description": "The progress of a batch autofill: how many records have been looked up out of how many.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillBatchUpdated": "{count} updated",
+  "@autofillBatchUpdated": {
+    "description": "The live count of records a batch autofill has written.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillBatchNeedYou": "{count, plural, =1{1 needs you} other{{count} need you}}",
+  "@autofillBatchNeedYou": {
+    "description": "The live count of records a batch autofill kept for the owner to check.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillBatchAlreadyRight": "{count} already right",
+  "@autofillBatchAlreadyRight": {
+    "description": "The live count of records a batch autofill found to need no change.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillBatchNotFound": "{count} not found",
+  "@autofillBatchNotFound": {
+    "description": "The live count of records a batch autofill found nothing for on MusicBrainz.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillBatchSkipped": "{count} skipped",
+  "@autofillBatchSkipped": {
+    "description": "The live count of what a batch autofill left alone: songs that cannot be changed and records that failed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillBatchStop": "Stop",
+  "@autofillBatchStop": {
+    "description": "The button that stops a batch autofill after the record being looked up."
+  },
+  "autofillBatchClearList": "Clear list",
+  "@autofillBatchClearList": {
+    "description": "The button that forgets the records a batch autofill kept for the owner."
+  },
+  "autofillBatchClearTitle": "Clear the list?",
+  "@autofillBatchClearTitle": {
+    "description": "The title of the question asked before the records kept for the owner are forgotten."
+  },
+  "autofillBatchClearBody": "The records waiting for you are forgotten. Nothing is written.",
+  "@autofillBatchClearBody": {
+    "description": "The body of the question asked before the records kept for the owner are forgotten."
+  },
+  "autofillBatchClearConfirm": "Clear",
+  "@autofillBatchClearConfirm": {
+    "description": "The button that forgets the records kept for the owner."
+  },
+  "autofillBatchPaused": "MusicBrainz could not be reached. The autofill is paused.",
+  "@autofillBatchPaused": {
+    "description": "Shown on the batch autofill screen when MusicBrainz could not be reached several times in a row and the batch waits for the owner."
+  },
+  "autofillBatchSummary": "{updated, plural, =1{1 record updated} other{{updated} records updated}}, {needYou, plural, =1{1 needs you} other{{needYou} need you}}",
+  "@autofillBatchSummary": {
+    "description": "The headline of a finished batch autofill: how many records were written and how many wait for the owner.",
+    "placeholders": {
+      "updated": {
+        "type": "int"
+      },
+      "needYou": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillBatchSectionNeedYou": "Need you",
+  "@autofillBatchSectionNeedYou": {
+    "description": "The heading of the list of records a batch autofill kept for the owner to check."
+  },
+  "autofillBatchSectionNotFound": "Not found",
+  "@autofillBatchSectionNotFound": {
+    "description": "The heading of the list of records a batch autofill found nothing for."
+  },
+  "autofillBatchSectionNotWritable": "Can't be changed",
+  "@autofillBatchSectionNotWritable": {
+    "description": "The heading of the list of songs a batch autofill could not change, because of the kind of file or the shape of its tags."
+  },
+  "autofillBatchSectionFailed": "Could not be written or looked up",
+  "@autofillBatchSectionFailed": {
+    "description": "The heading of the list of records a batch autofill could not look up, or whose files could not all be written."
+  },
+  "autofillBatchSectionNotLookedUp": "Not looked up",
+  "@autofillBatchSectionNotLookedUp": {
+    "description": "The heading of the list of records a stopped batch autofill never reached."
+  },
+  "autofillDoubtNoMatch": "No match",
+  "@autofillDoubtNoMatch": {
+    "description": "Why a record was kept for the owner: MusicBrainz found no release for it."
+  },
+  "autofillDoubtNotOfficial": "Not an official release",
+  "@autofillDoubtNotOfficial": {
+    "description": "Why a record was kept for the owner: the best release found is not an official one."
+  },
+  "autofillDoubtDifferentAlbum": "Different album name",
+  "@autofillDoubtDifferentAlbum": {
+    "description": "Why a record was kept for the owner: the best release is called something else than the record."
+  },
+  "autofillDoubtDifferentArtist": "Different artist",
+  "@autofillDoubtDifferentArtist": {
+    "description": "Why a record was kept for the owner: the best release is by another artist than the record."
+  },
+  "autofillDoubtUnmatchedSongs": "{count, plural, =1{1 song unmatched} other{{count} songs unmatched}}",
+  "@autofillDoubtUnmatchedSongs": {
+    "description": "Why a record was kept for the owner: some of its songs found no track on the release; the placeholder is how many.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillDoubtDifferentSongs": "{count, plural, =1{1 song differs} other{{count} songs differ}}",
+  "@autofillDoubtDifferentSongs": {
+    "description": "Why a record was kept for the owner: some of its songs found a track that is not plainly theirs; the placeholder is how many.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillDoubtWouldSplitAlbum": "Would split the album",
+  "@autofillDoubtWouldSplitAlbum": {
+    "description": "Why a record was kept for the owner: only some of its songs are in the batch, and writing the release's album to them would separate them from the rest."
+  },
+  "autofillDoubtUncertainTrack": "Not a clear match",
+  "@autofillDoubtUncertainTrack": {
+    "description": "Why a lone track was kept for the owner: the recording found is not surely the song."
+  },
+  "autofillBatchIndicatorRunning": "Autofilling {done}/{total}",
+  "@autofillBatchIndicatorRunning": {
+    "description": "The shell's indicator while a batch autofill runs: how many records are done out of how many.",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillBatchIndicatorPaused": "Autofill paused",
+  "@autofillBatchIndicatorPaused": {
+    "description": "The shell's indicator while a batch autofill waits for MusicBrainz."
+  },
+  "autofillBatchIndicatorNeedYou": "{count, plural, =1{1 needs you} other{{count} need you}}",
+  "@autofillBatchIndicatorNeedYou": {
+    "description": "The shell's indicator once a batch autofill is done and records still wait for the owner.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "autofillBatchIndicatorDone": "Autofill done",
+  "@autofillBatchIndicatorDone": {
+    "description": "The shell's indicator once a batch autofill is done, until its summary has been seen."
+  },
   "tagEditAction": "Edit tags…",
   "@tagEditAction": {
     "description": "The action, in a track's menu, that opens the form its tags are edited in by hand."

@@ -836,6 +836,224 @@ class AppLocalizationsEn extends AppLocalizations {
   String get autofillOpenSettings => 'Open settings';
 
   @override
+  String autofillBatchConfirmTitle(int songs) {
+    String _temp0 = intl.Intl.pluralLogic(
+      songs,
+      locale: localeName,
+      other: '$songs songs',
+      one: '1 song',
+    );
+    return 'Autofill $_temp0?';
+  }
+
+  @override
+  String autofillBatchConfirmBody(int records, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      records,
+      locale: localeName,
+      other: '$records records',
+      one: '1 record',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutes',
+      one: '1 minute',
+    );
+    return '$_temp0, about $_temp1. Records that clearly match MusicBrainz are written without asking, replacing their current tags; the others are kept for you to check.';
+  }
+
+  @override
+  String autofillBatchConfirmSkipped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count songs can\'t be changed and will be skipped.',
+      one: '1 song can\'t be changed and will be skipped.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get autofillBatchStart => 'Start';
+
+  @override
+  String get autofillBatchReplaceTitle => 'Start a new autofill?';
+
+  @override
+  String autofillBatchReplaceBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'The $count records waiting for you will be forgotten.',
+      one: 'The record waiting for you will be forgotten.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get autofillBatchReplaceConfirm => 'Start new';
+
+  @override
+  String get autofillBatchTitle => 'Autofill';
+
+  @override
+  String autofillBatchProgress(int done, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'Looking up $done of $total records',
+      one: 'Looking up $done of 1 record',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String autofillBatchUpdated(int count) {
+    return '$count updated';
+  }
+
+  @override
+  String autofillBatchNeedYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count need you',
+      one: '1 needs you',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String autofillBatchAlreadyRight(int count) {
+    return '$count already right';
+  }
+
+  @override
+  String autofillBatchNotFound(int count) {
+    return '$count not found';
+  }
+
+  @override
+  String autofillBatchSkipped(int count) {
+    return '$count skipped';
+  }
+
+  @override
+  String get autofillBatchStop => 'Stop';
+
+  @override
+  String get autofillBatchClearList => 'Clear list';
+
+  @override
+  String get autofillBatchClearTitle => 'Clear the list?';
+
+  @override
+  String get autofillBatchClearBody =>
+      'The records waiting for you are forgotten. Nothing is written.';
+
+  @override
+  String get autofillBatchClearConfirm => 'Clear';
+
+  @override
+  String get autofillBatchPaused =>
+      'MusicBrainz could not be reached. The autofill is paused.';
+
+  @override
+  String autofillBatchSummary(int updated, int needYou) {
+    String _temp0 = intl.Intl.pluralLogic(
+      updated,
+      locale: localeName,
+      other: '$updated records updated',
+      one: '1 record updated',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      needYou,
+      locale: localeName,
+      other: '$needYou need you',
+      one: '1 needs you',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String get autofillBatchSectionNeedYou => 'Need you';
+
+  @override
+  String get autofillBatchSectionNotFound => 'Not found';
+
+  @override
+  String get autofillBatchSectionNotWritable => 'Can\'t be changed';
+
+  @override
+  String get autofillBatchSectionFailed => 'Could not be written or looked up';
+
+  @override
+  String get autofillBatchSectionNotLookedUp => 'Not looked up';
+
+  @override
+  String get autofillDoubtNoMatch => 'No match';
+
+  @override
+  String get autofillDoubtNotOfficial => 'Not an official release';
+
+  @override
+  String get autofillDoubtDifferentAlbum => 'Different album name';
+
+  @override
+  String get autofillDoubtDifferentArtist => 'Different artist';
+
+  @override
+  String autofillDoubtUnmatchedSongs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count songs unmatched',
+      one: '1 song unmatched',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String autofillDoubtDifferentSongs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count songs differ',
+      one: '1 song differs',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get autofillDoubtWouldSplitAlbum => 'Would split the album';
+
+  @override
+  String get autofillDoubtUncertainTrack => 'Not a clear match';
+
+  @override
+  String autofillBatchIndicatorRunning(int done, int total) {
+    return 'Autofilling $done/$total';
+  }
+
+  @override
+  String get autofillBatchIndicatorPaused => 'Autofill paused';
+
+  @override
+  String autofillBatchIndicatorNeedYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count need you',
+      one: '1 needs you',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get autofillBatchIndicatorDone => 'Autofill done';
+
+  @override
   String get tagEditAction => 'Edit tags…';
 
   @override

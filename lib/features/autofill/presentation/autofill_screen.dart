@@ -224,7 +224,7 @@ class _Review extends ConsumerWidget {
             release: release.release,
             candidates: state.candidates,
           ),
-          if (state.refusal != null) _Refusal(decision: state.refusal!),
+          if (state.refusal != null) AutofillRefusal(decision: state.refusal!),
           if (state.coverMissing)
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.sm),
@@ -310,9 +310,13 @@ String _describe(ReleaseCandidate release) => [
   ?release.disambiguation,
 ].where((part) => part.isNotEmpty).join(' · ');
 
-class _Refusal extends ConsumerWidget {
-  const _Refusal({required this.decision});
+/// Says the owner refused write access, and offers the system settings where
+/// the refusal is for good.
+class AutofillRefusal extends ConsumerWidget {
+  /// Creates the notice for [decision].
+  const AutofillRefusal({required this.decision, super.key});
 
+  /// What the owner said; not a grant.
   final LibraryAccessDecision decision;
 
   @override
@@ -540,16 +544,7 @@ class _Summary extends StatelessWidget {
           ListTile(
             dense: true,
             title: Text(path.split(RegExp(r'[/\\]')).last),
-            subtitle: Text(switch (outcome) {
-              WriteOutcome.changedSinceRead => l10n.autofillOutcomeChanged,
-              WriteOutcome.inUse => l10n.autofillOutcomeInUse,
-              WriteOutcome.denied => l10n.autofillOutcomeDenied,
-              // A kind of file Orpheus writes, whose tag the editor refused.
-              WriteOutcome.unsupported when canWriteTagsTo(path) =>
-                l10n.autofillUnsafeTags,
-              WriteOutcome.unsupported => l10n.autofillOutcomeUnsupported,
-              _ => l10n.autofillOutcomeFailed,
-            }),
+            subtitle: Text(writeOutcomeReason(l10n, path, outcome)),
           ),
         for (final path in unreached)
           ListTile(
@@ -569,3 +564,18 @@ class _Summary extends StatelessWidget {
     );
   }
 }
+
+/// Why the file at [path] was not written, as [outcome] says.
+String writeOutcomeReason(
+  AppLocalizations l10n,
+  String path,
+  WriteOutcome outcome,
+) => switch (outcome) {
+  WriteOutcome.changedSinceRead => l10n.autofillOutcomeChanged,
+  WriteOutcome.inUse => l10n.autofillOutcomeInUse,
+  WriteOutcome.denied => l10n.autofillOutcomeDenied,
+  // A kind of file Orpheus writes, whose tag the editor refused.
+  WriteOutcome.unsupported when canWriteTagsTo(path) => l10n.autofillUnsafeTags,
+  WriteOutcome.unsupported => l10n.autofillOutcomeUnsupported,
+  _ => l10n.autofillOutcomeFailed,
+};

@@ -839,6 +839,264 @@ class AppLocalizationsPt extends AppLocalizations {
   String get autofillOpenSettings => 'Abrir configurações';
 
   @override
+  String autofillBatchConfirmTitle(int songs) {
+    String _temp0 = intl.Intl.pluralLogic(
+      songs,
+      locale: localeName,
+      other: '$songs faixas',
+      one: '1 faixa',
+      zero: '0 faixas',
+    );
+    return 'Preencher $_temp0?';
+  }
+
+  @override
+  String autofillBatchConfirmBody(int records, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      records,
+      locale: localeName,
+      other: '$records discos',
+      one: '1 disco',
+      zero: '0 discos',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutos',
+      one: '1 minuto',
+      zero: '0 minutos',
+    );
+    return '$_temp0, cerca de $_temp1. Os discos que correspondem claramente ao MusicBrainz são gravados sem perguntar, substituindo as tags atuais; os outros ficam guardados para você conferir.';
+  }
+
+  @override
+  String autofillBatchConfirmSkipped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count faixas não podem ser alteradas e serão ignoradas.',
+      one: '1 faixa não pode ser alterada e será ignorada.',
+      zero: '0 faixas não podem ser alteradas e serão ignoradas.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get autofillBatchStart => 'Iniciar';
+
+  @override
+  String get autofillBatchReplaceTitle => 'Iniciar um novo preenchimento?';
+
+  @override
+  String autofillBatchReplaceBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Os $count discos que esperam por você serão esquecidos.',
+      one: 'O disco que espera por você será esquecido.',
+      zero: 'Os 0 discos que esperam por você serão esquecidos.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get autofillBatchReplaceConfirm => 'Iniciar novo';
+
+  @override
+  String get autofillBatchTitle => 'Preenchimento automático';
+
+  @override
+  String autofillBatchProgress(int done, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'Buscando $done de $total discos',
+      one: 'Buscando $done de 1 disco',
+      zero: 'Buscando $done de 0 discos',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String autofillBatchUpdated(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count atualizados',
+      one: '1 atualizado',
+      zero: '0 atualizados',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String autofillBatchNeedYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count precisam de você',
+      one: '1 precisa de você',
+      zero: '0 precisam de você',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String autofillBatchAlreadyRight(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count já estão certos',
+      one: '1 já está certo',
+      zero: '0 já estão certos',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String autofillBatchNotFound(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count não encontrados',
+      one: '1 não encontrado',
+      zero: '0 não encontrados',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String autofillBatchSkipped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ignorados',
+      one: '1 ignorado',
+      zero: '0 ignorados',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get autofillBatchStop => 'Parar';
+
+  @override
+  String get autofillBatchClearList => 'Limpar lista';
+
+  @override
+  String get autofillBatchClearTitle => 'Limpar a lista?';
+
+  @override
+  String get autofillBatchClearBody =>
+      'Os discos que esperam por você serão esquecidos. Nada será gravado.';
+
+  @override
+  String get autofillBatchClearConfirm => 'Limpar';
+
+  @override
+  String get autofillBatchPaused =>
+      'Não foi possível acessar o MusicBrainz. O preenchimento está em pausa.';
+
+  @override
+  String autofillBatchSummary(int updated, int needYou) {
+    String _temp0 = intl.Intl.pluralLogic(
+      updated,
+      locale: localeName,
+      other: '$updated discos atualizados',
+      one: '1 disco atualizado',
+      zero: '0 discos atualizados',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      needYou,
+      locale: localeName,
+      other: '$needYou precisam de você',
+      one: '1 precisa de você',
+      zero: '0 precisam de você',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String get autofillBatchSectionNeedYou => 'Precisam de você';
+
+  @override
+  String get autofillBatchSectionNotFound => 'Não encontrados';
+
+  @override
+  String get autofillBatchSectionNotWritable => 'Não podem ser alteradas';
+
+  @override
+  String get autofillBatchSectionFailed => 'Não foi possível gravar ou buscar';
+
+  @override
+  String get autofillBatchSectionNotLookedUp => 'Não buscados';
+
+  @override
+  String get autofillDoubtNoMatch => 'Sem correspondência';
+
+  @override
+  String get autofillDoubtNotOfficial => 'Não é um lançamento oficial';
+
+  @override
+  String get autofillDoubtDifferentAlbum => 'Nome de álbum diferente';
+
+  @override
+  String get autofillDoubtDifferentArtist => 'Artista diferente';
+
+  @override
+  String autofillDoubtUnmatchedSongs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count faixas sem correspondência',
+      one: '1 faixa sem correspondência',
+      zero: '0 faixas sem correspondência',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String autofillDoubtDifferentSongs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count faixas diferentes',
+      one: '1 faixa diferente',
+      zero: '0 faixas diferentes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get autofillDoubtWouldSplitAlbum => 'Dividiria o álbum';
+
+  @override
+  String get autofillDoubtUncertainTrack => 'Correspondência incerta';
+
+  @override
+  String autofillBatchIndicatorRunning(int done, int total) {
+    return 'Preenchendo $done/$total';
+  }
+
+  @override
+  String get autofillBatchIndicatorPaused => 'Preenchimento em pausa';
+
+  @override
+  String autofillBatchIndicatorNeedYou(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count precisam de você',
+      one: '1 precisa de você',
+      zero: '0 precisam de você',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get autofillBatchIndicatorDone => 'Preenchimento concluído';
+
+  @override
   String get tagEditAction => 'Editar tags…';
 
   @override
