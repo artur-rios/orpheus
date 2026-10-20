@@ -456,6 +456,18 @@ void main() {
       );
     });
 
+    test('GivenAnUnsafeTagsSongInTheBatch_WhenTheOthersAlbumChanges_ThenWouldSplitAlbum', () {
+      expectDoubtful(
+        judge(
+          propose: (songs) => [
+            untouched(songs[0], blockedBecause: ProposalBlock.unsafeTags),
+            changing(songs[1], AutofillField.album),
+          ],
+        ),
+        DoubtReason.wouldSplitAlbum,
+      );
+    });
+
     test('GivenSeveralReasons_WhenJudged_ThenTheFirstRuleSays', () {
       expectDoubtful(
         judge(

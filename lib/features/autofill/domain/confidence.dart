@@ -67,17 +67,17 @@ final class Doubtful extends Confidence {
 /// its artist credit equals the record's album artist; every song of the
 /// batch that can be written is assigned a track with the same title and, where
 /// the song is numbered, the same disc and number; and, for a record some of
-/// whose songs are not written — left out of the batch, or of a format no tag
-/// is written to ([BatchUnit.hasAlbumMatesOutside]) — nothing proposed touches
-/// album or album artist, which would split the album in two. Names are
-/// compared once [normalised].
+/// whose songs are not written — left out of the batch, of a format no tag is
+/// written to ([BatchUnit.hasAlbumMatesOutside]), or blocked in [proposals] —
+/// nothing proposed touches album or album artist, which would split the album
+/// in two. Names are compared once [normalised].
 ///
 /// Conservative on purpose: a false doubt costs the owner a review, a false
 /// confidence writes wrong tags unreviewed, so anything that cannot be
 /// compared — no album, no artist, no title — is a doubt. A song that
 /// [proposals] block as [ProposalBlock.unwritableFormat] or
 /// [ProposalBlock.unsafeTags] is not going to be written, so it does not
-/// decide, and the rest of the record is judged without it.
+/// decide the track rules, and the rest of the record is judged without it.
 Confidence recordConfidence(
   BatchUnit unit, {
   required ReleaseQuery query,
@@ -136,7 +136,9 @@ Confidence recordConfidence(
           change.field == AutofillField.albumArtist,
     ),
   );
-  if (unit.hasAlbumMatesOutside && changesTheAlbum) {
+  // A song left as it is keeps the old album and album artist whether it was
+  // left out of the batch or is in it but cannot be written safely.
+  if ((unit.hasAlbumMatesOutside || notWritten.isNotEmpty) && changesTheAlbum) {
     return const Doubtful(DoubtReason.wouldSplitAlbum);
   }
 
