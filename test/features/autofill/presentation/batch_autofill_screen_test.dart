@@ -210,6 +210,36 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'GivenThousandsOfSongsThatCantBeChanged_WhenSummarised_ThenOnlyTheRowsInViewAreBuilt',
+    (tester) async {
+      final loose = [for (var i = 0; i < 3000; i++) oggSong('Loose$i')];
+      final library = [...albumOf('Alpha'), ...loose];
+      final harness = batchHarness(library);
+      await finish(harness, library);
+      expect(stateOf(harness).notWritableSongs, hasLength(3000));
+
+      await show(tester, harness, window: phoneWindow);
+
+      expect(find.text("Can't be changed"), findsOneWidget);
+      expect(find.text('Loose0.ogg'), findsOneWidget);
+      expect(find.text('Loose2999.ogg', skipOffstage: false), findsNothing);
+      expect(
+        find.byType(ListTile, skipOffstage: false).evaluate().length,
+        lessThan(100),
+      );
+
+      await tester.scrollUntilVisible(
+        find.text('Loose2999.ogg'),
+        20000,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      expect(find.text('Loose2999.ogg'), findsOneWidget);
+      expect(find.text('Loose0.ogg', skipOffstage: false), findsNothing);
+    },
+  );
+
   testWidgets('GivenAFinishedBatch_WhenShown_ThenItIsMarkedSeen', (
     tester,
   ) async {

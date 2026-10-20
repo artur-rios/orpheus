@@ -68,27 +68,30 @@ class _BatchAutofillScreenState extends ConsumerState<BatchAutofillScreen> {
     final state = ref.watch(batchAutofillControllerProvider);
     final controller = ref.read(batchAutofillControllerProvider.notifier);
 
+    // One flat list built lazily: a summary can name thousands of songs, and
+    // only the rows in view are built.
+    final items = <WidgetBuilder>[
+      if (state.refusal case final refusal?)
+        (_) => AutofillRefusal(decision: refusal),
+      ...switch (state.stage) {
+        BatchStage.idle => const <WidgetBuilder>[],
+        BatchStage.running ||
+        BatchStage.paused => [(_) => _Progress(state: state)],
+        BatchStage.finished => _summaryItems(
+          state,
+          onReview: (outcome) => _review(state, outcome),
+          onRetry: () => unawaited(controller.retryFailed()),
+          onClear: () => unawaited(_clear()),
+        ),
+      },
+    ];
+
     return Scaffold(
       appBar: AppBar(title: Text(l10n.autofillBatchTitle)),
-      body: ListView(
+      body: ListView.builder(
         padding: const EdgeInsets.all(AppSpacing.md),
-        children: [
-          if (state.refusal case final refusal?)
-            AutofillRefusal(decision: refusal),
-          ...switch (state.stage) {
-            BatchStage.idle => const <Widget>[],
-            BatchStage.running ||
-            BatchStage.paused => [_Progress(state: state)],
-            BatchStage.finished => [
-              _Summary(
-                state: state,
-                onReview: (outcome) => _review(state, outcome),
-                onRetry: () => unawaited(controller.retryFailed()),
-                onClear: () => unawaited(_clear()),
-              ),
-            ],
-          },
-        ],
+        itemCount: items.length,
+        itemBuilder: (context, index) => items[index](context),
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
@@ -232,57 +235,114 @@ class _Counts extends StatelessWidget {
   }
 }
 
-/// A finished batch: the headline, then what became of each record that was
-/// not simply written.
-class _Summary extends StatelessWidget {
-  const _Summary({
+/// A finished batch, as the items of the screen's list: the headline, then
+/// what became of each record that was not simply written, each section a
+/// heading followed by its rows.
+///
+/// [onReview] is called with the doubtful record the owner tapped, [onRetry]
+/// when they ask to write again the files that were in use or failed, and
+/// [onClear] when they ask to forget the records waiting for them.
+List<WidgetBuilder> _summaryItems(
+  BatchAutofillState state, {
+  required void Function(UnitOutcome outcome) onReview,
+  required VoidCallback onRetry,
+  required VoidCallback onClear,
+}) {
+  List<UnitOutcome> of(UnitOutcomeKind kind) => [
+    for (final outcome in state.outcomes)
+      if (outcome.kind == kind) outcome,
+  ];
+  final needYou = of(UnitOutcomeKind.doubtful);
+  final notFound = of(UnitOutcomeKind.notFound);
+  final notLookedUp = of(UnitOutcomeKind.notLookedUp);
+  final problems = [
+    for (final outcome in state.outcomes)
+      if (_hasProblem(outcome)) outcome,
+  ];
+  final retryable = state.outcomes.any(
+    (outcome) => outcome.writes.values.any(
+      (write) => write == WriteOutcome.inUse || write == WriteOutcome.failed,
+    ),
+  );
+  final cantChange = state.notWritableSongs;
+
+  WidgetBuilder heading(String Function(AppLocalizations l10n) title) =>
+      (context) => _SectionTitle(title(AppLocalizations.of(context)));
+
+  return [
+    (_) => _Headline(
+      state: state,
+      retryable: retryable,
+      onRetry: onRetry,
+      onClear: onClear,
+    ),
+    if (needYou.isNotEmpty) ...[
+      heading((l10n) => l10n.autofillBatchSectionNeedYou),
+      for (final outcome in needYou)
+        (_) => _NeedYouRow(outcome: outcome, onTap: () => onReview(outcome)),
+    ],
+    if (notFound.isNotEmpty) ...[
+      heading((l10n) => l10n.autofillBatchSectionNotFound),
+      for (final outcome in notFound) (_) => _UnitRow(outcome),
+    ],
+    if (cantChange.isNotEmpty) ...[
+      heading((l10n) => l10n.autofillBatchSectionNotWritable),
+      for (final song in cantChange) (_) => _SongRow(song),
+    ],
+    if (problems.isNotEmpty) ...[
+      heading((l10n) => l10n.autofillBatchSectionFailed),
+      for (final outcome in problems) (_) => _ProblemRow(outcome),
+    ],
+    if (notLookedUp.isNotEmpty) ...[
+      heading((l10n) => l10n.autofillBatchSectionNotLookedUp),
+      for (final outcome in notLookedUp) (_) => _UnitRow(outcome),
+    ],
+  ];
+}
+
+/// Whether [outcome] went wrong in a way the owner should hear of: it could
+/// not be looked up or written, some of its files were refused, or its cover
+/// could not be downloaded though everything else was done.
+bool _hasProblem(UnitOutcome outcome) => switch (outcome.kind) {
+  UnitOutcomeKind.failed || UnitOutcomeKind.unreachable => true,
+  UnitOutcomeKind.updated || UnitOutcomeKind.alreadyRight =>
+    outcome.coverUnavailable || _refused(outcome).isNotEmpty,
+  _ => false,
+};
+
+/// The files of [outcome] a write was refused, and how.
+Map<String, WriteOutcome> _refused(UnitOutcome outcome) => {
+  for (final MapEntry(:key, :value) in outcome.writes.entries)
+    if (value != WriteOutcome.written) key: value,
+};
+
+/// A finished batch's headline, its counts, and what can be done with it.
+class _Headline extends StatelessWidget {
+  const _Headline({
     required this.state,
-    required this.onReview,
+    required this.retryable,
     required this.onRetry,
     required this.onClear,
   });
 
   final BatchAutofillState state;
 
-  /// Called with the doubtful record the owner tapped.
-  final void Function(UnitOutcome outcome) onReview;
+  /// Whether some files were in use or failed, and can be written again.
+  final bool retryable;
 
-  /// Called when the owner asks to write again the files that were in use or
-  /// failed.
   final VoidCallback onRetry;
-
-  /// Called when the owner asks to forget the records waiting for them.
   final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    List<UnitOutcome> of(UnitOutcomeKind kind) => [
-      for (final outcome in state.outcomes)
-        if (outcome.kind == kind) outcome,
-    ];
-    final needYou = of(UnitOutcomeKind.doubtful);
-    final notFound = of(UnitOutcomeKind.notFound);
-    final notLookedUp = of(UnitOutcomeKind.notLookedUp);
-    final problems = [
-      for (final outcome in state.outcomes)
-        if (_hasProblem(outcome)) outcome,
-    ];
-    final retryable = state.outcomes.any(
-      (outcome) => outcome.writes.values.any(
-        (write) => write == WriteOutcome.inUse || write == WriteOutcome.failed,
-      ),
-    );
-    final cantChange = state.notWritableSongs;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           l10n.autofillBatchSummary(state.updated, state.needYou),
-          style: theme.textTheme.titleMedium,
+          style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: AppSpacing.sm),
         _Counts(state: state),
@@ -305,75 +365,21 @@ class _Summary extends StatelessWidget {
               ],
             ),
           ),
-        if (needYou.isNotEmpty)
-          _Section(
-            title: l10n.autofillBatchSectionNeedYou,
-            children: [
-              for (final outcome in needYou)
-                _NeedYouRow(outcome: outcome, onTap: () => onReview(outcome)),
-            ],
-          ),
-        if (notFound.isNotEmpty)
-          _Section(
-            title: l10n.autofillBatchSectionNotFound,
-            children: [for (final outcome in notFound) _UnitRow(outcome)],
-          ),
-        if (cantChange.isNotEmpty)
-          _Section(
-            title: l10n.autofillBatchSectionNotWritable,
-            children: [for (final song in cantChange) _SongRow(song)],
-          ),
-        if (problems.isNotEmpty)
-          _Section(
-            title: l10n.autofillBatchSectionFailed,
-            children: [for (final outcome in problems) _ProblemRow(outcome)],
-          ),
-        if (notLookedUp.isNotEmpty)
-          _Section(
-            title: l10n.autofillBatchSectionNotLookedUp,
-            children: [for (final outcome in notLookedUp) _UnitRow(outcome)],
-          ),
       ],
     );
   }
-
-  /// Whether [outcome] went wrong in a way the owner should hear of: it could
-  /// not be looked up or written, some of its files were refused, or its cover
-  /// could not be downloaded though everything else was done.
-  static bool _hasProblem(UnitOutcome outcome) => switch (outcome.kind) {
-    UnitOutcomeKind.failed || UnitOutcomeKind.unreachable => true,
-    UnitOutcomeKind.updated || UnitOutcomeKind.alreadyRight =>
-      outcome.coverUnavailable || _refused(outcome).isNotEmpty,
-    _ => false,
-  };
 }
 
-/// The files of [outcome] a write was refused, and how.
-Map<String, WriteOutcome> _refused(UnitOutcome outcome) => {
-  for (final MapEntry(:key, :value) in outcome.writes.entries)
-    if (value != WriteOutcome.written) key: value,
-};
-
-/// A heading and the rows under it.
-class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.children});
+/// The heading of a section of the summary.
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.title);
 
   final String title;
-  final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Padding(
-        padding: const EdgeInsets.only(
-          top: AppSpacing.lg,
-          bottom: AppSpacing.xs,
-        ),
-        child: Text(title, style: Theme.of(context).textTheme.titleSmall),
-      ),
-      ...children,
-    ],
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.xs),
+    child: Text(title, style: Theme.of(context).textTheme.titleSmall),
   );
 }
 
