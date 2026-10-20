@@ -148,6 +148,7 @@ class BatchAutofillState {
     this.outcomes = const [],
     this.refusal,
     this.stoppedEarly = false,
+    this.stopping = false,
     this.seen = false,
   });
 
@@ -171,6 +172,10 @@ class BatchAutofillState {
 
   /// Whether the owner stopped the batch with units still to look up.
   final bool stoppedEarly;
+
+  /// Whether the owner has asked a running batch to stop, and it is finishing
+  /// the unit in flight first.
+  final bool stopping;
 
   /// Whether the owner has seen the finished batch's summary.
   final bool seen;
@@ -221,6 +226,7 @@ class BatchAutofillState {
     List<UnitOutcome>? outcomes,
     LibraryAccessDecision? refusal,
     bool? stoppedEarly,
+    bool? stopping,
     bool? seen,
   }) => BatchAutofillState(
     stage: stage ?? this.stage,
@@ -230,6 +236,7 @@ class BatchAutofillState {
     outcomes: outcomes ?? this.outcomes,
     refusal: refusal,
     stoppedEarly: stoppedEarly ?? this.stoppedEarly,
+    stopping: stopping ?? this.stopping,
     seen: seen ?? this.seen,
   );
 }
@@ -336,12 +343,15 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
     }
   }
 
-  /// Stops after the unit being looked up or written; the units not reached
-  /// are reported as not looked up. A paused batch stops at once.
+  /// Stops after the unit being looked up or written, saying meanwhile that
+  /// it is [BatchAutofillState.stopping]; the units not reached are reported
+  /// as not looked up. A paused batch stops at once.
   void stop() {
     switch (state.stage) {
       case BatchStage.running:
+        if (_stopping) return;
         _stopping = true;
+        state = state.copyWith(stopping: true);
       case BatchStage.paused:
         _stopping = true;
         _finish();
@@ -357,7 +367,7 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
 
     _missesInARow = 0;
     _stopping = false;
-    state = state.copyWith(stage: BatchStage.running);
+    state = state.copyWith(stage: BatchStage.running, stopping: false);
     _run = _walk();
   }
 
@@ -484,6 +494,7 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
       stage: BatchStage.finished,
       outcomes: _listed(),
       stoppedEarly: _stopping && unreached.isNotEmpty,
+      stopping: false,
       seen: false,
     );
     _rescanIfWritten();

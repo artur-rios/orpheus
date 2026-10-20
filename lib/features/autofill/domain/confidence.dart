@@ -26,8 +26,9 @@ enum DoubtReason {
   /// Some songs found a track that is not plainly theirs.
   differentSongs,
 
-  /// Only part of the record is in the batch, and writing it would give those
-  /// songs an album or album artist the rest of the record does not have.
+  /// Some songs of the record are not written — left out of the batch, or of
+  /// a format no tag is written to — and writing the rest would give them an
+  /// album or album artist those songs do not have.
   wouldSplitAlbum,
 
   /// The recording found for a lone track is not surely the song.
@@ -65,9 +66,11 @@ final class Doubtful extends Confidence {
 /// the release exists; it is official; its title equals the record's album;
 /// its artist credit equals the record's album artist; every song of the
 /// batch that can be written is assigned a track with the same title and, where
-/// the song is numbered, the same disc and number; and, for a record only
-/// partly in the batch, nothing proposed touches album or album artist, which
-/// would split the album in two. Names are compared once [normalised].
+/// the song is numbered, the same disc and number; and, for a record some of
+/// whose songs are not written — left out of the batch, or of a format no tag
+/// is written to ([BatchUnit.hasAlbumMatesOutside]) — nothing proposed touches
+/// album or album artist, which would split the album in two. Names are
+/// compared once [normalised].
 ///
 /// Conservative on purpose: a false doubt costs the owner a review, a false
 /// confidence writes wrong tags unreviewed, so anything that cannot be
@@ -133,7 +136,7 @@ Confidence recordConfidence(
           change.field == AutofillField.albumArtist,
     ),
   );
-  if (unit.partial && changesTheAlbum) {
+  if (unit.hasAlbumMatesOutside && changesTheAlbum) {
     return const Doubtful(DoubtReason.wouldSplitAlbum);
   }
 

@@ -837,10 +837,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String autofillBatchConfirmTitle(int songs) {
+    final intl.NumberFormat songsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String songsString = songsNumberFormat.format(songs);
+
     String _temp0 = intl.Intl.pluralLogic(
       songs,
       locale: localeName,
-      other: '$songs songs',
+      other: '$songsString songs',
       one: '1 song',
     );
     return 'Autofill $_temp0?';
@@ -848,16 +852,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String autofillBatchConfirmBody(int records, int minutes) {
+    final intl.NumberFormat recordsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String recordsString = recordsNumberFormat.format(records);
+    final intl.NumberFormat minutesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String minutesString = minutesNumberFormat.format(minutes);
+
     String _temp0 = intl.Intl.pluralLogic(
       records,
       locale: localeName,
-      other: '$records records',
+      other: '$recordsString records',
       one: '1 record',
     );
     String _temp1 = intl.Intl.pluralLogic(
       minutes,
       locale: localeName,
-      other: '$minutes minutes',
+      other: '$minutesString minutes',
       one: '1 minute',
     );
     return '$_temp0, about $_temp1. Records that clearly match MusicBrainz are written without asking, replacing their current tags; the others are kept for you to check.';
@@ -865,10 +876,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String autofillBatchConfirmSkipped(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count songs can\'t be changed and will be skipped.',
+      other: '$countString songs can\'t be changed and will be skipped.',
       one: '1 song can\'t be changed and will be skipped.',
     );
     return '$_temp0';
@@ -882,10 +897,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String autofillBatchReplaceBody(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'The $count records waiting for you will be forgotten.',
+      other: 'The $countString records waiting for you will be forgotten.',
       one: 'The record waiting for you will be forgotten.',
     );
     return '$_temp0';
@@ -899,26 +918,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String autofillBatchProgress(int done, int total) {
+    final intl.NumberFormat doneNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String doneString = doneNumberFormat.format(done);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
     String _temp0 = intl.Intl.pluralLogic(
       total,
       locale: localeName,
-      other: 'Looking up $done of $total records',
-      one: 'Looking up $done of 1 record',
+      other: 'Looking up $doneString of $totalString records',
+      one: 'Looking up $doneString of 1 record',
     );
     return '$_temp0';
   }
 
   @override
   String autofillBatchUpdated(int count) {
-    return '$count updated';
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$countString updated';
   }
 
   @override
   String autofillBatchNeedYou(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count need you',
+      other: '$countString need you',
       one: '1 needs you',
     );
     return '$_temp0';
@@ -926,21 +961,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String autofillBatchAlreadyRight(int count) {
-    return '$count already right';
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$countString already right';
   }
 
   @override
   String autofillBatchNotFound(int count) {
-    return '$count not found';
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$countString not found';
   }
 
   @override
   String autofillBatchSkipped(int count) {
-    return '$count skipped';
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$countString skipped';
   }
 
   @override
   String get autofillBatchStop => 'Stop';
+
+  @override
+  String get autofillBatchStopping => 'Stopping…';
 
   @override
   String get autofillBatchClearList => 'Clear list';
@@ -961,16 +1011,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String autofillBatchSummary(int updated, int needYou) {
+    final intl.NumberFormat updatedNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String updatedString = updatedNumberFormat.format(updated);
+    final intl.NumberFormat needYouNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String needYouString = needYouNumberFormat.format(needYou);
+
     String _temp0 = intl.Intl.pluralLogic(
       updated,
       locale: localeName,
-      other: '$updated records updated',
+      other: '$updatedString records updated',
       one: '1 record updated',
     );
     String _temp1 = intl.Intl.pluralLogic(
       needYou,
       locale: localeName,
-      other: '$needYou need you',
+      other: '$needYouString need you',
       one: '1 needs you',
     );
     return '$_temp0, $_temp1';
@@ -1005,10 +1062,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String autofillDoubtUnmatchedSongs(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count songs unmatched',
+      other: '$countString songs unmatched',
       one: '1 song unmatched',
     );
     return '$_temp0';
@@ -1016,10 +1077,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String autofillDoubtDifferentSongs(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count songs differ',
+      other: '$countString songs differ',
       one: '1 song differs',
     );
     return '$_temp0';
@@ -1033,7 +1098,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String autofillBatchIndicatorRunning(int done, int total) {
-    return 'Autofilling $done/$total';
+    final intl.NumberFormat doneNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String doneString = doneNumberFormat.format(done);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return 'Autofilling $doneString/$totalString';
   }
 
   @override
@@ -1041,10 +1114,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String autofillBatchIndicatorNeedYou(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count need you',
+      other: '$countString need you',
       one: '1 needs you',
     );
     return '$_temp0';

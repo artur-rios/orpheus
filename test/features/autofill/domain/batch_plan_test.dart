@@ -210,6 +210,25 @@ void main() {
       expect(plan.notWritable, hasLength(1));
     });
 
+    test('GivenAnUnwritableSongOfARecordTheBatchHolds_WhenPlanned_ThenTheRecordHasAlbumMatesOutside', () {
+      final songs = [
+        ...album('Kid A', artist: 'Radiohead', count: 2),
+        ogg('three', album: 'Kid A', artist: 'Radiohead'),
+      ];
+
+      final plan = planBatch(songs, songs);
+
+      expect(plan.units.single.hasAlbumMatesOutside, isTrue);
+    });
+
+    test('GivenAWholeWritableAlbum_WhenPlanned_ThenNoAlbumMatesOutside', () {
+      final whole = album('OK Computer', artist: 'Radiohead', count: 12);
+
+      final plan = planBatch(whole, whole);
+
+      expect(plan.units.single.hasAlbumMatesOutside, isFalse);
+    });
+
     test('GivenAWholeWritableAlbum_WhenPlanned_ThenNotPartial', () {
       final whole = album('OK Computer', artist: 'Radiohead', count: 12);
 

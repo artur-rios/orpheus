@@ -51,6 +51,18 @@ class BatchUnit {
     );
   }
 
+  /// Whether the unit holds any song, writable or not, that its writes leave
+  /// out: one the batch does not hold, or one of a format no tag is written
+  /// to.
+  ///
+  /// Writing an album or an album artist to the rest would part them from
+  /// such a song, which the library groups by those two tags.
+  bool get hasAlbumMatesOutside {
+    final inBatch = {for (final song in songs) song.file.path};
+
+    return matchAgainst.any((song) => !inBatch.contains(song.file.path));
+  }
+
   /// A stable name for the unit: the normalised album artist and album of a
   /// record, `folder:` and the folder of a record of untitled songs, or
   /// `track:` and the path of a lone track.

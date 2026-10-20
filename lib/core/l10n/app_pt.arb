@@ -1055,7 +1055,8 @@
     "description": "The title of the question that asks the owner to confirm an autofill of many songs; the placeholder is how many songs.",
     "placeholders": {
       "songs": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -1064,10 +1065,12 @@
     "description": "The body of the question that asks the owner to confirm an autofill of many songs: how many records (albums, or lone tracks) will be looked up, roughly how long it takes, and what happens to them.",
     "placeholders": {
       "records": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       },
       "minutes": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -1076,7 +1079,8 @@
     "description": "A sentence added to the autofill confirmation when some of the chosen songs are of a kind Orpheus cannot write; the placeholder is how many.",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -1093,7 +1097,8 @@
     "description": "The body of the question asked when a new batch autofill replaces a finished one; the placeholder is how many records were waiting for the owner.",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -1110,10 +1115,12 @@
     "description": "The progress of a batch autofill: how many records have been looked up out of how many.",
     "placeholders": {
       "done": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       },
       "total": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -1122,7 +1129,8 @@
     "description": "The live count of records a batch autofill has written.",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -1131,7 +1139,8 @@
     "description": "The live count of records a batch autofill kept for the owner to check.",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -1140,7 +1149,8 @@
     "description": "The live count of records a batch autofill found to need no change.",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -1149,7 +1159,8 @@
     "description": "The live count of records a batch autofill found nothing for on MusicBrainz.",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -1158,13 +1169,18 @@
     "description": "The live count of what a batch autofill left alone: songs that cannot be changed and records that failed.",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
   "autofillBatchStop": "Parar",
   "@autofillBatchStop": {
     "description": "The button that stops a batch autofill after the record being looked up."
+  },
+  "autofillBatchStopping": "Parando…",
+  "@autofillBatchStopping": {
+    "description": "The batch autofill's stop button once pressed, unavailable while the record being looked up or written is finished before the batch stops."
   },
   "autofillBatchClearList": "Limpar lista",
   "@autofillBatchClearList": {
@@ -1191,10 +1207,12 @@
     "description": "The headline of a finished batch autofill: how many records were written and how many wait for the owner.",
     "placeholders": {
       "updated": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       },
       "needYou": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -1239,7 +1257,8 @@
     "description": "Why a record was kept for the owner: some of its songs found no track on the release; the placeholder is how many.",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -1248,7 +1267,8 @@
     "description": "Why a record was kept for the owner: some of its songs found a track that is not plainly theirs; the placeholder is how many.",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -1265,10 +1285,12 @@
     "description": "The shell's indicator while a batch autofill runs: how many records are done out of how many.",
     "placeholders": {
       "done": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       },
       "total": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -1281,7 +1303,8 @@
     "description": "The shell's indicator once a batch autofill is done and records still wait for the owner.",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },

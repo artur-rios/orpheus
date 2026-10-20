@@ -356,6 +356,34 @@ void main() {
     },
   );
 
+  test(
+    'GivenARunningBatch_WhenStopped_ThenItIsStoppingUntilTheUnitInFlightEnds',
+    () async {
+      final library = [...albumOf('Alpha'), ...albumOf('Beta')];
+      final harness = harnessFor(library);
+      final held = Completer<void>();
+      harness.tagWriter.hold = held.future;
+      final controller = controllerOf(harness);
+      expect(
+        await controller.start(planBatch(library, library), const {
+          AutofillField.artist,
+        }),
+        isTrue,
+      );
+      await pumpEventQueue();
+      expect(stateOf(harness).stopping, isFalse);
+
+      controller.stop();
+
+      expect(stateOf(harness).stage, BatchStage.running);
+      expect(stateOf(harness).stopping, isTrue);
+      held.complete();
+      await controller.settled;
+      expect(stateOf(harness).stage, BatchStage.finished);
+      expect(stateOf(harness).stopping, isFalse);
+    },
+  );
+
   test('GivenOneUnreachable_WhenRun_ThenRetriedAfterTheNextUnit', () async {
     final library = [
       ...albumOf('Alpha'),

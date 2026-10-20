@@ -1532,6 +1532,12 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get autofillBatchStop;
 
+  /// The batch autofill's stop button once pressed, unavailable while the record being looked up or written is finished before the batch stops.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping…'**
+  String get autofillBatchStopping;
+
   /// The button that forgets the records a batch autofill kept for the owner.
   ///
   /// In en, this message translates to:

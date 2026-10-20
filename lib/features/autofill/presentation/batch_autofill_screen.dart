@@ -101,9 +101,15 @@ class _BatchAutofillScreenState extends ConsumerState<BatchAutofillScreen> {
               spacing: AppSpacing.sm,
               children: [
                 Expanded(
+                  // Disabled once asked: the record in flight is finished
+                  // first, which can take a while.
                   child: OutlinedButton(
-                    onPressed: controller.stop,
-                    child: Text(l10n.autofillBatchStop),
+                    onPressed: state.stopping ? null : controller.stop,
+                    child: Text(
+                      state.stopping
+                          ? l10n.autofillBatchStopping
+                          : l10n.autofillBatchStop,
+                    ),
                   ),
                 ),
                 Expanded(child: _close(context)),

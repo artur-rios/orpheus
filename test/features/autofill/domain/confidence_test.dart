@@ -5,7 +5,9 @@ import 'package:orpheus/features/autofill/domain/confidence.dart';
 import 'package:orpheus/features/autofill/domain/metadata_source.dart';
 import 'package:orpheus/features/autofill/domain/proposals.dart';
 import 'package:orpheus/features/autofill/domain/release.dart';
+import 'package:orpheus/features/library/domain/audio_file.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
+import 'package:orpheus/features/library/domain/track_metadata.dart';
 
 import '../../../support/entries.dart';
 
@@ -424,6 +426,33 @@ void main() {
           ],
         ),
         isA<Confident>(),
+      );
+    });
+
+    test('GivenAMixedFormatAlbumWhoseM4aSongIsNotWritten_WhenItsAlbumChanges_ThenWouldSplitAlbum', () {
+      final m4a = MusicEntry(
+        file: AudioFile(
+          path: '/library/zzz-3.m4a',
+          sizeInBytes: 1024,
+          modifiedAt: DateTime.utc(2026),
+        ),
+        metadata: const TrackMetadata(
+          title: 'Song 3',
+          artist: 'Radiohead',
+          albumArtist: 'Radiohead',
+          album: 'OK Computer',
+          track: 3,
+        ),
+      );
+
+      expectDoubtful(
+        judge(
+          libraryOnly: [m4a],
+          propose: (songs) => [
+            for (final item in songs) changing(item, AutofillField.album),
+          ],
+        ),
+        DoubtReason.wouldSplitAlbum,
       );
     });
 

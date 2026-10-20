@@ -134,6 +134,34 @@ void main() {
     expect(find.text('Not looked up'), findsOneWidget);
   });
 
+  testWidgets(
+    'GivenStopTapped_WhenTheRecordInFlightIsStillGoing_ThenStoppingAndStopIsDisabled',
+    (tester) async {
+      final library = [...albumOf('Alpha'), ...albumOf('Beta')];
+      final harness = batchHarness(library);
+      final gate = Completer<void>();
+      harness.metadata.hold = gate.future;
+      addTearDown(() => gate.isCompleted ? null : gate.complete());
+      await controllerOf(harness)
+          .start(planBatch(library, library), artistOnly);
+      await show(tester, harness);
+
+      await tester.tap(find.text('Stop'));
+      await tester.pump();
+
+      expect(stateOf(harness).stage, BatchStage.running);
+      expect(find.text('Stop'), findsNothing);
+      final stopping = tester.widget<OutlinedButton>(
+        find.widgetWithText(OutlinedButton, 'Stopping…'),
+      );
+      expect(stopping.onPressed, isNull);
+
+      gate.complete();
+      await controllerOf(harness).settled;
+      await tester.pumpAndSettle();
+    },
+  );
+
   testWidgets('GivenPaused_WhenTryAgainTapped_ThenItResumes', (tester) async {
     final library = [
       ...albumOf('Alpha'),
