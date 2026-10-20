@@ -277,6 +277,34 @@ void main() {
     },
   );
 
+  test('GivenAFinishedBatchWithDoubtful_WhenAStartIsRefused_ThenItStaysWithTheRefusal', () async {
+    final alpha = albumOf('Alpha');
+    final beta = albumOf('Beta');
+    final access = FakeLibraryAccess();
+    final harness = harnessFor(
+      [...alpha, ...beta],
+      access: access,
+      releases: {
+        'Alpha': releaseOf('Alpha', status: 'Bootleg'),
+        'Beta': releaseOf('Beta'),
+      },
+    );
+    final first = planBatch(alpha, alpha);
+    await run(harness, first);
+    access.writeDecision = LibraryAccessDecision.deniedPermanently;
+
+    final started = await controllerOf(harness)
+        .start(planBatch(beta, beta), const {AutofillField.artist});
+
+    final state = stateOf(harness);
+    expect(started, isFalse);
+    expect(state.refusal, LibraryAccessDecision.deniedPermanently);
+    expect(state.stage, BatchStage.finished);
+    expect(state.plan, same(first));
+    expect(state.needYou, 1);
+    expect(albumsSearched(harness), ['Alpha']);
+  });
+
   test(
     'GivenStop_WhenAUnitIsBeingWritten_ThenItFinishesAndTheRestAreNotLookedUp',
     () async {
@@ -451,6 +479,57 @@ void main() {
     },
   );
 
+  test(
+    'GivenStopDuringTheThirdUnreachable_WhenItComesBack_ThenFinishedNotPaused',
+    () async {
+      final library = [
+        ...albumOf('Alpha'),
+        ...albumOf('Beta'),
+        ...albumOf('Gamma'),
+      ];
+      final harness = harnessFor(library);
+      harness.metadata.failures.addAll([
+        MetadataSourceFailure.unreachable,
+        MetadataSourceFailure.unreachable,
+        MetadataSourceFailure.unreachable,
+      ]);
+      // Each lookup waits for its gate, so the test lets them through one by
+      // one and stops while the third is out.
+      var gate = Completer<void>();
+      harness.metadata.hold = gate.future;
+      final controller = controllerOf(harness);
+      expect(
+        await controller.start(planBatch(library, library), const {
+          AutofillField.artist,
+        }),
+        isTrue,
+      );
+      await pumpEventQueue();
+      for (var i = 0; i < 2; i++) {
+        final open = gate;
+        gate = Completer<void>();
+        harness.metadata.hold = gate.future;
+        open.complete();
+        await pumpEventQueue();
+      }
+      expect(albumsSearched(harness), ['Alpha', 'Beta', 'Alpha']);
+
+      controller.stop();
+      gate.complete();
+      await controller.settled;
+
+      final state = stateOf(harness);
+      expect(state.stage, BatchStage.finished);
+      expect(state.stoppedEarly, isTrue);
+      expect(albumsSearched(harness), hasLength(3));
+      expect(state.outcomes.map((o) => o.kind), [
+        UnitOutcomeKind.unreachable,
+        UnitOutcomeKind.unreachable,
+        UnitOutcomeKind.notLookedUp,
+      ]);
+    },
+  );
+
   test('GivenNoScreenWatching_WhenRun_ThenItStillFinishes', () async {
     final library = [...albumOf('Alpha'), ...albumOf('Beta')];
     final harness = harnessFor(library);
@@ -586,6 +665,84 @@ void main() {
       for (final s in beta) s.file.path,
     ]);
     expect(writtenPaths(harness).where((p) => p == busy), hasLength(1));
+  });
+
+  test('GivenEveryWriteRefused_WhenRun_ThenFailedWithItsWrites', () async {
+    final alpha = albumOf('Alpha');
+    final harness = harnessFor(alpha);
+    for (final song in alpha) {
+      harness.tagWriter.refusals[song.file.path] = WriteOutcome.inUse;
+    }
+
+    await run(harness, planBatch(alpha, alpha));
+
+    final state = stateOf(harness);
+    expect(state.outcomes.single.kind, UnitOutcomeKind.failed);
+    expect(state.outcomes.single.writes, {
+      for (final song in alpha) song.file.path: WriteOutcome.inUse,
+    });
+    expect(state.updated, 0);
+    expect(state.skipped, 1);
+  });
+
+  test('GivenAFailedUnit_WhenRetryFailedWritesIt_ThenItIsUpdated', () async {
+    final alpha = albumOf('Alpha');
+    final harness = harnessFor(alpha);
+    for (final song in alpha) {
+      harness.tagWriter.refusals[song.file.path] = WriteOutcome.inUse;
+    }
+    await run(harness, planBatch(alpha, alpha));
+    harness.tagWriter.refusals.remove(alpha.first.file.path);
+
+    await controllerOf(harness).retryFailed();
+
+    final state = stateOf(harness);
+    expect(state.outcomes.single.kind, UnitOutcomeKind.updated);
+    expect(state.outcomes.single.writes, {
+      alpha[0].file.path: WriteOutcome.written,
+      alpha[1].file.path: WriteOutcome.inUse,
+    });
+    expect(state.updated, 1);
+    expect(state.skipped, 0);
+  });
+
+  test(
+    'GivenTheCoverWillNotDownload_WhenRun_ThenTheRestIsWrittenWithANote',
+    () async {
+      final alpha = albumOf('Alpha');
+      final harness = harnessFor(alpha);
+      harness.metadata.coverFailure = MetadataSourceFailure.unreachable;
+
+      await run(
+        harness,
+        planBatch(alpha, alpha),
+        fields: const {AutofillField.artist, AutofillField.cover},
+      );
+
+      final outcome = stateOf(harness).outcomes.single;
+      expect(harness.metadata.coversFetched, ['rel-Alpha']);
+      expect(outcome.kind, UnitOutcomeKind.updated);
+      expect(outcome.coverUnavailable, isTrue);
+      expect(harness.tagWriter.writes.map((w) => w.$2), [
+        for (final _ in alpha) {AutofillField.artist: 'Radiohead'},
+      ]);
+    },
+  );
+
+  test('GivenASongBlockedInAWritableRecord_WhenRun_ThenTheRestIsWrittenAndItIsNotWritable', () async {
+    final alpha = albumOf('Alpha', count: 3);
+    final harness = harnessFor(alpha);
+    harness.tagWriter.unreadable.add(alpha[1].file.path);
+
+    await run(harness, planBatch(alpha, alpha));
+
+    final state = stateOf(harness);
+    expect(state.outcomes.single.kind, UnitOutcomeKind.updated);
+    expect(writtenPaths(harness), [alpha[0].file.path, alpha[2].file.path]);
+    expect(state.notWritableSongs.map((s) => s.file.path), [
+      alpha[1].file.path,
+    ]);
+    expect(state.skipped, 1);
   });
 
   test('GivenADoubtfulUnit_WhenMarkedReviewed_ThenNeedYouDrops', () async {

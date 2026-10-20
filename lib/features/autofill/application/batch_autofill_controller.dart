@@ -36,7 +36,7 @@ enum BatchStage {
 
 /// What became of one unit of a batch.
 enum UnitOutcomeKind {
-  /// Confident, and its changes written.
+  /// Confident, and its changes written to at least one of its files.
   updated,
 
   /// Confident, and nothing to change.
@@ -54,7 +54,9 @@ enum UnitOutcomeKind {
   /// None of its songs can be changed safely, so it was not looked up.
   notWritable,
 
-  /// MusicBrainz answered something that could not be read.
+  /// Could not be looked up or written: MusicBrainz answered something that
+  /// could not be read, every write of a confident unit was refused, or
+  /// something unforeseen went wrong with it.
   failed,
 
   /// The owner stopped the batch before it was reached.
@@ -72,6 +74,7 @@ class UnitOutcome {
     this.proposals = const [],
     this.writes = const {},
     this.reviewed = false,
+    this.coverUnavailable = false,
   });
 
   /// The record or lone track.
@@ -95,17 +98,36 @@ class UnitOutcome {
   /// Whether the owner has reviewed it since, in the review screen.
   final bool reviewed;
 
+  /// Whether the cover was chosen and could not be downloaded: the other
+  /// changes stand without it.
+  final bool coverUnavailable;
+
+  /// The songs of this unit no tag can be written to safely, which its
+  /// writes leave out.
+  Iterable<MusicEntry> get blockedSongs => kind == UnitOutcomeKind.notWritable
+      ? unit.songs
+      : [
+          for (final proposal in proposals)
+            if (proposal.blockedBecause == ProposalBlock.unwritableFormat ||
+                proposal.blockedBecause == ProposalBlock.unsafeTags)
+              proposal.entry,
+        ];
+
   /// A copy with the given changes.
-  UnitOutcome copyWith({Map<String, WriteOutcome>? writes, bool? reviewed}) =>
-      UnitOutcome(
-        unit: unit,
-        kind: kind,
-        doubt: doubt,
-        release: release,
-        proposals: proposals,
-        writes: writes ?? this.writes,
-        reviewed: reviewed ?? this.reviewed,
-      );
+  UnitOutcome copyWith({
+    UnitOutcomeKind? kind,
+    Map<String, WriteOutcome>? writes,
+    bool? reviewed,
+  }) => UnitOutcome(
+    unit: unit,
+    kind: kind ?? this.kind,
+    doubt: doubt,
+    release: release,
+    proposals: proposals,
+    writes: writes ?? this.writes,
+    reviewed: reviewed ?? this.reviewed,
+    coverUnavailable: coverUnavailable,
+  );
 }
 
 /// One batch autofill, as the batch screen and the shell's indicator show it.
@@ -160,21 +182,17 @@ class BatchAutofillState {
   /// How many units the search found nothing for.
   int get notFound => _count(UnitOutcomeKind.notFound);
 
-  /// What was left alone: the songs no tag can be written to, the songs of
-  /// the units none of whose songs could be changed safely, and the units
-  /// that failed.
-  int get skipped =>
-      (plan?.notWritable.length ?? 0) +
-      outcomes.fold(
-        0,
-        (sum, outcome) =>
-            sum +
-            switch (outcome.kind) {
-              UnitOutcomeKind.notWritable => outcome.unit.songs.length,
-              UnitOutcomeKind.failed => 1,
-              _ => 0,
-            },
-      );
+  /// The batch's songs no tag can be written to safely: those of a format
+  /// that cannot be written, the songs of the units none of whose songs could
+  /// be changed, and the songs left out of the other units' writes for the
+  /// same reason.
+  List<MusicEntry> get notWritableSongs => [
+    ...?plan?.notWritable,
+    for (final outcome in outcomes) ...outcome.blockedSongs,
+  ];
+
+  /// What was left alone: the [notWritableSongs], and the units that failed.
+  int get skipped => notWritableSongs.length + _count(UnitOutcomeKind.failed);
 
   /// Whether the shell should show the batch: while it runs or is paused,
   /// and once finished until its summary has been seen and for as long as
@@ -188,12 +206,13 @@ class BatchAutofillState {
   int _count(UnitOutcomeKind kind) =>
       outcomes.where((outcome) => outcome.kind == kind).length;
 
-  /// A copy with the given changes. [refusal] clears: it describes a start
-  /// that did not happen.
+  /// A copy with the given changes. [refusal] clears unless passed: it
+  /// describes a start that did not happen.
   BatchAutofillState copyWith({
     BatchStage? stage,
     int? done,
     List<UnitOutcome>? outcomes,
+    LibraryAccessDecision? refusal,
     bool? stoppedEarly,
     bool? seen,
   }) => BatchAutofillState(
@@ -202,6 +221,7 @@ class BatchAutofillState {
     fields: fields,
     done: done ?? this.done,
     outcomes: outcomes ?? this.outcomes,
+    refusal: refusal,
     stoppedEarly: stoppedEarly ?? this.stoppedEarly,
     seen: seen ?? this.seen,
   );
@@ -224,6 +244,7 @@ typedef _Found = ({
   Confidence confidence,
   ReleaseCandidate release,
   List<FileProposal> proposals,
+  bool coverUnavailable,
 });
 
 /// Walks a batch one unit at a time: looks each up, judges it, writes the
@@ -270,9 +291,9 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
   ///
   /// A batch running or paused answers `false` and is left as it is. [fields]
   /// are kept as the remembered choice, and write access is asked for once,
-  /// here: a refusal starts nothing and is kept in [BatchAutofillState.refusal].
-  /// Otherwise the batch replaces any finished one, and runs without being
-  /// waited for.
+  /// here: a refusal starts nothing, leaves any finished batch as it was, and
+  /// is kept in [BatchAutofillState.refusal]. Otherwise the batch replaces any
+  /// finished one, and runs without being waited for.
   Future<bool> start(BatchPlan plan, Set<AutofillField> fields) async {
     if (_starting || _isActive) return false;
 
@@ -284,8 +305,7 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
           .ensureWritable();
       if (!ref.mounted) return false;
       if (!access.isGranted) {
-        _generation++;
-        state = BatchAutofillState(fields: fields, refusal: access);
+        state = state.copyWith(refusal: access);
         return false;
       }
 
@@ -410,7 +430,9 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
       if (outcome.kind == UnitOutcomeKind.unreachable) {
         final missed = _Pending(pending.index, misses: pending.misses + 1);
         _missesInARow++;
-        if (_missesInARow >= _missesBeforePause) {
+        // A stop asked for meanwhile wins over the pause: the owner wants the
+        // batch over, and this unit is reported as could not be looked up.
+        if (_missesInARow >= _missesBeforePause && !_stopping) {
           _queue.insert(0, missed);
           state = state.copyWith(stage: BatchStage.paused);
           _rescanIfWritten();
@@ -485,9 +507,11 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
     } on MetadataSourceException catch (error) {
       return UnitOutcome(
         unit: unit,
-        kind: error.kind == MetadataSourceFailure.malformed
-            ? UnitOutcomeKind.failed
-            : UnitOutcomeKind.unreachable,
+        kind: switch (error.kind) {
+          MetadataSourceFailure.unreachable ||
+          MetadataSourceFailure.rateLimited => UnitOutcomeKind.unreachable,
+          MetadataSourceFailure.malformed => UnitOutcomeKind.failed,
+        },
       );
     }
     if (!ref.mounted) return null;
@@ -495,7 +519,7 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
       return UnitOutcome(unit: unit, kind: UnitOutcomeKind.notFound);
     }
 
-    final (:confidence, :release, :proposals) = found;
+    final (:confidence, :release, :proposals, :coverUnavailable) = found;
     if (confidence is Doubtful) {
       return UnitOutcome(
         unit: unit,
@@ -503,6 +527,7 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
         doubt: confidence,
         release: release,
         proposals: proposals,
+        coverUnavailable: coverUnavailable,
       );
     }
 
@@ -516,6 +541,7 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
         kind: UnitOutcomeKind.alreadyRight,
         release: release,
         proposals: proposals,
+        coverUnavailable: coverUnavailable,
       );
     }
 
@@ -524,12 +550,20 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
 
     return UnitOutcome(
       unit: unit,
-      kind: UnitOutcomeKind.updated,
+      kind: _writtenOrFailed(writes),
       release: release,
       proposals: proposals,
       writes: writes,
+      coverUnavailable: coverUnavailable,
     );
   }
+
+  /// [UnitOutcomeKind.updated] where [writes] reached at least one file, and
+  /// [UnitOutcomeKind.failed] where every one was refused.
+  static UnitOutcomeKind _writtenOrFailed(Map<String, WriteOutcome> writes) =>
+      writes.containsValue(WriteOutcome.written)
+      ? UnitOutcomeKind.updated
+      : UnitOutcomeKind.failed;
 
   /// The best release for the record [unit], searched, ranked and assigned
   /// over all of its library songs, and proposed for its batch songs only.
@@ -577,6 +611,7 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
       ),
       release: detail.release,
       proposals: proposals,
+      coverUnavailable: fetched.coverUnavailable,
     );
   }
 
@@ -627,6 +662,7 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
       confidence: confidence,
       release: detail.release,
       proposals: proposals,
+      coverUnavailable: fetched.coverUnavailable,
     );
   }
 
@@ -681,7 +717,11 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
         // files were written: the rest is forgotten with it.
         if (generation != _generation) break;
 
-        outcomes[i] = outcome.copyWith(writes: {...outcome.writes, ...writes});
+        final merged = {...outcome.writes, ...writes};
+        outcomes[i] = outcome.copyWith(
+          kind: _writtenOrFailed(merged),
+          writes: merged,
+        );
         state = state.copyWith(outcomes: _listed());
       }
 
