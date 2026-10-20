@@ -197,7 +197,7 @@ Realises F-15.
 
 ### 2.8 Autofill (AF)
 
-Realises F-17.
+Realises F-17 and F-25.
 
 | ID | Requirement |
 | --- | --- |
@@ -205,10 +205,13 @@ Realises F-17.
 | **FR-AF-02** | The application must look the record up on MusicBrainz (and the cover on the Cover Art Archive) only when the owner starts an autofill, identify itself, and send at most one request a second. |
 | **FR-AF-03** | The best-matching release must be preselected, every other candidate must be selectable, and the search must be editable. |
 | **FR-AF-04** | Every proposed change must be shown per file as the current value and the new one, each with its own confirmation; values that would not change must not be shown. |
-| **FR-AF-05** | Only confirmed changes may be written, only into the file's metadata, and a file changed since it was read must not be written. A format that cannot be written without losing other metadata must not be offered: only MP3 and FLAC are written, each by an editor that changes only the frames or comments asked for and keeps every other byte, and a format is written only once tests prove a write loses nothing else. M4A, WAV, APE, OGG, Opus and the rest are read-only. A write must go to a temporary file beside the track and be renamed into place, through a symbolic link to the real file. |
+| **FR-AF-05** | Only confirmed changes may be written (for a batch, those `FR-AF-10` allows), only into the file's metadata, and a file changed since it was read must not be written. A format that cannot be written without losing other metadata must not be offered: only MP3 and FLAC are written, each by an editor that changes only the frames or comments asked for and keeps every other byte, and a format is written only once tests prove a write loses nothing else. M4A, WAV, APE, OGG, Opus and the rest are read-only. A write must go to a temporary file beside the track and be renamed into place, through a symbolic link to the real file. |
 | **FR-AF-06** | Written changes must reach the library, and every screen, without the owner starting a scan. |
 | **FR-AF-07** | A file that could not be written must be named with the reason, and a file refused because it was in use must be retryable. |
-| **FR-AF-08** | On Android 11 and later, all-files access must be asked for only when the owner confirms an autofill or a tag edit. On Android 7 to 10, write access is granted together with read access, in the same system dialog, and must only ever be used for an autofill or a tag edit the owner confirmed. Either way, a refusal must write nothing. |
+| **FR-AF-08** | On Android 11 and later, all-files access must be asked for only when the owner confirms an autofill or a tag edit. On Android 7 to 10, write access is granted together with read access, in the same system dialog, and must only ever be used for an autofill or a tag edit the owner confirmed. Either way, a refusal must write nothing. For a batch (`FR-AF-09`) the access is asked for once, when the owner confirms the start and before anything is looked up, and a refusal starts nothing and says so. |
+| **FR-AF-09** | The owner must be able to start an autofill on a selection of songs, an artist, a genre, a playlist or the whole library, choosing the tags as in `FR-AF-01`. Before anything is looked up, Orpheus must say how many songs and records it covers, roughly how long it will take, that confident matches are written without review and replace existing values, and how many songs cannot be changed, and must be told to start. A record's own menu keeps the reviewed autofill of `FR-AF-01`. |
+| **FR-AF-10** | The songs must be split into records and lone tracks by album artist (else artist) and album, a folder of songs with no album being one record and a lone song a lone track, and each looked up as in `FR-AF-02` and `FR-AF-03`, over every song of the album the library holds when only part of it is in the batch. A record or lone track must be written without review only when its match is confident: an official release of the same title and artist, each song of the batch given a track of the same title and, where the song has them, the same numbers, and no change to the album or album artist of a record only partly in the batch. Every other one must be kept, unwritten, for the owner to review as in `FR-AF-04`, with the reason it is doubtful. A song whose tags cannot be changed safely must be counted and left out, and the rest of its record proceed. |
+| **FR-AF-11** | The batch must show its progress, keep running while the owner uses the rest of Orpheus, show an indicator outside its own screen, and stop when asked after the record being written, keeping what was written. A lookup that fails must be tried once more after the next record, and three in a row must pause the batch with the choice to try again or stop. At the end it must say how many records were updated, how many need the owner, how many were already right, and which were not found, could not be changed, could not be written or looked up, or were not looked up, and why; files refused because they were in use or failed must be retryable as in `FR-AF-07`. Only one batch may exist at a time, and nothing of it survives closing Orpheus. |
 
 ### 2.9 Visualisation (VZ)
 
@@ -321,7 +324,7 @@ Realises F-24.
 | --- | --- |
 | **NFR-01** | **One source, three targets.** Windows, Linux and Android must build from the same source with no per-platform implementation of any feature above the platform edges. |
 | **NFR-02** | **Three network calls, named.** The application must make no network request other than the lyrics lookup of `FR-LY-13`, the MusicBrainz and Cover Art Archive lookups an autofill makes when the owner starts one (`FR-AF-02`), and, on Windows and Linux, the release check of `BR-03` — the one request at startup for the newest release (the latest full release, or for a build that is itself a pre-release, the release list), and the download of an installer and its checksums the owner accepted. No telemetry, analytics, crash reporting, scrobbling or other lookup may be added. The Android package must declare exactly the permissions its manifest lists, and this must be verifiable from the built package. |
-| **NFR-03** | **Audio files are changed for confirmed tags only.** No audio file may be renamed, moved, deleted or re-encoded, and its tags may be written only for changes the owner confirmed (`FR-AF-05`, `FR-TE-03`, `FR-TE-07`). Exporting a playlist, the owner's data or a backup writes only the file the owner chose (`FR-PS-11`, `FR-DX-04`, `FR-BK-05`), and restoring from a backup changes no audio file: the music folders change only through the restore's first stage, which the owner confirms (`FR-BK-10`, `FR-BK-20`). |
+| **NFR-03** | **Audio files are changed for confirmed tags only.** No audio file may be renamed, moved, deleted or re-encoded, and its tags may be written only for changes the owner confirmed, one by one or, for a batch autofill, by starting it after being told that its confident matches are written without review (`FR-AF-05`, `FR-AF-09`, `FR-TE-03`, `FR-TE-07`). Exporting a playlist, the owner's data or a backup writes only the file the owner chose (`FR-PS-11`, `FR-DX-04`, `FR-BK-05`), and restoring from a backup changes no audio file: the music folders change only through the restore's first stage, which the owner confirms (`FR-BK-10`, `FR-BK-20`). |
 | **NFR-04** | **Startup is not gated on a scan.** The library from the last scan must be on screen before a new scan is started. |
 | **NFR-05** | **Scanning is proportional to change.** Re-scanning an unchanged library must not re-parse it. |
 | **NFR-06** | **The cover cache is proportional to records, not files.** |
@@ -362,6 +365,7 @@ Realises F-24.
 | F-22 Auto playlists | FR-PS-14 … FR-PS-21, FR-ST-16 … FR-ST-20, FR-UX-06 |
 | F-23 Export my data | FR-DX-01 … FR-DX-09 |
 | F-24 Back up and restore | FR-BK-01 … FR-BK-20 |
+| F-25 Autofill many songs at once | FR-AF-09 … FR-AF-11 |
 
 ### 4.2 Requirements to use cases
 
@@ -375,7 +379,7 @@ Realises F-24.
 | UX | UC-28, UC-29, UC-38, UC-39 |
 | LY | UC-30, UC-31, UC-33 |
 | VZ | UC-32 |
-| AF | UC-34 |
+| AF | UC-34, UC-44 |
 | TE | UC-35, UC-37, UC-38 |
 | PS | UC-39, UC-40 |
 | DX | UC-29, UC-41 |

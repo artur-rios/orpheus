@@ -13,7 +13,7 @@ result in a file beside its own settings.
 
 > **Status:** complete and tested — the unit and widget suite green and
 > `flutter analyze` clean. Every use case in the [specifications](#specifications),
-> UC-01 to UC-43, is implemented — see the [roadmap](#roadmap). All three
+> UC-01 to UC-44, is implemented — see the [roadmap](#roadmap). All three
 > release builds and the Windows installer are produced and verified by CI on
 > every pull request. It runs on Linux, Windows and Android: the fixes released
 > since 1.0.0 came from running it on a Windows machine and an Android phone.
@@ -53,6 +53,18 @@ result in a file beside its own settings.
   one tap away. Only what you leave ticked is written, into the files and into
   the library, which updates without you starting a scan. MP3 and FLAC can be written; the
   other formats are read-only, and say so.
+- **Fills in many songs at once.** From an artist's, a genre's or a playlist's
+  menu, from a selection of songs, or from the ⋮ in the Music tab — the whole
+  library — choose *Autofill tags…* and the tags it may fill. Orpheus tells you
+  how many songs and records that is and about how long it will take, and says
+  that the matches it is sure of are written without asking and replace the
+  tags they change. Then it looks the records up one after another, in the
+  background: a record whose release is official, whose title and artist are the
+  same and whose every song has a track of the same title is written; the rest
+  are kept, unwritten, with the reason, for you to open in the review above. A
+  screen and an indicator in the app bar show the progress, you can stop it and
+  keep what was written, and the summary says what was updated, what needs you,
+  and what was not found, could not be changed or could not be written.
 - **Lets you fix a track's tags by hand.** From a track's menu, choose
   *Edit tags…*: the form holds what the file says — title, artist, album
   artist, album, track and disc numbers and totals, year, genre and the cover,
@@ -121,9 +133,10 @@ result in a file beside its own settings.
 
 - **It changes your files only when you ask.** No renaming, no moving, no
   deleting, no transcoding. The one change it ever makes to an audio file is to
-  its tags, from an autofill whose every change you saw and confirmed or an
-  edit you made by hand — and it refuses a file another program changed since
-  it was read. Besides that, it writes a `.lrc` next to a track whose words it
+  its tags, from an autofill whose every change you saw and confirmed, an
+  autofill of many songs that you started knowing it writes the matches it is
+  sure of without asking, or an edit you made by hand — and it refuses a file
+  another program changed since it was read. Besides that, it writes a `.lrc` next to a track whose words it
   looked up, a new file and never a replacement for one you wrote.
 - **Almost no network.** No streaming, no scrobbling, no telemetry, no
   analytics, no crash reporting, no cover art fetched unless you ask. There are
@@ -142,7 +155,7 @@ result in a file beside its own settings.
   where Android expects it, and whose tags you never change from Orpheus, never
   meets it, and granting it changes nothing about the promise above — the
   folders read are still the folders you registered, and the only thing written
-  is the tags you confirmed.
+  is the tags you confirmed or started.
 - **No accounts, no sync, no cloud.** One person, one machine, one library.
   Nothing Orpheus sends identifies you, or persists between requests: there is
   no account, no key, and no identifier of any kind.
@@ -266,7 +279,7 @@ which offers the platform's conventional one — and the scan starts. On Android
 the system asks for permission to read audio files at that point; it is asked
 for once you have registered a folder, never before. On Android 7 to 10 that
 same dialog also grants write access — Android asks for the two together — and
-Orpheus only ever uses it for an autofill or a tag edit you confirmed. On
+Orpheus only ever uses it for an autofill or a tag edit you confirmed or started. On
 Android 11 and later, changing tags takes all-files access, asked for at the
 first autofill or tag edit you confirm. Android also asks to be
 allowed to post the playback notification, and that one is asked for the first
@@ -577,7 +590,7 @@ not written, and on Windows the track playing may be refused as in use.
 
 Nine milestones covering thirty-four issues: one foundation issue plus one
 issue per use case from UC-01 to UC-33. UC-34, UC-35, UC-36, UC-37, UC-38,
-UC-39, UC-40, UC-41, UC-42 and UC-43 came after the backlog was filed and have
+UC-39, UC-40, UC-41, UC-42, UC-43 and UC-44 came after the backlog was filed and have
 no milestone; they are listed after M-09.
 Milestones are dependency-ordered — no milestone depends on a later one, and
 every milestone after `M-01` depends on it.
@@ -683,7 +696,7 @@ Built, tested and specified, and merged.
 
 ### After the backlog — Tags and genres
 
-Built, tested and specified, and merged. UC-34, UC-36, UC-37, UC-38, UC-39, UC-40, UC-41, UC-42 and UC-43 have no issue, so the use case itself is linked.
+Built, tested and specified, and merged. UC-34, UC-36, UC-37, UC-38, UC-39, UC-40, UC-41, UC-42, UC-43 and UC-44 have no issue, so the use case itself is linked.
 
 | Issue | Work | Spec |
 | --- | --- | --- |
@@ -697,6 +710,7 @@ Built, tested and specified, and merged. UC-34, UC-36, UC-37, UC-38, UC-39, UC-4
 | [UC-41](docs/requirements/Use%20Case%20Specification%20Document.md#uc-41-export-my-data) | UC-41 — Export my data — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [UC-42](docs/requirements/Use%20Case%20Specification%20Document.md#uc-42-back-up-orpheus) | UC-42 — Back up Orpheus — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 | [UC-43](docs/requirements/Use%20Case%20Specification%20Document.md#uc-43-restore-from-a-backup) | UC-43 — Restore from a backup — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
+| [UC-44](docs/requirements/Use%20Case%20Specification%20Document.md#uc-44-autofill-many-songs-at-once) | UC-44 — Autofill many songs at once — done | [Use Case Specification](docs/requirements/Use%20Case%20Specification%20Document.md) |
 
 ## Changelog
 

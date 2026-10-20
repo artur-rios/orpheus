@@ -18,8 +18,8 @@ done.
 | Actor | Description |
 | --- | --- |
 | **Owner** | The single human user, and the only actor with intent. Interacts with every use case below. |
-| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, to the one file the owner chose for an export or a backup (UC-39, UC-41, UC-42), read when the owner restores from one (UC-43), and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed (UC-34, UC-35, UC-37, UC-38). |
-| **Metadata service** | MusicBrainz, and the Cover Art Archive for covers. Asked only when the owner starts an autofill (UC-34), at most once a second, and sent nothing that identifies the owner. |
+| **Local filesystem** | The disks holding the library folders. Read for audio files and their tags; written within this application's own directory, to the one file the owner chose for an export or a backup (UC-39, UC-41, UC-42), read when the owner restores from one (UC-43), and into a music folder only for a `.lrc` beside a track whose words were looked up (UC-33) and for the tags of files whose autofill or tag edit the owner confirmed or, for an autofill of many songs, started (UC-34, UC-35, UC-37, UC-38, UC-44). |
+| **Metadata service** | MusicBrainz, and the Cover Art Archive for covers. Asked only when the owner starts an autofill (UC-34, UC-44), at most once a second, and sent nothing that identifies the owner. |
 | **Playback engine** | The libmpv-backed engine linked in process. Opens files, reports position and duration, and reports what it cannot decode. Never modifies a file. |
 | **Host platform** | Windows, Linux or Android. Grants or refuses read access, provides the folder picker, and — on Android alone — provides the media session and the foreground service. |
 
@@ -91,6 +91,7 @@ graph LR
 
     subgraph "Autofill (AF)"
         UC34[UC-34: Autofill a record's tags]
+        UC44[UC-44: Autofill many songs at once]
     end
 
     subgraph "Tag editing (TE)"
@@ -130,6 +131,7 @@ graph LR
     OWNER --> UC41
     OWNER --> UC42
     OWNER --> UC43
+    OWNER --> UC44
 ```
 
 ---
@@ -1745,6 +1747,79 @@ graph LR
 | AF-19 | A restore is already under way | Asking again answers with the one under way (`FR-BK-09`). |
 | AF-20 | Something unforeseen stops the restore before the choices show, after *Continue* changed the music folders | *Something went wrong while preparing the restore. Nothing was restored.* is shown with a note that the music folders were changed in the last step and stay as they are now, and the owner closes the screen (`FR-BK-10`). |
 
+### UC-44: Autofill many songs at once
+
+| Field | Value |
+| --- | --- |
+| **ID** | UC-44 |
+| **Name** | Autofill many songs at once |
+| **Actors** | Owner, Metadata service, Local filesystem, Host platform |
+| **Description** | The owner chooses which tags to fill on many songs at once — an artist's, a genre's, a playlist's, a selection or the whole library — and starts the autofill after being told that the matches Orpheus is sure of are written without asking. It looks the records up on MusicBrainz one after another, writes the confident ones, and keeps the doubtful ones for the owner to check in the review of UC-34. |
+| **Preconditions** | The library holds the songs the owner starts from. No batch is running. |
+| **Postconditions** | Every record whose match was confident holds the chosen tags, and the library shows them. A record that was doubtful, not found, not looked up or failed has had nothing written, and is named with its reason. No song outside the batch, no tag that was not chosen and no file that was not MP3 or FLAC has changed, and no audio, file name or place has changed. Where the owner cancelled before starting, or access was refused, nothing was looked up and nothing was written. What was written stays written; the batch is kept in memory only and is forgotten when Orpheus is closed. |
+| **Requirements** | FR-AF-01, FR-AF-02, FR-AF-03, FR-AF-05, FR-AF-06, FR-AF-07, FR-AF-08, FR-AF-09, FR-AF-10, FR-AF-11 |
+
+**Main Flow**
+
+1. The owner picks *Autofill tags…* on an artist, on a genre (its ⋮ button, a right-click or a long press), on a
+   playlist of their own or an auto playlist, in the bar over a selection of several songs, or in the ⋮ beside shuffle
+   in the Music tab's controls bar — which covers the whole library, or, inside an open genre, that genre's songs
+   (`FR-AF-09`).
+2. The application asks which tags it may fill, showing the choice made last time and leaving cover unticked until it
+   is chosen, as UC-34 does (`FR-AF-01`). The owner chooses and presses *Find*.
+3. The application says how many songs and records the autofill covers, about how many minutes it will take (about
+   two and a half seconds a record, a second more with the cover), that records that match MusicBrainz clearly are
+   written without asking and replace their current tags, and how many songs cannot be changed. The owner presses
+   *Start* (`FR-AF-09`). On Android, write access is asked for now, once, before anything is looked up (`FR-AF-08`).
+4. The application splits the songs into records — by album artist (else artist) and album, a folder of songs with no
+   album being one record — and lone tracks, and opens the batch screen (`FR-AF-10`). A record only partly in the
+   batch is looked up over every song of that album the library holds, but changes are proposed only for the songs in
+   the batch.
+5. It looks the records up one at a time, at most one request a second, as UC-34 does, and judges each one's best
+   release: confident only when it is official, has the record's title and artist, and gives every song of the batch a
+   track of the same title and, where the song has them, the same numbers (`FR-AF-02`, `FR-AF-03`, `FR-AF-10`).
+6. A confident record is written as found, one file at a time, each to a temporary file beside the track renamed
+   into place, keeping every other byte, the song that is playing last in its record (`FR-AF-05`). A record with
+   nothing to change is counted as already right. A doubtful record is kept with what was found, and nothing is
+   written to it (`FR-AF-10`).
+7. The screen shows the progress and the counts — updated, need you, already right, not found, skipped — while the
+   owner uses the rest of Orpheus; an indicator in the app bar shows the progress and reopens the screen
+   (`FR-AF-11`). The library is brought up to date with what was written, at most once a minute while writing and
+   once at the end, without the owner starting a scan (`FR-AF-06`).
+8. When the last record has been looked up, the screen shows the summary: *Need you*, *Not found*, *Can't be changed*,
+   *Could not be written or looked up* and *Not looked up*, each record named with its reason (`FR-AF-11`).
+9. The owner opens a record under *Need you*. The review screen of UC-34 opens for that record's songs in the batch,
+   with the batch's choice of tags, matched against the whole album, and the owner goes on as there
+   (`FR-AF-04`). When it writes files, the row is marked reviewed.
+10. The indicator stays after the batch ends until the owner has seen the summary once, and then, as *N need you*, for
+    as long as records waiting for them remain unreviewed; it reopens the summary.
+
+**Alternative Flows**
+
+| ID | Condition | Outcome |
+| --- | --- | --- |
+| AF-01 | The owner starts from an album's menu, a song's menu, or a selection of one song | The reviewed autofill of UC-34 opens: the album as one record, the song as a lone track. An album's menu keeps the review of every change; nothing is written without it. |
+| AF-02 | No song in the batch can be written | Only MP3 and FLAC can be written. The first dialog says so and offers nothing to find, as UC-34 AF-06 does. Nothing is looked up. |
+| AF-03 | On Android, permission to change audio files is refused | Nothing is looked up and nothing is written, and the screen says so. On Android 11 and later all-files access is asked for only here, once the owner has started; where the refusal is permanent the settings page is offered (`FR-AF-08`, UC-34 AF-08). |
+| AF-04 | The owner presses *Cancel* in the field dialog or in the confirmation | Nothing is looked up and nothing is written. |
+| AF-05 | Only part of an album is in the batch, and the match would change its album or its album artist | The record is doubtful, with the reason *would split the album*: the library groups an album by the exact pair of album and album artist, so writing them to some of its songs would split it in two. Nothing is written to it. |
+| AF-06 | A song's tags cannot be changed safely — an MP3 or FLAC whose tags Orpheus cannot rewrite without loss — or the song is another format | The song is counted as can't be changed and named, and the rest of its record is judged and written without it. A record none of whose songs can be written is not looked up. |
+| AF-07 | MusicBrainz knows nothing about a record | The record is counted as not found and named. Nothing is written, and the batch goes on. |
+| AF-08 | MusicBrainz cannot be reached, or turns the request away as too frequent | The lookup is tried once more after the next record, and the record is then named under *Could not be written or looked up*. It is not drawn as a failure of the library, and the batch goes on. A reply Orpheus cannot read is a failed record, named with the reason. |
+| AF-09 | Three records in a row cannot be reached | The batch pauses with *MusicBrainz could not be reached*, so that a lost connection does not burn through the library as failures. *Try again* goes on from the record it stopped at; *Stop* ends it as AF-10 does. |
+| AF-10 | The owner presses *Stop* | The record in flight is finished and nothing further is looked up; a *Stop* during a pause, or at the third miss, ends the batch instead of pausing it. What was written stays written, the library is brought up to date with it, and the records not reached are named under *Not looked up*. |
+| AF-11 | A file cannot be written | The file is named with the reason (`FR-AF-07`) and the others of its record and the other records are written regardless. A file changed since it was read — by another program, or by a scan — is refused rather than overwritten; a file in use, which on Windows can be the track playing, and one that failed, are named under *Could not be written or looked up*, with *Try again*. A record counts as updated only if at least one of its files was written. |
+| AF-12 | A cover was chosen and the picture will not download | The record's other tags are written, and the row notes that its cover could not be fetched. |
+| AF-13 | The owner opens a record under *Need you* and chooses a different release, or edits the search | As UC-34 AF-02 and AF-03. A record whose review wrote nothing stays waiting. |
+| AF-14 | The owner presses *Clear list* | The application asks first. On yes it forgets the records waiting for the owner — nothing is written — and the indicator goes when nothing is left to review. |
+| AF-15 | The owner closes the batch screen while it runs, or goes elsewhere | The batch keeps running. The app bar shows the progress while it runs, *Autofill paused* while paused, and then *N need you*; on a phone or a compact window it is an icon with a badge. It reopens the screen (`FR-AF-11`). |
+| AF-16 | The owner starts an autofill while one is running | The running one opens instead. Only one batch exists at a time (`FR-AF-11`). |
+| AF-17 | The owner starts an autofill over a finished batch that still has records waiting for them | The application asks whether to start a new autofill and forget the N records waiting; the new batch replaces them only on yes. |
+| AF-18 | The owner starts the autofill of UC-34 while a batch runs | It shares the one throttle and so waits its turn; the batch is not disturbed. |
+| AF-19 | A scan runs while the batch does | The batch keeps the songs it started with; a file the scan saw change is refused as in AF-11. |
+| AF-20 | Orpheus is closed or killed during the batch | What was written stays written. The batch is not resumed, and the records waiting for the owner are forgotten. |
+| AF-21 | An album is spelt two ways across its songs | It is two records, each looked up on its own; whichever does not match exactly is doubtful. |
+
 ---
 
 ## 3. Use case — requirements traceability
@@ -1793,6 +1868,7 @@ graph LR
 | UC-41 Export my data | FR-DX-01 … FR-DX-09 |
 | UC-42 Back up Orpheus | FR-BK-01 … FR-BK-06 |
 | UC-43 Restore from a backup | FR-BK-07 … FR-BK-20 |
+| UC-44 Autofill many songs at once | FR-AF-09 … FR-AF-11, and as UC-34 FR-AF-01 … FR-AF-03, FR-AF-05 … FR-AF-08 |
 
 ## 4. State diagrams
 

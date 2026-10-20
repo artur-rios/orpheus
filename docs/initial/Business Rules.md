@@ -47,7 +47,9 @@ with two exceptions. The first is the `.lrc` a lyrics lookup writes beside a
 track (`BR-29a`): a new file next to the audio, never a change to the audio, and
 never a replacement for a sidecar the owner wrote. The second is the tags of an
 MP3 or FLAC file, changed by an autofill (`FR-AF-05`) — and only for the
-changes the owner saw, as the current value and the new one, and confirmed. A
+changes the owner saw, as the current value and the new one, and confirmed —
+or, for an autofill of many songs, the matches Orpheus is sure of, once the
+owner has started it knowing they are written without review (`FR-AF-09`). A
 file changed since it was read is not written, and no other format is written
 at all.
 

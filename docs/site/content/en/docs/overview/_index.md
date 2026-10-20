@@ -35,6 +35,7 @@ interface on Windows, Linux and Android.
 | **Exports your data** | *Preferences → Your data → Export my data (JSON)…* saves your library, playlists, auto playlists, play history and statistics to one JSON file you choose, to read in any tool. It only reads, and writes only that file. The layout is [documented](https://github.com/artur-rios/orpheus/blob/main/docs/data-export.md) and versioned. |
 | **Backs up and restores Orpheus** | *Back up Orpheus (ZIP)…* adds your playlists' cover pictures and your preferences to that data, in one ZIP. *Restore from a backup…* reads it, or an exported JSON, on this device or another: it shows the music folders the backup names so you can point Orpheus at your music, scans, matches the backup's songs to your library by path and then by tags, and lets you *Merge*, *Skip* or *Replace* the playlists, the play history and the preferences separately. *Merge* is the default and loses nothing; *Replace* says what it removes first; a part either side could not read is not written over. Your music files are never touched. |
 | **Fixes tags, from MusicBrainz or by hand** | Autofill a record from MusicBrainz, or edit one track's tags and cover yourself — or, from an album's or an artist's ⋮ menu, the shared tags of all its songs at once; fields they disagree on show as mixed and are left alone unless you type in them. Only what you confirm is written. |
+| **Fixes the tags of many songs at once** | *Autofill tags…* on an artist, a genre, a playlist, a selection, or the whole library from the Music tab's ⋮ menu. Orpheus says how many songs and records that is and about how long it will take, then looks them up on MusicBrainz in the background. The records it is sure of are written without asking, replacing their current tags; the doubtful ones are kept, with the reason, for you to check in the usual review. You can stop it and keep what was written. |
 | **Says what you actually listen to** | Total plays, and the most played tracks, artists, records and genres — counted from your own listening and nobody else's. |
 | **Adapts to the window** | A rail down the side on a desktop, a bar across the bottom on a phone. |
 | **Light and dark, English and Brazilian Portuguese** | |
@@ -43,8 +44,9 @@ interface on Windows, Linux and Android.
 
 **It changes your files only when you ask.** No renaming, no moving, no
 deleting, no transcoding. The one change it ever makes to an audio file is to
-its tags, from an autofill whose every change you saw and confirmed or an edit
-you made by hand — and it refuses a file another program changed since it was
+its tags, from an autofill whose every change you saw and confirmed, an
+autofill of many songs that you started knowing it writes the matches it is sure
+of without asking, or an edit you made by hand — and it refuses a file another program changed since it was
 read. Besides that, it writes a `.lrc` next to a track whose words it looked
 up, a new file and never a replacement for one you wrote.
 
