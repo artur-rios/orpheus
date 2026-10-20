@@ -7,6 +7,7 @@ import '../../../core/di/providers.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/breakpoints.dart';
+import '../../autofill/presentation/batch_autofill_indicator.dart';
 import '../../library/presentation/library_folders_view.dart';
 import '../../library/presentation/scan_strip.dart';
 import '../../playback/presentation/genres_view.dart';
@@ -128,6 +129,9 @@ class _ShellAppBar extends ConsumerWidget implements PreferredSizeWidget {
           const SizedBox(width: 320, child: _SearchField())
         else
           const _PhoneSearchButton(),
+        // A batch autofill outlives its screen: this is the way back to it
+        // for as long as it runs or waits for the owner.
+        const BatchAutofillIndicator(),
         IconButton(
           tooltip: l10n.statsOpen,
           icon: const Icon(Icons.insights_outlined),
@@ -251,8 +255,7 @@ class _PhoneSearchButton extends ConsumerWidget {
                 top: AppSpacing.md,
                 // Above the keyboard, which is most of a phone's screen while
                 // this is open.
-                bottom:
-                    MediaQuery.viewInsetsOf(context).bottom + AppSpacing.md,
+                bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.md,
               ),
               child: const _SearchField(autofocus: true),
             ),
