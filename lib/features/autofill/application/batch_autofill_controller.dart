@@ -675,12 +675,12 @@ class BatchAutofillController extends Notifier<BatchAutofillState> {
       cover: fetched.cover,
     );
 
-    final judged = trackConfidence(song, match: match, appearance: best);
-    // A recording surely the song but found on no track of its release has
-    // nothing to propose, which is not the same as being already right.
-    final confidence = judged is Confident && assignment[song] == null
+    // A recording found on no track of its release is not surely any of its
+    // tracks: the one its number or title points at was never judged, and
+    // nothing at all may be there to propose. It is shown, not written.
+    final confidence = byRecording == null
         ? const Doubtful(DoubtReason.uncertainTrack)
-        : judged;
+        : trackConfidence(song, match: match, appearance: best);
 
     return (
       confidence: confidence,

@@ -1014,6 +1014,73 @@ void main() {
     expect(stateOf(harness).outcomes.single.release?.id, 'rel-pablo');
   });
 
+  test('GivenALoneTracksRecordingOnNoTrackOfItsRelease_WhenATrackOfItsTitleIsThere_ThenDoubtfulAndNothingWritten', () async {
+    final lone = entry(
+      id: 'creep',
+      title: 'Creep',
+      artist: 'Radiohead',
+      track: 2,
+      duration: const Duration(minutes: 3, seconds: 58),
+      directory: '/library/loose',
+    );
+    final harness = harnessFor([lone], releases: const {});
+    const pablo = ReleaseCandidate(
+      id: 'rel-pablo',
+      title: 'Pablo Honey',
+      artistCredit: radiohead,
+      trackCount: 2,
+      status: 'Official',
+      primaryType: 'Album',
+    );
+    harness.metadata
+      ..recordings = const [
+        RecordingMatch(
+          recordingId: 'rec-creep',
+          title: 'Creep',
+          artistCredit: radiohead,
+          length: Duration(minutes: 3, seconds: 56),
+          appearances: [
+            RecordingAppearance(release: pablo, disc: 1, position: 2),
+          ],
+        ),
+      ]
+      // The release's track 2 is called Creep and numbered as the song is,
+      // but it is another recording of it.
+      ..releases = {
+        'rel-pablo': const ReleaseDetail(
+          release: pablo,
+          tracks: [
+            ReleaseTrack(
+              disc: 1,
+              position: 1,
+              title: 'You',
+              artistCredit: radiohead,
+              recordingId: 'rec-you',
+            ),
+            ReleaseTrack(
+              disc: 1,
+              position: 2,
+              title: 'Creep',
+              artistCredit: radiohead,
+              recordingId: 'rec-creep-acoustic',
+            ),
+          ],
+        ),
+      };
+
+    await run(
+      harness,
+      planBatch([lone], [lone]),
+      fields: const {AutofillField.album, AutofillField.trackNumber},
+    );
+
+    final outcome = stateOf(harness).outcomes.single;
+    expect(harness.tagWriter.writes, isEmpty);
+    expect(outcome.kind, UnitOutcomeKind.doubtful);
+    expect(outcome.doubt?.reason, DoubtReason.uncertainTrack);
+    expect(outcome.release?.id, 'rel-pablo');
+  });
+
   test('GivenAMalformedAnswer_WhenRun_ThenFailedAndSkipped', () async {
     final library = [...albumOf('Alpha'), ...albumOf('Beta')];
     final harness = harnessFor(library);
