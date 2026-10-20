@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
+import 'package:orpheus/core/theme/breakpoints.dart';
 import 'package:orpheus/features/autofill/application/batch_autofill_controller.dart';
 import 'package:orpheus/features/autofill/domain/autofill_field.dart';
 import 'package:orpheus/features/autofill/domain/batch_plan.dart';
@@ -28,7 +29,13 @@ void main() {
     WidgetTester tester,
     Harness harness, {
     Size window = desktopWindow,
-  }) => tester.pumpHarness(harness, const ShellScreen(), window: window);
+    Locale locale = const Locale('en'),
+  }) => tester.pumpHarness(
+    harness,
+    const ShellScreen(),
+    window: window,
+    locale: locale,
+  );
 
   /// Runs [library] as a batch to its end.
   Future<void> finish(Harness harness, List<MusicEntry> library) async {
@@ -196,5 +203,75 @@ void main() {
     final badge = tester.widget<Badge>(find.byType(Badge));
     expect((badge.label! as Text).data, '1');
     expect(find.byTooltip('1 needs you'), findsOneWidget);
+  });
+
+  group('GivenACompactWindow', () {
+    const portuguese = Locale('pt', 'BR');
+
+    /// The app bar's title, as wide as it is with no batch at all there, and
+    /// clear of the [indicator].
+    void expectTitleKeepsItsRoom(WidgetTester tester, Finder indicator) {
+      final title = find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Músicas'),
+      );
+
+      expect(
+        tester.getRect(title).right,
+        lessThanOrEqualTo(tester.getRect(indicator).left),
+      );
+      expect(tester.getSize(title).width, greaterThanOrEqualTo(144));
+    }
+
+    /// The narrowest and the widest window of the compact tier.
+    final widths = [Breakpoint.compactMinWidth, Breakpoint.mediumMinWidth - 1];
+
+    for (final width in widths) {
+      final window = Size(width, 900);
+
+      testWidgets(
+        'WhenRunningInPortuguese_ThenItFitsAndOpensTheScreen (${width.round()})',
+        (tester) async {
+          final harness = await aRunningBatch();
+          await show(tester, harness, window: window, locale: portuguese);
+
+          final indicator = find.byType(BatchAutofillIndicator);
+          expect(tester.takeException(), isNull);
+          expect(
+            tester.getRect(indicator).right,
+            lessThanOrEqualTo(window.width),
+          );
+          // The title keeps room beside the search field and the indicator.
+          expectTitleKeepsItsRoom(tester, indicator);
+
+          await tester.tap(indicator);
+          await tester.pumpAndSettle();
+
+          expect(find.byType(BatchAutofillScreen), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'WhenFinishedWithDoubtfulInPortuguese_ThenItFitsAndOpensTheScreen (${width.round()})',
+        (tester) async {
+          final harness = await aFinishedBatchWithADoubt();
+          controllerOf(harness).markSeen();
+          await show(tester, harness, window: window, locale: portuguese);
+
+          final indicator = find.byType(BatchAutofillIndicator);
+          expect(tester.takeException(), isNull);
+          expect(
+            tester.getRect(indicator).right,
+            lessThanOrEqualTo(window.width),
+          );
+          expectTitleKeepsItsRoom(tester, indicator);
+
+          await tester.tap(indicator);
+          await tester.pumpAndSettle();
+
+          expect(find.byType(BatchAutofillScreen), findsOneWidget);
+        },
+      );
+    }
   });
 }

@@ -12,9 +12,10 @@ import 'batch_autofill_screen.dart';
 /// The shell's way back to a batch autofill: its progress while it runs, and
 /// once it is done how many records still need the owner.
 ///
-/// Nothing at all unless [BatchAutofillState.showsIndicator]. A phone's bar has
-/// no room for a sentence, so there it is the autofill icon with the figure on
-/// a badge and the sentence as its tooltip. A tap opens the batch screen.
+/// Nothing at all unless [BatchAutofillState.showsIndicator]. The bar of a
+/// phone or a compact window has no room for a sentence beside the search
+/// field, so there it is the autofill icon with the figure on a badge and the
+/// sentence as its tooltip. A tap opens the batch screen.
 class BatchAutofillIndicator extends ConsumerWidget {
   /// Creates the indicator.
   const BatchAutofillIndicator({super.key});
@@ -33,7 +34,9 @@ class BatchAutofillIndicator extends ConsumerWidget {
       BatchStage.paused => l10n.autofillBatchIndicatorPaused,
       BatchStage.finished when state.needYou > 0 =>
         l10n.autofillBatchIndicatorNeedYou(state.needYou),
-      BatchStage.finished || BatchStage.idle => l10n.autofillBatchIndicatorDone,
+      BatchStage.finished => l10n.autofillBatchIndicatorDone,
+      // Never shown: there is no batch to follow.
+      BatchStage.idle => '',
     };
     // What the badge says: the progress, or who is waiting. Paused and done
     // say it in the sentence alone.
@@ -44,7 +47,9 @@ class BatchAutofillIndicator extends ConsumerWidget {
     };
     void open() => unawaited(BatchAutofillScreen.show(context));
 
-    if (Breakpoint.from(context).usesBottomNavigation) {
+    // The sentence needs the width the search field and the buttons leave:
+    // below the medium tier it overflows the bar, so the icon speaks for it.
+    if (Breakpoint.from(context) case Breakpoint.phone || Breakpoint.compact) {
       return IconButton(
         tooltip: text,
         icon: Badge(

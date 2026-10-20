@@ -115,7 +115,8 @@ class _ShellAppBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final phone = Breakpoint.from(context).usesBottomNavigation;
+    final breakpoint = Breakpoint.from(context);
+    final phone = breakpoint.usesBottomNavigation;
 
     return AppBar(
       title: Text(destination.label(l10n)),
@@ -125,8 +126,14 @@ class _ShellAppBar extends ConsumerWidget implements PreferredSizeWidget {
         // the bar over when there is not: a search box squeezed into a phone's
         // app bar beside a title is a box too small to read what was typed
         // into it.
+        //
+        // A little narrower in a compact window, to leave the room a running
+        // autofill's button takes: the title is already tight there.
         if (!phone)
-          const SizedBox(width: 320, child: _SearchField())
+          SizedBox(
+            width: breakpoint == Breakpoint.compact ? 272 : 320,
+            child: const _SearchField(),
+          )
         else
           const _PhoneSearchButton(),
         // A batch autofill outlives its screen: this is the way back to it
