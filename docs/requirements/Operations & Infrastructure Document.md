@@ -100,8 +100,8 @@ developer happens to have.
 | `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | Playback that continues off screen. |
 | `POST_NOTIFICATIONS` | The playback notification. |
 | `WAKE_LOCK` | Keeping the processor running through a track with the screen off. |
-| `MANAGE_EXTERNAL_STORAGE` | A registered folder on a memory card or a drive plugged into the phone; and, on Android 11 and later, changing the tags of files whose autofill the owner confirmed. |
-| `WRITE_EXTERNAL_STORAGE`, capped at API 29 | Changing the tags of files whose autofill the owner confirmed, on Android 10 and earlier. On Android 7 to 10 it is granted together with read access, in the same system dialog, and is only ever used for an autofill the owner confirmed (`FR-AF-08`). |
+| `MANAGE_EXTERNAL_STORAGE` | A registered folder on a memory card or a drive plugged into the phone; and, on Android 11 and later, changing the tags of files whose autofill the owner confirmed or started as a batch (`FR-AF-09`). |
+| `WRITE_EXTERNAL_STORAGE`, capped at API 29 | Changing the tags of files whose autofill the owner confirmed or started as a batch (`FR-AF-09`), on Android 10 and earlier. On Android 7 to 10 it is granted together with read access, in the same system dialog, and is only ever used for an autofill the owner confirmed or started (`FR-AF-08`). |
 
 `MANAGE_EXTERNAL_STORAGE` is the broad one, and it is bounded by when it is asked for
 rather than by its own scope: Android mounts removable volumes outside the
@@ -111,15 +111,15 @@ on a launch, never on a scan, and never on the way into a folder picker — only
 once a folder the owner registered has been walked and reported unreachable,
 and then from a card on the folders screen that says what it allows. The one
 other moment is on Android 11 and later, at the first autofill the owner
-confirms, when the application is about to change the tags of files it did not
-make (`FR-AF-08`); it is not asked for before that confirmation. On Android 7
-to 10 there is no such moment of its own: Android grants
-`WRITE_EXTERNAL_STORAGE` together with read access, in the same system dialog
-the library's first scan raises, and the application uses it only for an
-autofill the owner confirmed. Granting it widens
-nothing about what the application does: the folders walked are the folders
-registered, the only thing written is the tags the owner confirmed (`BR-02`),
-and `BR-03` is unchanged.
+confirms, or starts as a batch, when the application is about to change the
+tags of files it did not make (`FR-AF-08`, `FR-AF-09`); it is not asked for
+before that. On Android 7 to 10 there is no such moment of its own: Android
+grants `WRITE_EXTERNAL_STORAGE` together with read access, in the same system
+dialog the library's first scan raises, and the application uses it only for an
+autofill the owner confirmed or started. Granting it widens nothing about what
+the application does: the folders walked are the folders registered, the only
+thing written is the tags the owner confirmed, or started a batch autofill for
+(`BR-02`), and `BR-03` is unchanged.
 
 Granting it is also not always enough within the run that asked. Android fixes
 a process's view of the mounted volumes when the process starts, so a volume

@@ -46,9 +46,10 @@ interface on Windows, Linux and Android.
 deleting, no transcoding. The one change it ever makes to an audio file is to
 its tags, from an autofill whose every change you saw and confirmed, an
 autofill of many songs that you started knowing it writes the matches it is sure
-of without asking, or an edit you made by hand — and it refuses a file another program changed since it was
-read. Besides that, it writes a `.lrc` next to a track whose words it looked
-up, a new file and never a replacement for one you wrote.
+of without asking, or an edit you made by hand — and it refuses a file another
+program changed since it was read. Besides that, it writes a `.lrc` next to a
+track whose words it looked up, a new file and never a replacement for one you
+wrote.
 
 **Almost no network.** No streaming, no scrobbling, no telemetry, no analytics,
 no crash reporting, no cover art fetched unless you ask. There are three

@@ -136,8 +136,9 @@ result in a file beside its own settings.
   its tags, from an autofill whose every change you saw and confirmed, an
   autofill of many songs that you started knowing it writes the matches it is
   sure of without asking, or an edit you made by hand — and it refuses a file
-  another program changed since it was read. Besides that, it writes a `.lrc` next to a track whose words it
-  looked up, a new file and never a replacement for one you wrote.
+  another program changed since it was read. Besides that, it writes a `.lrc`
+  next to a track whose words it looked up, a new file and never a replacement
+  for one you wrote.
 - **Almost no network.** No streaming, no scrobbling, no telemetry, no
   analytics, no crash reporting, no cover art fetched unless you ask. There are
   three exceptions: the lyrics lookup described above, which can be turned off;
@@ -151,7 +152,8 @@ result in a file beside its own settings.
   only: a folder you registered has turned out to be on a memory card or a
   drive plugged into the phone, which Android mounts where no narrower
   permission reaches; and, on Android 11 and later, when you confirm an
-  autofill or a tag edit, which has to change the files. A library that lives
+  autofill or a tag edit, or start a batch autofill, which has to change the
+  files. A library that lives
   where Android expects it, and whose tags you never change from Orpheus, never
   meets it, and granting it changes nothing about the promise above — the
   folders read are still the folders you registered, and the only thing written
@@ -279,9 +281,10 @@ which offers the platform's conventional one — and the scan starts. On Android
 the system asks for permission to read audio files at that point; it is asked
 for once you have registered a folder, never before. On Android 7 to 10 that
 same dialog also grants write access — Android asks for the two together — and
-Orpheus only ever uses it for an autofill or a tag edit you confirmed or started. On
-Android 11 and later, changing tags takes all-files access, asked for at the
-first autofill or tag edit you confirm. Android also asks to be
+Orpheus only ever uses it for an autofill or a tag edit you confirmed or
+started. On Android 11 and later, changing tags takes all-files access, asked
+for at the first autofill or tag edit you confirm, or batch autofill you start.
+Android also asks to be
 allowed to post the playback notification, and that one is asked for the first
 time you press play. Refusing it costs the notification and nothing else —
 playback still runs, and still runs in the background.
@@ -590,8 +593,8 @@ not written, and on Windows the track playing may be refused as in use.
 
 Nine milestones covering thirty-four issues: one foundation issue plus one
 issue per use case from UC-01 to UC-33. UC-34, UC-35, UC-36, UC-37, UC-38,
-UC-39, UC-40, UC-41, UC-42, UC-43 and UC-44 came after the backlog was filed and have
-no milestone; they are listed after M-09.
+UC-39, UC-40, UC-41, UC-42, UC-43 and UC-44 came after the backlog was filed
+and have no milestone; they are listed after M-09.
 Milestones are dependency-ordered — no milestone depends on a later one, and
 every milestone after `M-01` depends on it.
 

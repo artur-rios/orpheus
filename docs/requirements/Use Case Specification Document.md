@@ -1757,7 +1757,7 @@ graph LR
 | **Description** | The owner chooses which tags to fill on many songs at once — an artist's, a genre's, a playlist's, a selection or the whole library — and starts the autofill after being told that the matches Orpheus is sure of are written without asking. It looks the records up on MusicBrainz one after another, writes the confident ones, and keeps the doubtful ones for the owner to check in the review of UC-34. |
 | **Preconditions** | The library holds the songs the owner starts from. No batch is running. |
 | **Postconditions** | Every record whose match was confident holds the chosen tags, and the library shows them. A record that was doubtful, not found, not looked up or failed has had nothing written, and is named with its reason. No song outside the batch, no tag that was not chosen and no file that was not MP3 or FLAC has changed, and no audio, file name or place has changed. Where the owner cancelled before starting, or access was refused, nothing was looked up and nothing was written. What was written stays written; the batch is kept in memory only and is forgotten when Orpheus is closed. |
-| **Requirements** | FR-AF-01, FR-AF-02, FR-AF-03, FR-AF-05, FR-AF-06, FR-AF-07, FR-AF-08, FR-AF-09, FR-AF-10, FR-AF-11 |
+| **Requirements** | FR-AF-01, FR-AF-02, FR-AF-03, FR-AF-04, FR-AF-05, FR-AF-06, FR-AF-07, FR-AF-08, FR-AF-09, FR-AF-10, FR-AF-11 |
 
 **Main Flow**
 
@@ -1776,8 +1776,10 @@ graph LR
    batch is looked up over every song of that album the library holds, but changes are proposed only for the songs in
    the batch.
 5. It looks the records up one at a time, at most one request a second, as UC-34 does, and judges each one's best
-   release: confident only when it is official, has the record's title and artist, and gives every song of the batch a
-   track of the same title and, where the song has them, the same numbers (`FR-AF-02`, `FR-AF-03`, `FR-AF-10`).
+   release: a record is confident only when it is official, has the record's title and artist, and gives every song
+   of the batch a track of the same title and, where the song has them, the same numbers; a lone track only when the
+   recording has the song's title and artist, its length is within 3 seconds of the song's, and the release it is filed
+   under is an official album that is not a compilation (`FR-AF-02`, `FR-AF-03`, `FR-AF-10`).
 6. A confident record is written as found, one file at a time, each to a temporary file beside the track renamed
    into place, keeping every other byte, the song that is playing last in its record (`FR-AF-05`). A record with
    nothing to change is counted as already right. A doubtful record is kept with what was found, and nothing is
@@ -1819,6 +1821,7 @@ graph LR
 | AF-19 | A scan runs while the batch does | The batch keeps the songs it started with; a file the scan saw change is refused as in AF-11. |
 | AF-20 | Orpheus is closed or killed during the batch | What was written stays written. The batch is not resumed, and the records waiting for the owner are forgotten. |
 | AF-21 | An album is spelt two ways across its songs | It is two records, each looked up on its own; whichever does not match exactly is doubtful. |
+| AF-22 | A lone track falls short of a clear match: its title or artist differs, its length is more than 3 seconds off or unknown, or its release is not an official album or is a compilation | It is kept for the owner, with the reason *Not a clear match*, and nothing is written to it (`FR-AF-10`). |
 
 ---
 
@@ -1868,7 +1871,7 @@ graph LR
 | UC-41 Export my data | FR-DX-01 … FR-DX-09 |
 | UC-42 Back up Orpheus | FR-BK-01 … FR-BK-06 |
 | UC-43 Restore from a backup | FR-BK-07 … FR-BK-20 |
-| UC-44 Autofill many songs at once | FR-AF-09 … FR-AF-11, and as UC-34 FR-AF-01 … FR-AF-03, FR-AF-05 … FR-AF-08 |
+| UC-44 Autofill many songs at once | FR-AF-01 … FR-AF-11 |
 
 ## 4. State diagrams
 

@@ -41,7 +41,7 @@ part of the application must have anyway.
 > it. Re-scanning is what reconciles that.
 
 **BR-02 — The owner's audio files are read, and written only to change their
-tags, for changes the owner confirmed.** No file is renamed, moved, deleted or
+tags, for changes the owner confirmed or started.** No file is renamed, moved, deleted or
 transcoded. Everything this application produces lives in its own directory,
 with two exceptions. The first is the `.lrc` a lyrics lookup writes beside a
 track (`BR-29a`): a new file next to the audio, never a change to the audio, and
