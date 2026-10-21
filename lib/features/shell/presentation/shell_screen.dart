@@ -7,6 +7,7 @@ import '../../../core/di/providers.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/breakpoints.dart';
+import '../../autofill/presentation/batch_autofill_indicator.dart';
 import '../../library/presentation/library_folders_view.dart';
 import '../../library/presentation/scan_strip.dart';
 import '../../playback/presentation/genres_view.dart';
@@ -114,7 +115,8 @@ class _ShellAppBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final phone = Breakpoint.from(context).usesBottomNavigation;
+    final breakpoint = Breakpoint.from(context);
+    final phone = breakpoint.usesBottomNavigation;
 
     return AppBar(
       title: Text(destination.label(l10n)),
@@ -124,10 +126,19 @@ class _ShellAppBar extends ConsumerWidget implements PreferredSizeWidget {
         // the bar over when there is not: a search box squeezed into a phone's
         // app bar beside a title is a box too small to read what was typed
         // into it.
+        //
+        // A little narrower in a compact window, to leave the room a running
+        // autofill's button takes: the title is already tight there.
         if (!phone)
-          const SizedBox(width: 320, child: _SearchField())
+          SizedBox(
+            width: breakpoint == Breakpoint.compact ? 272 : 320,
+            child: const _SearchField(),
+          )
         else
           const _PhoneSearchButton(),
+        // A batch autofill outlives its screen: this is the way back to it
+        // for as long as it runs or waits for the owner.
+        const BatchAutofillIndicator(),
         IconButton(
           tooltip: l10n.statsOpen,
           icon: const Icon(Icons.insights_outlined),
@@ -251,8 +262,7 @@ class _PhoneSearchButton extends ConsumerWidget {
                 top: AppSpacing.md,
                 // Above the keyboard, which is most of a phone's screen while
                 // this is open.
-                bottom:
-                    MediaQuery.viewInsetsOf(context).bottom + AppSpacing.md,
+                bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.md,
               ),
               child: const _SearchField(autofocus: true),
             ),

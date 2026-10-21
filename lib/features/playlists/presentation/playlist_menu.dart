@@ -6,7 +6,9 @@ import 'package:logging/logging.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
+import '../../autofill/presentation/batch_autofill_launcher.dart';
 import '../../data_export/domain/backup.dart';
+import '../../library/domain/music_entry.dart';
 import '../../shell/presentation/confirmation_dialog.dart';
 import '../../tag_editor/domain/tag_edits.dart';
 import '../domain/auto_playlists.dart';
@@ -16,11 +18,11 @@ import 'playlist_name_dialog.dart';
 
 final Logger _log = Logger('playlists');
 
-/// A playlist's own actions: rename, its cover, export and delete.
+/// A playlist's own actions: autofill, rename, its cover, export and delete.
 ///
-/// An auto playlist's are only *Add to playlist…* — every song of it, into
-/// one of the owner's — and export: it is Orpheus's to keep, not the owner's
-/// to rename, re-cover or delete. Given the playlist as it is shown, named
+/// An auto playlist's are only *Autofill tags…*, *Add to playlist…* — every
+/// song of it, into one of the owner's — and export: it is Orpheus's to keep,
+/// not the owner's to rename, re-cover or delete. Given the playlist as it is shown, named
 /// (see `shownAs`), since that name is what an export is called.
 ///
 /// Opened by right-click, touch and hold, or the ⋮ button, as an album's menu
@@ -51,9 +53,16 @@ class PlaylistMenu extends ConsumerWidget {
       child: Text(l10n.playlistExport),
     );
 
+    final autofill = MenuItemButton(
+      leadingIcon: const Icon(Icons.auto_fix_high_outlined),
+      onPressed: () => unawaited(startBatchAutofill(context, ref, _songs(ref))),
+      child: Text(l10n.autofillAction),
+    );
+
     return MenuAnchor(
       menuChildren: isAutoPlaylistId(playlist.id)
           ? [
+              autofill,
               MenuItemButton(
                 leadingIcon: const Icon(Icons.playlist_add),
                 onPressed: () => unawaited(_addAll(context, ref)),
@@ -61,7 +70,7 @@ class PlaylistMenu extends ConsumerWidget {
               ),
               export,
             ]
-          : _ownersItems(context, ref, l10n, export),
+          : _ownersItems(context, ref, l10n, autofill, export),
       builder: (context, controller, _) => GestureDetector(
         onSecondaryTapDown: (details) =>
             controller.open(position: details.localPosition),
@@ -77,8 +86,10 @@ class PlaylistMenu extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     AppLocalizations l10n,
+    Widget autofill,
     Widget export,
   ) => [
+    autofill,
     MenuItemButton(
       leadingIcon: const Icon(Icons.drive_file_rename_outline),
       onPressed: () => unawaited(_rename(context, ref)),
@@ -167,13 +178,15 @@ class PlaylistMenu extends ConsumerWidget {
 
   /// Every song of the playlist the library has, into a playlist the owner
   /// chooses — an auto playlist copied into one of their own.
-  Future<void> _addAll(BuildContext context, WidgetRef ref) {
-    final songs =
+  Future<void> _addAll(BuildContext context, WidgetRef ref) =>
+      startAddToPlaylist(context, ref, _songs(ref));
+
+  /// The songs of the playlist the library still has, in its order.
+  List<MusicEntry> _songs(WidgetRef ref) {
+    final byPath =
         ref.read(musicLibraryControllerProvider).value?.byPath ?? const {};
 
-    return startAddToPlaylist(context, ref, [
-      for (final entry in playlist.entries) ?songs[entry.path],
-    ]);
+    return [for (final entry in playlist.entries) ?byPath[entry.path]];
   }
 
   Future<void> _export(BuildContext context, WidgetRef ref) async {

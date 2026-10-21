@@ -73,9 +73,10 @@ player did not have opinions about what they should listen to next.
 - **It changes the owner's audio files only when asked.** No renaming, no
   moving, no deleting, no transcoding. The one change it makes to an audio file
   is to its tags (MP3 and FLAC), from an autofill whose every change the owner
-  saw and confirmed. Besides that, it writes a `.lrc` beside a track whose
-  words were looked up — a new file, never a replacement for one the owner
-  wrote.
+  saw and confirmed, or from an autofill of many songs the owner started
+  knowing it writes the matches it is sure of without asking. Besides that, it
+  writes a `.lrc` beside a track whose words were looked up — a new file, never
+  a replacement for one the owner wrote.
 - **Almost no network.** No streaming, no scrobbling, no telemetry, no
   analytics, no crash reporting, no cover art fetched unless asked for. The
   exceptions are the lyrics lookup, which sends a track's artist and title; on

@@ -1442,6 +1442,240 @@ abstract class AppLocalizations {
   /// **'Open settings'**
   String get autofillOpenSettings;
 
+  /// The title of the question that asks the owner to confirm an autofill of many songs; the placeholder is how many songs.
+  ///
+  /// In en, this message translates to:
+  /// **'Autofill {songs, plural, =1{1 song} other{{songs} songs}}?'**
+  String autofillBatchConfirmTitle(int songs);
+
+  /// The body of the question that asks the owner to confirm an autofill of many songs: how many records (albums, or lone tracks) will be looked up, roughly how long it takes, and what happens to them.
+  ///
+  /// In en, this message translates to:
+  /// **'{records, plural, =1{1 record} other{{records} records}}, about {minutes, plural, =1{1 minute} other{{minutes} minutes}}. Records that clearly match MusicBrainz are written without asking, replacing their current tags; the others are kept for you to check.'**
+  String autofillBatchConfirmBody(int records, int minutes);
+
+  /// A sentence added to the autofill confirmation when some of the chosen songs are of a kind Orpheus cannot write; the placeholder is how many.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 song can\'t be changed and will be skipped.} other{{count} songs can\'t be changed and will be skipped.}}'**
+  String autofillBatchConfirmSkipped(int count);
+
+  /// The button that confirms and starts an autofill of many songs.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get autofillBatchStart;
+
+  /// The title of the question asked when a new batch autofill is started while a finished one still has records waiting for the owner.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new autofill?'**
+  String get autofillBatchReplaceTitle;
+
+  /// The body of the question asked when a new batch autofill replaces a finished one; the placeholder is how many records were waiting for the owner.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{The record waiting for you will be forgotten.} other{The {count} records waiting for you will be forgotten.}}'**
+  String autofillBatchReplaceBody(int count);
+
+  /// The button that forgets the records waiting for the owner and starts a new batch autofill.
+  ///
+  /// In en, this message translates to:
+  /// **'Start new'**
+  String get autofillBatchReplaceConfirm;
+
+  /// The title of the screen that follows an autofill of many songs.
+  ///
+  /// In en, this message translates to:
+  /// **'Autofill'**
+  String get autofillBatchTitle;
+
+  /// The progress of a batch autofill: how many records have been looked up out of how many.
+  ///
+  /// In en, this message translates to:
+  /// **'{total, plural, =1{Looking up {done} of 1 record} other{Looking up {done} of {total} records}}'**
+  String autofillBatchProgress(int done, int total);
+
+  /// The live count of records a batch autofill has written.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} updated'**
+  String autofillBatchUpdated(int count);
+
+  /// The live count of records a batch autofill kept for the owner to check.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 needs you} other{{count} need you}}'**
+  String autofillBatchNeedYou(int count);
+
+  /// The live count of records a batch autofill found to need no change.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} already right'**
+  String autofillBatchAlreadyRight(int count);
+
+  /// The live count of records a batch autofill found nothing for on MusicBrainz.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} not found'**
+  String autofillBatchNotFound(int count);
+
+  /// The live count of what a batch autofill left alone: songs that cannot be changed and records that failed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} skipped'**
+  String autofillBatchSkipped(int count);
+
+  /// The button that stops a batch autofill after the record being looked up.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get autofillBatchStop;
+
+  /// The batch autofill's stop button once pressed, unavailable while the record being looked up or written is finished before the batch stops.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping…'**
+  String get autofillBatchStopping;
+
+  /// The button that forgets the records a batch autofill kept for the owner.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear list'**
+  String get autofillBatchClearList;
+
+  /// The title of the question asked before the records kept for the owner are forgotten.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the list?'**
+  String get autofillBatchClearTitle;
+
+  /// The body of the question asked before the records kept for the owner are forgotten.
+  ///
+  /// In en, this message translates to:
+  /// **'The records waiting for you are forgotten. Nothing is written.'**
+  String get autofillBatchClearBody;
+
+  /// The button that forgets the records kept for the owner.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get autofillBatchClearConfirm;
+
+  /// Shown on the batch autofill screen when MusicBrainz could not be reached several times in a row and the batch waits for the owner.
+  ///
+  /// In en, this message translates to:
+  /// **'MusicBrainz could not be reached. The autofill is paused.'**
+  String get autofillBatchPaused;
+
+  /// The headline of a finished batch autofill: how many records were written and how many wait for the owner.
+  ///
+  /// In en, this message translates to:
+  /// **'{updated, plural, =1{1 record updated} other{{updated} records updated}}, {needYou, plural, =1{1 needs you} other{{needYou} need you}}'**
+  String autofillBatchSummary(int updated, int needYou);
+
+  /// The heading of the list of records a batch autofill kept for the owner to check.
+  ///
+  /// In en, this message translates to:
+  /// **'Need you'**
+  String get autofillBatchSectionNeedYou;
+
+  /// The heading of the list of records a batch autofill found nothing for.
+  ///
+  /// In en, this message translates to:
+  /// **'Not found'**
+  String get autofillBatchSectionNotFound;
+
+  /// The heading of the list of songs a batch autofill could not change, because of the kind of file or the shape of its tags.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t be changed'**
+  String get autofillBatchSectionNotWritable;
+
+  /// The heading of the list of records a batch autofill could not look up, or whose files could not all be written.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not be written or looked up'**
+  String get autofillBatchSectionFailed;
+
+  /// The heading of the list of records a stopped batch autofill never reached.
+  ///
+  /// In en, this message translates to:
+  /// **'Not looked up'**
+  String get autofillBatchSectionNotLookedUp;
+
+  /// Why a record was kept for the owner: MusicBrainz found no release for it.
+  ///
+  /// In en, this message translates to:
+  /// **'No match'**
+  String get autofillDoubtNoMatch;
+
+  /// Why a record was kept for the owner: the best release found is not an official one.
+  ///
+  /// In en, this message translates to:
+  /// **'Not an official release'**
+  String get autofillDoubtNotOfficial;
+
+  /// Why a record was kept for the owner: the best release is called something else than the record.
+  ///
+  /// In en, this message translates to:
+  /// **'Different album name'**
+  String get autofillDoubtDifferentAlbum;
+
+  /// Why a record was kept for the owner: the best release is by another artist than the record.
+  ///
+  /// In en, this message translates to:
+  /// **'Different artist'**
+  String get autofillDoubtDifferentArtist;
+
+  /// Why a record was kept for the owner: some of its songs found no track on the release; the placeholder is how many.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 song unmatched} other{{count} songs unmatched}}'**
+  String autofillDoubtUnmatchedSongs(int count);
+
+  /// Why a record was kept for the owner: some of its songs found a track that is not plainly theirs; the placeholder is how many.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 song differs} other{{count} songs differ}}'**
+  String autofillDoubtDifferentSongs(int count);
+
+  /// Why a record was kept for the owner: only some of its songs are in the batch, and writing the release's album to them would separate them from the rest.
+  ///
+  /// In en, this message translates to:
+  /// **'Would split the album'**
+  String get autofillDoubtWouldSplitAlbum;
+
+  /// Why a lone track was kept for the owner: the recording found is not surely the song.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a clear match'**
+  String get autofillDoubtUncertainTrack;
+
+  /// The shell's indicator while a batch autofill runs: how many records are done out of how many.
+  ///
+  /// In en, this message translates to:
+  /// **'Autofilling {done}/{total}'**
+  String autofillBatchIndicatorRunning(int done, int total);
+
+  /// The shell's indicator while a batch autofill waits for MusicBrainz.
+  ///
+  /// In en, this message translates to:
+  /// **'Autofill paused'**
+  String get autofillBatchIndicatorPaused;
+
+  /// The shell's indicator once a batch autofill is done and records still wait for the owner.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 needs you} other{{count} need you}}'**
+  String autofillBatchIndicatorNeedYou(int count);
+
+  /// The shell's indicator once a batch autofill is done, until its summary has been seen.
+  ///
+  /// In en, this message translates to:
+  /// **'Autofill done'**
+  String get autofillBatchIndicatorDone;
+
   /// The action, in a track's menu, that opens the form its tags are edited in by hand.
   ///
   /// In en, this message translates to:

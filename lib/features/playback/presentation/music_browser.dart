@@ -44,6 +44,7 @@ class MusicBrowser extends ConsumerWidget {
     this.leadingCrumbs = const [],
     this.fallbackLibrary,
     this.listFrame,
+    this.onAutofill,
     super.key,
   });
 
@@ -110,6 +111,13 @@ class MusicBrowser extends ConsumerWidget {
   /// owner has drilled to.
   final Object selectionPlace;
 
+  /// What *Autofill tags…* in the controls bar's ⋮ menu does, or `null` for
+  /// a browser with no such menu.
+  ///
+  /// Autofills what [onShuffle] plays: the whole library under Music, the
+  /// genre's songs inside one.
+  final VoidCallback? onAutofill;
+
   /// What the list is drawn inside, or `null` for the list alone.
   ///
   /// The Music tab's: its loading, failure and empty states take the list's
@@ -139,6 +147,7 @@ class MusicBrowser extends ConsumerWidget {
           navigator: navigator,
           onShuffle: onShuffle,
           shuffleTooltip: shuffleTooltip,
+          onAutofill: onAutofill,
         ),
         const SizedBox(height: AppSpacing.sm),
         _Breadcrumb(
@@ -153,7 +162,8 @@ class MusicBrowser extends ConsumerWidget {
   }
 }
 
-/// The view switcher, the shuffle button and the layout switcher.
+/// The view switcher, the shuffle button, the ⋮ menu where there is one and the
+/// layout switcher.
 ///
 /// One row wherever one row holds them, and two on a phone, where it does not.
 /// The three of them want about 545 logical pixels together — 585 in
@@ -173,6 +183,7 @@ class _Controls extends StatelessWidget {
     required this.navigator,
     required this.onShuffle,
     required this.shuffleTooltip,
+    required this.onAutofill,
   });
 
   final MusicView view;
@@ -180,14 +191,35 @@ class _Controls extends StatelessWidget {
   final MusicNavigator navigator;
   final VoidCallback onShuffle;
   final String shuffleTooltip;
+  final VoidCallback? onAutofill;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final autofill = onAutofill;
     final shuffle = IconButton(
       tooltip: shuffleTooltip,
       icon: const Icon(Icons.shuffle),
       onPressed: onShuffle,
     );
+    // Beside shuffle, since both are about everything the browser shows, and
+    // only where the caller has something to offer in it.
+    final more = autofill == null
+        ? null
+        : MenuAnchor(
+            menuChildren: [
+              MenuItemButton(
+                leadingIcon: const Icon(Icons.auto_fix_high_outlined),
+                onPressed: autofill,
+                child: Text(l10n.autofillAction),
+              ),
+            ],
+            builder: (context, menu, _) => IconButton(
+              tooltip: l10n.musicGroupActions,
+              icon: const Icon(Icons.more_vert),
+              onPressed: () => menu.isOpen ? menu.close() : menu.open(),
+            ),
+          );
 
     if (!Breakpoint.from(context).usesBottomNavigation) {
       return Row(
@@ -196,6 +228,7 @@ class _Controls extends StatelessWidget {
             child: _ViewSwitcher(selected: view, navigator: navigator),
           ),
           shuffle,
+          ?more,
           MusicLayoutSwitcher(selected: layout),
         ],
       );
@@ -210,6 +243,7 @@ class _Controls extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             shuffle,
+            ?more,
             MusicLayoutSwitcher(selected: layout),
           ],
         ),

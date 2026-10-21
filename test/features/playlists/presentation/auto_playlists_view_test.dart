@@ -357,6 +357,21 @@ void main() {
     );
 
     testWidgets(
+      'GivenAnAutoRow_WhenAutofillTagsIsChosen_ThenItsSongsAreConfirmedAsABatch',
+      (tester) async {
+        await show(tester);
+
+        await tester.tap(row('All-time favourites'), buttons: kSecondaryButton);
+        await tester.pumpAndSettle();
+        await tap(tester, menuItem('Autofill tags…'));
+        await tap(tester, find.text('Find'));
+
+        // Alpha and Bravo, the two songs that were ever played.
+        expect(find.text('Autofill 2 songs?'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'GivenAnAutoRow_WhenAddToPlaylistIsChosen_ThenAllItsSongsGoToTheChosenPlaylist',
       (tester) async {
         final harness = await show(tester);

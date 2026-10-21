@@ -10,6 +10,7 @@ import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../autofill/application/autofill_controller.dart';
 import '../../autofill/presentation/autofill_launcher.dart';
+import '../../autofill/presentation/batch_autofill_launcher.dart';
 import '../../library/domain/music_entry.dart';
 import '../../library/domain/music_grouping.dart';
 import '../../playlists/presentation/add_to_playlist.dart';
@@ -293,9 +294,7 @@ class _GroupArt extends StatelessWidget {
     final coverId = _coverOf(group);
     final art = AlbumArt(coverId: coverId, side: side);
 
-    return kind == MusicGroupKind.artist
-        ? ClipOval(child: art)
-        : art;
+    return kind == MusicGroupKind.artist ? ClipOval(child: art) : art;
   }
 
   /// The first picture any of the group's tracks carries.
@@ -388,8 +387,12 @@ class _GroupActions extends ConsumerWidget {
   }
 }
 
-/// An album's or an artist's own actions: autofill (albums only), adding to a
-/// playlist and the tag editor.
+/// An album's or an artist's own actions: autofill, adding to a playlist and
+/// the tag editor.
+///
+/// Autofill on an album is UC-34's review of the one record; on an artist it
+/// is a batch over all their songs, which the owner does not review record by
+/// record.
 ///
 /// Opened by right-click, long press, or the ⋮ button on the row. A long press
 /// opens it here though it picks the song on a track's row: albums and artists
@@ -420,19 +423,20 @@ class MusicGroupMenu extends ConsumerWidget {
 
     return MenuAnchor(
       menuChildren: [
-        if (kind == MusicGroupKind.album)
-          MenuItemButton(
-            leadingIcon: const Icon(Icons.auto_fix_high_outlined),
-            onPressed: () => unawaited(
-              startAutofill(
-                context,
-                ref,
-                _gathered(context, ref),
-                kind: AutofillKind.record,
-              ),
-            ),
-            child: Text(l10n.autofillAction),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.auto_fix_high_outlined),
+          onPressed: () => unawaited(
+            kind == MusicGroupKind.album
+                ? startAutofill(
+                    context,
+                    ref,
+                    _gathered(context, ref),
+                    kind: AutofillKind.record,
+                  )
+                : startBatchAutofill(context, ref, _gathered(context, ref)),
           ),
+          child: Text(l10n.autofillAction),
+        ),
         MenuItemButton(
           leadingIcon: const Icon(Icons.playlist_add),
           onPressed: () => unawaited(
@@ -685,6 +689,14 @@ class _MusicTrackListState extends ConsumerState<MusicTrackList> {
   Future<void> _addSelected() =>
       startAddToPlaylist(context, ref, _pickedEntries());
 
+  /// Autofills the picked songs: one as UC-34's lone track, several as a
+  /// batch.
+  ///
+  /// The selection is kept, as after [_addSelected]: the owner may want to do
+  /// more with the same songs.
+  Future<void> _autofillSelected() =>
+      startBatchAutofill(context, ref, _pickedEntries());
+
   /// Opens the tag form over the picked songs, in the list's order, and ends
   /// the selection if it wrote any of them.
   ///
@@ -829,6 +841,11 @@ class _MusicTrackListState extends ConsumerState<MusicTrackList> {
                 onSelectAll: () => controller.selectAll(scope, _order()),
                 onEditTags: () => unawaited(_editSelected()),
                 actions: [
+                  IconButton(
+                    tooltip: l10n.autofillAction,
+                    icon: const Icon(Icons.auto_fix_high_outlined),
+                    onPressed: () => unawaited(_autofillSelected()),
+                  ),
                   IconButton(
                     tooltip: l10n.playlistAddTo,
                     icon: const Icon(Icons.playlist_add),

@@ -7,8 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
+import 'package:orpheus/features/autofill/application/autofill_controller.dart';
 import 'package:orpheus/features/autofill/domain/autofill_field.dart';
 import 'package:orpheus/features/autofill/domain/tag_writer.dart';
+import 'package:orpheus/features/autofill/presentation/autofill_screen.dart';
 import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_grouping.dart';
@@ -688,6 +690,53 @@ void main() {
         expect(find.byType(EditTagsDialog), findsNothing);
         expect(selected(harness), {b.file.path});
         expect(find.text('1 selected'), findsOneWidget);
+      },
+    );
+  });
+
+  group('autofill', () {
+    testWidgets(
+      'GivenASelectionOfThree_WhenAutofillTapped_ThenTheBatchConfirmationOpens',
+      (tester) async {
+        final harness = await songs(tester);
+        await hold(tester, 'Alpha');
+        await tap(tester, 'Charlie');
+        await tap(tester, 'Delta');
+
+        await tester.tap(find.byTooltip('Autofill tags…'));
+        await tester.pumpAndSettle();
+        expect(find.text('Fill which tags?'), findsOneWidget);
+        await tester.tap(find.text('Find'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Autofill 3 songs?'), findsOneWidget);
+        // Kept, as after Add to playlist: the owner may want the same songs
+        // for something else.
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+        expect(selected(harness), {a.file.path, c.file.path, d.file.path});
+      },
+    );
+
+    testWidgets(
+      'GivenASelectionOfOne_WhenAutofillTapped_ThenTheLoneTrackReviewOpens',
+      (tester) async {
+        await songs(tester);
+        await hold(tester, 'Bravo');
+
+        await tester.tap(find.byTooltip('Autofill tags…'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Find'));
+        await tester.pumpAndSettle();
+
+        final screen = tester.widget<AutofillScreen>(
+          find.byType(AutofillScreen),
+        );
+        expect(screen.kind, AutofillKind.track);
+        expect(
+          [for (final song in screen.entries) song.file.path],
+          [b.file.path],
+        );
       },
     );
   });

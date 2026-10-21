@@ -1050,6 +1050,268 @@
   "@autofillOpenSettings": {
     "description": "The button that opens the system settings where write access can be granted."
   },
+  "autofillBatchConfirmTitle": "Preencher {songs, plural, =0{0 faixas} =1{1 faixa} other{{songs} faixas}}?",
+  "@autofillBatchConfirmTitle": {
+    "description": "The title of the question that asks the owner to confirm an autofill of many songs; the placeholder is how many songs.",
+    "placeholders": {
+      "songs": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillBatchConfirmBody": "{records, plural, =0{0 discos} =1{1 disco} other{{records} discos}}, cerca de {minutes, plural, =0{0 minutos} =1{1 minuto} other{{minutes} minutos}}. Os discos que correspondem claramente ao MusicBrainz são gravados sem perguntar, substituindo as tags atuais; os outros ficam guardados para você conferir.",
+  "@autofillBatchConfirmBody": {
+    "description": "The body of the question that asks the owner to confirm an autofill of many songs: how many records (albums, or lone tracks) will be looked up, roughly how long it takes, and what happens to them.",
+    "placeholders": {
+      "records": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "minutes": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillBatchConfirmSkipped": "{count, plural, =0{0 faixas não podem ser alteradas e serão ignoradas.} =1{1 faixa não pode ser alterada e será ignorada.} other{{count} faixas não podem ser alteradas e serão ignoradas.}}",
+  "@autofillBatchConfirmSkipped": {
+    "description": "A sentence added to the autofill confirmation when some of the chosen songs are of a kind Orpheus cannot write; the placeholder is how many.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillBatchStart": "Iniciar",
+  "@autofillBatchStart": {
+    "description": "The button that confirms and starts an autofill of many songs."
+  },
+  "autofillBatchReplaceTitle": "Iniciar um novo preenchimento?",
+  "@autofillBatchReplaceTitle": {
+    "description": "The title of the question asked when a new batch autofill is started while a finished one still has records waiting for the owner."
+  },
+  "autofillBatchReplaceBody": "{count, plural, =0{Os 0 discos que esperam por você serão esquecidos.} =1{O disco que espera por você será esquecido.} other{Os {count} discos que esperam por você serão esquecidos.}}",
+  "@autofillBatchReplaceBody": {
+    "description": "The body of the question asked when a new batch autofill replaces a finished one; the placeholder is how many records were waiting for the owner.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillBatchReplaceConfirm": "Iniciar novo",
+  "@autofillBatchReplaceConfirm": {
+    "description": "The button that forgets the records waiting for the owner and starts a new batch autofill."
+  },
+  "autofillBatchTitle": "Preenchimento automático",
+  "@autofillBatchTitle": {
+    "description": "The title of the screen that follows an autofill of many songs."
+  },
+  "autofillBatchProgress": "{total, plural, =0{Buscando {done} de 0 discos} =1{Buscando {done} de 1 disco} other{Buscando {done} de {total} discos}}",
+  "@autofillBatchProgress": {
+    "description": "The progress of a batch autofill: how many records have been looked up out of how many.",
+    "placeholders": {
+      "done": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillBatchUpdated": "{count, plural, =0{0 atualizados} =1{1 atualizado} other{{count} atualizados}}",
+  "@autofillBatchUpdated": {
+    "description": "The live count of records a batch autofill has written.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillBatchNeedYou": "{count, plural, =0{0 precisam de você} =1{1 precisa de você} other{{count} precisam de você}}",
+  "@autofillBatchNeedYou": {
+    "description": "The live count of records a batch autofill kept for the owner to check.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillBatchAlreadyRight": "{count, plural, =0{0 já estão certos} =1{1 já está certo} other{{count} já estão certos}}",
+  "@autofillBatchAlreadyRight": {
+    "description": "The live count of records a batch autofill found to need no change.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillBatchNotFound": "{count, plural, =0{0 não encontrados} =1{1 não encontrado} other{{count} não encontrados}}",
+  "@autofillBatchNotFound": {
+    "description": "The live count of records a batch autofill found nothing for on MusicBrainz.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillBatchSkipped": "{count, plural, =0{0 ignorados} =1{1 ignorado} other{{count} ignorados}}",
+  "@autofillBatchSkipped": {
+    "description": "The live count of what a batch autofill left alone: songs that cannot be changed and records that failed.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillBatchStop": "Parar",
+  "@autofillBatchStop": {
+    "description": "The button that stops a batch autofill after the record being looked up."
+  },
+  "autofillBatchStopping": "Parando…",
+  "@autofillBatchStopping": {
+    "description": "The batch autofill's stop button once pressed, unavailable while the record being looked up or written is finished before the batch stops."
+  },
+  "autofillBatchClearList": "Limpar lista",
+  "@autofillBatchClearList": {
+    "description": "The button that forgets the records a batch autofill kept for the owner."
+  },
+  "autofillBatchClearTitle": "Limpar a lista?",
+  "@autofillBatchClearTitle": {
+    "description": "The title of the question asked before the records kept for the owner are forgotten."
+  },
+  "autofillBatchClearBody": "Os discos que esperam por você serão esquecidos. Nada será gravado.",
+  "@autofillBatchClearBody": {
+    "description": "The body of the question asked before the records kept for the owner are forgotten."
+  },
+  "autofillBatchClearConfirm": "Limpar",
+  "@autofillBatchClearConfirm": {
+    "description": "The button that forgets the records kept for the owner."
+  },
+  "autofillBatchPaused": "Não foi possível acessar o MusicBrainz. O preenchimento está em pausa.",
+  "@autofillBatchPaused": {
+    "description": "Shown on the batch autofill screen when MusicBrainz could not be reached several times in a row and the batch waits for the owner."
+  },
+  "autofillBatchSummary": "{updated, plural, =0{0 discos atualizados} =1{1 disco atualizado} other{{updated} discos atualizados}}, {needYou, plural, =0{0 precisam de você} =1{1 precisa de você} other{{needYou} precisam de você}}",
+  "@autofillBatchSummary": {
+    "description": "The headline of a finished batch autofill: how many records were written and how many wait for the owner.",
+    "placeholders": {
+      "updated": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "needYou": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillBatchSectionNeedYou": "Precisam de você",
+  "@autofillBatchSectionNeedYou": {
+    "description": "The heading of the list of records a batch autofill kept for the owner to check."
+  },
+  "autofillBatchSectionNotFound": "Não encontrados",
+  "@autofillBatchSectionNotFound": {
+    "description": "The heading of the list of records a batch autofill found nothing for."
+  },
+  "autofillBatchSectionNotWritable": "Não podem ser alteradas",
+  "@autofillBatchSectionNotWritable": {
+    "description": "The heading of the list of songs a batch autofill could not change, because of the kind of file or the shape of its tags."
+  },
+  "autofillBatchSectionFailed": "Não foi possível gravar ou buscar",
+  "@autofillBatchSectionFailed": {
+    "description": "The heading of the list of records a batch autofill could not look up, or whose files could not all be written."
+  },
+  "autofillBatchSectionNotLookedUp": "Não buscados",
+  "@autofillBatchSectionNotLookedUp": {
+    "description": "The heading of the list of records a stopped batch autofill never reached."
+  },
+  "autofillDoubtNoMatch": "Sem correspondência",
+  "@autofillDoubtNoMatch": {
+    "description": "Why a record was kept for the owner: MusicBrainz found no release for it."
+  },
+  "autofillDoubtNotOfficial": "Não é um lançamento oficial",
+  "@autofillDoubtNotOfficial": {
+    "description": "Why a record was kept for the owner: the best release found is not an official one."
+  },
+  "autofillDoubtDifferentAlbum": "Nome de álbum diferente",
+  "@autofillDoubtDifferentAlbum": {
+    "description": "Why a record was kept for the owner: the best release is called something else than the record."
+  },
+  "autofillDoubtDifferentArtist": "Artista diferente",
+  "@autofillDoubtDifferentArtist": {
+    "description": "Why a record was kept for the owner: the best release is by another artist than the record."
+  },
+  "autofillDoubtUnmatchedSongs": "{count, plural, =0{0 faixas sem correspondência} =1{1 faixa sem correspondência} other{{count} faixas sem correspondência}}",
+  "@autofillDoubtUnmatchedSongs": {
+    "description": "Why a record was kept for the owner: some of its songs found no track on the release; the placeholder is how many.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillDoubtDifferentSongs": "{count, plural, =0{0 faixas diferentes} =1{1 faixa diferente} other{{count} faixas diferentes}}",
+  "@autofillDoubtDifferentSongs": {
+    "description": "Why a record was kept for the owner: some of its songs found a track that is not plainly theirs; the placeholder is how many.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillDoubtWouldSplitAlbum": "Dividiria o álbum",
+  "@autofillDoubtWouldSplitAlbum": {
+    "description": "Why a record was kept for the owner: only some of its songs are in the batch, and writing the release's album to them would separate them from the rest."
+  },
+  "autofillDoubtUncertainTrack": "Correspondência incerta",
+  "@autofillDoubtUncertainTrack": {
+    "description": "Why a lone track was kept for the owner: the recording found is not surely the song."
+  },
+  "autofillBatchIndicatorRunning": "Preenchendo {done}/{total}",
+  "@autofillBatchIndicatorRunning": {
+    "description": "The shell's indicator while a batch autofill runs: how many records are done out of how many.",
+    "placeholders": {
+      "done": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillBatchIndicatorPaused": "Preenchimento em pausa",
+  "@autofillBatchIndicatorPaused": {
+    "description": "The shell's indicator while a batch autofill waits for MusicBrainz."
+  },
+  "autofillBatchIndicatorNeedYou": "{count, plural, =0{0 precisam de você} =1{1 precisa de você} other{{count} precisam de você}}",
+  "@autofillBatchIndicatorNeedYou": {
+    "description": "The shell's indicator once a batch autofill is done and records still wait for the owner.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "autofillBatchIndicatorDone": "Preenchimento concluído",
+  "@autofillBatchIndicatorDone": {
+    "description": "The shell's indicator once a batch autofill is done, until its summary has been seen."
+  },
   "tagEditAction": "Editar tags…",
   "@tagEditAction": {
     "description": "The action, in a track's menu, that opens the form its tags are edited in by hand."

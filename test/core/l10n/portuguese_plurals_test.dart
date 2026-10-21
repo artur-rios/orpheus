@@ -61,4 +61,31 @@ void main() {
     expect(l10n.storyOpeningTracks(0), 'em 0 faixas');
     expect(l10n.storyOpeningTracks(1), 'em 1 faixa');
   });
+
+  test(
+    'GivenNothingCounted_WhenTheBatchAutofillIsRead_ThenPortugueseSaysZero',
+    () {
+      expect(l10n.autofillBatchUpdated(0), '0 atualizados');
+      expect(l10n.autofillBatchUpdated(1), '1 atualizado');
+      expect(l10n.autofillBatchNeedYou(0), '0 precisam de você');
+      expect(l10n.autofillBatchNeedYou(1), '1 precisa de você');
+      expect(l10n.autofillBatchNotFound(0), '0 não encontrados');
+      expect(l10n.autofillBatchSkipped(1), '1 ignorado');
+      expect(
+        l10n.autofillBatchSummary(0, 3),
+        '0 discos atualizados, 3 precisam de você',
+      );
+      expect(l10n.autofillBatchProgress(0, 0), 'Buscando 0 de 0 discos');
+      expect(l10n.autofillBatchProgress(1, 1), 'Buscando 1 de 1 disco');
+      expect(
+        l10n.autofillDoubtUnmatchedSongs(1),
+        '1 faixa sem correspondência',
+      );
+      expect(l10n.autofillDoubtDifferentSongs(2), '2 faixas diferentes');
+      expect(
+        l10n.autofillBatchConfirmBody(1, 1),
+        startsWith('1 disco, cerca de 1 minuto.'),
+      );
+    },
+  );
 }
