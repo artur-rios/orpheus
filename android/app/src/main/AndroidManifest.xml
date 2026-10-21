@@ -44,18 +44,19 @@
          permission for them: a folder on one either reads as a folder that is
          not there, or it reads with this.
 
-         The second, on Android 11 and later: the owner has reviewed an
-         autofill's changes and confirmed them, and the application is about
-         to change the tags of files it did not make. There is no narrower
-         permission that lets an application do that there, and nothing is
-         asked for before that confirmation.
+         The second, on Android 11 and later: the owner has confirmed an
+         autofill's changes, or started an autofill of many songs knowing its
+         clear matches are written without review, and the application is
+         about to change the tags of files it did not make. There is no
+         narrower permission that lets an application do that there, and
+         nothing is asked for before that.
 
          It changes nothing about what this application does with what it
          reads. Orpheus walks the folders the owner registered and no others,
          it opens audio files to read their tags and play them, and the only
          things it ever writes into a music folder are a .lrc beside a track
          whose words were looked up, and the tags of files whose autofill the
-         owner confirmed. That is true with this permission exactly as it was
+         owner confirmed or started. That is true with this permission exactly as it was
          without it. It can be taken back in the system settings at any
          time. -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>

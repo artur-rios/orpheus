@@ -12,6 +12,10 @@ class ScriptedMetadataSource implements MetadataSource {
   /// Releases each search answers.
   List<ReleaseCandidate> candidates = const [];
 
+  /// What a release search answers for its query, in place of [candidates],
+  /// where a test looks up more than one record.
+  List<ReleaseCandidate> Function(ReleaseQuery query)? candidatesFor;
+
   /// Each release by id.
   Map<String, ReleaseDetail> releases = const {};
 
@@ -21,11 +25,20 @@ class ScriptedMetadataSource implements MetadataSource {
   /// Recordings each recording search answers.
   List<RecordingMatch> recordings = const [];
 
+  /// What a recording search answers for its query, in place of
+  /// [recordings], where a test looks up more than one track.
+  List<RecordingMatch> Function(RecordingQuery query)? recordingsFor;
+
   /// Covers by release id.
   Map<String, Uint8List> covers = const {};
 
   /// What every call throws instead, where a test wants a failure.
   MetadataSourceFailure? failure;
+
+  /// What each search throws, one taken per search in order, where a test
+  /// wants some lookups to fail and others not: `null` lets that one through,
+  /// and once the list is empty every search is let through.
+  final List<MetadataSourceFailure?> failures = [];
 
   /// What fetching a cover throws instead, where a test wants only the
   /// download to fail.
@@ -53,11 +66,19 @@ class ScriptedMetadataSource implements MetadataSource {
     if (thrown != null) throw MetadataSourceException(thrown);
   }
 
+  Future<void> _searchGate() async {
+    await _gate();
+    if (failures.isEmpty) return;
+
+    final thrown = failures.removeAt(0);
+    if (thrown != null) throw MetadataSourceException(thrown);
+  }
+
   @override
   Future<List<ReleaseCandidate>> searchReleases(ReleaseQuery query) async {
     releaseQueries.add(query);
-    await _gate();
-    return candidates;
+    await _searchGate();
+    return candidatesFor?.call(query) ?? candidates;
   }
 
   @override
@@ -77,8 +98,8 @@ class ScriptedMetadataSource implements MetadataSource {
 
   @override
   Future<List<RecordingMatch>> searchRecordings(RecordingQuery query) async {
-    await _gate();
-    return recordings;
+    await _searchGate();
+    return recordingsFor?.call(query) ?? recordings;
   }
 
   @override

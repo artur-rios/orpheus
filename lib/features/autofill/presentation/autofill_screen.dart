@@ -24,6 +24,8 @@ class AutofillScreen extends ConsumerStatefulWidget {
     required this.entries,
     required this.fields,
     required this.kind,
+    this.matchAgainst,
+    this.onWritten,
     super.key,
   });
 
@@ -36,16 +38,32 @@ class AutofillScreen extends ConsumerStatefulWidget {
   /// A record or a lone track.
   final AutofillKind kind;
 
+  /// The whole record [entries] belong to, where they are only some of it: the
+  /// record is matched as a whole and only [entries] are proposed changes.
+  final List<MusicEntry>? matchAgainst;
+
+  /// Called once when the writing finishes with at least one file written.
+  final void Function()? onWritten;
+
   @override
   ConsumerState<AutofillScreen> createState() => _AutofillScreenState();
 }
 
 class _AutofillScreenState extends ConsumerState<AutofillScreen> {
   final TextEditingController _query = TextEditingController();
+  bool _notified = false;
 
   @override
   void initState() {
     super.initState();
+    // Once, though a retry can finish a second time.
+    ref.listenManual(autofillControllerProvider, (_, next) {
+      if (_notified || next.stage != AutofillStage.finished) return;
+      if (!next.outcomes.values.contains(WriteOutcome.written)) return;
+
+      _notified = true;
+      widget.onWritten?.call();
+    });
     // After the first frame, so the controller is being watched — kept alive —
     // before the lookup starts.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -53,7 +71,12 @@ class _AutofillScreenState extends ConsumerState<AutofillScreen> {
       unawaited(
         ref
             .read(autofillControllerProvider.notifier)
-            .start(widget.entries, widget.fields, kind: widget.kind),
+            .start(
+              widget.entries,
+              widget.fields,
+              kind: widget.kind,
+              matchAgainst: widget.matchAgainst,
+            ),
       );
     });
   }
@@ -201,7 +224,7 @@ class _Review extends ConsumerWidget {
             release: release.release,
             candidates: state.candidates,
           ),
-          if (state.refusal != null) _Refusal(decision: state.refusal!),
+          if (state.refusal != null) AutofillRefusal(decision: state.refusal!),
           if (state.coverMissing)
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.sm),
@@ -287,9 +310,13 @@ String _describe(ReleaseCandidate release) => [
   ?release.disambiguation,
 ].where((part) => part.isNotEmpty).join(' · ');
 
-class _Refusal extends ConsumerWidget {
-  const _Refusal({required this.decision});
+/// Says the owner refused write access, and offers the system settings where
+/// the refusal is for good.
+class AutofillRefusal extends ConsumerWidget {
+  /// Creates the notice for [decision].
+  const AutofillRefusal({required this.decision, super.key});
 
+  /// What the owner said; not a grant.
   final LibraryAccessDecision decision;
 
   @override
@@ -517,16 +544,7 @@ class _Summary extends StatelessWidget {
           ListTile(
             dense: true,
             title: Text(path.split(RegExp(r'[/\\]')).last),
-            subtitle: Text(switch (outcome) {
-              WriteOutcome.changedSinceRead => l10n.autofillOutcomeChanged,
-              WriteOutcome.inUse => l10n.autofillOutcomeInUse,
-              WriteOutcome.denied => l10n.autofillOutcomeDenied,
-              // A kind of file Orpheus writes, whose tag the editor refused.
-              WriteOutcome.unsupported when canWriteTagsTo(path) =>
-                l10n.autofillUnsafeTags,
-              WriteOutcome.unsupported => l10n.autofillOutcomeUnsupported,
-              _ => l10n.autofillOutcomeFailed,
-            }),
+            subtitle: Text(writeOutcomeReason(l10n, path, outcome)),
           ),
         for (final path in unreached)
           ListTile(
@@ -546,3 +564,18 @@ class _Summary extends StatelessWidget {
     );
   }
 }
+
+/// Why the file at [path] was not written, as [outcome] says.
+String writeOutcomeReason(
+  AppLocalizations l10n,
+  String path,
+  WriteOutcome outcome,
+) => switch (outcome) {
+  WriteOutcome.changedSinceRead => l10n.autofillOutcomeChanged,
+  WriteOutcome.inUse => l10n.autofillOutcomeInUse,
+  WriteOutcome.denied => l10n.autofillOutcomeDenied,
+  // A kind of file Orpheus writes, whose tag the editor refused.
+  WriteOutcome.unsupported when canWriteTagsTo(path) => l10n.autofillUnsafeTags,
+  WriteOutcome.unsupported => l10n.autofillOutcomeUnsupported,
+  _ => l10n.autofillOutcomeFailed,
+};

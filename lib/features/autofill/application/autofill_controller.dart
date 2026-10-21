@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
@@ -13,6 +12,7 @@ import '../domain/metadata_source.dart';
 import '../domain/proposals.dart';
 import '../domain/release.dart';
 import '../domain/tag_writer.dart';
+import 'release_fetch.dart';
 
 /// Where an autofill is.
 enum AutofillStage {
@@ -167,6 +167,7 @@ class AutofillController extends Notifier<AutofillState> {
   static const String fieldsSettingsKey = 'autofillFields';
 
   List<MusicEntry> _entries = const [];
+  List<MusicEntry>? _matchAgainst;
   Map<String, FileTags> _tags = const {};
   String? _recordingId;
   bool _cancelled = false;
@@ -182,16 +183,23 @@ class AutofillController extends Notifier<AutofillState> {
   );
 
   /// Starts an autofill of [entries] for [fields].
+  ///
+  /// With [matchAgainst], [entries] are some files of a bigger record: the
+  /// record is looked up, ranked and its tracks assigned as for the whole of
+  /// [matchAgainst], and only [entries] are proposed changes.
   Future<void> start(
     List<MusicEntry> entries,
     Set<AutofillField> fields, {
     required AutofillKind kind,
+    List<MusicEntry>? matchAgainst,
   }) async {
     _entries = entries;
+    _matchAgainst = matchAgainst;
     unawaited(_remember(fields));
 
+    final basis = matchAgainst ?? entries;
     final text = kind == AutofillKind.record
-        ? _join(releaseQueryFor(entries).album, releaseQueryFor(entries).artist)
+        ? _join(releaseQueryFor(basis).album, releaseQueryFor(basis).artist)
         : _join(
             recordingQueryFor(entries.single).title,
             recordingQueryFor(entries.single).artist,
@@ -287,7 +295,8 @@ class AutofillController extends Notifier<AutofillState> {
 
     try {
       if (state.kind == AutofillKind.record) {
-        final query = releaseQueryFor(_entries);
+        final basis = _matchAgainst ?? _entries;
+        final query = releaseQueryFor(basis);
         final found = await source.searchReleases(
           text == null ? query : ReleaseQuery(text: text),
         );
@@ -295,7 +304,7 @@ class AutofillController extends Notifier<AutofillState> {
 
         final ranked = rankCandidates(
           found,
-          fileCount: _entries.length,
+          fileCount: basis.length,
           album: query.album,
           artist: query.artist,
         );
@@ -346,63 +355,50 @@ class AutofillController extends Notifier<AutofillState> {
     final source = ref.read(metadataSourceProvider);
 
     try {
-      final detail = await source.release(releaseId);
+      final fetched = await fetchRelease(source, releaseId, state.fields);
       if (!ref.mounted) return;
 
-      var fallback = const <Genre>[];
-      final groupId = detail.releaseGroupId;
-      if (state.fields.contains(AutofillField.genre) &&
-          detail.genres.isEmpty &&
-          groupId != null) {
-        try {
-          fallback = await source.releaseGroupGenres(groupId);
-        } on MetadataSourceException catch (error) {
-          // A stand-in that could not be fetched is no genre to propose,
-          // not a release that cannot be: the other changes stand.
-          _log.info('the release group genres could not be fetched', error);
-        }
-        if (!ref.mounted) return;
-      }
-
-      Uint8List? cover;
-      var coverUnavailable = false;
-      if (state.fields.contains(AutofillField.cover)) {
-        try {
-          cover = await source.frontCover(releaseId);
-        } on MetadataSourceException catch (error) {
-          // Not "no cover": the owner is told it could not be downloaded,
-          // and can look the release up again for another try.
-          _log.info('the cover could not be fetched', error);
-          coverUnavailable = true;
-        }
-        if (!ref.mounted) return;
-      }
-
-      final assignment = state.kind == AutofillKind.track
-          ? _assignLoneTrack(detail)
-          : assignTracks(_entries, detail);
+      final detail = fetched.detail;
+      final assignment = switch (state.kind) {
+        AutofillKind.track => _assignLoneTrack(detail),
+        AutofillKind.record => _assignRecord(detail),
+      };
 
       state = state.copyWith(
         stage: AutofillStage.reviewing,
         release: detail,
         coverMissing:
             state.fields.contains(AutofillField.cover) &&
-            cover == null &&
-            !coverUnavailable,
-        coverUnavailable: coverUnavailable,
+            fetched.cover == null &&
+            !fetched.coverUnavailable,
+        coverUnavailable: fetched.coverUnavailable,
         proposals: proposalsFor(
           assignment: assignment,
           release: detail,
           fields: state.fields,
           tags: _tags,
-          fallbackGenres: fallback,
-          cover: cover,
+          fallbackGenres: fetched.fallbackGenres,
+          cover: fetched.cover,
         ),
       );
     } on MetadataSourceException catch (error) {
       if (!ref.mounted) return;
       state = state.copyWith(stage: AutofillStage.failed, failure: error.kind);
     }
+  }
+
+  /// Each of [_entries]' place on [detail]: assigned among the whole of
+  /// [_matchAgainst] where there is one, so a file is not given a track that
+  /// another file of the record has the better claim to.
+  Map<MusicEntry, ReleaseTrack?> _assignRecord(ReleaseDetail detail) {
+    final all = _matchAgainst;
+    if (all == null) return assignTracks(_entries, detail);
+
+    final wanted = {for (final entry in _entries) entry.file.path};
+    return {
+      for (final MapEntry(:key, :value) in assignTracks(all, detail).entries)
+        if (wanted.contains(key.file.path)) key: value,
+    };
   }
 
   /// The lone track's place on [detail]: the recording it was matched as,
@@ -447,13 +443,10 @@ class AutofillController extends Notifier<AutofillState> {
       return;
     }
 
-    // The track playing last: on Windows the player holds it open and the
-    // write may be refused, and everything else should be done by then.
-    final playing = ref.read(audioPlaybackControllerProvider).current?.path;
-    final ordered = [
-      ...chosen.where((p) => p.entry.file.path != playing),
-      ...chosen.where((p) => p.entry.file.path == playing),
-    ];
+    final ordered = playingLast(
+      chosen,
+      ref.read(audioPlaybackControllerProvider).current?.path,
+    );
 
     _cancelled = false;
     final outcomes = {...keep};

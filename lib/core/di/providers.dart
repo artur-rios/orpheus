@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/autofill/application/autofill_controller.dart';
+import '../../features/autofill/application/batch_autofill_controller.dart';
 import '../../features/autofill/data/audio_metadata_tag_writer.dart';
 import '../../features/autofill/data/musicbrainz_source.dart';
 import '../../features/autofill/domain/metadata_source.dart';
@@ -223,6 +224,17 @@ final autofillControllerProvider =
       isAutoDispose: true,
     );
 
+/// One batch autofill, from the first lookup to the summary.
+///
+/// Kept alive, not auto-disposed: a batch outlives its screen. The owner
+/// starts it, closes the screen and goes on listening while it runs, and
+/// comes back to its summary from the shell — and a closed screen must not
+/// stop the writes, nor forget the records kept for the owner to review.
+final batchAutofillControllerProvider =
+    NotifierProvider<BatchAutofillController, BatchAutofillState>(
+      BatchAutofillController.new,
+    );
+
 /// One tag edit, from the file read to the edit written.
 ///
 /// Auto-disposed: it lives as long as the dialog watching it, so a closed
@@ -271,9 +283,7 @@ final coverPickerProvider = Provider<CoverPicker>(
 
 /// A file's size and time as the disk has them now, which a tag edit is
 /// measured against.
-final fileStampsProvider = Provider<FileStamps>(
-  (ref) => const IoFileStamps(),
-);
+final fileStampsProvider = Provider<FileStamps>((ref) => const IoFileStamps());
 
 /// Whether a queued file is still there.
 final trackProbeProvider = Provider<TrackProbe>(

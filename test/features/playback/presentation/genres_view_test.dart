@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
@@ -364,4 +365,105 @@ void main() {
       },
     );
   });
+
+  /// Answers the fields dialog a started autofill opens with its defaults.
+  Future<void> confirmFields(WidgetTester tester) async {
+    expect(find.text('Fill which tags?'), findsOneWidget);
+    await tester.tap(find.text('Find'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('GivenAGenreRow_WhenRightClicked_ThenAutofillTagsIsOffered', (
+    tester,
+  ) async {
+    final harness = Harness(library: library);
+    await tester.pumpHarness(harness, area());
+
+    await tester.tap(rowOf('Rock'), buttons: kSecondaryMouseButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Autofill tags…'), findsOneWidget);
+    // Opened by the menu, not by the tap a row otherwise answers.
+    expect(harness.read(genreBrowseControllerProvider).inGenre, isFalse);
+  });
+
+  testWidgets('GivenAGenreRow_WhenTouchedAndHeld_ThenAutofillTagsIsOffered', (
+    tester,
+  ) async {
+    final harness = Harness(library: library);
+    await tester.pumpHarness(harness, area());
+
+    await tester.longPress(rowOf('Rock'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Autofill tags…'), findsOneWidget);
+  });
+
+  testWidgets(
+    'GivenAGenreRow_WhenItsMoreButtonIsPressedAndAutofillTapped_ThenOnlyItsTaggedSongsAreCounted',
+    (tester) async {
+      final harness = Harness(library: library);
+      await tester.pumpHarness(harness, area());
+
+      await tester.tap(
+        find.descendant(
+          of: rowOf('Rock'),
+          matching: find.byTooltip('More actions'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Autofill tags…'));
+      await tester.pumpAndSettle();
+      await confirmFields(tester);
+
+      // Airbag and War Pigs; Karma Police shares a record but is not Rock.
+      expect(find.text('Autofill 2 songs?'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'GivenAGenreRow_WhenPlayAndShuffleAreLookedFor_ThenTheyStillSitBesideTheMenuButton',
+    (tester) async {
+      final harness = Harness(library: library);
+      await tester.pumpHarness(harness, area());
+
+      for (final tooltip in [
+        'Play the genre',
+        'Shuffle the genre',
+        'More actions',
+      ]) {
+        expect(
+          find.descendant(of: rowOf('Rock'), matching: find.byTooltip(tooltip)),
+          findsOneWidget,
+          reason: tooltip,
+        );
+      }
+    },
+  );
+
+  testWidgets(
+    'GivenAnOpenGenre_WhenControlsMenuAutofillTapped_ThenOnlyItsSongsAreCounted',
+    (tester) async {
+      await openRock(tester);
+
+      await tester.tap(
+        find.descendant(
+          of: find
+              .ancestor(
+                of: find.byTooltip('Shuffle the genre'),
+                matching: find.byType(Row),
+              )
+              .first,
+          matching: find.byIcon(Icons.more_vert),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Autofill tags…'));
+      await tester.pumpAndSettle();
+      await confirmFields(tester);
+
+      // What its shuffle plays: two Rock tracks, not the library's six.
+      expect(find.text('Autofill 2 songs?'), findsOneWidget);
+    },
+  );
 }

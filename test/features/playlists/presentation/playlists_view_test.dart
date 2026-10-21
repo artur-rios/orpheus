@@ -618,4 +618,27 @@ void main() {
       },
     );
   });
+
+  group('autofill', () {
+    Future<void> confirmFields(WidgetTester tester) async {
+      await tester.tap(find.text('Autofill tags…'));
+      await tester.pumpAndSettle();
+      expect(find.text('Fill which tags?'), findsOneWidget);
+      await tester.tap(find.text('Find'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'GivenAnOwnPlaylist_WhenMenuOpened_ThenAutofillTagsIsOfferedForTheSongsItHolds',
+      (tester) async {
+        await show(tester, playlists: [roadTrip]);
+
+        await openMenuOf(tester, 'Road trip');
+        expect(find.text('Autofill tags…'), findsOneWidget);
+        await confirmFields(tester);
+
+        expect(find.text('Autofill 2 songs?'), findsOneWidget);
+      },
+    );
+  });
 }

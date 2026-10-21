@@ -590,4 +590,69 @@ void main() {
 
     expect(scanner.requests, hasLength(1));
   });
+
+  test('GivenMatchAgainstTheWholeAlbum_WhenStarted_ThenRankedByItsSizeAndProposedOnlyForTheEntries', () async {
+    final album = [
+      for (var n = 1; n <= 12; n++)
+        entry(
+          id: 'big$n',
+          title: 'Song $n',
+          artist: 'Radiohed',
+          album: 'Big Album',
+          track: n,
+        ),
+    ];
+    const single = ReleaseCandidate(
+      id: 'single',
+      title: 'Big Album',
+      artistCredit: [ArtistCredit(name: 'Radiohead')],
+      trackCount: 3,
+      status: 'Official',
+    );
+    const full = ReleaseCandidate(
+      id: 'full',
+      title: 'Big Album',
+      artistCredit: [ArtistCredit(name: 'Radiohead')],
+      trackCount: 12,
+      status: 'Official',
+    );
+    ReleaseDetail detailFor(ReleaseCandidate release, int tracks) =>
+        ReleaseDetail(
+          release: release,
+          tracks: [
+            for (var n = 1; n <= tracks; n++)
+              ReleaseTrack(
+                disc: 1,
+                position: n,
+                title: 'Song $n',
+                artistCredit: const [ArtistCredit(name: 'Radiohead')],
+              ),
+          ],
+        );
+    final harness = Harness(library: album);
+    harness.metadata
+      ..candidates = const [single, full]
+      ..releases = {
+        'single': detailFor(single, 3),
+        'full': detailFor(full, 12),
+      };
+    for (final e in album) {
+      harness.tagWriter.files[e.file.path] = FileTags(
+        writable: AutofillField.values.toSet(),
+        values: {AutofillField.artist: 'Radiohed'},
+      );
+    }
+
+    await controllerOf(harness).start(
+      album.take(3).toList(),
+      {AutofillField.artist},
+      kind: AutofillKind.record,
+      matchAgainst: album,
+    );
+
+    final state = stateOf(harness);
+    expect(state.release!.release.id, 'full');
+    expect(state.proposals, hasLength(3));
+    expect(harness.metadata.releaseQueries.single.album, 'Big Album');
+  });
 }

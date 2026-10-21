@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
+import '../../autofill/presentation/batch_autofill_launcher.dart';
 import '../../library/domain/music_catalog.dart';
 import '../../library/domain/music_entry.dart';
 import '../../library/domain/music_grouping.dart';
@@ -85,6 +86,7 @@ class GenresView extends ConsumerWidget {
               ),
         ),
         shuffleTooltip: l10n.genreShuffle,
+        onAutofill: () => unawaited(startBatchAutofill(context, ref, tracks)),
         selectionPlace: ('genre', key),
       ),
     );
@@ -114,36 +116,47 @@ class _GenreList extends ConsumerWidget {
         final count = l10n.musicTrackCount(genre.tracks.length);
         final duration = genre.duration;
 
-        return ListTile(
-          title: Text(name),
-          // The count alone where any length is unknown: a total that skipped
-          // the tracks it could not measure would be a number nobody can read.
-          subtitle: Text(
-            duration == null
-                ? count
-                : l10n.genreRowSummary(count, formatPlaybackPosition(duration)),
+        return _GenreMenu(
+          genre: genre,
+          builder: (context, menu) => ListTile(
+            title: Text(name),
+            // The count alone where any length is unknown: a total that skipped
+            // the tracks it could not measure would be a number nobody can read.
+            subtitle: Text(
+              duration == null
+                  ? count
+                  : l10n.genreRowSummary(
+                      count,
+                      formatPlaybackPosition(duration),
+                    ),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: l10n.genrePlay,
+                  icon: const Icon(Icons.play_arrow),
+                  onPressed: () => _play(ref, genre, name, shuffled: false),
+                ),
+                IconButton(
+                  tooltip: l10n.genreShuffle,
+                  icon: const Icon(Icons.shuffle),
+                  onPressed: () => _play(ref, genre, name, shuffled: true),
+                ),
+                IconButton(
+                  tooltip: l10n.musicGroupActions,
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () => menu.isOpen ? menu.close() : menu.open(),
+                ),
+              ],
+            ),
+            // Opening rather than playing, as an artist row does: playing is on
+            // the buttons beside it, where it is a decision rather than
+            // something a mis-aimed click does.
+            onTap: () => ref
+                .read(genreBrowseControllerProvider.notifier)
+                .openGenre(genre.key),
           ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                tooltip: l10n.genrePlay,
-                icon: const Icon(Icons.play_arrow),
-                onPressed: () => _play(ref, genre, name, shuffled: false),
-              ),
-              IconButton(
-                tooltip: l10n.genreShuffle,
-                icon: const Icon(Icons.shuffle),
-                onPressed: () => _play(ref, genre, name, shuffled: true),
-              ),
-            ],
-          ),
-          // Opening rather than playing, as an artist row does: playing is on
-          // the buttons beside it, where it is a decision rather than
-          // something a mis-aimed click does.
-          onTap: () => ref
-              .read(genreBrowseControllerProvider.notifier)
-              .openGenre(genre.key),
         );
       },
     );
@@ -165,4 +178,43 @@ class _GenreList extends ConsumerWidget {
           shuffled: shuffled,
         ),
   );
+}
+
+/// A genre's own actions: autofill.
+///
+/// Opened by right-click, long press, or the ⋮ button on the row, as an
+/// album's menu is. The row is built by [builder] and handed the
+/// [MenuController], so the button sits wherever the row wants it.
+class _GenreMenu extends ConsumerWidget {
+  const _GenreMenu({required this.genre, required this.builder});
+
+  /// The genre the menu acts on.
+  final GenreGroup genre;
+
+  /// The row, wired to open the menu through the controller it is given.
+  final Widget Function(BuildContext context, MenuController menu) builder;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+
+    return MenuAnchor(
+      menuChildren: [
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.auto_fix_high_outlined),
+          // Only the tracks tagged with the genre, as its play buttons queue.
+          onPressed: () =>
+              unawaited(startBatchAutofill(context, ref, genre.tracks)),
+          child: Text(l10n.autofillAction),
+        ),
+      ],
+      builder: (context, controller, _) => GestureDetector(
+        onSecondaryTapDown: (details) =>
+            controller.open(position: details.localPosition),
+        onLongPressStart: (details) =>
+            controller.open(position: details.localPosition),
+        child: builder(context, controller),
+      ),
+    );
+  }
 }

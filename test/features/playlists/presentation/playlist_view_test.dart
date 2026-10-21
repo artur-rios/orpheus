@@ -8,8 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/app.dart';
 import 'package:orpheus/core/di/providers.dart';
+import 'package:orpheus/features/autofill/application/autofill_controller.dart';
 import 'package:orpheus/features/autofill/domain/autofill_field.dart';
 import 'package:orpheus/features/autofill/domain/tag_writer.dart';
+import 'package:orpheus/features/autofill/presentation/autofill_screen.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/playback/domain/playback_queue.dart';
 import 'package:orpheus/features/playback/presentation/music_rows.dart';
@@ -613,6 +615,57 @@ void main() {
         expect(find.byTooltip('Remover da playlist'), findsOneWidget);
         // An icon on a phone, where the words would push the count out.
         expect(find.byTooltip('Editar tags…'), findsOneWidget);
+      },
+    );
+  });
+
+  group('autofill', () {
+    testWidgets(
+      'GivenTwoPresentSongsTicked_WhenAutofillInTheBarIsTapped_ThenTheBatchConfirmationOpens',
+      (tester) async {
+        final harness = await show(tester, roadTrip);
+        await hold(tester, row('Alpha'));
+        await tap(tester, row('Bravo'));
+
+        await tap(tester, find.byTooltip('Autofill tags…'));
+        await tap(tester, find.text('Find'));
+
+        expect(find.text('Autofill 2 songs?'), findsOneWidget);
+        expect(selected(harness), {'e1', 'e3'});
+      },
+    );
+
+    testWidgets(
+      'GivenOneSongTicked_WhenAutofillInTheBarIsTapped_ThenTheLoneTrackReviewOpens',
+      (tester) async {
+        await show(tester, roadTrip);
+        await hold(tester, row('Alpha'));
+
+        await tap(tester, find.byTooltip('Autofill tags…'));
+        await tap(tester, find.text('Find'));
+
+        final screen = tester.widget<AutofillScreen>(
+          find.byType(AutofillScreen),
+        );
+        expect(screen.kind, AutofillKind.track);
+        expect(
+          [for (final song in screen.entries) song.file.path],
+          [a.file.path],
+        );
+      },
+    );
+
+    testWidgets(
+      'GivenOnlyAMissingRowTicked_WhenTheBarShows_ThenAutofillIsOff',
+      (tester) async {
+        await show(tester, roadTrip);
+
+        await hold(tester, row('Ghost'));
+
+        final autofill = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.auto_fix_high_outlined),
+        );
+        expect(autofill.onPressed, isNull);
       },
     );
   });

@@ -7,6 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Autofill many songs at once. *Autofill tags…* is now on an artist's menu, on a genre's new ⋮ menu, on a
+  playlist's menu, in the bar over a selection of songs, and in a new ⋮ beside shuffle in the Music tab, which
+  covers the whole library or, inside a genre, its songs. Choose the tags, and Orpheus says how many songs and
+  records that is, about how long it will take, and that the matches it is sure of are written without asking and
+  replace the current tags. It then looks the records up on MusicBrainz one after another, in the background: a
+  record whose official release has the same title and artist and a track of the same title for every song is
+  written, and every other one is kept, unwritten, with the reason, for you to open in the usual review. A screen
+  and an indicator in the app bar show the progress and what needs you; you can stop it and keep what was written,
+  and a lost connection pauses it. The summary lists what was updated, what needs you, and what was not found,
+  could not be changed, could not be written or was not reached. An album's own menu keeps its reviewed autofill.
+
 ## [1.6.0] - 2026-10-19
 
 ### Added

@@ -2,6 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orpheus/core/di/providers.dart';
+import 'package:orpheus/features/autofill/application/autofill_controller.dart';
+import 'package:orpheus/features/autofill/presentation/autofill_screen.dart';
 import 'package:orpheus/features/playback/domain/music_layout.dart';
 import 'package:orpheus/features/playback/presentation/letter_bar.dart';
 import 'package:orpheus/features/playback/presentation/music_library_view.dart';
@@ -17,10 +19,34 @@ import '../../../support/test_container.dart';
 /// The music area: what it lists, and what happens when a row is used.
 void main() {
   final library = [
-    entry(id: '1', title: 'Airbag', artist: 'Radiohead', album: 'OK Computer', track: 1),
-    entry(id: '2', title: 'Karma Police', artist: 'Radiohead', album: 'OK Computer', track: 2),
-    entry(id: '3', title: 'Everything', artist: 'Radiohead', album: 'Kid A', track: 1),
-    entry(id: '4', title: 'So What', artist: 'Miles Davis', album: 'Kind of Blue', track: 1),
+    entry(
+      id: '1',
+      title: 'Airbag',
+      artist: 'Radiohead',
+      album: 'OK Computer',
+      track: 1,
+    ),
+    entry(
+      id: '2',
+      title: 'Karma Police',
+      artist: 'Radiohead',
+      album: 'OK Computer',
+      track: 2,
+    ),
+    entry(
+      id: '3',
+      title: 'Everything',
+      artist: 'Radiohead',
+      album: 'Kid A',
+      track: 1,
+    ),
+    entry(
+      id: '4',
+      title: 'So What',
+      artist: 'Miles Davis',
+      album: 'Kind of Blue',
+      track: 1,
+    ),
   ];
 
   Widget area() => const Scaffold(body: MusicLibraryView());
@@ -112,10 +138,7 @@ void main() {
       await tester.tap(find.widgetWithText(TextButton, 'Radiohead'));
       await tester.pumpAndSettle();
 
-      expect(
-        harness.read(musicBrowseControllerProvider).inAlbum,
-        isFalse,
-      );
+      expect(harness.read(musicBrowseControllerProvider).inAlbum, isFalse);
     },
   );
 
@@ -224,23 +247,22 @@ void main() {
     },
   );
 
-  testWidgets(
-    'GivenASongRow_WhenItIsRightClicked_ThenEditTagsIsOffered',
-    (tester) async {
-      final harness = Harness(library: library);
-      await tester.pumpHarness(harness, area());
-      await tester.tap(find.text('Songs'));
-      await tester.pumpAndSettle();
+  testWidgets('GivenASongRow_WhenItIsRightClicked_ThenEditTagsIsOffered', (
+    tester,
+  ) async {
+    final harness = Harness(library: library);
+    await tester.pumpHarness(harness, area());
+    await tester.tap(find.text('Songs'));
+    await tester.pumpAndSettle();
 
-      await tester.tap(
-        find.byType(MusicRowMenu).first,
-        buttons: kSecondaryMouseButton,
-      );
-      await tester.pumpAndSettle();
+    await tester.tap(
+      find.byType(MusicRowMenu).first,
+      buttons: kSecondaryMouseButton,
+    );
+    await tester.pumpAndSettle();
 
-      expect(find.text('Edit tags…'), findsOneWidget);
-    },
-  );
+    expect(find.text('Edit tags…'), findsOneWidget);
+  });
 
   Finder groupMore() => find
       .descendant(
@@ -266,21 +288,101 @@ void main() {
   );
 
   testWidgets(
-    'GivenAnArtistRow_WhenItIsRightClicked_ThenEditTagsIsOfferedAndAutofillIsNot',
+    'GivenAnArtistRow_WhenMenuOpened_ThenEditTagsAndAutofillTagsAreOffered',
     (tester) async {
       final harness = Harness(library: library);
       await tester.pumpHarness(harness, area());
 
-      await tester.tap(
-        find.byType(MusicGroupMenu).first,
-        buttons: kSecondaryMouseButton,
-      );
+      await tester.tap(find.text('Radiohead'), buttons: kSecondaryMouseButton);
       await tester.pumpAndSettle();
 
       expect(find.text('Edit tags…'), findsOneWidget);
-      expect(find.text('Autofill tags…'), findsNothing);
+      expect(find.text('Autofill tags…'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'GivenAnArtistRow_WhenAutofillTagsIsTapped_ThenTheBatchIsConfirmedOverAllTheirSongs',
+    (tester) async {
+      final harness = Harness(library: library);
+      await tester.pumpHarness(harness, area());
+      await tester.tap(find.text('Radiohead'), buttons: kSecondaryMouseButton);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Autofill tags…'));
+      await tester.pumpAndSettle();
+      expect(find.text('Fill which tags?'), findsOneWidget);
+      await tester.tap(find.text('Find'));
+      await tester.pumpAndSettle();
+
+      // Three songs of the artist, not the four of the library.
+      expect(find.text('Autofill 3 songs?'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'GivenAnAlbumRow_WhenAutofillTapped_ThenTheRecordReviewOpensAsBefore',
+    (tester) async {
+      final harness = Harness(library: library);
+      await tester.pumpHarness(harness, area());
+      await tester.tap(find.text('Albums'));
+      await tester.pumpAndSettle();
+      await tester.tap(groupMore());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Autofill tags…'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Find'));
+      await tester.pumpAndSettle();
+
+      final screen = tester.widget<AutofillScreen>(find.byType(AutofillScreen));
+      expect(screen.kind, AutofillKind.record);
+    },
+  );
+
+  group('the controls bar menu', () {
+    // The ⋮ beside shuffle, not the ones on the rows below it.
+    Finder controlsMore() => find.descendant(
+      of: find
+          .ancestor(
+            of: find.byTooltip('Shuffle everything'),
+            matching: find.byType(Row),
+          )
+          .first,
+      matching: find.byIcon(Icons.more_vert),
+    );
+
+    testWidgets(
+      'GivenTheMusicTab_WhenControlsMenuAutofillTapped_ThenTheWholeLibraryIsCounted',
+      (tester) async {
+        final harness = Harness(library: library);
+        await tester.pumpHarness(harness, area());
+
+        await tester.tap(controlsMore());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Autofill tags…'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Find'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Autofill 4 songs?'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'GivenAPhone_WhenTheControlsMenuIsOpened_ThenAutofillTagsIsOffered',
+      (tester) async {
+        final harness = Harness(library: library);
+        await tester.pumpHarness(harness, area(), window: const Size(360, 800));
+
+        await tester.tap(controlsMore());
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('Autofill tags…'), findsOneWidget);
+      },
+    );
+  });
 
   testWidgets(
     'GivenAnAlbumOfThreeTracks_WhenEditTagsIsPicked_ThenTheManyTrackFormOpensOverThree',
@@ -289,7 +391,13 @@ void main() {
         library: [
           entry(id: 'a', title: 'One', artist: 'Band', album: 'Trio', track: 1),
           entry(id: 'b', title: 'Two', artist: 'Band', album: 'Trio', track: 2),
-          entry(id: 'c', title: 'Three', artist: 'Band', album: 'Trio', track: 3),
+          entry(
+            id: 'c',
+            title: 'Three',
+            artist: 'Band',
+            album: 'Trio',
+            track: 3,
+          ),
         ],
       );
       await tester.pumpHarness(harness, area());
@@ -306,17 +414,16 @@ void main() {
     },
   );
 
-  testWidgets(
-    'GivenAnAlbumRow_WhenListed_ThenItHasNoSeparateAutofillButton',
-    (tester) async {
-      final harness = Harness(library: library);
-      await tester.pumpHarness(harness, area());
-      await tester.tap(find.text('Albums'));
-      await tester.pumpAndSettle();
+  testWidgets('GivenAnAlbumRow_WhenListed_ThenItHasNoSeparateAutofillButton', (
+    tester,
+  ) async {
+    final harness = Harness(library: library);
+    await tester.pumpHarness(harness, area());
+    await tester.tap(find.text('Albums'));
+    await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.auto_fix_high_outlined), findsNothing);
-    },
-  );
+    expect(find.byIcon(Icons.auto_fix_high_outlined), findsNothing);
+  });
 
   testWidgets(
     'GivenAFileWithNoTagsAtAll_WhenTheLibraryIsListed_ThenItIsCalledUnknownRatherThanItsFileName',
