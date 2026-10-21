@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-21
+
 ### Added
 
 - Autofill many songs at once. *Autofill tags…* is now on an artist's menu, on a genre's new ⋮ menu, on a
@@ -351,7 +353,8 @@ A pre-release built from the `diagnose/android-usb-folder` branch to diagnose fo
 - Release downloads: a Windows installer, a portable Windows archive, a Linux installer and an Android APK, with
   `SHA256SUMS.txt`.
 
-[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/artur-rios/orpheus/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/artur-rios/orpheus/compare/v1.5.1...v1.6.0
 [1.5.1]: https://github.com/artur-rios/orpheus/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/artur-rios/orpheus/compare/v1.4.0...v1.5.0
