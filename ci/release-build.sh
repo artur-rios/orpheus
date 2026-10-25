@@ -17,8 +17,9 @@
 #   ORPHEUS_KEY_ALIAS           the key's alias (ANDROID_KEY_ALIAS)
 #   ORPHEUS_KEY_PASSWORD        the key's password (ANDROID_KEY_PASSWORD)
 # android/app/build.gradle.kts reads ORPHEUS_KEYSTORE (a path) and the other three. A release (RELEASE_VERSION set)
-# without the keystore fails before the long builds start, as the old workflow did. ORPHEUS_SIGNING_SHA256 (it was
-# the repository variable ANDROID_SIGNING_SHA256) is optional: the fingerprint the release key must have.
+# without the keystore fails before the long builds start, as the old workflow did. The signer
+# must have the fingerprint in android/signing-sha256.txt (it was the repository variable ANDROID_SIGNING_SHA256), or
+# the one in ORPHEUS_SIGNING_SHA256, which overrides the file.
 #
 # The Linux build needs desktop packages the Flutter image does not carry; they are installed with apt when this
 # runs as root, as it does on the release agent.
@@ -133,11 +134,25 @@ if [ -z "$fingerprint" ]; then
 fi
 echo "Signed with SHA-256 $fingerprint"
 
-# Optional, and worth setting once the first signed release is out: it is what catches a key rotated by accident,
-# which every owner meets as an update they cannot install.
-if [ -z "$suffix" ] && [ -n "${ORPHEUS_SIGNING_SHA256:-}" ] && [ "$ORPHEUS_SIGNING_SHA256" != "$fingerprint" ]; then
-  echo "ci/release-build.sh: signed with $fingerprint, but this project publishes under $ORPHEUS_SIGNING_SHA256. An update signed by a different key cannot be installed over the last one." >&2
+# The release key must be the one this project has always published under: it is what catches a key rotated by
+# accident, which every owner meets as an update they cannot install. The expected fingerprint is android/signing-sha256.txt
+# (a public value, committed), and ORPHEUS_SIGNING_SHA256 in the environment overrides it. Only a debug-signed local
+# run (no keystore) skips the comparison.
+expected=${ORPHEUS_SIGNING_SHA256:-}
+if [ -z "$expected" ] && [ -f android/signing-sha256.txt ]; then
+  expected=$(grep -v '^[[:space:]]*#' android/signing-sha256.txt | tr -d ' \t\r\n:' || true)
+fi
+expected=$(printf '%s' "$expected" | tr 'A-F' 'a-f')
+if [ -n "$expected" ] && ! printf '%s\n' "$expected" | grep -Eq '^[0-9a-f]{64}$'; then
+  echo "ci/release-build.sh: the expected signing fingerprint '$expected' (android/signing-sha256.txt or ORPHEUS_SIGNING_SHA256) is not 64 hex characters" >&2
   exit 1
+fi
+if [ -z "$suffix" ] && [ -n "$expected" ]; then
+  if [ "$expected" != "$fingerprint" ]; then
+    echo "ci/release-build.sh: signed with $fingerprint, but this project publishes under $expected. An update signed by a different key cannot be installed over the last one." >&2
+    exit 1
+  fi
+  echo "The signer is the one this project publishes under."
 fi
 
 # The same gate the linux check applies, against the package that actually ships rather than one built from the

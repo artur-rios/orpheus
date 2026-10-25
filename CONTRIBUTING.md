@@ -450,12 +450,11 @@ installed a release signed with the old one would have to uninstall first, and
 their catalog, statistics and settings would go with it. It is the one file in
 this project that has no copy in the repository and cannot be rebuilt from it.
 
-**4. Optional, once the first signed release is out.** Read its fingerprint out
-of the release build's log — `ci/release-build.sh` prints
-`Signed with SHA-256 <64 hex characters>` — and give it to the build as
-`ORPHEUS_SIGNING_SHA256` (the script reads it; nothing in the pipeline sets it
-yet). From then on a release signed by anything else fails the build instead of
-shipping an update nobody can install.
+**4. The fingerprint.** `android/signing-sha256.txt` holds the SHA-256 fingerprint of the certificate the releases
+are signed with (a public value, committed). `ci/release-build.sh` reads the signer back out of the APK and fails the
+release unless it is that one, instead of shipping an update nobody can install. It prints
+`Signed with SHA-256 <64 hex characters>`; if the key is ever replaced on purpose, put the new fingerprint in the file.
+`ORPHEUS_SIGNING_SHA256` in the environment overrides the file.
 
 Building a signed package locally needs none of that. `flutter build apk
 --release` with no key configured falls back to the debug key and works as it

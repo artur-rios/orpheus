@@ -1,0 +1,5 @@
+# SHA-256 fingerprint of the certificate that signs every release of Orpheus (a public value, not a secret).
+# ci/release-build.sh compares the release APK's signer with it, and a release signed by any other key fails:
+# an update signed by a different key cannot be installed over the last one. It was the repository variable
+# ANDROID_SIGNING_SHA256. The environment variable ORPHEUS_SIGNING_SHA256 overrides it.
+b80814ed3ec6314a48687c8aa178bd16f3242f6b8a63e7a1d99bfacd271bdb33
