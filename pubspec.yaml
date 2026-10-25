@@ -102,7 +102,7 @@ dependencies:
   # the preferences, written and read in pure Dart so the format is exercised
   # by tests on every target. Already in the tree as somebody else's transitive
   # dependency; named here because the backup format now depends on it directly.
-  archive: ^4.2.0
+  archive: ^4.5.2
 
 dev_dependencies:
   flutter_test:
