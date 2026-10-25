@@ -1,0 +1,13 @@
+# The build context of the docs image (Dockerfile): only what the Hugo site is built from comes in, the site itself
+# (docs/site) and the two files it renders from the repository's root (CHANGELOG.md and CONTRIBUTING.md, mounted by
+# docs/site/hugo.toml). The application's sources, its build output and its history stay out.
+*
+!docs/site
+!CHANGELOG.md
+!CONTRIBUTING.md
+
+# Not part of the site, or rebuilt by the image.
+docs/site/node_modules
+docs/site/public
+docs/site/resources
+docs/site/.hugo_build.lock
