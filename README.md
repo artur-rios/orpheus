@@ -1,5 +1,8 @@
 # Orpheus
 
+This repository lives at <https://git.techcraftsmen.net/artur-rios/orpheus>. GitHub is a read-only mirror:
+open pull requests on the git server, not on GitHub.
+
 A music player for Windows, Linux and Android. It reads the audio files already
 on the machine it is running on, names every track by its tags rather than by
 its file name, and plays them — with the same interface on all three platforms.

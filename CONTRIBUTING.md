@@ -1,5 +1,12 @@
 # Contributing
 
+This repository lives at <https://git.techcraftsmen.net/artur-rios/orpheus>. GitHub is a read-only mirror:
+open pull requests on the git server, not on GitHub. To clone it:
+
+```sh
+git clone https://git.techcraftsmen.net/artur-rios/orpheus.git
+```
+
 The normative rules for how work is delivered — branches, commits, the issue lifecycle, pull requests and the
 Definition of Done — are in the
 [Development Workflow Document](./docs/requirements/Development%20Workflow%20Document.md), and the tests are specified
@@ -184,9 +191,9 @@ Useful flags: `--no-build` for the fast loop, `--only linux|android|windows` for
 one target, `--strict` for CI. `tools/verify.ps1` takes the same ones in long
 form, plus `-Installer`.
 
-`.github/workflows/verify.yml` is what makes the `n/a` rows add up to nothing: it
-runs `verify.sh --strict` on Linux (Linux + Android) and `verify.ps1 -Strict` on
-Windows (Windows + the installer). It also reads the built APK's permissions back
+The `linux` check (`ci/linux.sh`, run by Jenkins) and `.github/workflows/verify.yml` are what make the `n/a` rows
+add up to nothing: they run `verify.sh --strict` on Linux (Linux + Android) and `verify.ps1 -Strict` on
+Windows (Windows + the installer, the `Windows and the installer` job on the GitHub mirror). The `linux` check also reads the built APK's permissions back
 out and **fails the build if they are not exactly the nine declared in
 `AndroidManifest.xml`** — which is the promise at the top of the README,
 enforced rather than asserted. A deny list would only catch the permissions
@@ -205,8 +212,8 @@ Builds the Windows release and compiles `packaging\windows\installer.iss` into
 `PATH` and in both standard install directories, and takes `-InnoSetupPath` if
 it is somewhere else. `-SkipBuild` reuses an existing release build.
 
-Every push to `develop` or `main`, and every pull request into them, builds it:
-the `Verify` workflow's Windows job uploads `orpheus-setup-<version>.exe` as an
+Every push to any branch builds it, which is how a pull request gets its result:
+the `Verify` workflow's Windows job (the GitHub mirror runs it) uploads `orpheus-setup-<version>.exe` as an
 artifact, so the latest one is a download away from the run that produced it.
 
 ### The Linux installer
@@ -249,8 +256,8 @@ pattern without the `uc-` segment, and a defect fix takes `fix/`: `fix/scan-prog
 letters, digits, `.`, `_` and `-`. A `release/` branch is a snapshot of `develop`: a fix for a release lands on
 `develop` through a `fix/` branch and a new release branch is cut.
 
-The **Branch Policy** workflow (`.github/workflows/branch-policy.yml`) checks all of this on every pull request into
-`develop` or `main`. It, and both jobs of the `Verify` workflow, are required checks on both branches. The repository
+The `branch-policy` check, run by Jenkins, checks all of this on every pull request into
+`develop` or `main`. It, the `linux` check and the `Windows and the installer` job, are required checks on both branches. The repository
 owner can bypass these rules; that is for emergencies, not for routine work.
 
 A pull request is titled after the use case (`UC-14 — Resume a track where it stopped`), says what was built, which
@@ -294,7 +301,7 @@ The version lives in one place, the `version:` in `pubspec.yaml`, as `<major>.<m
 `<major>.<minor>.<patch>-beta.<n>+<build>` for a pre-release: `v1.3.0-beta.1` is built from `1.3.0-beta.1+7`. Both
 installer scripts read it from there, so their file names carry the pre-release (`orpheus-setup-1.3.0-beta.1.exe`);
 Flutter compiles it into the application, which is how a beta knows it is one — built from `1.3.0+7`, it would report
-itself as `1.3.0` and never be offered the `1.3.0` that follows it; and the release workflow refuses a tag that is not
+itself as `1.3.0` and never be offered the `1.3.0` that follows it; and the release build refuses a tag that is not
 `v` followed by that version, pre-release included and build number left out. The build number rises with every
 package that is published, pre-releases included, because Android reads it as `versionCode` — through
 `flutter.versionCode` in `android/app/build.gradle.kts` — and an update whose code did not rise is not an update as far
@@ -341,25 +348,29 @@ A pre-release goes the same way — `release/1.3.0`, with `pubspec.yaml` saying 
 `pubspec.yaml` says `1.3.0-beta.2+<build>` or `1.3.0+<build>`, with a higher build number, so it goes through `develop`
 and a release branch again.
 
-`.github/workflows/release.yml` does the rest. It refuses immediately if the tagged commit is not on `main` — so a
-build from any other branch is never published as a release; `v1.2.2-beta.1` predates the rule — or if the tag is not
-`v` followed by the version in `pubspec.yaml`, pre-release included — a release whose file names, installer wizard and
-application each state something different is worth failing a job over.
+Jenkins does the rest, from the `release` section of `yggdrasil.yml`. It refuses a tag whose commit is not on `main` —
+so a build from any other branch is never published as a release; `v1.2.2-beta.1` predates the rule. `ci/release-build.sh`
+refuses a tag that is not `v` followed by the version in `pubspec.yaml`, pre-release included — a release whose file
+names, installer wizard and application each state something different is worth failing a job over. Jenkins publishes
+the release on the git server and its GitHub copy, with the section of `CHANGELOG.md` for the notes.
 
 Then four artifacts, each built where it can be — the Windows installer, the
 portable Windows archive, the Linux installer and the APK, listed under
-[Downloads](./README.md#downloads) in the README.
+[Downloads](./README.md#downloads) in the README. The Linux installer and the APK are built on Jenkins's release
+agent by `ci/release-build.sh`. The two Windows files are built by the GitHub Actions workflow
+`.github/workflows/release-windows.yml` on the GitHub mirror, which Jenkins dispatches with the tag and whose files it
+attaches to the release.
 
-The APK is put through the same permission gate the Verify workflow applies,
+The APK is put through the same permission gate the `linux` check applies (`ci/permissions.sh`),
 against the package that actually ships, and the same is done with its signer
 — see below. The analyzer and the suite are run before anything is built,
-because a release is not the place to discover the suite is red. Every file is
-checksummed into `SHA256SUMS.txt`, which is the only way somebody can tell that
-what they downloaded is what the workflow built — both desktop installers are
-unsigned.
+because a release is not the place to discover the suite is red. The files are
+checksummed into `SHA256SUMS-linux-android.txt` (the Linux installer and the APK) and `SHA256SUMS-windows.txt` (the two
+Windows files), which are the only way somebody can tell that what they downloaded is what was built — both desktop
+installers are unsigned.
 
-The workflow can also be run by hand from the Actions tab, naming an existing
-tag to build a release from.
+A release that stopped can be finished, and the Windows files rebuilt for a tag, from Jenkins (`release-resume`
+and `actions-release`).
 
 ### The Android signing key
 
@@ -370,7 +381,7 @@ different signer, and an owner would meet the next one as *App not installed*
 with no way forward but uninstalling — losing the library, the statistics and
 the settings that an upgrade is supposed to keep.
 
-So the release workflow signs with a key the project holds, and refuses to
+So the release build signs with a key the project holds, and refuses to
 build without one.
 
 **1. Make the keystore.** Once, and never again. `keytool` ships with the JDK
@@ -395,8 +406,8 @@ those answers are checked by anything or shown to anyone; the password is the
 part that matters. **Write the password down before you press enter** — there is
 no way to recover it and no way to replace the keystore later.
 
-**2. Encode it.** The secret holds the file's bytes as text, because a GitHub
-secret is a string.
+**2. Encode it.** The credential holds the file's bytes as text, because a
+Jenkins secret text is a string.
 
 On Windows, which has no `base64` command — this writes the file and puts the
 same text on your clipboard, ready to paste:
@@ -416,20 +427,22 @@ base64 -w0 orpheus-release.jks > keystore.base64.txt
 Not `certutil -encode`: it wraps its output in `-----BEGIN CERTIFICATE-----`
 lines, which are not part of the data and will not decode.
 
-**3. Put four secrets in the repository.** *Settings → Secrets and variables →
-Actions → New repository secret*. The names are case-sensitive and must be
-exactly these:
+**3. Give Jenkins four credentials.** *Manage Jenkins → Credentials → System →
+Global credentials*, kind **Secret text**, with the ID exactly as written (they
+are the repository's `releaseCredentials` in yggdrasil's `catalog.yaml`, and
+`release.build.credentials` in `yggdrasil.yml` binds them to the variables the
+build reads, shown in the second column):
 
-| Secret | What to paste into it |
-| --- | --- |
-| `ANDROID_KEYSTORE_BASE64` | The entire contents of `keystore.base64.txt` — one long run of letters, digits, `+` and `/`, possibly ending in `=`. Paste what step 2 put on the clipboard, or open the file and select all. Not the `.jks` itself: a secret is text. Line breaks in it are harmless, the workflow strips them. |
-| `ANDROID_KEYSTORE_PASSWORD` | The password you typed at *Enter keystore password*. |
-| `ANDROID_KEY_ALIAS` | `orpheus` — whatever followed `-alias` in the command above. |
-| `ANDROID_KEY_PASSWORD` | **The same password again.** A PKCS12 keystore holds one password for both; keytool warns and ignores a `-keypass` that differs from the store password, so there is no second password to give. |
+| Credential ID | Variable | What to paste into it |
+| --- | --- | --- |
+| `orpheus-android-keystore` | `ORPHEUS_KEYSTORE_BASE64` | The entire contents of `keystore.base64.txt` — one long run of letters, digits, `+` and `/`, possibly ending in `=`. Paste what step 2 put on the clipboard, or open the file and select all. Not the `.jks` itself: a secret is text. Line breaks in it are harmless, the build strips them. |
+| `orpheus-android-keystore-password` | `ORPHEUS_KEYSTORE_PASSWORD` | The password you typed at *Enter keystore password*. |
+| `orpheus-android-key-alias` | `ORPHEUS_KEY_ALIAS` | `orpheus` — whatever followed `-alias` in the command above. |
+| `orpheus-android-key-password` | `ORPHEUS_KEY_PASSWORD` | **The same password again.** A PKCS12 keystore holds one password for both; keytool warns and ignores a `-keypass` that differs from the store password, so there is no second password to give. |
 
 Then delete `keystore.base64.txt` — it is the keystore in another form, sitting
 in the repository directory. `.gitignore` refuses to commit it, and the `.jks`
-beside it, but neither belongs there once the secret is set.
+beside it, but neither belongs there once the credential is set.
 
 **Back the `.jks` up somewhere that is not this machine, and keep the
 passwords.** Losing it cannot be undone by generating another: every owner who
@@ -438,10 +451,11 @@ their catalog, statistics and settings would go with it. It is the one file in
 this project that has no copy in the repository and cannot be rebuilt from it.
 
 **4. Optional, once the first signed release is out.** Read its fingerprint out
-of the workflow log — the *Read the signer back out of the package* step prints
-`Signed with SHA-256 <64 hex characters>` — and set it under *Variables*, not
-*Secrets*, as `ANDROID_SIGNING_SHA256`. From then on a release signed by
-anything else fails the job instead of shipping an update nobody can install.
+of the release build's log — `ci/release-build.sh` prints
+`Signed with SHA-256 <64 hex characters>` — and give it to the build as
+`ORPHEUS_SIGNING_SHA256` (the script reads it; nothing in the pipeline sets it
+yet). From then on a release signed by anything else fails the build instead of
+shipping an update nobody can install.
 
 Building a signed package locally needs none of that. `flutter build apk
 --release` with no key configured falls back to the debug key and works as it
