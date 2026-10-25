@@ -34,7 +34,7 @@ migrate_working_dir/
 /coverage/
 
 # What the installer builds produce. Release artifacts are attached to a
-# GitHub release by .github/workflows/release.yml, never committed.
+# release by ci/release-build.sh and .github/workflows/release-windows.yml, never committed.
 /dist/
 
 # The Android release signing key, and anything it was encoded into. Neither is
@@ -60,8 +60,8 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 
-# The documentation site's build output and dependencies. The site is built and
-# published by .github/workflows/docs.yml; none of this belongs in the history.
+# The documentation site's build output and dependencies. The site is built by the
+# Dockerfile; none of this belongs in the history.
 /docs/site/public/
 /docs/site/resources/
 /docs/site/node_modules/
