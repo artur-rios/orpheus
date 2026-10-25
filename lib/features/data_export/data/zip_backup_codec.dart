@@ -156,7 +156,7 @@ Uint8List? _coverBytes(ArchiveFile file, FileContent content) {
       return raw.length > maxBackupCoverBytes ? null : raw.toUint8List();
     case CompressionType.deflate:
       return inflateRawWithin(_pieces(raw), maxBackupCoverBytes);
-    case CompressionType.bzip2 || null:
+    case CompressionType.bzip2 || CompressionType.zstd || null:
       return null;
   }
 }
