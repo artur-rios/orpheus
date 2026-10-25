@@ -24,6 +24,9 @@
 #      so a pinned Node image installs them (`npm ci`) and the Hugo stage takes the node_modules directory.
 #   4. The site renders CHANGELOG.md and CONTRIBUTING.md from the repository's root (docs/site/hugo.toml mounts them),
 #      so those two files are part of the context, which .dockerignore otherwise reduces to the site.
+#   5. After Hugo, a RUN asserts what the site is for (the checks of the old Docs workflow): a home and a downloads page,
+#      the changelog and contributing pages carrying their files, diagrams on at least 4 architecture pages, the
+#      light/dark control and a pinned mermaid. A site that renders but is wrong fails the image build.
 ARG HUGO_DIR=docs/site
 
 FROM node:24.22.1-alpine3.24@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS npm
@@ -62,6 +65,37 @@ RUN set -eu; \
     cd "$HUGO_DIR"; \
     if [ -n "$PUBLIC_HOST" ]; then base="https://$PUBLIC_HOST$PUBLIC_PATH/"; else base="$PUBLIC_PATH/"; fi; \
     hugo --environment production --minify --gc --baseURL "$base" --destination /out
+
+# A page that renders as an empty shell still exits zero, so the things this site is actually for are checked rather
+# than assumed, against what Hugo wrote: the checks of the old Docs workflow. A failing one fails the image build.
+RUN <<'CHECKS'
+set -eu
+fail() { echo "Dockerfile: the docs site is wrong: $*" >&2; exit 1; }
+cd /out
+
+test -f index.html           || fail "no home page"
+test -f downloads/index.html || fail "no downloads page"
+
+# Rendered from the repository root's own files, not from copies.
+grep -q 'Keep a Changelog' docs/changelog/index.html ||
+  fail "the changelog page does not carry CHANGELOG.md"
+grep -q 'The Android signing key' docs/contributing/index.html ||
+  fail "the contributing page does not carry CONTRIBUTING.md"
+
+# Quote-agnostic, and only the rendered pages. --minify strips the quotes from attribute values, so a pattern written
+# as class="mermaid matches an unminified build and misses everything in a minified one.
+diagrams=$(grep -rlE 'class="?mermaid' docs/architecture --include=index.html | grep -v '/_print/' | wc -l)
+[ "$diagrams" -ge 4 ] ||
+  fail "expected diagrams on at least 4 architecture pages, found $diagrams"
+
+grep -q 'td-light-dark-menu' index.html ||
+  fail "the light/dark control is not rendered"
+
+grep -q 'mermaid@11' docs/architecture/index.html ||
+  fail "mermaid is not pinned to the expected major version"
+
+echo "Home, downloads, changelog, contributing, $diagrams diagram pages, the theme control, and a pinned mermaid."
+CHECKS
 
 FROM joseluisq/static-web-server:2.44.1@sha256:94618e3d17802265a21926217e6f9e7832b311b6fbf5933684001739fafed06a
 
