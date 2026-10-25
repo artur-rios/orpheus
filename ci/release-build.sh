@@ -16,9 +16,10 @@
 #   ORPHEUS_KEY_ALIAS           the key's alias (ANDROID_KEY_ALIAS)
 #   ORPHEUS_KEY_PASSWORD        the key's password (ANDROID_KEY_PASSWORD)
 # android/app/build.gradle.kts reads ORPHEUS_KEYSTORE (a path) and the other three. A release (RELEASE_VERSION set)
-# without the keystore fails before the long builds start, as the old workflow did. The signer
-# must have the fingerprint in android/signing-sha256.txt (it was the repository variable ANDROID_SIGNING_SHA256), or
-# the one in ORPHEUS_SIGNING_SHA256, which overrides the file.
+# without the keystore, or without a fingerprint to check the signer against, fails before the long builds start. The
+# signer must have the fingerprint in android/signing-sha256.txt (it was the repository variable
+# ANDROID_SIGNING_SHA256), or the one in ORPHEUS_SIGNING_SHA256, which overrides the file. The signing values are
+# taken out of the environment before pub get, the analyzer and the tests, and given back to the Gradle build only.
 #
 # The Linux build needs desktop packages the Flutter image does not carry; they are installed with apt when this
 # runs as root, as it does on the release agent.
@@ -65,13 +66,39 @@ if [ "$release" = yes ]; then
   done
 fi
 
+# The keystore, base64-encoded. Whitespace is stripped before decoding: the value is produced on whatever machine
+# holds the keystore, and one encoded on Windows arrives wrapped, carriage-returned, or both. A value that is nothing
+# but whitespace is not a keystore, and is said so here instead of as a decoding error, or, worse, no error at all.
+keystore_base64=$(printf '%s' "${ORPHEUS_KEYSTORE_BASE64:-}" | tr -d ' \t\r\n')
+if [ -n "${ORPHEUS_KEYSTORE_BASE64:-}" ] && [ -z "$keystore_base64" ]; then
+  echo "ci/release-build.sh: ORPHEUS_KEYSTORE_BASE64 holds only whitespace, which is not a keystore (the Jenkins credential orpheus-android-keystore is empty or was pasted wrong). See 'The Android signing key' in CONTRIBUTING.md" >&2
+  exit 1
+fi
+
+# The release key must be the one this project has always published under: it is what catches a key rotated by
+# accident, which every owner meets as an update they cannot install. The expected fingerprint is
+# android/signing-sha256.txt (a public value, committed), and ORPHEUS_SIGNING_SHA256 in the environment overrides it.
+# A release with neither has nothing to compare with and fails before anything is built; only a debug-signed local
+# run (no release) goes without.
+expected=$(printf '%s' "${ORPHEUS_SIGNING_SHA256:-}" | tr -d ' \t\r\n:' | tr 'A-F' 'a-f')
+if [ -z "$expected" ] && [ -f android/signing-sha256.txt ]; then
+  expected=$( (grep -v '^[[:space:]]*#' android/signing-sha256.txt || true) | tr -d ' \t\r\n:' | tr 'A-F' 'a-f')
+fi
+if [ -n "$expected" ] && ! printf '%s\n' "$expected" | grep -Eq '^[0-9a-f]{64}$'; then
+  echo "ci/release-build.sh: the expected signing fingerprint '$expected' (android/signing-sha256.txt or ORPHEUS_SIGNING_SHA256) is not 64 hex characters" >&2
+  exit 1
+fi
+if [ "$release" = yes ] && [ -z "$expected" ]; then
+  echo "ci/release-build.sh: release $version has no expected signing fingerprint to check the APK against: android/signing-sha256.txt is missing or holds none, and ORPHEUS_SIGNING_SHA256 is not set. A release signed by a key nobody expected could not be installed over the last one" >&2
+  exit 1
+fi
+
 # shellcheck source=ci/apt-packages.sh
 source ci/apt-packages.sh
 ensure_packages clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
 # shellcheck source=ci/android-sdk.sh
 source ci/android-sdk.sh
-# Keep in step with compileSdk in android/app/build.gradle.kts.
-ensure_android_package "platforms;android-37.0" platforms/android-37.0
+ensure_android_platform
 # shellcheck source=ci/flutter-env.sh
 source ci/flutter-env.sh
 
@@ -81,6 +108,25 @@ mkdir dist
 # The decoded keystore and the signer listing live here, and go however this ends.
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
+
+# The signing values are decoded and taken out of the environment before pub get, the analyzer and the tests run, so
+# none of them (a pub package's build hook, a test) can read them. Only the Gradle build below gets them back.
+signing_env=()
+suffix=''
+if [ -n "$keystore_base64" ]; then
+  printf '%s' "$keystore_base64" | base64 -d >"$work/release.jks"
+  test -s "$work/release.jks"
+  signing_env=(
+    "ORPHEUS_KEYSTORE=$work/release.jks"
+    "ORPHEUS_KEYSTORE_PASSWORD=${ORPHEUS_KEYSTORE_PASSWORD:-}"
+    "ORPHEUS_KEY_ALIAS=${ORPHEUS_KEY_ALIAS:-}"
+    "ORPHEUS_KEY_PASSWORD=${ORPHEUS_KEY_PASSWORD:-}"
+  )
+else
+  echo "WARNING: no release keystore is set, so the Android APK is signed with the debug key. Do not distribute it." >&2
+  suffix='-debug-signed'
+fi
+unset ORPHEUS_KEYSTORE_BASE64 keystore_base64 ORPHEUS_KEYSTORE_PASSWORD ORPHEUS_KEY_ALIAS ORPHEUS_KEY_PASSWORD
 
 # A container's root has no USER in its environment, and atomic_write_test.dart takes that for "not root" (it
 # skips its read-only-file test only when USER is root) and then expects a superuser's write to a read-only file
@@ -99,21 +145,7 @@ flutter test
 [ -f "dist/orpheus-installer-$version.sh" ] || { echo "ci/release-build.sh: tools/build-linux-installer.sh made no dist/orpheus-installer-$version.sh" >&2; exit 1; }
 
 # ---- Android ----
-suffix=''
-if [ -n "${ORPHEUS_KEYSTORE_BASE64:-}" ]; then
-  # Whitespace stripped before decoding: the value is produced on whatever machine holds the keystore, and one
-  # encoded on Windows arrives wrapped, carriage-returned, or both. A keystore that fails to decode is a cryptic way
-  # to learn that.
-  printf '%s' "$ORPHEUS_KEYSTORE_BASE64" | tr -d ' \t\r\n' | base64 -d >"$work/release.jks"
-  test -s "$work/release.jks"
-  export ORPHEUS_KEYSTORE=$work/release.jks
-else
-  echo "WARNING: no release keystore is set, so the Android APK is signed with the debug key. Do not distribute it." >&2
-  suffix='-debug-signed'
-fi
-unset ORPHEUS_KEYSTORE_BASE64
-
-flutter build apk --release
+env ${signing_env[@]+"${signing_env[@]}"} flutter build apk --release
 apk=build/app/outputs/flutter-apk/app-release.apk
 
 # The signer, read back out of the package that actually ships: what the build was configured to do and what it did
@@ -133,19 +165,6 @@ if [ -z "$fingerprint" ]; then
 fi
 echo "Signed with SHA-256 $fingerprint"
 
-# The release key must be the one this project has always published under: it is what catches a key rotated by
-# accident, which every owner meets as an update they cannot install. The expected fingerprint is android/signing-sha256.txt
-# (a public value, committed), and ORPHEUS_SIGNING_SHA256 in the environment overrides it. Only a debug-signed local
-# run (no keystore) skips the comparison.
-expected=${ORPHEUS_SIGNING_SHA256:-}
-if [ -z "$expected" ] && [ -f android/signing-sha256.txt ]; then
-  expected=$(grep -v '^[[:space:]]*#' android/signing-sha256.txt | tr -d ' \t\r\n:' || true)
-fi
-expected=$(printf '%s' "$expected" | tr 'A-F' 'a-f')
-if [ -n "$expected" ] && ! printf '%s\n' "$expected" | grep -Eq '^[0-9a-f]{64}$'; then
-  echo "ci/release-build.sh: the expected signing fingerprint '$expected' (android/signing-sha256.txt or ORPHEUS_SIGNING_SHA256) is not 64 hex characters" >&2
-  exit 1
-fi
 if [ -z "$suffix" ] && [ -n "$expected" ]; then
   if [ "$expected" != "$fingerprint" ]; then
     echo "ci/release-build.sh: signed with $fingerprint, but this project publishes under $expected. An update signed by a different key cannot be installed over the last one." >&2

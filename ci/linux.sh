@@ -4,8 +4,8 @@
 #
 # The job apt-installed ninja-build and libgtk-3-dev on a runner that already had a C++ toolchain; the Flutter image
 # has none of it, so the whole Linux desktop list is installed here when it is missing. That needs root, as checks
-# have on yggdrasil's agents. So does the Android platform the build compiles against (API 37), which the image's SDK
-# lacks (ci/android-sdk.sh); Gradle installs the NDK and the build tools itself.
+# have on yggdrasil's agents. So does the Android platform the build compiles against (compileSdk, API 37), which the image's
+# SDK lacks (ci/android-sdk.sh); Gradle installs the NDK and the build tools itself.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
@@ -14,8 +14,7 @@ source ci/apt-packages.sh
 ensure_packages clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
 # shellcheck source=ci/android-sdk.sh
 source ci/android-sdk.sh
-# Keep in step with compileSdk in android/app/build.gradle.kts.
-ensure_android_package "platforms;android-37.0" platforms/android-37.0
+ensure_android_platform
 # shellcheck source=ci/flutter-env.sh
 source ci/flutter-env.sh
 
