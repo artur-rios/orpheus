@@ -5,8 +5,8 @@ name: Release Windows
 # (release.windows in yggdrasil.yml), waits for it, and attaches the files below to the release. It is not a pull
 # request check, so the only trigger is the dispatch, with the tag as its input.
 #
-# Neither file is signed, so SmartScreen warns the first time. Their checksums are in the SHA256SUMS-windows.txt
-# beside them; the Linux installer and the APK have their own list, made by ci/release-build.sh.
+# Neither file is signed, so SmartScreen warns the first time. Their checksums are in the release's SHA256SUMS.txt,
+# which release.finalize (ci/finalize.sh) writes over every file of the release.
 
 on:
   workflow_dispatch:
@@ -116,12 +116,6 @@ jobs:
           foreach ($expected in "orpheus-$version-windows-x64-portable.zip", "orpheus-setup-$version.exe") {
             if (-not (Test-Path "release\$expected")) { throw "missing $expected" }
           }
-
-          # Both are unsigned, so a checksum is the only way somebody can tell that what they downloaded is what this
-          # workflow built. sha256sum's format, so `sha256sum -c` reads it.
-          Get-ChildItem release -File | Where-Object Name -ne 'SHA256SUMS-windows.txt' | ForEach-Object {
-            '{0}  {1}' -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
-          } | Set-Content release\SHA256SUMS-windows.txt -Encoding ascii
 
           Get-ChildItem release | Format-Table Name, Length
 

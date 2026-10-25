@@ -34,7 +34,6 @@ release:
     files:
       - "dist/*.sh"
       - "dist/*.apk"
-      - "dist/SHA256SUMS-linux-android.txt"
     credentials:                         # ENV_VAR: Jenkins credential id (the catalog's releaseCredentials)
       ORPHEUS_KEYSTORE_BASE64: orpheus-android-keystore
       ORPHEUS_KEYSTORE_PASSWORD: orpheus-android-keystore-password
@@ -45,3 +44,10 @@ release:
     workflow: release-windows.yml
     files:
       - "orpheus-windows/*"
+  # release.yml's checksums: one SHA256SUMS.txt over every file of the release, the Windows ones included, written
+  # after the validation. A release with release.windows publishes only with its Windows files.
+  finalize:
+    image: ghcr.io/cirruslabs/flutter:3.44.0@sha256:46691e311715845de03a3ba4753a475476936805b29431b1f00f1816981033f8
+    run: ci/finalize.sh
+    files:
+      - "release-sums/SHA256SUMS.txt"

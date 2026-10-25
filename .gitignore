@@ -66,3 +66,6 @@ app.*.map.json
 /docs/site/resources/
 /docs/site/node_modules/
 /docs/site/.hugo_build.lock
+
+# The checksums release.finalize writes (ci/finalize.sh).
+/release-sums/

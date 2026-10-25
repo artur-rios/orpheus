@@ -5,7 +5,6 @@
 #
 #   dist/orpheus-installer-<version>.sh           the Linux installer
 #   dist/orpheus-<version>-android.apk            the APK, signed with the release key
-#   dist/SHA256SUMS-linux-android.txt             their checksums (the Windows files have their own list)
 #
 # The tag is the input: RELEASE_TAG and RELEASE_VERSION (the tag without its v) are set by the pipeline, which has
 # already checked that the tag is on main. A run by hand sets neither ("dev"): it builds the same files from the
@@ -161,8 +160,6 @@ ci/permissions.sh "$apk" "$work/permissions.txt"
 
 cp "$apk" "dist/orpheus-$version-android$suffix.apk"
 
-# Both installers are unsigned, so a checksum is the only way somebody can tell that what they downloaded is what
-# was built. The Windows files have their own list, made by release-windows.yml.
-(cd dist && sha256sum -- orpheus-* >SHA256SUMS-linux-android.txt)
+# The checksums are not made here: release.finalize (ci/finalize.sh) writes one SHA256SUMS.txt over these files and
+# the Windows ones.
 ls -l dist
-cat dist/SHA256SUMS-linux-android.txt

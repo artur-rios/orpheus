@@ -364,10 +364,10 @@ attaches to the release.
 The APK is put through the same permission gate the `linux` check applies (`ci/permissions.sh`),
 against the package that actually ships, and the same is done with its signer
 — see below. The analyzer and the suite are run before anything is built,
-because a release is not the place to discover the suite is red. The files are
-checksummed into `SHA256SUMS-linux-android.txt` (the Linux installer and the APK) and `SHA256SUMS-windows.txt` (the two
-Windows files), which are the only way somebody can tell that what they downloaded is what was built — both desktop
-installers are unsigned.
+because a release is not the place to discover the suite is red. Every file of the release
+(the Windows ones included) is checksummed into one `SHA256SUMS.txt` by `ci/finalize.sh`, Jenkins's `release.finalize`
+step, which is the only way somebody can tell that what they downloaded is what was built — both desktop installers are
+unsigned.
 
 A release that stopped can be finished, and the Windows files rebuilt for a tag, from Jenkins (`release-resume`
 and `actions-release`).
