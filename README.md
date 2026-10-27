@@ -1,5 +1,11 @@
 # Orpheus
 
+> [!NOTE]
+> This is the real, open-source code of orpheus. Its home is Forgejo, at
+> https://git.techcraftsmen.net/artur-rios/orpheus; the copy on GitHub is a read-only mirror, for viewing only, and
+> its issues and pull requests are not followed. If you want to contribute, email me at
+> arturdev@duck.com.
+
 A music player for Windows, Linux and Android. It reads the audio files already
 on the machine it is running on, names every track by its tags rather than by
 its file name, and plays them — with the same interface on all three platforms.
