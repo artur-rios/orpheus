@@ -12,8 +12,9 @@
 # actually failed — never for a target that was never available.
 #
 # Running it on all three hosts, or letting CI do that, is what makes the claim
-# complete. .github/workflows/verify.yml runs this same script on Linux and on
-# Windows for exactly that reason.
+# complete. ci/linux.sh (the `linux` check) and .github/workflows/verify.yml run
+# this same script on Linux and its PowerShell counterpart on Windows for exactly
+# that reason.
 
 set -eu
 

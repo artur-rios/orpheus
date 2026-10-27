@@ -1,0 +1,18 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["local>artur-rios/yggdrasil//renovate/default"],
+  "enabledManagers": ["pub", "npm", "github-actions", "dockerfile", "docker-compose", "custom.regex"],
+  "packageRules": [
+    {
+      "description": "pub weekly, as Dependabot did.",
+      "matchManagers": ["pub"],
+      "schedule": ["on monday"]
+    },
+    {
+      "description": "The workflow actions weekly and in one pull request, as Dependabot did.",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "schedule": ["on monday"]
+    }
+  ]
+}

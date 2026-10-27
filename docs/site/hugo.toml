@@ -8,7 +8,8 @@
 # something to relocate for a website's convenience. The site links out to them
 # instead.
 
-baseURL = 'https://artur-rios.github.io/orpheus/'
+# What `hugo server` uses; the docs image (Dockerfile) overrides it with the address it is served at.
+baseURL = 'https://docs.artur-rios.tech/orpheus/'
 title = 'Orpheus'
 locale = 'en-us'
 contentDir = 'content/en'
