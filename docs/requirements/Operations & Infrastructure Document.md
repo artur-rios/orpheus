@@ -182,8 +182,9 @@ target the host's operating system cannot produce at all is **not applicable**,
 and never fails: no configuration makes a Linux machine emit a Windows binary.
 
 **IR-20** — Because no single host can build every target, the claim is only
-complete across hosts. `.github/workflows/verify.yml` runs the same two scripts
-on a Linux runner and a Windows runner, so that every target is built and every
+complete across hosts. the `linux` check (`ci/linux.sh`, run by Jenkins) and
+`.github/workflows/verify.yml` run the same two scripts
+on a Linux host and a Windows runner, so that every target is built and every
 "not applicable" is covered somewhere.
 
 **IR-21** — The workflow reads the built Android package's permissions back out

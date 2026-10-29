@@ -23,7 +23,7 @@ and the changelog for a release land on `develop` first, through a work branch.
 The release is tagged `v<version>` on its merge commit on `main`, where
 `<version>` is the `version:` in `pubspec.yaml` without its build number — a
 pre-release included: `v1.3.0-beta.1` is built from `1.3.0-beta.1+<build>`.
-`.github/workflows/branch-policy.yml` enforces all of this on every pull request
+The `branch-policy` check, run by Jenkins, enforces all of this on every pull request
 into `develop` or `main`, and the steps are in
 [CONTRIBUTING.md](../../CONTRIBUTING.md#releasing).
 

@@ -7,6 +7,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-10-29
+
+### Changed
+
+- Releases are built by Jenkins instead of GitHub Actions. The Android package is built and signed on the release
+  agent, and the build stops unless the signing key matches the fingerprint in `android/signing-sha256.txt`. The
+  release carries one `SHA256SUMS.txt` for all its files.
+- The documentation site moved from GitHub Pages to <https://docs.artur-rios.tech/orpheus>.
+- Dependencies: `archive` 4.2.0 → 4.5.2 and `audio_metadata_reader` 1.8.0 → 1.8.1.
+
+### Fixed
+
+- Restoring a backup skips a cover stored with zstd compression, as it already skipped bzip2 ones. Orpheus never
+  writes either, and with `archive` 4.5, which can read zstd, the app no longer built without this.
+
 ## [1.7.0] - 2026-10-21
 
 ### Added
@@ -353,7 +368,8 @@ A pre-release built from the `diagnose/android-usb-folder` branch to diagnose fo
 - Release downloads: a Windows installer, a portable Windows archive, a Linux installer and an Android APK, with
   `SHA256SUMS.txt`.
 
-[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.7.1...HEAD
+[1.7.1]: https://github.com/artur-rios/orpheus/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/artur-rios/orpheus/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/artur-rios/orpheus/compare/v1.5.1...v1.6.0
 [1.5.1]: https://github.com/artur-rios/orpheus/compare/v1.5.0...v1.5.1

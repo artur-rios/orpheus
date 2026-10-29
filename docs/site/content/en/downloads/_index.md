@@ -130,6 +130,7 @@ to forget what you listened to, and reinstalling should find it all again.
 
 ## Building it yourself
 
-Everything above is produced by [`.github/workflows/release.yml`](https://github.com/artur-rios/orpheus/blob/main/.github/workflows/release.yml)
-from a pushed tag. To build the same artifacts locally, see
+Everything above is produced by `ci/release-build.sh` (the Linux installer and the APK) and
+[`.github/workflows/release-windows.yml`](https://github.com/artur-rios/orpheus/blob/main/.github/workflows/release-windows.yml)
+(the two Windows files) from a pushed tag. To build the same artifacts locally, see
 [Contributing]({{< relref "/docs/contributing" >}}).

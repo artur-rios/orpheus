@@ -1,0 +1,128 @@
+name: Release Windows
+
+# The Windows files of a release: the installer and the portable archive. Jenkins builds the rest
+# (ci/release-build.sh) and dispatches this workflow on the release's tag once the mirror has pushed it
+# (release.windows in yggdrasil.yml), waits for it, and attaches the files below to the release. It is not a pull
+# request check, so the only trigger is the dispatch, with the tag as its input.
+#
+# Neither file is signed, so SmartScreen warns the first time. Their checksums are in the release's SHA256SUMS.txt,
+# which release.finalize (ci/finalize.sh) writes over every file of the release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build, e.g. v1.4.0'
+        required: true
+
+concurrency:
+  group: release-windows-${{ inputs.tag }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Renovate does not track this one. Keep it equal to FLUTTER_VERSION in ci/flutter-env.sh and to the one in
+  # verify.yml, and bump the three together.
+  FLUTTER_VERSION: 3.47.2
+
+jobs:
+  windows:
+    name: Windows portable and the installer
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      # A tag that disagrees with pubspec.yaml produces a release whose file names, whose installer wizard and whose
+      # application all state different versions. The Linux build refuses that too; this one does not wait for it.
+      - name: Read the version, and check the tag agrees with it
+        id: version
+        shell: pwsh
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # The whole version, pre-release included; only the build number after `+` is left out.
+          $line = Select-String -Path pubspec.yaml -Pattern '^version:\s*([^+\s]+)' | Select-Object -First 1
+          if (-not $line) { throw 'pubspec.yaml declares no version' }
+          $version = $line.Matches[0].Groups[1].Value
+          if ($env:TAG -ne "v$version") {
+            throw "the tag $env:TAG does not name version $version, which pubspec.yaml declares. A release is tagged v<version>, pre-release included: v$version."
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Releasing $version from $env:TAG"
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      # Builds the release and compiles the setup executable from it. The portable archive below is zipped from the
+      # same build, so the two cannot be of different code.
+      - name: Build Windows and the installer
+        run: .\tools\build-windows-installer.ps1
+
+      - name: Pack the portable archive
+        shell: pwsh
+        # A Flutter Windows application is an executable beside the engine's DLLs and a data directory, and it will
+        # not run without them, so the portable form is an archive that unpacks and runs, not a lone .exe. Nothing is
+        # installed, nothing is written to the registry, and it runs from a memory stick.
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ steps.version.outputs.version }}'
+          $release = 'build\windows\x64\runner\Release'
+          if (-not (Test-Path "$release\orpheus.exe")) {
+            throw "no release build in $release"
+          }
+
+          $staging = "staging\orpheus-$version"
+          New-Item -ItemType Directory -Force -Path $staging | Out-Null
+          Copy-Item "$release\*" $staging -Recurse -Force
+
+          # Says what the archive is, next to the thing it is about, for somebody who unpacks it a month later.
+          @"
+          Orpheus $version — portable
+
+          Run orpheus.exe. Nothing is installed and nothing is written outside
+          this folder except your own settings, catalog and statistics, which
+          live in your Windows application data directory and are shared with an
+          installed copy if you ever install one.
+
+          The whole folder is the application: orpheus.exe will not run on its
+          own, because the playback engine's libraries sit beside it.
+
+          Unsigned, so SmartScreen will warn the first time.
+
+          https://github.com/artur-rios/orpheus
+          "@ | Set-Content "$staging\README.txt" -Encoding UTF8
+
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          Compress-Archive -Path "$staging\*" `
+            -DestinationPath "release\orpheus-$version-windows-x64-portable.zip" `
+            -CompressionLevel Optimal
+
+          Copy-Item "dist\orpheus-setup-$version.exe" release\
+
+          # Named rather than globbed: a build that half-failed would otherwise publish a release quietly missing
+          # one. The pipeline uploads this folder, so what is not here is not released.
+          foreach ($expected in "orpheus-$version-windows-x64-portable.zip", "orpheus-setup-$version.exe") {
+            if (-not (Test-Path "release\$expected")) { throw "missing $expected" }
+          }
+
+          Get-ChildItem release | Format-Table Name, Length
+
+      # Named for the repository: Jenkins downloads each artifact into a directory of its name (release.windows.files
+      # in yggdrasil.yml).
+      - uses: actions/upload-artifact@v7
+        with:
+          name: orpheus-windows
+          path: release/*
+          if-no-files-found: error

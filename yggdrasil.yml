@@ -1,0 +1,53 @@
+# What Jenkins checks and releases for Orpheus, read by the pipeline of the yggdrasil installation that deploys it
+# (yggdrasil's docs/catalog.md, "Repository pipeline file", has every field). It is data, never code: images (pinned
+# by version and digest, which Renovate keeps up to date: the owner merges those changes), commands, globs and the
+# names of Jenkins credentials. The commands are scripts under ci/ that run from the repository's root, so you can run
+# them on your own machine too.
+#
+# One file, two catalog entries: the repository (`orpheus`: the check `linux`, the releases and the Android signing
+# key) and its docs site (`orpheus-docs`: no checks of its own, built from the Dockerfile). The Windows job of the old
+# verify.yml stays a GitHub Actions workflow, the catalog's actionsCheck `Windows and the installer`, run on the
+# GitHub mirror.
+#
+# Flutter 3.47.2 is pinned in ci/flutter-env.sh, not by the image: ghcr.io/cirruslabs/flutter has no tag newer than
+# 3.44.0, whose Dart is older than pubspec.yaml's `sdk: ^3.13.2`. The image supplies the Android SDK, the JDK (21; the
+# workflows used 17, which the build targets), git, curl and xz, and ci/flutter-env.sh fetches the SDK itself
+# (checksummed). The Linux desktop packages are installed by ci/apt-packages.sh, which needs root: checks and release
+# builds run as root on yggdrasil's agents.
+#
+# Check it where the catalog is, in the yggdrasil checkout:
+#   python3 scripts/pipeline_config.py describe orpheus <this repository's checkout>
+#   python3 scripts/pipeline_config.py describe orpheus-docs <this repository's checkout>
+
+checks:
+  linux:                                 # analyzer, tests, Linux and Android release builds, the APK's permissions (verify.yml: Linux and Android)
+    image: ghcr.io/cirruslabs/flutter:3.44.0@sha256:46691e311715845de03a3ba4753a475476936805b29431b1f00f1816981033f8
+    run: ci/linux.sh
+    archive: "build/app/outputs/flutter-apk/app-release.apk,build/permissions.txt"
+
+release:
+  # release.yml's Linux jobs (version, linux, release), on the release agent from the release's tag: the Linux
+  # installer and the APK. The release itself is published by the pipeline.
+  build:
+    image: ghcr.io/cirruslabs/flutter:3.44.0@sha256:46691e311715845de03a3ba4753a475476936805b29431b1f00f1816981033f8
+    run: ci/release-build.sh
+    files:
+      - "dist/*.sh"
+      - "dist/*.apk"
+    credentials:                         # ENV_VAR: Jenkins credential id (the catalog's releaseCredentials)
+      ORPHEUS_KEYSTORE_BASE64: orpheus-android-keystore
+      ORPHEUS_KEYSTORE_PASSWORD: orpheus-android-keystore-password
+      ORPHEUS_KEY_ALIAS: orpheus-android-key-alias
+      ORPHEUS_KEY_PASSWORD: orpheus-android-key-password
+  # release.yml's Windows job, on GitHub Actions: dispatched on the tag, with tag=<tag>.
+  windows:
+    workflow: release-windows.yml
+    files:
+      - "orpheus-windows/*"
+  # release.yml's checksums: one SHA256SUMS.txt over every file of the release, the Windows ones included, written
+  # after the validation. A release with release.windows publishes only with its Windows files.
+  finalize:
+    image: ghcr.io/cirruslabs/flutter:3.44.0@sha256:46691e311715845de03a3ba4753a475476936805b29431b1f00f1816981033f8
+    run: ci/finalize.sh
+    files:
+      - "release-sums/SHA256SUMS.txt"

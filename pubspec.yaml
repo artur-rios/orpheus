@@ -1,7 +1,7 @@
 name: orpheus
 description: "A cross-platform music player for Windows, Linux and Android."
 publish_to: "none"
-version: 1.7.0+12
+version: 1.7.1+13
 
 environment:
   sdk: ^3.13.2
@@ -30,7 +30,7 @@ dependencies:
   # lib/features/library/data/id3_genres.dart imports the package's private
   # src/constants/id3_genres.dart for its ID3v1 genre table, which no release
   # promises to keep: an upgrade must check that file is still there.
-  audio_metadata_reader: ^1.8.0
+  audio_metadata_reader: ^1.8.1
 
   # Where the catalog, the settings and the cover cache live on each platform.
   path: ^1.9.1
@@ -102,7 +102,7 @@ dependencies:
   # the preferences, written and read in pure Dart so the format is exercised
   # by tests on every target. Already in the tree as somebody else's transitive
   # dependency; named here because the backup format now depends on it directly.
-  archive: ^4.2.0
+  archive: ^4.5.2
 
 dev_dependencies:
   flutter_test:
