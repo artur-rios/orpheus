@@ -96,7 +96,7 @@ dependencies:
 
   # The desktop window: the minimum size, and the geometry that is restored
   # between runs. Desktop-only by nature, and guarded as such at every call.
-  window_manager: ^0.5.2
+  window_manager: ^0.6.0
 
   # The backup file: a ZIP holding the exported data, the playlist covers and
   # the preferences, written and read in pure Dart so the format is exercised
