@@ -10,7 +10,7 @@ A dependency added without a row here is a Definition of Done failure.
 
 | | Version | Notes |
 | --- | --- | --- |
-| **Flutter** | 3.47.2, stable channel | The version the project is built and tested against. |
+| **Flutter** | 3.50.0, stable channel | The version the project is built and tested against. |
 | **Dart SDK** | `^3.13.2` | Declared in `pubspec.yaml`. |
 | **Java** | 17 | `sourceCompatibility`, `targetCompatibility` and the Kotlin JVM target for the Android build. |
 
@@ -27,6 +27,7 @@ A dependency added without a row here is a Definition of Done failure.
 
 | Package | Version | What it is for |
 | --- | --- | --- |
+| `material_ui` | `^1.11.0` | The Material widgets, theme and localizations, which Flutter 3.50 moved out of the SDK (`package:flutter/material.dart` is deprecated there). Every Material import comes from here: a theme or localizations from one copy are not found by widgets from the other. |
 | `flutter_riverpod` | `^3.4.3` | State management and the single composition root. The queue outlives the screen that started it, so it cannot live in a widget. |
 | `media_kit` | `^1.2.6` | The playback engine. libmpv-backed, and the one engine in its class covering all three targets with one API and no transcoding. |
 | `media_kit_libs_audio` | `^1.0.7` | The engine's bundled native libraries for Windows and Android. |

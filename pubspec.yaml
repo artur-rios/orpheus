@@ -12,6 +12,14 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
+  # The Material widgets, theme and localizations. Flutter 3.50 moved them out
+  # of the SDK into this package and deprecated `package:flutter/material.dart`,
+  # which the analyzer then reports at every import. Same library, its own
+  # home: `MaterialApp`, `ThemeData` and `GlobalMaterialLocalizations` come
+  # from here, and all of them must, because a theme or a set of localizations
+  # from one is not found by widgets from the other.
+  material_ui: ^1.11.0
+
   # Composition root and state management. The same choice the Alexandria UI
   # made, for the same reason: the player outlives the screen that started it,
   # so the queue has to live somewhere that is not a widget.

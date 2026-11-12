@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'core/di/providers.dart';
 import 'core/l10n/generated/app_localizations.dart';
@@ -42,9 +41,9 @@ class OrpheusApp extends ConsumerWidget {
     supportedLocales: supportedLocales,
     localizationsDelegates: const [
       AppLocalizations.delegate,
-      GlobalMaterialLocalizations.delegate,
-      GlobalWidgetsLocalizations.delegate,
-      GlobalCupertinoLocalizations.delegate,
+      // material_ui's own: its Material, Cupertino and widgets
+      // localizations, which its widgets look up.
+      ...GlobalMaterialLocalizations.delegates,
     ],
 
     // Inside the `MaterialApp`, because the prompt it raises is a dialog and a

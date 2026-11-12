@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # Puts the pinned Flutter SDK on PATH. Sourced by the other scripts under ci/, not run.
 #
-# The workflows pinned Flutter 3.47.2 (subosito/flutter-action, `channel: stable`). The newest
+# The workflows pin Flutter 3.50.0 (subosito/flutter-action, `channel: stable`). The newest
 # ghcr.io/cirruslabs/flutter image is 3.44.0, whose Dart (3.12) is older than pubspec.yaml's `sdk: ^3.13.2`, so
 # the image only supplies the Android SDK, the JDK, git and curl, and the SDK itself is fetched here from
 # Flutter's release archive and checked against its checksum. FLUTTER_SHA256 comes from
@@ -14,8 +14,8 @@
 # FLUTTER_SDK_DIR reuses an unpacked SDK between runs (default: a directory under $TMPDIR).
 
 # renovate: datasource=github-tags depName=flutter/flutter versioning=regex:^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)$
-FLUTTER_VERSION=3.47.2
-FLUTTER_SHA256=447878859d01ca9bfdb99a85f245af07ed8a15fedcd9d189c4749e8e92d1f185
+FLUTTER_VERSION=3.50.0
+FLUTTER_SHA256=6ea2d806fd57269ae783e6788e2a81fc26eaad782f1e0d0ff38623bb765ff9f5
 
 FLUTTER_SDK_DIR=${FLUTTER_SDK_DIR:-${TMPDIR:-/tmp}/flutter-$FLUTTER_VERSION}
 
