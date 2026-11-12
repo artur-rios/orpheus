@@ -13,14 +13,17 @@ abstract interface class AppShutdown {
 
 /// [AppShutdown] through the window.
 ///
-/// `close` rather than `destroy`: it raises the same event the owner clicking
-/// the button raises, so the geometry is written and the playback engine is
-/// released on the way out exactly as they are on any other quit. An update is
-/// not a reason to skip the tidying.
+/// A close request rather than an exit: it reaches the window's listeners as
+/// the owner clicking the button does, so the geometry is written and the
+/// playback engine is released on the way out exactly as they are on any
+/// other quit (see `DesktopWindow`). An update is not a reason to skip the
+/// tidying.
 class WindowShutdown implements AppShutdown {
   /// Creates the shutdown.
   const WindowShutdown();
 
   @override
-  Future<void> quit() => windowManager.close();
+  Future<void> quit() async {
+    WindowManager.instance.getCurrent()?.close();
+  }
 }

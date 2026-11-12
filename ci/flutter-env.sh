@@ -2,7 +2,7 @@
 # Puts the pinned Flutter SDK on PATH. Sourced by the other scripts under ci/, not run.
 #
 # The workflows pin Flutter 3.50.0 (subosito/flutter-action, `channel: stable`). The newest
-# ghcr.io/cirruslabs/flutter image is 3.44.0, whose Dart (3.12) is older than pubspec.yaml's `sdk: ^3.13.2`, so
+# ghcr.io/cirruslabs/flutter image is 3.44.0, whose Dart (3.12) is older than pubspec.yaml's `sdk: ^3.14.0`, so
 # the image only supplies the Android SDK, the JDK, git and curl, and the SDK itself is fetched here from
 # Flutter's release archive and checked against its checksum. FLUTTER_SHA256 comes from
 # https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json; change it together with

@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Orpheus is built with Flutter 3.50.0.
+- Dependencies: `window_manager` 0.5.2 → 0.7.0, which places the desktop window through a native library of its own
+  instead of a Flutter plugin. On Linux it needs `libx11-6` and `libxi6`, which GTK already depends on, so nothing
+  new needs installing.
+
 ## [1.7.1] - 2026-10-29
 
 ### Changed

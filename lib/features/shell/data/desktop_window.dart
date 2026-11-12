@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui';
+import 'dart:io';
+import 'dart:ui' show Rect;
 
 import 'package:logging/logging.dart';
 import 'package:window_manager/window_manager.dart';
@@ -23,15 +24,19 @@ import '../../../core/theme/breakpoints.dart';
 /// Geometry that will not load, or that is smaller than this application
 /// supports, is not an error: the window opens at its default size, and the
 /// owner's next move is what gets recorded.
-class DesktopWindow with WindowListener {
+class DesktopWindow {
   /// Creates the placement over [settings].
   ///
+  /// [window] answers the application's native window, and is a seam for the
+  /// tests, which run with no window and stand a recording one in its place.
   /// [shutdownBudget] is a seam for the test that asserts the window closes
-  /// even when the release behind it never finishes; nothing else passes one.
+  /// even when the release behind it never finishes. Nothing else passes
+  /// either.
   DesktopWindow(
     this._settings, {
+    Window? Function()? window,
     this._shutdownBudget = const Duration(seconds: 3),
-  });
+  }) : _lookUp = window ?? WindowManager.instance.getCurrent;
 
   static final Logger _log = Logger('shell');
 
@@ -40,8 +45,21 @@ class DesktopWindow with WindowListener {
 
   final SettingsStore _settings;
 
+  /// Where [open] finds the window.
+  final Window? Function() _lookUp;
+
+  /// The application's window, once [open] has found it.
+  ///
+  /// Kept rather than looked up at every call: each lookup makes a new native
+  /// wrapper, and the listener [open] registers lives on this one.
+  Window? _window;
+
   /// Coalesces the flurry of resize events a drag produces into one write.
   Timer? _pending;
+
+  /// Whether the geometry is no longer being followed: the close path has
+  /// recorded where the window was, and nothing after it may overwrite that.
+  bool _stopped = false;
 
   /// What to release on the way out, run behind the hidden window.
   ///
@@ -50,11 +68,11 @@ class DesktopWindow with WindowListener {
   /// exists, because its placement comes from the settings store and it has to
   /// be up before the first frame.
   ///
-  /// Why the close path is where it belongs: `destroy` hands the process to
-  /// its own teardown, and everything the application holds natively — a
-  /// libmpv instance with an output device open, above all — is released
-  /// there, at the slowest possible moment and with the window still on
-  /// screen. Released here it is the same work done while the isolate is
+  /// Why the close path is where it belongs: closing the last window hands
+  /// the process to its own teardown, and everything the application holds
+  /// natively — a libmpv instance with an output device open, above all — is
+  /// released there, at the slowest possible moment and with the window still
+  /// on screen. Released here it is the same work done while the isolate is
   /// still alive and the owner is no longer looking at it.
   FutureOr<void> Function()? onClosing;
 
@@ -64,68 +82,82 @@ class DesktopWindow with WindowListener {
   /// Whether the close is already under way.
   bool _closing = false;
 
+  /// Whether the close requests from here on are this class's own, the one
+  /// that ends the application, and are to be let through.
+  bool _quitting = false;
+
   /// The last geometry the window had while neither maximized nor minimized,
   /// which is what is recorded beside a maximized window.
   Rect? _restored;
 
   /// Sizes the window, restores where it was, and shows it.
   Future<void> open() async {
-    await windowManager.ensureInitialized();
-    await windowManager.setMinimumSize(Breakpoint.minimumWindowSize);
+    final window = _window ??= _lookUp();
+    if (window == null) {
+      _log.warning('there is no window to place');
 
-    // What makes [onWindowClose] arrive at all. Without it the platform closes
-    // the window and no listener runs, so the geometry of a window that was
-    // moved and then closed inside the half second [_scheduleWrite] waits was
-    // simply lost — and this class's own close path was unreachable code.
+      return;
+    }
+
+    window.minimumSize = Breakpoint.minimumWindowSize.toNative();
+
+    // What makes the close come here at all. Every request to close the
+    // window — its title bar's button, the window manager's, the update
+    // hand-off's [WindowShutdown] — reaches the window's listeners first, and
+    // [_onEvent] refuses it and runs [_finish] instead. Without that the
+    // geometry of a window that was moved and then closed inside the half
+    // second [_scheduleWrite] waits is simply lost, and this class's own close
+    // path is unreachable code.
     //
     // The trade it makes is that closing the window becomes this class's job:
-    // see [_finish], which destroys it whatever happens to the write.
-    await windowManager.setPreventClose(true);
+    // see [_finish], which closes it whatever happens to the write.
+    window.addListener(_onEvent);
 
     final stored = _read();
     final bounds = stored?.bounds;
     _restored = bounds;
 
-    await windowManager.waitUntilReadyToShow(
-      WindowOptions(
-        size: bounds?.size ?? Breakpoint.defaultWindowSize,
-        // Centred when there is nothing stored, and at the stored position
-        // when there is — `setBounds` below is what actually places it, since
-        // the options only carry a size.
-        center: bounds == null,
-      ),
-      () async {
-        // Placed first even when it is about to be maximized: that is the
-        // rectangle the restore button brings it back to.
-        if (bounds != null) await windowManager.setBounds(bounds);
-        // Maximized unless the owner said otherwise by leaving it that way,
-        // and before it is shown, so it appears at its full size rather than
-        // drawing once at the normal one and jumping.
-        if (stored?.maximized ?? true) await windowManager.maximize();
-        await windowManager.show();
-        await windowManager.focus();
-      },
+    window.setSize(
+      (bounds?.size ?? Breakpoint.defaultWindowSize).toNative(),
+      false,
     );
-
-    windowManager.addListener(this);
+    // Centred when there is nothing stored, and placed where it was when
+    // there is — even when it is about to be maximized: that is the rectangle
+    // the restore button brings it back to.
+    if (bounds == null) {
+      window.center();
+    } else {
+      window.bounds = bounds.toNative();
+    }
+    // Maximized unless the owner said otherwise by leaving it that way, and
+    // before it is shown, so it appears at its full size rather than drawing
+    // once at the normal one and jumping.
+    if (stored?.maximized ?? true) window.maximize();
+    window.show();
+    window.focus();
   }
 
-  @override
-  void onWindowResized() => _scheduleWrite();
+  void _onEvent(WindowEvent event) {
+    switch (event) {
+      case WindowCloseRequestedEvent(:final request):
+        // The close [_quit] asks for goes through, and so does anything after
+        // it: the application is on its way out.
+        if (_quitting) return;
+        request.cancel();
+        unawaited(_finish());
+      // A restore is the end of a maximize as well as of a minimize: the
+      // platform reports the two the same way.
+      case WindowResizedEvent() ||
+          WindowMovedEvent() ||
+          WindowMaximizedEvent() ||
+          WindowRestoredEvent():
+        _scheduleWrite();
+      default:
+        break;
+    }
+  }
 
-  @override
-  void onWindowMoved() => _scheduleWrite();
-
-  @override
-  void onWindowMaximize() => _scheduleWrite();
-
-  @override
-  void onWindowUnmaximize() => _scheduleWrite();
-
-  @override
-  void onWindowClose() => unawaited(_finish());
-
-  /// Stops listening, having written where the window ended up.
+  /// Stops following the window, having written where it ended up.
   ///
   /// [placement] is the geometry to record, for a caller that had to read it
   /// first. The close path did: it hides the window before it writes
@@ -135,25 +167,26 @@ class DesktopWindow with WindowListener {
     await _write(placement);
   }
 
+  /// Stops the geometry writes. The close requests are still answered: the
+  /// listener stays for as long as the window does, because without it a
+  /// close would no longer come through [_finish].
   void _stopListening() {
+    _stopped = true;
     _pending?.cancel();
-    windowManager.removeListener(this);
   }
 
   /// Takes the window off screen, records where it was, releases what the
   /// application holds, and quits.
   ///
   /// The order is the whole of this method, and Windows is what sets it.
-  /// There `destroy` is `PostQuitMessage`: it ends the runner's message loop
-  /// and returns, which leaves the window standing — painted, and no longer
-  /// pumping messages — for the whole of the Flutter engine teardown that
-  /// follows as the process unwinds. Everything between the owner's click and
-  /// the end of that teardown is time an application spends looking like it
-  /// did not hear the click, so the window goes first and the rest happens
-  /// behind it.
+  /// There the last window closing ends the runner's message loop, and the
+  /// process then stands for the whole of the Flutter engine teardown that
+  /// follows as it unwinds. Everything between the owner's click and the end
+  /// of that teardown is time an application spends looking like it did not
+  /// hear the click, so the window goes first and the rest happens behind it.
   ///
-  /// [_shutdownBudget] and the `finally` are the same idea said twice:
-  /// [WindowManager.setPreventClose] means nothing closes this window but this
+  /// [_shutdownBudget] and the `finally` are the same idea said twice: the
+  /// listener [open] registers means nothing closes this window but this
   /// method, so work that threw — or that hung on a settings store or an audio
   /// device that could not be reached — would leave an owner with an
   /// application they cannot quit. None of it is worth that.
@@ -169,14 +202,33 @@ class DesktopWindow with WindowListener {
     } on Object catch (error) {
       _log.warning('the shutdown did not finish', error);
     } finally {
-      await windowManager.destroy();
+      _quit();
     }
+  }
+
+  /// Closes the window for good, which on both desktops ends the application.
+  ///
+  /// The close goes back through [_onEvent], which lets this one pass. Where
+  /// the platform will not close the window at all, the process ends without
+  /// it: a window that stays is an application the owner cannot quit, and
+  /// everything worth releasing has been by now.
+  void _quit() {
+    _quitting = true;
+
+    var closed = false;
+    try {
+      closed = _window?.close() ?? false;
+    } on Object catch (error) {
+      _log.warning('the window could not be closed', error);
+    }
+
+    if (!closed) exit(0);
   }
 
   Future<void> _shutDown() async {
     final placement = await _measure();
 
-    await windowManager.hide();
+    _window?.hide();
 
     // Nothing measured — a minimized window — is nothing to record. Handed to
     // [close], it would be measured again, from the hidden window.
@@ -198,12 +250,13 @@ class DesktopWindow with WindowListener {
   /// already recorded.
   Future<WindowPlacement?> _measure() async {
     try {
-      if (await windowManager.isMinimized()) return null;
-      if (await windowManager.isMaximized()) {
+      final window = _window;
+      if (window == null || window.isMinimized) return null;
+      if (window.isMaximized) {
         return WindowPlacement(bounds: _restored, maximized: true);
       }
 
-      final bounds = await windowManager.getBounds();
+      final bounds = window.bounds.toRect();
       _restored = bounds;
 
       return WindowPlacement(bounds: bounds, maximized: false);
@@ -215,6 +268,7 @@ class DesktopWindow with WindowListener {
   }
 
   void _scheduleWrite() {
+    if (_stopped) return;
     _pending?.cancel();
     // A drag produces a resize event per frame, and a settings write per frame
     // is a settings write per frame. Half a second after the owner stops is
