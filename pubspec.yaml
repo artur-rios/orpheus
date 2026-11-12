@@ -4,13 +4,21 @@ publish_to: "none"
 version: 1.7.1+13
 
 environment:
-  sdk: ^3.13.2
+  sdk: ^3.14.0
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+
+  # The Material widgets, theme and localizations. Flutter 3.50 moved them out
+  # of the SDK into this package and deprecated `package:flutter/material.dart`,
+  # which the analyzer then reports at every import. Same library, its own
+  # home: `MaterialApp`, `ThemeData` and `GlobalMaterialLocalizations` come
+  # from here, and all of them must, because a theme or a set of localizations
+  # from one is not found by widgets from the other.
+  material_ui: ^1.11.0
 
   # Composition root and state management. The same choice the Alexandria UI
   # made, for the same reason: the player outlives the screen that started it,
@@ -96,7 +104,12 @@ dependencies:
 
   # The desktop window: the minimum size, and the geometry that is restored
   # between runs. Desktop-only by nature, and guarded as such at every call.
-  window_manager: ^0.5.2
+  #
+  # From 0.6 it is a binding of nativeapi, a C++ core that a build hook
+  # compiles for the target on every build and every `flutter test`: on Linux
+  # that needs a C++ compiler, pkg-config and the GTK, X11 and Xi headers,
+  # which libgtk-3-dev brings with it.
+  window_manager: ^0.7.0
 
   # The backup file: a ZIP holding the exported data, the playlist covers and
   # the preferences, written and read in pure Dart so the format is exercised
