@@ -835,7 +835,7 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
   /// The engine is built on first use, and building one — loading libmpv,
   /// opening an output device — in order to stop it is work for nothing.
   Future<void> _stopEngine() async {
-    if (ref.exists(audioPlayerProvider)) await _player.stop();
+    if (ref.read(audioPlayerProvider.exists)) await _player.stop();
   }
 
   /// Renames an album or artist queue after the record or artist as [library]

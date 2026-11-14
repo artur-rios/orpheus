@@ -81,7 +81,6 @@ class PlatformStoryShare implements StoryShare {
         fileName: fileName,
         bytes: png,
         mimeType: 'image/png',
-        type: FileType.image,
       );
 
       return saved == null
