@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/l10n/generated/app_localizations.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';

@@ -404,7 +404,7 @@ void main() {
     }, kind: AutofillKind.record);
     subscription.close();
     await pumpEventQueue();
-    expect(harness.container.exists(autofillControllerProvider), isFalse);
+    expect(harness.container.read(autofillControllerProvider.exists), isFalse);
     held.complete();
 
     await expectLater(started, completes);
@@ -427,7 +427,7 @@ void main() {
     await pumpEventQueue();
     subscription.close();
     await pumpEventQueue();
-    expect(harness.container.exists(autofillControllerProvider), isFalse);
+    expect(harness.container.read(autofillControllerProvider.exists), isFalse);
     held.complete();
 
     await expectLater(chosen, completes);
@@ -451,7 +451,7 @@ void main() {
     await pumpEventQueue();
     subscription.close();
     await pumpEventQueue();
-    expect(harness.container.exists(autofillControllerProvider), isFalse);
+    expect(harness.container.read(autofillControllerProvider.exists), isFalse);
     held.complete();
 
     await expectLater(writing, completes);

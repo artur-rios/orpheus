@@ -7,6 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.7.2] - 2026-11-14
+
+### Changed
+
+- Orpheus is built with Flutter 3.50.0.
+- Dependencies: `window_manager` 0.5.2 → 0.7.0, which places the desktop window through a native library of its own
+  instead of a Flutter plugin. On Linux it needs `libx11-6` and `libxi6`, which GTK already depends on, so nothing
+  new needs installing.
+
 ## [1.7.1] - 2026-10-29
 
 ### Changed
@@ -368,7 +377,8 @@ A pre-release built from the `diagnose/android-usb-folder` branch to diagnose fo
 - Release downloads: a Windows installer, a portable Windows archive, a Linux installer and an Android APK, with
   `SHA256SUMS.txt`.
 
-[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.7.1...HEAD
+[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.7.2...HEAD
+[1.7.2]: https://github.com/artur-rios/orpheus/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/artur-rios/orpheus/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/artur-rios/orpheus/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/artur-rios/orpheus/compare/v1.5.1...v1.6.0

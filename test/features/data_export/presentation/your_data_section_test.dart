@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:orpheus/features/data_export/data/zip_backup_codec.dart';
 import 'package:orpheus/features/playlists/domain/file_saver.dart';
 import 'package:orpheus/features/shell/presentation/preferences_dialog.dart';

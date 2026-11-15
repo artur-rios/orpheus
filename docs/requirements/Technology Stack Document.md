@@ -10,8 +10,8 @@ A dependency added without a row here is a Definition of Done failure.
 
 | | Version | Notes |
 | --- | --- | --- |
-| **Flutter** | 3.47.2, stable channel | The version the project is built and tested against. |
-| **Dart SDK** | `^3.13.2` | Declared in `pubspec.yaml`. |
+| **Flutter** | 3.50.0, stable channel | The version the project is built and tested against. |
+| **Dart SDK** | `^3.14.0` | Declared in `pubspec.yaml`. |
 | **Java** | 17 | `sourceCompatibility`, `targetCompatibility` and the Kotlin JVM target for the Android build. |
 
 ## 2. Platform targets
@@ -27,6 +27,7 @@ A dependency added without a row here is a Definition of Done failure.
 
 | Package | Version | What it is for |
 | --- | --- | --- |
+| `material_ui` | `^1.11.0` | The Material widgets, theme and localizations, which Flutter 3.50 moved out of the SDK (`package:flutter/material.dart` is deprecated there). Every Material import comes from here: a theme or localizations from one copy are not found by widgets from the other. |
 | `flutter_riverpod` | `^3.4.3` | State management and the single composition root. The queue outlives the screen that started it, so it cannot live in a widget. |
 | `media_kit` | `^1.2.6` | The playback engine. libmpv-backed, and the one engine in its class covering all three targets with one API and no transcoding. |
 | `media_kit_libs_audio` | `^1.0.7` | The engine's bundled native libraries for Windows and Android. |
@@ -39,7 +40,7 @@ A dependency added without a row here is a Definition of Done failure.
 | `file_picker` | `^13.1.0` | The folder picker, and the open dialog a restore picks its backup with. Chosen over `file_selector` because `getDirectoryPath` answers on Android as well as on both desktops, and this project has a mobile target. |
 | `archive` | `^4.2.0` | The backup ZIP (`FR-BK-02`), written and read in pure Dart, so the format is exercised by tests on every target and needs no native build. Already in the tree as another package's transitive dependency; named here because the backup format depends on it directly. |
 | `permission_handler` | `^13.0.2` | Android's `READ_MEDIA_AUDIO`, its pre-13 predecessor, and the notification permission; and, for an autofill, all-files access (`MANAGE_EXTERNAL_STORAGE`, Android 11 and later) or `WRITE_EXTERNAL_STORAGE` (capped at API 29, granted with read access on Android 7 to 10). Asked for on Android and nowhere else. |
-| `window_manager` | `^0.5.2` | The desktop window's minimum size and restored geometry. Desktop-only by nature and guarded as such at every call. |
+| `window_manager` | `^0.7.0` | The desktop window's minimum size and restored geometry. Desktop-only by nature and guarded as such at every call. |
 | `http` | `^1.6.0` | The lyrics lookup (`FR-LY-13`), the desktop release check (`BR-03`), and the autofill's MusicBrainz and Cover Art Archive lookups (`FR-AF-02`), and nothing else. Chosen over `dart:io`'s `HttpClient` because its `Client` is an interface: the three things this application does over a network sit behind seams the suite stands a scripted client in front of, so no test opens a socket (`NFR-08`). |
 | `crypto` | `^3.0.6` | The SHA-256 a downloaded installer is checked against before it is run, from the release's `SHA256SUMS.txt`. |
 | `package_info_plus` | `^10.2.2` | The running application's own version, which the release check compares against the latest release. |

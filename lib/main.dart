@@ -121,7 +121,7 @@ Future<AppVersion?> _runningVersion() async {
 /// it away — which on Windows means loading libmpv and opening an output
 /// device as part of quitting.
 Future<void> _release(ProviderContainer container) async {
-  if (container.exists(audioPlayerProvider)) {
+  if (container.read(audioPlayerProvider.exists)) {
     await container.read(audioPlayerProvider).dispose();
   }
 

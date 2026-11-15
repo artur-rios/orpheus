@@ -29,7 +29,7 @@
 #      light/dark control and a pinned mermaid. A site that renders but is wrong fails the image build.
 ARG HUGO_DIR=docs/site
 
-FROM node:24.22.1-alpine3.24@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS npm
+FROM node:26.13.1-alpine3.24@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS npm
 
 ARG HUGO_DIR
 WORKDIR /src/${HUGO_DIR}

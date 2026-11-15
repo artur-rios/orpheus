@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:orpheus/core/l10n/generated/app_localizations.dart';
 import 'package:orpheus/core/theme/app_theme.dart';
 import 'package:orpheus/core/theme/breakpoints.dart';
@@ -52,9 +51,9 @@ extension PumpHarness on WidgetTester {
           supportedLocales: const [Locale('en'), Locale('pt', 'BR')],
           localizationsDelegates: const [
             AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            // material_ui's own: its Material, Cupertino and widgets
+            // localizations, which its widgets look up.
+            ...GlobalMaterialLocalizations.delegates,
           ],
           builder: (context, built) => MediaQuery(
             data: MediaQuery.of(context).copyWith(

@@ -1,10 +1,10 @@
 name: orpheus
 description: "A cross-platform music player for Windows, Linux and Android."
 publish_to: "none"
-version: 1.7.1+13
+version: 1.7.2+14
 
 environment:
-  sdk: ^3.13.2
+  sdk: ^3.14.0
 
 dependencies:
   flutter:
@@ -12,10 +12,18 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
+  # The Material widgets, theme and localizations. Flutter 3.50 moved them out
+  # of the SDK into this package and deprecated `package:flutter/material.dart`,
+  # which the analyzer then reports at every import. Same library, its own
+  # home: `MaterialApp`, `ThemeData` and `GlobalMaterialLocalizations` come
+  # from here, and all of them must, because a theme or a set of localizations
+  # from one is not found by widgets from the other.
+  material_ui: ^1.11.0
+
   # Composition root and state management. The same choice the Alexandria UI
   # made, for the same reason: the player outlives the screen that started it,
   # so the queue has to live somewhere that is not a widget.
-  flutter_riverpod: ^3.4.3
+  flutter_riverpod: ^3.5.0
 
   # The playback engine. libmpv-backed, and the one engine in this class that
   # covers all three targets — Windows, Linux and Android — with the same API
@@ -58,7 +66,7 @@ dependencies:
   # it directly, and the one thing that must never silently change version is
   # the thing deciding whether a downloaded executable is the one that was
   # built.
-  crypto: ^3.0.6
+  crypto: ^3.0.8
 
   # What the running build calls itself, which is the other half of the update
   # check: a release is only newer than something, and that something is this.
@@ -71,13 +79,13 @@ dependencies:
   logging: ^1.3.0
 
   # Localization for en and pt-BR.
-  intl: ^0.20.2
+  intl: ^0.20.3
 
   # The folder picker. `file_picker` rather than `file_selector` because this
   # application has a mobile target: `getDirectoryPath` is the one call the
   # library-folder flow needs, and only this package answers it on Android as
   # well as on the two desktops.
-  file_picker: ^13.1.0
+  file_picker: ^13.3.3
 
   # Android's audio-media read permission. Asked for on Android and nowhere
   # else — the desktops have no such gate.
@@ -96,13 +104,18 @@ dependencies:
 
   # The desktop window: the minimum size, and the geometry that is restored
   # between runs. Desktop-only by nature, and guarded as such at every call.
-  window_manager: ^0.5.2
+  #
+  # From 0.6 it is a binding of nativeapi, a C++ core that a build hook
+  # compiles for the target on every build and every `flutter test`: on Linux
+  # that needs a C++ compiler, pkg-config and the GTK, X11 and Xi headers,
+  # which libgtk-3-dev brings with it.
+  window_manager: ^0.7.0
 
   # The backup file: a ZIP holding the exported data, the playlist covers and
   # the preferences, written and read in pure Dart so the format is exercised
   # by tests on every target. Already in the tree as somebody else's transitive
   # dependency; named here because the backup format now depends on it directly.
-  archive: ^4.5.2
+  archive: ^4.7.1
 
 dev_dependencies:
   flutter_test:

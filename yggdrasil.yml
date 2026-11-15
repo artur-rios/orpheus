@@ -9,8 +9,8 @@
 # verify.yml stays a GitHub Actions workflow, the catalog's actionsCheck `Windows and the installer`, run on the
 # GitHub mirror.
 #
-# Flutter 3.47.2 is pinned in ci/flutter-env.sh, not by the image: ghcr.io/cirruslabs/flutter has no tag newer than
-# 3.44.0, whose Dart is older than pubspec.yaml's `sdk: ^3.13.2`. The image supplies the Android SDK, the JDK (21; the
+# Flutter 3.50.0 is pinned in ci/flutter-env.sh, not by the image: ghcr.io/cirruslabs/flutter has no tag newer than
+# 3.44.0, whose Dart is older than pubspec.yaml's `sdk: ^3.14.0`. The image supplies the Android SDK, the JDK (21; the
 # workflows used 17, which the build targets), git, curl and xz, and ci/flutter-env.sh fetches the SDK itself
 # (checksummed). The Linux desktop packages are installed by ci/apt-packages.sh, which needs root: checks and release
 # builds run as root on yggdrasil's agents.

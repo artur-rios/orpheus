@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:orpheus/core/l10n/generated/app_localizations.dart';
 import 'package:orpheus/features/playback/domain/playback_queue.dart';
 import 'package:orpheus/features/playback/presentation/music_display_name.dart';

@@ -22,8 +22,8 @@ class HostPlatform {
 
   /// Whether this host has a window to size and place.
   ///
-  /// The two desktop targets. Android has a surface, not a window, and asking
-  /// `window_manager` about one there throws.
+  /// The two desktop targets. Android has a surface, not a window, and
+  /// `window_manager` supports the desktops alone.
   bool get isDesktop => isWindows || isLinux;
 
   /// Whether reading the owner's audio files needs a permission first.

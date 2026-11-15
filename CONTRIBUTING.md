@@ -15,10 +15,11 @@ what you need to build, test and release the application.
 
 ## Prerequisites
 
-- [Flutter](https://docs.flutter.dev/get-started/install) 3.47.2, stable channel — the version the project is built
+- [Flutter](https://docs.flutter.dev/get-started/install) 3.50.0, stable channel — the version the project is built
   and tested against (see the [Technology Stack Document](./docs/requirements/Technology%20Stack%20Document.md)).
 - **Linux:** `ninja-build` and `libgtk-3-dev` to build, and libmpv to play (`sudo apt install libmpv-dev mpv` on
-  Debian and Ubuntu).
+  Debian and Ubuntu). `flutter test` needs a C++ compiler, `pkg-config` and `libgtk-3-dev` too: it compiles
+  `window_manager`'s native library, against the GTK, X11 and Xi headers that package brings.
 - **Android:** a JDK 17 and the Android SDK.
 - **Windows:** the MSVC toolchain Flutter's Windows build needs, and [Inno Setup](https://jrsoftware.org/isdl.php)
   for the installer.

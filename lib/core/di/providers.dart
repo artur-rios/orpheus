@@ -13,8 +13,8 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../features/autofill/application/autofill_controller.dart';
 import '../../features/autofill/application/batch_autofill_controller.dart';

@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/features/shell/presentation/async_state_view.dart';
-import 'package:orpheus/features/stats/domain/play_history.dart';
 import 'package:orpheus/features/shell/presentation/shell_screen.dart';
+import 'package:orpheus/features/stats/domain/play_history.dart';
 import 'package:orpheus/features/stats/presentation/music_stats_screen.dart';
 
 import '../../../support/entries.dart';
