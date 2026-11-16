@@ -96,7 +96,7 @@ void main() {
     });
 
     test(
-      'GivenOneFileHoldingRockPop_AndOneRock_WhenShared_ThenTheGenreIsMixed',
+      'GivenOneFileHoldingRockPopAndOneRock_WhenShared_ThenTheGenreIsMixed',
       () {
         final shared = SharedTags.of([
           file(values: const {AutofillField.genre: 'Rock; Pop'}),

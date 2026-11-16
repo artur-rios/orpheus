@@ -250,7 +250,7 @@ void main() {
     });
 
     testWidgets(
-      'GivenAnOpenPlaylist_WhileTheLibraryLoads_ThenItShowsLoadingNotMissing',
+      'GivenAnOpenPlaylist_WhenTheLibraryReloads_ThenItShowsLoadingNotMissing',
       (tester) async {
         final harness = await show(tester, roadTrip);
 
