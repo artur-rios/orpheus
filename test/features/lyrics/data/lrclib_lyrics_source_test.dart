@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -352,12 +353,9 @@ void main() {
     'GivenTheServiceHangs_WhenTheLookupTimesOut_ThenNothingComesBack',
     () async {
       final source = LrclibLyricsSource(
-        client: MockClient(
-          (_) async => Future.delayed(
-            const Duration(seconds: 1),
-            () => http.Response('', 200),
-          ),
-        ),
+        // An answer that never comes, rather than one that comes late: the
+        // test is about the timeout, and leaves no timer running after it.
+        client: MockClient((_) => Completer<http.Response>().future),
         timeout: const Duration(milliseconds: 20),
       );
 

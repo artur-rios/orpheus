@@ -180,7 +180,7 @@ void main() {
     expect(saveOf(tester), isNull);
   });
 
-  testWidgets('GivenAGenreTyped_ThenSaveIsEnabled', (tester) async {
+  testWidgets('GivenNoChange_WhenAGenreIsTyped_ThenSaveIsEnabled', (tester) async {
     await open(tester, harnessFor());
 
     await tester.enterText(field(AutofillField.genre), 'Alternative');
@@ -190,7 +190,7 @@ void main() {
   });
 
   testWidgets(
-    'GivenTheSameNumberRetypedWithALeadingZero_ThenSaveStaysDisabled',
+    'GivenASharedDiscNumber_WhenRetypedWithALeadingZero_ThenSaveStaysDisabled',
     (tester) async {
       final harness = harnessFor();
       for (final track in tracks) {

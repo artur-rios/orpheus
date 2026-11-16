@@ -127,11 +127,24 @@ if (-not $NoAnalyze) {
 
 # ------------------------------------------------------------------ the suite
 
+# The suite runs as $TestBundles files written by tools/test_bundles.dart, each
+# importing a share of test/ and compiled once, rather than one file at a time:
+# `flutter test` compiles its files one after the other, so with a file per
+# entry point most of the run was the compiler. One process per bundle, so the
+# bundles are also all the concurrency it asks for. `flutter test` on its own
+# still runs each file in its own process. The same as tools/verify.sh.
+$TestBundles = 4
+
 if (-not $NoTest) {
     Step 'Testing'
     Note 'no test may read your preferences, write to your support folder,'
     Note 'record against your statistics, open the engine, or reach the network'
-    if (Invoke-Step 'flutter' @('test')) { Record-Pass 'flutter test' }
+    Note "in $TestBundles bundles of the suite's files (tools/test_bundles.dart)"
+    $bundles = Join-Path 'build' 'test-bundles'
+    if ((Invoke-Step 'dart' @('tools/test_bundles.dart', $bundles, "$TestBundles")) -and
+        (Invoke-Step 'flutter' @('test', '--concurrency', "$TestBundles", $bundles))) {
+        Record-Pass 'flutter test'
+    }
     else { Record-Fail 'flutter test' }
 }
 

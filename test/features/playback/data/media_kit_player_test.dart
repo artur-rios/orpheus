@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -77,12 +78,22 @@ void main() {
       addTearDown(player.dispose);
 
       final statuses = <PlaybackStatus>[];
-      final subscription = player.status.listen(statuses.add);
+      final ended = Completer<void>();
+      final subscription = player.status.listen((status) {
+        statuses.add(status);
+        if (status.hasEnded && !ended.isCompleted) ended.complete();
+      });
       addTearDown(subscription.cancel);
 
       await player.open(track.path);
       await player.play();
-      await Future<void>.delayed(const Duration(seconds: 2));
+      // Until the second of sine has played out, rather than for a fixed two
+      // seconds: as short as the track on an idle machine, and still long
+      // enough on a loaded one. A track that never ends fails below.
+      await ended.future.timeout(
+        const Duration(seconds: 20),
+        onTimeout: () {},
+      );
 
       expect(statuses.where((status) => status.failedToDecode), isEmpty);
       expect(statuses.any((status) => status.hasEnded), isTrue);

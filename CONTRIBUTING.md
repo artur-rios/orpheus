@@ -71,6 +71,15 @@ engine, starts a platform media service, or reaches the network — every one of
 those is a provider, and every one is overridden by the harness in
 `test/support/test_container.dart`.
 
+`tools/verify.sh`, `tools/verify.ps1` and so the checks run the suite as four
+bundles written by `tools/test_bundles.dart`: each imports a share of the test
+files, is compiled once, and runs that share in one process. `flutter test`
+compiles one file at a time, so a run of one entry point per test file was
+mostly compiling. A test may therefore not depend on running in a process of
+its own: what it changes outside itself, it puts back. `flutter test` itself
+still runs each file in its own process, and `flutter test test/features/stats`
+is still the quick loop for one area.
+
 Two of the tests are guards rather than assertions about behaviour, and they
 exist because a rule nobody checks is a comment:
 
