@@ -140,11 +140,22 @@ fi
 
 # -------------------------------------------------------------------- the suite
 
+# The suite runs as TEST_BUNDLES files written by tools/test_bundles.dart, each
+# importing a share of test/ and compiled once, rather than one file at a time:
+# `flutter test` compiles its files one after the other, so with a file per
+# entry point most of the run was the compiler. One process per bundle, so the
+# bundles are also all the concurrency it asks for, which keeps a loaded CI
+# agent from starting a test process per spare core. `flutter test` on its own
+# still runs each file in its own process.
+TEST_BUNDLES=4
+
 if [ "$WANT_TEST" = "yes" ]; then
   step "Testing"
   note "no test may read your preferences, write to your support folder,"
   note "record against your statistics, open the engine, or reach the network"
-  if flutter test; then
+  note "in $TEST_BUNDLES bundles of the suite's files (tools/test_bundles.dart)"
+  if dart tools/test_bundles.dart build/test-bundles "$TEST_BUNDLES" >/dev/null &&
+    flutter test --concurrency "$TEST_BUNDLES" build/test-bundles; then
     record_pass "flutter test"
   else
     record_fail "flutter test"
