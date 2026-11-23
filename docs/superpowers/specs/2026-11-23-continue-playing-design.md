@@ -57,8 +57,9 @@ field restores as **Stop**.
   When that leaves none (a small artist fully heard), the queue's tracks are
   allowed again, except the seed itself; only when even that leaves nothing
   does playback stop, as today.
-- **Missing files.** A candidate the probe says is gone is stepped over and
-  another is drawn, a bounded number of times, then playback stops.
+- **Missing files.** A candidate the probe says is gone is never drawn, and a
+  track the queue had to skip never re-enters the pool, so a library full of
+  missing files ends playback instead of looping.
 - **Randomness** comes from `shuffleRandomProvider`, so tests seed it.
 - **Next.** Pressing next on the last track with the preference on draws a
   track the same way. The next button on the bar, the player and the media
