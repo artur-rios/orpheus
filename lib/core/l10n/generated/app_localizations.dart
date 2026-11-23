@@ -296,6 +296,36 @@ abstract class AppLocalizations {
   /// **'Playback'**
   String get settingsPlayback;
 
+  /// The label of the preference choosing what plays once a queue has run out.
+  ///
+  /// In en, this message translates to:
+  /// **'When the queue ends'**
+  String get settingsQueueContinuation;
+
+  /// The choice that stops playback at the end of the queue, as before.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get queueContinuationStop;
+
+  /// The choice that keeps playing random tracks by the artist of the track that ended.
+  ///
+  /// In en, this message translates to:
+  /// **'Play more by the same artist'**
+  String get queueContinuationSameArtist;
+
+  /// The choice that keeps playing random tracks sharing a genre with the track that ended.
+  ///
+  /// In en, this message translates to:
+  /// **'Play more of the same genre'**
+  String get queueContinuationSameGenre;
+
+  /// The choice that keeps playing random tracks from the whole library.
+  ///
+  /// In en, this message translates to:
+  /// **'Play anything from the library'**
+  String get queueContinuationLibrary;
+
   /// The preference that opens the full player on play.
   ///
   /// In en, this message translates to:

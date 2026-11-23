@@ -75,7 +75,9 @@ class GenresView extends ConsumerWidget {
         ],
         fallbackLibrary: entries,
         // The genre's tracks, as its own row's shuffle plays them — not
-        // everything, which is what the same button means under Music.
+        // everything, which is what the same button means under Music. An
+        // artist or record opened inside the genre shuffles only its tracks
+        // in the genre, which the browser works out itself.
         onShuffle: () => unawaited(
           ref
               .read(audioPlaybackControllerProvider.notifier)

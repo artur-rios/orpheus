@@ -466,4 +466,22 @@ void main() {
       expect(find.text('Autofill 2 songs?'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'GivenAnArtistOpenedInAGenre_WhenShuffleIsPressed_ThenOnlyTheirTracksInTheGenreAreQueued',
+    (tester) async {
+      // What the artist's own row under Rock queues: their Rock records,
+      // whole — OK Computer with Karma Police on it, as the screen lists it —
+      // and not Kid A, which is not Rock at all.
+      final harness = await openRock(tester);
+      await tester.tap(find.text('Radiohead'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Shuffle the artist'));
+      await tester.pumpAndSettle();
+
+      final queue = harness.read(audioPlaybackControllerProvider).queue;
+      expect(queue.tracks, unorderedEquals([file('1'), file('2')]));
+    },
+  );
 }

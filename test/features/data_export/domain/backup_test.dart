@@ -48,6 +48,7 @@ void main() {
       fetchesLyricsOnline: false,
       checksForUpdatesOnStartup: false,
       showsAutoPlaylists: false,
+      queueContinuation: 'sameGenre',
       volume: 0.35,
       libraryFolders: [r'C:\Music', '/home/a/Music'],
     );
@@ -61,6 +62,7 @@ void main() {
         'fetchesLyricsOnline': false,
         'checksForUpdatesOnStartup': false,
         'showsAutoPlaylists': false,
+        'queueContinuation': 'sameGenre',
         'volume': 0.35,
         'libraryFolders': [r'C:\Music', '/home/a/Music'],
       });
@@ -117,6 +119,12 @@ void main() {
       expect(back.showsAutoPlaylists, isTrue);
       expect(back.volume, 1);
       expect(back.libraryFolders, isEmpty);
+    });
+
+    test('GivenAnOlderBackupWithoutTheKey_WhenRead_ThenItIsStop', () {
+      final json = snapshot.toJson()..remove('queueContinuation');
+
+      expect(PreferencesSnapshot.fromJson(json).queueContinuation, 'stop');
     });
   });
 }

@@ -113,6 +113,21 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsPlayback => 'Reprodução';
 
   @override
+  String get settingsQueueContinuation => 'Quando a fila terminar';
+
+  @override
+  String get queueContinuationStop => 'Parar';
+
+  @override
+  String get queueContinuationSameArtist => 'Tocar mais do mesmo artista';
+
+  @override
+  String get queueContinuationSameGenre => 'Tocar mais do mesmo gênero';
+
+  @override
+  String get queueContinuationLibrary => 'Tocar qualquer música da biblioteca';
+
+  @override
   String get settingsOpensPlayerOnPlay => 'Abrir o player ao iniciar uma faixa';
 
   @override

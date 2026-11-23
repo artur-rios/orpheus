@@ -1047,6 +1047,48 @@ void main() {
       );
     });
 
+    test(
+      'GivenReplace_WhenRestored_ThenTheQueueContinuationIsTheBackups',
+      () {
+        final restored = restorePreferences(
+          current,
+          defaults,
+          backup.continuingWith('sameArtist'),
+          RestoreChoice.replace,
+        );
+
+        expect(restored?.queueContinuation, 'sameArtist');
+      },
+    );
+
+    test(
+      'GivenMerge_WhenTheOwnerStillStops_ThenTheBackupsQueueContinuationIsTaken',
+      () {
+        final restored = restorePreferences(
+          current,
+          defaults,
+          backup.continuingWith('sameArtist'),
+          RestoreChoice.merge,
+        );
+
+        expect(restored?.queueContinuation, 'sameArtist');
+      },
+    );
+
+    test(
+      'GivenMerge_WhenTheOwnerChoseAContinuation_ThenTheirsIsKept',
+      () {
+        final restored = restorePreferences(
+          current.continuingWith('library'),
+          defaults,
+          backup.continuingWith('sameArtist'),
+          RestoreChoice.merge,
+        );
+
+        expect(restored?.queueContinuation, 'library');
+      },
+    );
+
     test('GivenSkip_WhenRestored_ThenNothingIsApplied', () {
       expect(
         restorePreferences(current, defaults, backup, RestoreChoice.skip),
@@ -1269,7 +1311,21 @@ extension on PreferencesSnapshot {
     fetchesLyricsOnline: fetchesLyricsOnline,
     checksForUpdatesOnStartup: checksForUpdatesOnStartup,
     showsAutoPlaylists: showsAutoPlaylists,
+    queueContinuation: queueContinuation,
     volume: volume,
     libraryFolders: const [],
+  );
+
+  PreferencesSnapshot continuingWith(String mode) => PreferencesSnapshot(
+    themeMode: themeMode,
+    locale: locale,
+    opensPlayerOnPlay: opensPlayerOnPlay,
+    rescansAtStartup: rescansAtStartup,
+    fetchesLyricsOnline: fetchesLyricsOnline,
+    checksForUpdatesOnStartup: checksForUpdatesOnStartup,
+    showsAutoPlaylists: showsAutoPlaylists,
+    queueContinuation: mode,
+    volume: volume,
+    libraryFolders: libraryFolders,
   );
 }

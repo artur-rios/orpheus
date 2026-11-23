@@ -14,6 +14,7 @@ import '../application/music_navigator.dart';
 import '../domain/music_layout.dart';
 import 'music_display_name.dart';
 import 'music_rows.dart';
+import 'music_scope.dart';
 
 /// One step of the breadcrumb: what it says, and where it leads — `null` for
 /// a crumb that is only text.
@@ -97,10 +98,13 @@ class MusicBrowser extends ConsumerWidget {
   /// would empty the screen under its own name.
   final List<MusicEntry>? fallbackLibrary;
 
-  /// What the controls bar's shuffle button plays.
+  /// What the controls bar's shuffle button plays at the top of the browser,
+  /// before an artist or a record is opened — below that, it shuffles what is
+  /// open.
   final VoidCallback onShuffle;
 
-  /// What the controls bar's shuffle button says it does.
+  /// What the controls bar's shuffle button says it does at the top of the
+  /// browser.
   final String shuffleTooltip;
 
   /// Which browser this is, as the start of every song list's identity —
@@ -138,6 +142,8 @@ class MusicBrowser extends ConsumerWidget {
       selectionPlace: selectionPlace,
     );
 
+    final (shuffle, tooltip) = _shuffleHere(context, ref);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -145,8 +151,8 @@ class MusicBrowser extends ConsumerWidget {
           view: state.view,
           layout: layout,
           navigator: navigator,
-          onShuffle: onShuffle,
-          shuffleTooltip: shuffleTooltip,
+          onShuffle: shuffle,
+          shuffleTooltip: tooltip,
           onAutofill: onAutofill,
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -160,6 +166,66 @@ class MusicBrowser extends ConsumerWidget {
       ],
     );
   }
+
+  /// What the toolbar's shuffle plays where the owner is, and what it says.
+  ///
+  /// What they are looking at: [onShuffle] at the top of the browser, the
+  /// artist once one is open, the record once one is. Gathered as the row's
+  /// own shuffle gathers it — from the group's first track, within the
+  /// nearest [MusicScope] — so the toolbar and the row it came from always
+  /// queue the same tracks. A level with nothing left in it offers no
+  /// shuffle at all rather than the top level's under another name.
+  (VoidCallback?, String) _shuffleHere(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final within = musicWithinOf(context);
+    final player = ref.read(audioPlaybackControllerProvider.notifier);
+
+    if (state.inAlbum) {
+      final tracks = _openRecordTracks(state, library, fallbackLibrary);
+      final seed = tracks.isEmpty ? null : tracks.first.file;
+
+      return (
+        seed == null
+            ? null
+            : () => unawaited(
+                player.playAlbum(seed, shuffled: true, within: within),
+              ),
+        l10n.audioShuffleAlbum,
+      );
+    }
+
+    if (state.view == MusicView.artists && state.inArtist) {
+      final records = albumsOfArtist(state.artist, library);
+      final seed = records.isEmpty || records.first.entries.isEmpty
+          ? null
+          : records.first.entries.first.file;
+
+      return (
+        seed == null
+            ? null
+            : () => unawaited(
+                player.playArtist(seed, shuffled: true, within: within),
+              ),
+        l10n.audioShuffleArtist,
+      );
+    }
+
+    return (onShuffle, shuffleTooltip);
+  }
+}
+
+/// The tracks of the record [state] has open: from [library], or from
+/// [fallbackLibrary] where [library] no longer holds any of them.
+List<MusicEntry> _openRecordTracks(
+  MusicBrowseState state,
+  List<MusicEntry> library,
+  List<MusicEntry>? fallbackLibrary,
+) {
+  final tracks = tracksOfAlbum(state.album, state.artist, library);
+
+  return tracks.isEmpty && fallbackLibrary != null
+      ? tracksOfAlbum(state.album, state.artist, fallbackLibrary)
+      : tracks;
 }
 
 /// The view switcher, the shuffle button, the ⋮ menu where there is one and the
@@ -189,7 +255,7 @@ class _Controls extends StatelessWidget {
   final MusicView view;
   final MusicLayout layout;
   final MusicNavigator navigator;
-  final VoidCallback onShuffle;
+  final VoidCallback? onShuffle;
   final String shuffleTooltip;
   final VoidCallback? onAutofill;
 
@@ -276,14 +342,8 @@ class _List extends StatelessWidget {
 
   /// The open record's tracks: from [library], or from [fallbackLibrary]
   /// where [library] no longer holds any of them.
-  List<MusicEntry> _recordTracks() {
-    final tracks = tracksOfAlbum(state.album, state.artist, library);
-    final fallback = fallbackLibrary;
-
-    return tracks.isEmpty && fallback != null
-        ? tracksOfAlbum(state.album, state.artist, fallback)
-        : tracks;
-  }
+  List<MusicEntry> _recordTracks() =>
+      _openRecordTracks(state, library, fallbackLibrary);
 
   /// Which song list is on screen: this browser, and where in it the owner
   /// is. Opening another record, or switching views, names another list, and

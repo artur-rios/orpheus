@@ -142,6 +142,26 @@
   "@settingsPlayback": {
     "description": "The heading over the playback preferences."
   },
+  "settingsQueueContinuation": "Quando a fila terminar",
+  "@settingsQueueContinuation": {
+    "description": "The label of the preference choosing what plays once a queue has run out."
+  },
+  "queueContinuationStop": "Parar",
+  "@queueContinuationStop": {
+    "description": "The choice that stops playback at the end of the queue, as before."
+  },
+  "queueContinuationSameArtist": "Tocar mais do mesmo artista",
+  "@queueContinuationSameArtist": {
+    "description": "The choice that keeps playing random tracks by the artist of the track that ended."
+  },
+  "queueContinuationSameGenre": "Tocar mais do mesmo gênero",
+  "@queueContinuationSameGenre": {
+    "description": "The choice that keeps playing random tracks sharing a genre with the track that ended."
+  },
+  "queueContinuationLibrary": "Tocar qualquer música da biblioteca",
+  "@queueContinuationLibrary": {
+    "description": "The choice that keeps playing random tracks from the whole library."
+  },
   "settingsOpensPlayerOnPlay": "Abrir o player ao iniciar uma faixa",
   "@settingsOpensPlayerOnPlay": {
     "description": "The preference that opens the full player on play."

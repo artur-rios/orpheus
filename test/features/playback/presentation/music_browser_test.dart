@@ -217,6 +217,33 @@ void main() {
       }
     },
   );
+
+  testWidgets(
+    'GivenAnOpenArtistWithNoTracksLeft_WhenTheToolbarIsShown_ThenShuffleIsDisabled',
+    (tester) async {
+      // A rescan took every file of theirs away while they were open: the
+      // button names the artist and does nothing, rather than shuffling
+      // everything under a name that says otherwise.
+      final harness = Harness(library: library);
+      var shuffles = 0;
+      await pumpBrowser(
+        tester,
+        harness,
+        state: const MusicBrowseState(artist: 'Portishead', inArtist: true),
+        onShuffle: () => shuffles++,
+      );
+
+      final button = tester.widget<IconButton>(
+        find.ancestor(
+          of: find.byIcon(Icons.shuffle),
+          matching: find.byType(IconButton),
+        ),
+      );
+      expect(button.tooltip, 'Shuffle the artist');
+      expect(button.onPressed, isNull);
+      expect(shuffles, 0);
+    },
+  );
 }
 
 /// A navigator that only writes down what it was asked to do.

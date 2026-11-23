@@ -11,6 +11,7 @@ import '../../stats/domain/play_threshold.dart';
 import '../domain/media_player.dart';
 import '../domain/playback_position_store.dart';
 import '../domain/playback_queue.dart';
+import '../domain/queue_continuation.dart';
 
 /// Where audio playback is.
 enum AudioStage {
@@ -72,6 +73,18 @@ class AudioPlaybackState {
 
   /// Whether the engine is running.
   bool get isPlaying => status.isPlaying;
+
+  /// Whether pressing next would play something, under the owner's
+  /// [continuation].
+  ///
+  /// One answer for the bar, the player and the media session, so that none
+  /// of them draws the button dead at the end of a queue that will carry on —
+  /// under repeat, or with a random track the owner asked for.
+  bool canAdvance({required QueueContinuation continuation}) =>
+      queue.hasNext ||
+      (!queue.isEmpty &&
+          (repeat != QueueRepeat.off ||
+              continuation != QueueContinuation.stop));
 
   /// A copy with the given changes.
   ///
@@ -270,10 +283,10 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
   /// code with no `AppLocalizations` to name anything, and a label written
   /// here would be in one language for every owner.
   ///
-  /// Every track the library holds, not the view the owner is looking at:
-  /// "shuffle everything" said while standing in one artist would otherwise
-  /// mean something different from the same words said in Songs, and neither
-  /// reading is written anywhere an owner could check.
+  /// Every track the library holds, whichever view it is asked from: the
+  /// Artists, Albums and Songs views all mean the same thing by "shuffle
+  /// everything". The browser asks for it only at the top of a view; inside
+  /// an artist or a record its shuffle says so, and plays that instead.
   Future<void> playEverythingShuffled({required String label}) async {
     state = state.copyWith(stage: AudioStage.starting);
 
@@ -383,7 +396,13 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
       return;
     }
 
-    if (state.repeat == QueueRepeat.off || state.queue.isEmpty) return;
+    if (state.queue.isEmpty) return;
+
+    if (state.repeat == QueueRepeat.off) {
+      await _continueFrom(state.queue, seedPath: state.queue.current?.path);
+
+      return;
+    }
 
     await _openAt(0);
   }
@@ -743,7 +762,10 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
           await _openAt(state.queue.index + 1);
         } else if (state.repeat == QueueRepeat.all && !state.queue.isEmpty) {
           await _openAt(0);
-        } else {
+        } else if (!await _continueFrom(
+          state.queue,
+          seedPath: state.queue.current?.path,
+        )) {
           state = AudioPlaybackState(repeat: state.repeat);
         }
 
@@ -811,12 +833,101 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
       return;
     }
 
+    // Only a queue that played something carries on: one nothing in which
+    // ever opened is a selection that could not be played, and the owner is
+    // owed that report rather than a random track in its place. The seed is
+    // the last track that did play, since the one the queue ended on is the
+    // one that would not.
+    //
+    // And only from a track that did not fail: a decode failure arrives after
+    // the file opened, so a selection none of which made a sound still counts
+    // as played — and a seed of nothing would carry on with anything in the
+    // library, in place of the song the owner asked for.
+    final seed = _lastPlayableIn(queue);
+    if (_queuePlayed && seed != null) {
+      state = state.copyWith(queue: queue, lastSkipped: skipped);
+      if (await _continueFrom(queue, seedPath: seed)) return;
+    }
+
     await _stopEngine();
     state = AudioPlaybackState(
       stage: _queuePlayed ? AudioStage.idle : AudioStage.allFailed,
       repeat: state.repeat,
       lastSkipped: skipped,
     );
+  }
+
+  /// Appends one random track to [queue] and opens it, as the owner's
+  /// continuation preference says; answers whether it did.
+  ///
+  /// Nothing happens under repeat — either mode already says what comes next
+  /// — or when the preference is to stop, or when nothing in the library fits.
+  /// The caller then ends the queue the way it always has.
+  ///
+  /// A candidate whose file is gone is set aside and the pool asked again
+  /// without it, rather than simply drawn past: the pool leaves out what was
+  /// just heard only while something else is left, so a library whose unheard
+  /// tracks are all missing still continues with one already heard. Each pass
+  /// sets aside at least one file, so this ends.
+  Future<bool> _continueFrom(
+    PlaybackQueue queue, {
+    required String? seedPath,
+  }) async {
+    if (state.repeat != QueueRepeat.off) return false;
+
+    final mode = ref.read(preferencesControllerProvider).continuation;
+    if (mode == QueueContinuation.stop) return false;
+
+    // Reading the library can wait on a scan, and the owner may have chosen
+    // something else to play meanwhile: their choice wins.
+    final generation = _openGeneration;
+    final library = await _library();
+    if (library == null || generation != _openGeneration) return false;
+
+    final probe = ref.read(trackProbeProvider);
+    final random = ref.read(shuffleRandomProvider);
+    final queued = {for (final file in queue.tracks) file.path};
+    final setAside = {for (final file in queue.skipped) file.path};
+
+    while (true) {
+      final pool = continuationPool(
+        mode: mode,
+        seedPath: seedPath,
+        library: library.entries,
+        queuedPaths: queued,
+        skippedPaths: setAside,
+      );
+      if (pool.isEmpty) return false;
+
+      for (final entry in [...pool]..shuffle(random)) {
+        final path = entry.file.path;
+        if (!probe.exists(path)) {
+          setAside.add(path);
+          continue;
+        }
+
+        state = state.copyWith(
+          queue: queue.copyWith(tracks: [...queue.tracks, entry.file]),
+          lastSkipped: state.lastSkipped,
+        );
+        await _openAt(queue.tracks.length);
+
+        return true;
+      }
+    }
+  }
+
+  /// The path of the last track before [queue]'s position that was not
+  /// skipped, or `null` when every one was.
+  String? _lastPlayableIn(PlaybackQueue queue) {
+    final skipped = {for (final file in queue.skipped) file.path};
+    for (var i = queue.index; i >= 0; i--) {
+      if (i >= queue.tracks.length) continue;
+      final path = queue.tracks[i].path;
+      if (!skipped.contains(path)) return path;
+    }
+
+    return null;
   }
 
   /// Silences whatever is playing, for a state with no controls for it.
@@ -850,10 +961,15 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
       return;
     }
 
-    final current = queue.current;
-    if (current == null) return;
-
-    final entry = library.entryAt(current.path);
+    // The first track the library still holds rather than the one playing:
+    // the queue is named for the group it was built from, and once it has
+    // carried on into random tracks — appended after the group's own — the
+    // one playing may be from another record altogether.
+    MusicEntry? entry;
+    for (final file in queue.tracks) {
+      entry = library.entryAt(file.path);
+      if (entry != null) break;
+    }
     if (entry == null) return;
 
     final label = queue.kind == QueueKind.album

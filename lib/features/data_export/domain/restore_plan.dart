@@ -541,6 +541,7 @@ PreferencesSnapshot? restorePreferences(
         fetchesLyricsOnline: backup.fetchesLyricsOnline,
         checksForUpdatesOnStartup: backup.checksForUpdatesOnStartup,
         showsAutoPlaylists: backup.showsAutoPlaylists,
+        queueContinuation: backup.queueContinuation,
         volume: backup.volume,
         libraryFolders: current.libraryFolders,
       );
@@ -556,6 +557,7 @@ PreferencesSnapshot? restorePreferences(
         fetchesLyricsOnline: pick((p) => p.fetchesLyricsOnline),
         checksForUpdatesOnStartup: pick((p) => p.checksForUpdatesOnStartup),
         showsAutoPlaylists: pick((p) => p.showsAutoPlaylists),
+        queueContinuation: pick((p) => p.queueContinuation),
         volume: pick((p) => p.volume),
         libraryFolders: current.libraryFolders,
       );
