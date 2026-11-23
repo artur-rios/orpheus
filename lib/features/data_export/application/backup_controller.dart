@@ -76,6 +76,7 @@ PreferencesSnapshot preferencesNow(Ref ref) {
     fetchesLyricsOnline: preferences.fetchesLyricsOnline,
     checksForUpdatesOnStartup: preferences.checksForUpdatesOnStartup,
     showsAutoPlaylists: preferences.showsAutoPlaylists,
+    queueContinuation: preferences.continuation.name,
     volume: settings.volume,
     libraryFolders: settings.libraryFolders,
   );

@@ -113,6 +113,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPlayback => 'Playback';
 
   @override
+  String get settingsQueueContinuation => 'When the queue ends';
+
+  @override
+  String get queueContinuationStop => 'Stop';
+
+  @override
+  String get queueContinuationSameArtist => 'Play more by the same artist';
+
+  @override
+  String get queueContinuationSameGenre => 'Play more of the same genre';
+
+  @override
+  String get queueContinuationLibrary => 'Play anything from the library';
+
+  @override
   String get settingsOpensPlayerOnPlay => 'Open the player when a track starts';
 
   @override

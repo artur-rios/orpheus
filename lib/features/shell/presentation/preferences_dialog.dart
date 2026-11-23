@@ -7,6 +7,7 @@ import '../../../core/di/providers.dart';
 import '../../../core/l10n/generated/app_localizations.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../data_export/presentation/your_data_section.dart';
+import '../../playback/domain/queue_continuation.dart';
 
 /// The preferences.
 ///
@@ -98,6 +99,40 @@ class PreferencesDialog extends ConsumerWidget {
                 onChanged: (value) =>
                     unawaited(controller.setOpensPlayerOnPlay(value)),
               ),
+              // A list rather than a switch: "keep going" has to say from
+              // where, and four choices in one place read as one decision.
+              DropdownButtonFormField<QueueContinuation>(
+                initialValue: preferences.continuation,
+                // Expanded so a long choice — the Portuguese ones are — is
+                // cut short with an ellipsis instead of overflowing a narrow
+                // dialog.
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: l10n.settingsQueueContinuation,
+                ),
+                items: [
+                  for (final mode in QueueContinuation.values)
+                    DropdownMenuItem(
+                      value: mode,
+                      child: Text(
+                        overflow: TextOverflow.ellipsis,
+                        switch (mode) {
+                          QueueContinuation.stop => l10n.queueContinuationStop,
+                          QueueContinuation.sameArtist =>
+                            l10n.queueContinuationSameArtist,
+                          QueueContinuation.sameGenre =>
+                            l10n.queueContinuationSameGenre,
+                          QueueContinuation.library =>
+                            l10n.queueContinuationLibrary,
+                        },
+                      ),
+                    ),
+                ],
+                onChanged: (mode) => mode == null
+                    ? null
+                    : unawaited(controller.setContinuation(mode)),
+              ),
+              const SizedBox(height: AppSpacing.sm),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 value: preferences.rescansAtStartup,

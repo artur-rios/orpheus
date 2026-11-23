@@ -11,6 +11,7 @@ import '../../../core/failures/failure.dart';
 import '../../library/domain/music_entry.dart';
 import '../data/zip_backup_codec.dart';
 import '../domain/backup.dart';
+import '../../playback/domain/queue_continuation.dart';
 import '../domain/restore_plan.dart';
 import 'backup_controller.dart';
 import 'data_export_controller.dart';
@@ -983,6 +984,10 @@ class RestoreController extends Notifier<RestoreState> {
       preferences.setChecksForUpdatesOnStartup,
     );
     await apply((p) => p.showsAutoPlaylists, preferences.setShowsAutoPlaylists);
+    await apply(
+      (p) => p.queueContinuation,
+      (name) => preferences.setContinuation(QueueContinuation.fromName(name)),
+    );
     await apply((p) => p.volume, preferences.setVolume);
 
     return unsaved;
