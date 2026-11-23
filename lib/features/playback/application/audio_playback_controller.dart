@@ -838,11 +838,15 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
     // owed that report rather than a random track in its place. The seed is
     // the last track that did play, since the one the queue ended on is the
     // one that would not.
-    if (_queuePlayed) {
+    //
+    // And only from a track that did not fail: a decode failure arrives after
+    // the file opened, so a selection none of which made a sound still counts
+    // as played — and a seed of nothing would carry on with anything in the
+    // library, in place of the song the owner asked for.
+    final seed = _lastPlayableIn(queue);
+    if (_queuePlayed && seed != null) {
       state = state.copyWith(queue: queue, lastSkipped: skipped);
-      if (await _continueFrom(queue, seedPath: _lastPlayableIn(queue))) {
-        return;
-      }
+      if (await _continueFrom(queue, seedPath: seed)) return;
     }
 
     await _stopEngine();
@@ -957,10 +961,15 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
       return;
     }
 
-    final current = queue.current;
-    if (current == null) return;
-
-    final entry = library.entryAt(current.path);
+    // The first track the library still holds rather than the one playing:
+    // the queue is named for the group it was built from, and once it has
+    // carried on into random tracks — appended after the group's own — the
+    // one playing may be from another record altogether.
+    MusicEntry? entry;
+    for (final file in queue.tracks) {
+      entry = library.entryAt(file.path);
+      if (entry != null) break;
+    }
     if (entry == null) return;
 
     final label = queue.kind == QueueKind.album

@@ -1122,6 +1122,39 @@ void main() {
     );
 
     test(
+      'GivenAContinuedAlbum_WhenTheLibraryIsRescanned_ThenTheQueueKeepsTheAlbumsName',
+      () async {
+        final (harness, player) = await continuing(
+          QueueContinuation.sameArtist,
+        );
+        await player.playAlbum(okComputer.first.file);
+        await endEveryTrack(harness, 3);
+        expect(stateOf(harness).queue.current?.path, kidA.first.file.path);
+
+        harness
+            .read(musicLibraryControllerProvider.notifier)
+            .replaceWith(MusicCatalog(entries: albumArtistsAcross(library)));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(stateOf(harness).queue.label, 'OK');
+      },
+    );
+
+    test(
+      'GivenATrackThatWillNotDecode_WhenItIsAllThatWasAsked_ThenNothingElseStarts',
+      () async {
+        final (harness, player) = await continuing(QueueContinuation.library);
+        await player.playTrack(other.first.file);
+
+        await report(harness, const PlaybackStatus(failedToDecode: true));
+
+        expect(harness.player.opened, [other.first.file.path]);
+        expect(stateOf(harness).stage, AudioStage.idle);
+        expect(stateOf(harness).lastSkipped?.path, other.first.file.path);
+      },
+    );
+
+    test(
       'GivenContinuationOn_WhenTheLastTrackPlays_ThenCanAdvanceIsTrue',
       () async {
         final (harness, player) = await continuing(QueueContinuation.library);
