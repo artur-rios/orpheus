@@ -7,6 +7,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-11-23
+
+### Added
+
+- Keep playing when the queue ends. *Preferences → Playback → When the queue ends* chooses between stopping, as
+  before, and carrying on with random songs by the same artist, of the same genre or from the whole library — one at
+  a time, following the song that just played, and leaving out what is already in the queue while anything else is
+  left. Repeat still wins, and next on the last song plays one too. The choice is kept in a backup.
+
+### Changed
+
+- The shuffle beside the Music tab's views follows where you are: inside an artist it shuffles the artist, and
+  inside a record the record. At the top of Artists, Albums or Songs it still shuffles everything, and under a genre
+  the same rule applies one level down.
+
 ## [1.7.2] - 2026-11-14
 
 ### Changed
@@ -377,7 +392,8 @@ A pre-release built from the `diagnose/android-usb-folder` branch to diagnose fo
 - Release downloads: a Windows installer, a portable Windows archive, a Linux installer and an Android APK, with
   `SHA256SUMS.txt`.
 
-[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.7.2...HEAD
+[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/artur-rios/orpheus/compare/v1.7.2...v1.8.0
 [1.7.2]: https://github.com/artur-rios/orpheus/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/artur-rios/orpheus/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/artur-rios/orpheus/compare/v1.6.0...v1.7.0

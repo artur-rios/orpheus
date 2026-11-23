@@ -39,10 +39,12 @@ class MusicLibraryView extends ConsumerWidget {
       songs: MusicBrowser.showsSongs(browse) ? songsIn(entries) : const [],
       navigator: ref.read(musicBrowseControllerProvider.notifier),
       rootLabel: l10n.musicBreadcrumbRoot,
-      // The whole library in an order nobody chose. Beside the views rather
-      // than inside one of them: an owner who wants something to play is not
-      // browsing, and making them first pick a record to shuffle would be
-      // asking them the question they opened this to avoid.
+      // The whole library in an order nobody chose, from the top of any view.
+      // Beside the views rather than inside one of them: an owner who wants
+      // something to play is not browsing, and making them first pick a
+      // record to shuffle would be asking them the question they opened this
+      // to avoid. Once they have opened an artist or a record, the browser
+      // shuffles that instead.
       onShuffle: () => unawaited(
         ref
             .read(audioPlaybackControllerProvider.notifier)

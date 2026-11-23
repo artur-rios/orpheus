@@ -6,6 +6,7 @@ import 'package:orpheus/features/playback/domain/media_player.dart';
 import 'package:orpheus/features/playback/domain/media_session.dart';
 import 'package:orpheus/features/playback/domain/playback_position_store.dart';
 import 'package:orpheus/features/playback/domain/playback_queue.dart';
+import 'package:orpheus/features/playback/domain/queue_continuation.dart';
 
 import '../../../support/entries.dart';
 import '../../../support/test_container.dart';
@@ -214,6 +215,39 @@ void main() {
         await settle();
 
         expect(harness.read(audioPlaybackControllerProvider).repeat, QueueRepeat.all);
+        expect(harness.session.onScreen!.hasNext, isTrue);
+      },
+    );
+
+    test(
+      'GivenContinuationOn_WhenTheLastTrackPlays_ThenTheSessionOffersNext',
+      () async {
+        final harness = Harness(library: library);
+        final (player, _) = await playerOf(harness);
+        await harness
+            .read(preferencesControllerProvider.notifier)
+            .setContinuation(QueueContinuation.library);
+
+        await player.playTrack(okComputer.last.file);
+        await settle();
+
+        expect(harness.session.onScreen!.hasNext, isTrue);
+      },
+    );
+
+    test(
+      'GivenTheLastTrackPlaying_WhenContinuationIsTurnedOn_ThenTheSessionOffersNext',
+      () async {
+        final harness = Harness(library: library);
+        final (player, _) = await playerOf(harness);
+        await player.playTrack(okComputer.last.file);
+        await settle();
+
+        await harness
+            .read(preferencesControllerProvider.notifier)
+            .setContinuation(QueueContinuation.sameArtist);
+        await settle();
+
         expect(harness.session.onScreen!.hasNext, isTrue);
       },
     );

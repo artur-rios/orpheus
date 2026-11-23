@@ -3,6 +3,7 @@ import 'package:logging/logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../core/di/providers.dart';
+import '../../playback/domain/queue_continuation.dart';
 
 /// The preferences the owner can change.
 class PreferencesState {
@@ -15,6 +16,7 @@ class PreferencesState {
     required this.checksForUpdatesOnStartup,
     required this.showsAutoPlaylists,
     required this.volume,
+    this.continuation = QueueContinuation.stop,
     this.locale,
     this.unsaved = false,
   });
@@ -43,6 +45,9 @@ class PreferencesState {
   /// How loud playback is, 0 to 1.
   final double volume;
 
+  /// What plays once a queue has run out.
+  final QueueContinuation continuation;
+
   /// Whether the last change applied but could not be written.
   ///
   /// Shown rather than swallowed: a preference that will not persist is a
@@ -61,6 +66,7 @@ class PreferencesState {
     bool? checksForUpdatesOnStartup,
     bool? showsAutoPlaylists,
     double? volume,
+    QueueContinuation? continuation,
     bool? unsaved,
   }) => PreferencesState(
     themeMode: themeMode ?? this.themeMode,
@@ -72,6 +78,7 @@ class PreferencesState {
         checksForUpdatesOnStartup ?? this.checksForUpdatesOnStartup,
     showsAutoPlaylists: showsAutoPlaylists ?? this.showsAutoPlaylists,
     volume: volume ?? this.volume,
+    continuation: continuation ?? this.continuation,
     unsaved: unsaved ?? this.unsaved,
   );
 }
@@ -93,6 +100,9 @@ class PreferencesController extends Notifier<PreferencesState> {
       checksForUpdatesOnStartup: settings.checksForUpdatesOnStartup,
       showsAutoPlaylists: settings.showsAutoPlaylists,
       volume: settings.volume,
+      continuation: QueueContinuation.fromName(
+        settings.getString(queueContinuationSettingsKey),
+      ),
     );
   }
 
@@ -171,6 +181,21 @@ class PreferencesController extends Notifier<PreferencesState> {
     ref.invalidate(lyricsProvider);
     await _write(
       () => ref.read(settingsStoreProvider).setFetchesLyricsOnline(value),
+    );
+  }
+
+  /// Applies [mode], which the player reads when a queue runs out.
+  ///
+  /// Stored under its own key through the store's string preferences, as the
+  /// repeat mode is, rather than as one more typed accessor: it is the
+  /// player's setting, kept here only because this is where the owner
+  /// changes it.
+  Future<void> setContinuation(QueueContinuation mode) async {
+    state = state.copyWith(continuation: mode, unsaved: false);
+    await _write(
+      () => ref
+          .read(settingsStoreProvider)
+          .setString(queueContinuationSettingsKey, mode.name),
     );
   }
 

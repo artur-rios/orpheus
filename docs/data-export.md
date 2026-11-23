@@ -318,6 +318,7 @@ rescansAtStartup
 fetchesLyricsOnline
 checksForUpdatesOnStartup
 showsAutoPlaylists
+queueContinuation
 volume
 libraryFolders
 ```
@@ -331,6 +332,7 @@ libraryFolders
 | `fetchesLyricsOnline` | boolean | no | *Look up missing lyrics online*. |
 | `checksForUpdatesOnStartup` | boolean | no | *Check for updates when Orpheus starts*. |
 | `showsAutoPlaylists` | boolean | no | *Show auto playlists*. |
+| `queueContinuation` | string | no | *When the queue ends*: `stop`, `sameArtist`, `sameGenre` or `library`. An unknown value reads as `stop`. |
 | `volume` | number | no | The playback volume, from `0` to `1`. |
 | `libraryFolders` | array of string | no | The music folders, as the machine stored them. |
 

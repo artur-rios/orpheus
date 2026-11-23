@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
+import 'package:orpheus/features/playback/domain/queue_continuation.dart';
 import 'package:orpheus/features/shell/presentation/preferences_dialog.dart';
 
 import '../../../support/fakes.dart';
@@ -95,6 +96,26 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(harness.settings.showsAutoPlaylists, isTrue);
+    },
+  );
+
+  testWidgets(
+    'GivenThePreferences_WhenTheOwnerPicksWholeLibrary_ThenItIsStored',
+    (tester) async {
+      final harness = await open(tester, shown: true);
+      final dropdown = find.text('When the queue ends');
+
+      await tester.ensureVisible(dropdown);
+      await tester.pumpAndSettle();
+      await tester.tap(dropdown);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Play anything from the library').last);
+      await tester.pumpAndSettle();
+
+      expect(
+        harness.settings.getString(queueContinuationSettingsKey),
+        'library',
+      );
     },
   );
 }

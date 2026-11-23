@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/core/settings/in_memory_settings_store.dart';
+import 'package:orpheus/features/playback/domain/queue_continuation.dart';
 
 import '../../../support/fakes.dart';
 import '../../../support/test_container.dart';
@@ -145,4 +146,60 @@ void main() {
       expect(state.unsaved, isTrue);
     },
   );
+
+  group('when the queue ends', () {
+    test('GivenNothingStored_WhenPreferencesAreRead_ThenTheQueueStops', () {
+      final harness = Harness();
+
+      expect(
+        harness.read(preferencesControllerProvider).continuation,
+        QueueContinuation.stop,
+      );
+    });
+
+    test(
+      'GivenSameGenreStored_WhenPreferencesAreRead_ThenItIsSameGenre',
+      () async {
+        final settings = InMemorySettingsStore();
+        await settings.setString(queueContinuationSettingsKey, 'sameGenre');
+        final harness = Harness(settings: settings);
+
+        expect(
+          harness.read(preferencesControllerProvider).continuation,
+          QueueContinuation.sameGenre,
+        );
+      },
+    );
+
+    test(
+      'GivenTheOwnerPicksSameArtist_WhenItIsSet_ThenItAppliesAndIsStored',
+      () async {
+        final harness = Harness();
+        final preferences = harness.read(
+          preferencesControllerProvider.notifier,
+        );
+
+        await preferences.setContinuation(QueueContinuation.sameArtist);
+
+        final state = harness.read(preferencesControllerProvider);
+        expect(state.continuation, QueueContinuation.sameArtist);
+        expect(state.unsaved, isFalse);
+        expect(
+          harness.settings.getString(queueContinuationSettingsKey),
+          'sameArtist',
+        );
+      },
+    );
+
+    test('GivenTheStoreRefusesTheWrite_WhenContinuationIsSet_ThenItAppliesAndIsMarkedUnsaved', () async {
+      final harness = Harness(settings: UnwritableSettingsStore());
+      final preferences = harness.read(preferencesControllerProvider.notifier);
+
+      await preferences.setContinuation(QueueContinuation.library);
+
+      final state = harness.read(preferencesControllerProvider);
+      expect(state.continuation, QueueContinuation.library);
+      expect(state.unsaved, isTrue);
+    });
+  });
 }

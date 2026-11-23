@@ -7,6 +7,7 @@ import 'package:orpheus/features/playback/application/audio_playback_controller.
 import 'package:orpheus/features/playback/domain/media_player.dart';
 import 'package:orpheus/features/playback/domain/playback_position_store.dart';
 import 'package:orpheus/features/playback/domain/playback_queue.dart';
+import 'package:orpheus/features/playback/domain/queue_continuation.dart';
 
 import '../../../support/entries.dart';
 import '../../../support/test_container.dart';
@@ -897,6 +898,274 @@ void main() {
 
         expect(stateOf(harness).queue.label, 'OK Computer');
         expect(stateOf(harness).stage, AudioStage.playing);
+      },
+    );
+  });
+
+  group('when the queue ends', () {
+    /// A player over [library] that carries on as [mode] says.
+    Future<(Harness, AudioPlaybackController)> continuing(
+      QueueContinuation mode, {
+      List<MusicEntry>? within,
+      Set<String> missingTracks = const {},
+    }) async {
+      final harness = Harness(
+        library: within ?? library,
+        missingTracks: missingTracks,
+      );
+      await harness
+          .read(preferencesControllerProvider.notifier)
+          .setContinuation(mode);
+
+      return (harness, await playerOf(harness));
+    }
+
+    /// Plays every track of [player]'s queue to its end, from where it is.
+    Future<void> endEveryTrack(Harness harness, int count) async {
+      for (var i = 0; i < count; i++) {
+        await report(harness, const PlaybackStatus(hasEnded: true));
+      }
+    }
+
+    test('GivenStop_WhenTheLastTrackEnds_ThenPlaybackGoesIdle', () async {
+      final (harness, player) = await continuing(QueueContinuation.stop);
+      await player.playAlbum(okComputer.first.file);
+
+      await endEveryTrack(harness, 3);
+
+      expect(stateOf(harness).stage, AudioStage.idle);
+      expect(harness.player.opened, hasLength(3));
+    });
+
+    test(
+      'GivenSameArtist_WhenTheAlbumEnds_ThenATrackByTheArtistIsAppendedAndOpened',
+      () async {
+        final (harness, player) = await continuing(
+          QueueContinuation.sameArtist,
+        );
+        await player.playAlbum(okComputer.first.file);
+
+        await endEveryTrack(harness, 3);
+
+        final queue = stateOf(harness).queue;
+        expect(stateOf(harness).stage, AudioStage.playing);
+        expect(queue.tracks, hasLength(4));
+        expect(queue.index, 3);
+        expect(queue.kind, QueueKind.album);
+        expect(queue.current?.path, kidA.first.file.path);
+        expect(harness.player.opened.last, kidA.first.file.path);
+      },
+    );
+
+    test(
+      'GivenWholeLibrary_WhenTheAppendedTrackEnds_ThenAnotherIsAppended',
+      () async {
+        final (harness, player) = await continuing(QueueContinuation.library);
+        await player.playAlbum(okComputer.first.file);
+
+        await endEveryTrack(harness, 4);
+
+        final queue = stateOf(harness).queue;
+        expect(queue.tracks, hasLength(5));
+        expect(queue.index, 4);
+        expect(
+          queue.tracks.skip(3).map((file) => file.path).toSet(),
+          {kidA.first.file.path, other.first.file.path},
+        );
+      },
+    );
+
+    test(
+      'GivenRepeatAll_WhenTheAlbumEnds_ThenItStartsAgainAndNothingIsAppended',
+      () async {
+        final (harness, player) = await continuing(QueueContinuation.library);
+        await player.playAlbum(okComputer.first.file);
+        await player.cycleRepeat();
+
+        await endEveryTrack(harness, 3);
+
+        expect(stateOf(harness).queue.tracks, hasLength(3));
+        expect(harness.player.opened.last, okComputer.first.file.path);
+      },
+    );
+
+    test(
+      'GivenRepeatOne_WhenTheTrackEnds_ThenItRepeatsAndNothingIsAppended',
+      () async {
+        final (harness, player) = await continuing(QueueContinuation.library);
+        await player.playTrack(other.first.file);
+        await player.cycleRepeat();
+        await player.cycleRepeat();
+
+        await endEveryTrack(harness, 1);
+
+        expect(stateOf(harness).queue.tracks, hasLength(1));
+        expect(harness.player.opened, [
+          other.first.file.path,
+          other.first.file.path,
+        ]);
+      },
+    );
+
+    test(
+      'GivenSameArtist_WhenNextIsPressedOnTheLastTrack_ThenATrackIsAppended',
+      () async {
+        final (harness, player) = await continuing(
+          QueueContinuation.sameArtist,
+        );
+        await player.playTrack(okComputer.last.file);
+
+        await player.next();
+
+        final queue = stateOf(harness).queue;
+        expect(queue.tracks, hasLength(2));
+        expect(queue.index, 1);
+        expect(
+          {for (final e in [...okComputer, ...kidA]) e.file.path},
+          contains(harness.player.opened.last),
+        );
+        expect(harness.player.opened.last, isNot(okComputer.last.file.path));
+      },
+    );
+
+    test(
+      'GivenTheLastTrackIsMissing_WhenTheQueueRunsOut_ThenItContinuesFromTheLastTrackThatPlayed',
+      () async {
+        final (harness, player) = await continuing(
+          QueueContinuation.sameArtist,
+          missingTracks: {okComputer.last.file.path},
+        );
+        await player.playAlbum(okComputer.first.file);
+
+        await endEveryTrack(harness, 2);
+
+        expect(stateOf(harness).stage, AudioStage.playing);
+        expect(harness.player.opened.last, kidA.first.file.path);
+        expect(stateOf(harness).lastSkipped?.path, okComputer.last.file.path);
+      },
+    );
+
+    test(
+      'GivenEveryCandidateIsMissing_WhenTheQueueEnds_ThenPlaybackStops',
+      () async {
+        final (harness, player) = await continuing(
+          QueueContinuation.library,
+          missingTracks: {
+            for (final e in library)
+              if (e != okComputer.first) e.file.path,
+          },
+        );
+        await player.playTrack(okComputer.first.file);
+
+        await endEveryTrack(harness, 1);
+
+        expect(stateOf(harness).stage, AudioStage.idle);
+        expect(harness.player.opened, [okComputer.first.file.path]);
+      },
+    );
+
+    test(
+      'GivenTheUnheardCandidatesAreMissing_WhenTheQueueEnds_ThenATrackAlreadyHeardPlays',
+      () async {
+        final (harness, player) = await continuing(
+          QueueContinuation.sameArtist,
+          missingTracks: {kidA.first.file.path},
+        );
+        await player.playAlbum(okComputer.first.file);
+
+        await endEveryTrack(harness, 3);
+
+        expect(stateOf(harness).stage, AudioStage.playing);
+        expect(
+          [okComputer[0].file.path, okComputer[1].file.path],
+          contains(harness.player.opened.last),
+        );
+      },
+    );
+
+    test(
+      'GivenAnAppendedTrackFailsToDecode_WhenItIsSkipped_ThenAnotherIsDrawnAndTheFailedOneNeverReturns',
+      () async {
+        final hailToTheThief = entry(
+          id: 'ht1',
+          title: '2 + 2 = 5',
+          artist: 'Radiohead',
+          album: 'Hail',
+          track: 1,
+        );
+        final (harness, player) = await continuing(
+          QueueContinuation.sameArtist,
+          within: [...library, hailToTheThief],
+        );
+        await player.playAlbum(okComputer.first.file);
+        await endEveryTrack(harness, 3);
+        final failed = harness.player.opened.last;
+
+        await report(harness, const PlaybackStatus(failedToDecode: true));
+
+        final drawn = harness.player.opened.last;
+        expect(drawn, isNot(failed));
+        expect(
+          {kidA.first.file.path, hailToTheThief.file.path},
+          contains(drawn),
+        );
+
+        // The other one fails too: what is left is the record already heard,
+        // never either of the two that would not play.
+        await report(harness, const PlaybackStatus(failedToDecode: true));
+
+        expect(
+          [okComputer[0].file.path, okComputer[1].file.path],
+          contains(harness.player.opened.last),
+        );
+      },
+    );
+
+    test(
+      'GivenAContinuedAlbum_WhenTheLibraryIsRescanned_ThenTheQueueKeepsTheAlbumsName',
+      () async {
+        final (harness, player) = await continuing(
+          QueueContinuation.sameArtist,
+        );
+        await player.playAlbum(okComputer.first.file);
+        await endEveryTrack(harness, 3);
+        expect(stateOf(harness).queue.current?.path, kidA.first.file.path);
+
+        harness
+            .read(musicLibraryControllerProvider.notifier)
+            .replaceWith(MusicCatalog(entries: albumArtistsAcross(library)));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(stateOf(harness).queue.label, 'OK');
+      },
+    );
+
+    test(
+      'GivenATrackThatWillNotDecode_WhenItIsAllThatWasAsked_ThenNothingElseStarts',
+      () async {
+        final (harness, player) = await continuing(QueueContinuation.library);
+        await player.playTrack(other.first.file);
+
+        await report(harness, const PlaybackStatus(failedToDecode: true));
+
+        expect(harness.player.opened, [other.first.file.path]);
+        expect(stateOf(harness).stage, AudioStage.idle);
+        expect(stateOf(harness).lastSkipped?.path, other.first.file.path);
+      },
+    );
+
+    test(
+      'GivenContinuationOn_WhenTheLastTrackPlays_ThenCanAdvanceIsTrue',
+      () async {
+        final (harness, player) = await continuing(QueueContinuation.library);
+        await player.playTrack(other.first.file);
+
+        final state = stateOf(harness);
+        expect(
+          state.canAdvance(continuation: QueueContinuation.library),
+          isTrue,
+        );
+        expect(state.canAdvance(continuation: QueueContinuation.stop), isFalse);
       },
     );
   });

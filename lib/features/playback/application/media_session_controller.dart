@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/di/providers.dart';
 import '../../library/domain/music_catalog.dart';
 import '../domain/media_session.dart';
-import '../domain/playback_queue.dart';
 import 'audio_playback_controller.dart';
 
 /// The words the session shows for a file whose tags name nothing.
@@ -93,6 +92,13 @@ class MediaSessionController extends Notifier<NowPlaying?> {
     ref.listen(musicLibraryControllerProvider, (_, _) {
       unawaited(_publish(ref.read(audioPlaybackControllerProvider)));
     });
+    // What the next button can do depends on it.
+    ref.listen(
+      preferencesControllerProvider.select(
+        (preferences) => preferences.continuation,
+      ),
+      (_, _) => unawaited(_publish(ref.read(audioPlaybackControllerProvider))),
+    );
 
     return null;
   }
@@ -155,12 +161,13 @@ class MediaSessionController extends Notifier<NowPlaying?> {
       artPath: art,
       position: playback.status.position,
       isPlaying: playback.isPlaying,
-      // Repeat is part of the answer: at the end of a queue set to repeat, the
-      // next button goes back to the top, and a button drawn dead there would
-      // be lying about what pressing it does.
-      hasNext:
-          playback.queue.hasNext ||
-          (playback.repeat != QueueRepeat.off && !playback.queue.isEmpty),
+      // Repeat is part of the answer, and so is carrying on: at the end of a
+      // queue set to repeat the next button goes back to the top, and with a
+      // continuation it plays a random track — a button drawn dead there
+      // would be lying about what pressing it does.
+      hasNext: playback.canAdvance(
+        continuation: ref.read(preferencesControllerProvider).continuation,
+      ),
       // Always, while something is playing. Pressing back near the start of a
       // track steps to the one before it and pressing it later restarts this
       // one, so there is no point in the queue where the button does nothing.

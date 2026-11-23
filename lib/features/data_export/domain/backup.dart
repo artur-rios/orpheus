@@ -67,6 +67,7 @@ class PreferencesSnapshot {
     required this.showsAutoPlaylists,
     required this.volume,
     required this.libraryFolders,
+    this.queueContinuation = 'stop',
   });
 
   /// Reads a snapshot from the `preferences.json` document.
@@ -81,6 +82,7 @@ class PreferencesSnapshot {
     final locale = json['locale'];
     final volume = json['volume'];
     final folders = json['libraryFolders'];
+    final continuation = json['queueContinuation'];
 
     return PreferencesSnapshot(
       themeMode: theme is String && theme.isNotEmpty ? theme : 'system',
@@ -90,6 +92,9 @@ class PreferencesSnapshot {
       fetchesLyricsOnline: flag('fetchesLyricsOnline'),
       checksForUpdatesOnStartup: flag('checksForUpdatesOnStartup'),
       showsAutoPlaylists: flag('showsAutoPlaylists'),
+      queueContinuation: continuation is String && continuation.isNotEmpty
+          ? continuation
+          : 'stop',
       volume: volume is num ? volume.toDouble() : 1,
       libraryFolders: folders is List
           ? [
@@ -121,6 +126,11 @@ class PreferencesSnapshot {
   /// Whether the auto playlists are shown.
   final bool showsAutoPlaylists;
 
+  /// The name of what plays once a queue has run out — a
+  /// `QueueContinuation`, kept as its name like [themeMode] is, so that a
+  /// backup from a release with more choices still reads.
+  final String queueContinuation;
+
   /// The playback volume, from 0 to 1.
   final double volume;
 
@@ -137,6 +147,7 @@ class PreferencesSnapshot {
     'fetchesLyricsOnline': fetchesLyricsOnline,
     'checksForUpdatesOnStartup': checksForUpdatesOnStartup,
     'showsAutoPlaylists': showsAutoPlaylists,
+    'queueContinuation': queueContinuation,
     'volume': volume,
     'libraryFolders': libraryFolders,
   };
@@ -151,6 +162,7 @@ class PreferencesSnapshot {
       other.fetchesLyricsOnline == fetchesLyricsOnline &&
       other.checksForUpdatesOnStartup == checksForUpdatesOnStartup &&
       other.showsAutoPlaylists == showsAutoPlaylists &&
+      other.queueContinuation == queueContinuation &&
       other.volume == volume &&
       _sameStrings(other.libraryFolders, libraryFolders);
 
@@ -163,6 +175,7 @@ class PreferencesSnapshot {
     fetchesLyricsOnline,
     checksForUpdatesOnStartup,
     showsAutoPlaylists,
+    queueContinuation,
     volume,
     Object.hashAll(libraryFolders),
   );

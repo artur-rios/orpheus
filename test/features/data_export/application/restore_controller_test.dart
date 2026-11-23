@@ -19,6 +19,7 @@ import 'package:orpheus/features/library/domain/library_scan.dart';
 import 'package:orpheus/features/library/domain/music_catalog.dart';
 import 'package:orpheus/features/library/domain/music_entry.dart';
 import 'package:orpheus/features/library/domain/music_grouping.dart';
+import 'package:orpheus/features/playback/domain/queue_continuation.dart';
 import 'package:orpheus/features/playlists/domain/playlist.dart';
 import 'package:orpheus/features/stats/application/play_recorder.dart';
 import 'package:orpheus/features/stats/domain/play_history.dart';
@@ -687,6 +688,39 @@ void main() {
       expect(harness.settings.volume, 0.5);
       expect(harness.settings.libraryFolders, ['/music']);
       expect((summary.playlists as PlaylistsRestored).replaced, 1);
+    });
+
+    test('GivenABackupThatContinuesFromTheLibrary_WhenItsPreferencesAreRestored_ThenThePlayerWillToo', () async {
+      final harness = build();
+      final controller = await atChoices(
+        harness,
+        zip(
+          preferences: const PreferencesSnapshot(
+            themeMode: 'light',
+            locale: 'pt_BR',
+            opensPlayerOnPlay: false,
+            rescansAtStartup: true,
+            fetchesLyricsOnline: true,
+            checksForUpdatesOnStartup: true,
+            showsAutoPlaylists: true,
+            queueContinuation: 'library',
+            volume: 0.5,
+            libraryFolders: ['/music'],
+          ),
+        ),
+      );
+      controller.choose(RestorePart.preferences, RestoreChoice.replace);
+
+      await controller.restore();
+
+      expect(
+        harness.read(preferencesControllerProvider).continuation,
+        QueueContinuation.library,
+      );
+      expect(
+        harness.settings.getString(queueContinuationSettingsKey),
+        'library',
+      );
     });
 
     test('GivenSkipForEveryPart_WhenRestored_ThenWhatIsHereIsKeptAndOnlyTheNewIsAdded', () async {

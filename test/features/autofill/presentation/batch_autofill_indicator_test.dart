@@ -230,7 +230,7 @@ void main() {
       final window = Size(width, 900);
 
       testWidgets(
-        'WhenRunningInPortuguese_ThenItFitsAndOpensTheScreen (${width.round()})',
+        'GivenARunningBatchInPortugueseAt${width.round()}Wide_WhenShown_ThenItFitsAndOpensTheScreen',
         (tester) async {
           final harness = await aRunningBatch();
           await show(tester, harness, window: window, locale: portuguese);
@@ -252,7 +252,7 @@ void main() {
       );
 
       testWidgets(
-        'WhenFinishedWithDoubtfulInPortuguese_ThenItFitsAndOpensTheScreen (${width.round()})',
+        'GivenABatchFinishedWithDoubtfulInPortugueseAt${width.round()}Wide_WhenShown_ThenItFitsAndOpensTheScreen',
         (tester) async {
           final harness = await aFinishedBatchWithADoubt();
           controllerOf(harness).markSeen();
