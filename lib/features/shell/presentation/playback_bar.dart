@@ -10,7 +10,6 @@ import '../../../core/theme/breakpoints.dart';
 import '../../library/domain/audio_file.dart';
 import '../../playback/application/audio_playback_controller.dart';
 import '../../playback/domain/media_player.dart';
-import '../../playback/domain/playback_queue.dart';
 import '../../playback/presentation/album_art.dart';
 import '../../playback/presentation/music_display_name.dart';
 import '../../playback/presentation/now_playing_screen.dart';
@@ -197,8 +196,13 @@ class _Bar extends ConsumerWidget {
           tooltip: l10n.audioNext,
           icon: const Icon(Icons.skip_next),
           onPressed:
-              state.queue.hasNext ||
-                  (state.repeat != QueueRepeat.off && !state.queue.isEmpty)
+              state.canAdvance(
+                continuation: ref.watch(
+                  preferencesControllerProvider.select(
+                    (preferences) => preferences.continuation,
+                  ),
+                ),
+              )
               ? () => unawaited(controller.next())
               : null,
         ),

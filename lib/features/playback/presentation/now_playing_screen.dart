@@ -250,9 +250,13 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                           iconSize: 40,
                           icon: const Icon(Icons.skip_next),
                           onPressed:
-                              state.queue.hasNext ||
-                                  (state.repeat != QueueRepeat.off &&
-                                      !state.queue.isEmpty)
+                              state.canAdvance(
+                                continuation: ref.watch(
+                                  preferencesControllerProvider.select(
+                                    (preferences) => preferences.continuation,
+                                  ),
+                                ),
+                              )
                               ? () => unawaited(controller.next())
                               : null,
                         ),
