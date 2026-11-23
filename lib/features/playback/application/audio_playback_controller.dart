@@ -283,10 +283,10 @@ class AudioPlaybackController extends Notifier<AudioPlaybackState> {
   /// code with no `AppLocalizations` to name anything, and a label written
   /// here would be in one language for every owner.
   ///
-  /// Every track the library holds, not the view the owner is looking at:
-  /// "shuffle everything" said while standing in one artist would otherwise
-  /// mean something different from the same words said in Songs, and neither
-  /// reading is written anywhere an owner could check.
+  /// Every track the library holds, whichever view it is asked from: the
+  /// Artists, Albums and Songs views all mean the same thing by "shuffle
+  /// everything". The browser asks for it only at the top of a view; inside
+  /// an artist or a record its shuffle says so, and plays that instead.
   Future<void> playEverythingShuffled({required String label}) async {
     state = state.copyWith(stage: AudioStage.starting);
 

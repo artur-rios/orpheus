@@ -5,6 +5,7 @@ import 'package:orpheus/core/di/providers.dart';
 import 'package:orpheus/features/autofill/application/autofill_controller.dart';
 import 'package:orpheus/features/autofill/presentation/autofill_screen.dart';
 import 'package:orpheus/features/playback/domain/music_layout.dart';
+import 'package:orpheus/features/playback/domain/playback_queue.dart';
 import 'package:orpheus/features/playback/presentation/letter_bar.dart';
 import 'package:orpheus/features/playback/presentation/music_library_view.dart';
 import 'package:orpheus/features/playback/presentation/music_rows.dart';
@@ -613,6 +614,101 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(LetterBar), findsNothing);
+      },
+    );
+  });
+
+  group('the toolbar shuffle', () {
+    List<String> queuedTitles(Harness harness) => [
+      for (final file in harness.read(audioPlaybackControllerProvider).queue.tracks)
+        library.firstWhere((e) => e.file == file).title!,
+    ];
+
+    testWidgets(
+      'GivenTheArtistsView_WhenShuffleIsPressed_ThenEverythingIsShuffled',
+      (tester) async {
+        final harness = Harness(library: library);
+        await tester.pumpHarness(harness, area());
+
+        await tester.tap(find.byTooltip('Shuffle everything'));
+        await tester.pumpAndSettle();
+
+        expect(queuedTitles(harness), hasLength(4));
+      },
+    );
+
+    testWidgets(
+      'GivenAnOpenArtist_WhenShuffleIsPressed_ThenOnlyTheirTracksAreQueued',
+      (tester) async {
+        final harness = Harness(library: library);
+        await tester.pumpHarness(harness, area());
+        await tester.tap(find.text('Radiohead'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byTooltip('Shuffle the artist'));
+        await tester.pumpAndSettle();
+
+        final queue = harness.read(audioPlaybackControllerProvider).queue;
+        expect(queue.kind, QueueKind.artist);
+        expect(
+          queuedTitles(harness),
+          unorderedEquals(['Airbag', 'Karma Police', 'Everything']),
+        );
+        expect(find.byTooltip('Shuffle everything'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'GivenAnAlbumOpenedThroughAnArtist_WhenShuffleIsPressed_ThenOnlyTheAlbumIsQueued',
+      (tester) async {
+        final harness = Harness(library: library);
+        await tester.pumpHarness(harness, area());
+        await tester.tap(find.text('Radiohead'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('OK Computer'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byTooltip('Shuffle the album'));
+        await tester.pumpAndSettle();
+
+        final queue = harness.read(audioPlaybackControllerProvider).queue;
+        expect(queue.kind, QueueKind.album);
+        expect(
+          queuedTitles(harness),
+          unorderedEquals(['Airbag', 'Karma Police']),
+        );
+      },
+    );
+
+    testWidgets(
+      'GivenAnAlbumOpenedFromAlbums_WhenShuffleIsPressed_ThenOnlyTheAlbumIsQueued',
+      (tester) async {
+        final harness = Harness(library: library);
+        await tester.pumpHarness(harness, area());
+        await tester.tap(find.text('Albums'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Kid A'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byTooltip('Shuffle the album'));
+        await tester.pumpAndSettle();
+
+        expect(queuedTitles(harness), ['Everything']);
+      },
+    );
+
+    testWidgets(
+      'GivenTheSongsView_WhenShuffleIsPressed_ThenEverythingIsShuffled',
+      (tester) async {
+        final harness = Harness(library: library);
+        await tester.pumpHarness(harness, area());
+        await tester.tap(find.text('Songs'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byTooltip('Shuffle everything'));
+        await tester.pumpAndSettle();
+
+        expect(queuedTitles(harness), hasLength(4));
       },
     );
   });
