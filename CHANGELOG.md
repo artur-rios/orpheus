@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-11-23
+
 ### Added
 
 - Keep playing when the queue ends. *Preferences → Playback → When the queue ends* chooses between stopping, as
@@ -390,7 +392,8 @@ A pre-release built from the `diagnose/android-usb-folder` branch to diagnose fo
 - Release downloads: a Windows installer, a portable Windows archive, a Linux installer and an Android APK, with
   `SHA256SUMS.txt`.
 
-[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.7.2...HEAD
+[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/artur-rios/orpheus/compare/v1.7.2...v1.8.0
 [1.7.2]: https://github.com/artur-rios/orpheus/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/artur-rios/orpheus/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/artur-rios/orpheus/compare/v1.6.0...v1.7.0
