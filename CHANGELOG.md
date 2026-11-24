@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- On Linux under Wayland, the window's contents no longer come out at the wrong size when the window's display
+  scale changes after it opens, as it did on Hyprland (Omarchy) at launch, and as it does anywhere the window moves
+  between monitors of different scales. The application was drawn twice its size with only its top-left corner
+  showing, or shrunk into that corner. Since 1.7.2, from Flutter 3.50's Wayland renderer.
+
 ## [1.8.0] - 2026-11-23
 
 ### Added

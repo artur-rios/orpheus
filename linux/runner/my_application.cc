@@ -19,6 +19,79 @@ static void first_frame_cb(MyApplication* self, FlView* view) {
   gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
 }
 
+// The widget Flutter draws through on Wayland, or null where there is none (an
+// X11 display has its own renderer, which this does not concern). Found by its
+// type name, because the type is private to the engine.
+static GtkWidget* find_subsurface_renderer(GtkWidget* widget) {
+  if (g_strcmp0(G_OBJECT_TYPE_NAME(widget), "FlViewRendererSubsurface") == 0) {
+    return widget;
+  }
+  if (!GTK_IS_CONTAINER(widget)) {
+    return nullptr;
+  }
+  struct Search {
+    GtkWidget* found = nullptr;
+  } search;
+  gtk_container_forall(
+      GTK_CONTAINER(widget),
+      [](GtkWidget* child, gpointer data) {
+        auto* search = static_cast<Search*>(data);
+        if (search->found == nullptr) {
+          search->found = find_subsurface_renderer(child);
+        }
+      },
+      &search);
+  return search.found;
+}
+
+// The Wayland subsurface Flutter draws into, made again at the window's
+// current scale.
+//
+// Flutter 3.50 draws a Wayland window through a subsurface whose buffer scale
+// is set once, when it is made, and never again (fl_subsurface_egl.cc). When
+// the window's scale changes after that, the engine renders at the new scale
+// into a surface the compositor still reads at the old one: from 1 to 2 the
+// application is drawn twice its size and only its top-left quarter shows,
+// from 2 to 1 it shrinks into that quarter. Omarchy's Hyprland showed it at
+// launch; moving the window between monitors of different scales does it
+// anywhere.
+//
+// The renderer makes its subsurface when it is realized, so it is realized
+// again. FlView's own handlers on it are held back meanwhile: its realize
+// handler is what starts the engine, and must run once.
+static gboolean rebuild_subsurface_cb(gpointer data) {
+  FlView* view = FL_VIEW(data);
+  GtkWidget* renderer = find_subsurface_renderer(GTK_WIDGET(view));
+  if (renderer == nullptr || !gtk_widget_get_realized(renderer)) {
+    return G_SOURCE_REMOVE;
+  }
+
+  const gboolean mapped = gtk_widget_get_mapped(renderer);
+  g_signal_handlers_block_matched(renderer, G_SIGNAL_MATCH_DATA, 0, 0, nullptr,
+                                  nullptr, view);
+  gtk_widget_unrealize(renderer);
+  if (mapped) {
+    gtk_widget_map(renderer);
+  } else {
+    gtk_widget_realize(renderer);
+  }
+  g_signal_handlers_unblock_matched(renderer, G_SIGNAL_MATCH_DATA, 0, 0,
+                                    nullptr, nullptr, view);
+  gtk_widget_queue_resize(renderer);
+
+  return G_SOURCE_REMOVE;
+}
+
+// Called when the view's scale factor changes. The subsurface is made again
+// once GTK has finished propagating the change, rather than in the middle of
+// it.
+static void scale_factor_changed_cb(FlView* view,
+                                    GParamSpec* pspec,
+                                    gpointer user_data) {
+  g_idle_add_full(G_PRIORITY_DEFAULT, rebuild_subsurface_cb,
+                  g_object_ref(view), g_object_unref);
+}
+
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
@@ -85,6 +158,8 @@ static void my_application_activate(GApplication* application) {
   // Requires the view to be realized so we can start rendering.
   g_signal_connect_swapped(view, "first-frame", G_CALLBACK(first_frame_cb),
                            self);
+  g_signal_connect(view, "notify::scale-factor",
+                   G_CALLBACK(scale_factor_changed_cb), nullptr);
   gtk_widget_realize(GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
