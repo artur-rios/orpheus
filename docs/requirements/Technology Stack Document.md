@@ -10,7 +10,7 @@ A dependency added without a row here is a Definition of Done failure.
 
 | | Version | Notes |
 | --- | --- | --- |
-| **Flutter** | 3.50.0, stable channel | The version the project is built and tested against. |
+| **Flutter** | 3.50.1, stable channel | The version the project is built and tested against. |
 | **Dart SDK** | `^3.14.0` | Declared in `pubspec.yaml`. |
 | **Java** | 17 | `sourceCompatibility`, `targetCompatibility` and the Kotlin JVM target for the Android build. |
 

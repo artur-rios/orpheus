@@ -52,9 +52,8 @@ static GtkWidget* find_subsurface_renderer(GtkWidget* widget) {
 // the window's scale changes after that, the engine renders at the new scale
 // into a surface the compositor still reads at the old one: from 1 to 2 the
 // application is drawn twice its size and only its top-left quarter shows,
-// from 2 to 1 it shrinks into that quarter. Omarchy's Hyprland showed it at
-// launch; moving the window between monitors of different scales does it
-// anywhere.
+// from 2 to 1 it shrinks into that quarter. Moving the window between monitors
+// of different scales does it.
 //
 // The renderer makes its subsurface when it is realized, so it is realized
 // again. FlView's own handlers on it are held back meanwhile: its realize

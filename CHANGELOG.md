@@ -7,6 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.8.2] - 2026-11-24
+
+### Fixed
+
+- On Linux with an NVIDIA graphics card, the window shows the whole application again, under Wayland and X11
+  alike. Since 1.7.2 the window showed only the application's top-right quarter, drawn into its bottom-left
+  quarter, with the rest black. This was the problem seen on Omarchy, which 1.8.1 did not fix: it came from
+  Flutter 3.50.0, which draws differently on NVIDIA's driver, and Flutter 3.50.1 fixes it.
+
+### Changed
+
+- Orpheus is built with Flutter 3.50.1.
+
 ## [1.8.1] - 2026-11-24
 
 ### Fixed
@@ -401,7 +414,8 @@ A pre-release built from the `diagnose/android-usb-folder` branch to diagnose fo
 - Release downloads: a Windows installer, a portable Windows archive, a Linux installer and an Android APK, with
   `SHA256SUMS.txt`.
 
-[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.8.1...HEAD
+[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.8.2...HEAD
+[1.8.2]: https://github.com/artur-rios/orpheus/compare/v1.8.1...v1.8.2
 [1.8.1]: https://github.com/artur-rios/orpheus/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/artur-rios/orpheus/compare/v1.7.2...v1.8.0
 [1.7.2]: https://github.com/artur-rios/orpheus/compare/v1.7.1...v1.7.2
