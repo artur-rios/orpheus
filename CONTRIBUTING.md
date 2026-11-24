@@ -15,7 +15,7 @@ what you need to build, test and release the application.
 
 ## Prerequisites
 
-- [Flutter](https://docs.flutter.dev/get-started/install) 3.50.0, stable channel — the version the project is built
+- [Flutter](https://docs.flutter.dev/get-started/install) 3.50.1, stable channel — the version the project is built
   and tested against (see the [Technology Stack Document](./docs/requirements/Technology%20Stack%20Document.md)).
 - **Linux:** `ninja-build` and `libgtk-3-dev` to build, and libmpv to play (`sudo apt install libmpv-dev mpv` on
   Debian and Ubuntu). `flutter test` needs a C++ compiler, `pkg-config` and `libgtk-3-dev` too: it compiles
