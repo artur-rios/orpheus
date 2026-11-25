@@ -69,6 +69,10 @@ fi
 [ -d "$BUNDLE/data/flutter_assets" ] || fail 'the bundle holds no data/flutter_assets; the build is incomplete'
 [ -d "$BUNDLE/lib" ] || fail 'the bundle holds no lib directory; the engine libraries are missing'
 [ -f "$BUNDLE/lib/libapp.so" ] || fail 'the bundle holds no lib/libapp.so; this is not a release build'
+# The executable has to load the system's unwinder ahead of Flutter's engine, or
+# it crashes at the first song on a libmpv built with LuaJIT; see the script.
+"$REPO_ROOT/tools/check-linux-unwinder.sh" "$BUNDLE/orpheus" >/dev/null ||
+  fail 'the executable does not load libgcc_s.so.1 first; see tools/check-linux-unwinder.sh'
 
 # A release build is compiled ahead of time into lib/libapp.so and has no
 # kernel_blob.bin — that file belongs to a debug or profile build. Finding one
