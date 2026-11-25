@@ -27,4 +27,6 @@ export USER=${USER:-$(id -un)}
 # Windows target is reported as not applicable rather than skipped, so it does not trip it.
 ./tools/verify.sh --strict
 
+./tools/check-linux-unwinder.sh build/linux/x64/release/bundle/orpheus
+
 ci/permissions.sh build/app/outputs/flutter-apk/app-release.apk build/permissions.txt

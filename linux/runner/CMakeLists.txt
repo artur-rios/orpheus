@@ -19,6 +19,18 @@ apply_standard_settings(${BINARY_NAME})
 # Add preprocessor definitions for the application ID.
 add_definitions(-DAPPLICATION_ID="${APPLICATION_ID}")
 
+# The system's unwinder, loaded before anything else. Flutter's engine exports
+# LLVM's unwinder under libgcc's names (`_Unwind_RaiseException@GCC_3.0`), and
+# the dynamic linker binds a symbol to the first library in load order that
+# defines it. With the engine first, the LuaJIT inside an Arch-built libmpv
+# raised its Lua errors through the engine's unwinder and the application died
+# of a segmentation fault at the first song played. BEFORE puts the library
+# ahead of the objects and of every plugin, so it is the executable's first
+# needed library; --no-as-needed keeps it although nothing here calls it.
+# tools/check-linux-unwinder.sh fails the build if that ever stops being true.
+target_link_options(${BINARY_NAME} BEFORE PRIVATE
+  "LINKER:--push-state,--no-as-needed,-lgcc_s,--pop-state")
+
 # Add dependency libraries. Add any application-specific dependencies here.
 target_link_libraries(${BINARY_NAME} PRIVATE flutter)
 target_link_libraries(${BINARY_NAME} PRIVATE PkgConfig::GTK)
