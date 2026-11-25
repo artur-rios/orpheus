@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- On Linux, playing a song no longer crashes the application on systems whose libmpv runs its scripts on LuaJIT, as
+  Arch's (and so Omarchy's) does. The window closed at the first song clicked, more often with an audio device that
+  fails to open, such as a USB headset's receiver left plugged in with the headset off. Flutter's engine carries an
+  unwinder of its own under the system's names, and LuaJIT was handed it in place of the system's; the application
+  now loads the system's first. Since 1.7.2, from Flutter 3.50.
+
 ## [1.8.2] - 2026-11-24
 
 ### Fixed
