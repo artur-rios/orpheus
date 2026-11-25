@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.8.3] - 2026-11-25
+
 ### Fixed
 
 - On Linux, playing a song no longer crashes the application on systems whose libmpv runs its scripts on LuaJIT, as
@@ -422,7 +424,8 @@ A pre-release built from the `diagnose/android-usb-folder` branch to diagnose fo
 - Release downloads: a Windows installer, a portable Windows archive, a Linux installer and an Android APK, with
   `SHA256SUMS.txt`.
 
-[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.8.2...HEAD
+[Unreleased]: https://github.com/artur-rios/orpheus/compare/v1.8.3...HEAD
+[1.8.3]: https://github.com/artur-rios/orpheus/compare/v1.8.2...v1.8.3
 [1.8.2]: https://github.com/artur-rios/orpheus/compare/v1.8.1...v1.8.2
 [1.8.1]: https://github.com/artur-rios/orpheus/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/artur-rios/orpheus/compare/v1.7.2...v1.8.0
